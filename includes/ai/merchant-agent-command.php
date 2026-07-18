@@ -206,7 +206,7 @@ function mg_agent_cmd_create_package(PDO $pdo, array $user, array $input): array
         return ['plan_id' => $planPublicId, 'items' => $created, 'state' => mg_agent_cmd_state($pdo, $user, false)];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_fail('Unable to create draft package: ' . $error->getMessage(), 500);
+        mg_fail('Unable to create draft package.', 500);
     }
 }
 

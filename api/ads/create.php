@@ -16,6 +16,5 @@ try {
     $campaign = mg_ads_upsert_campaign($pdo, (int)$user['id'], $input, null);
     mg_ok(['schema_ready' => true, 'campaign' => $campaign], 'Draft ad campaign created.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.create_failed', 'Campaign Ads Manager create failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.create_failed', 'Unable to create the ad campaign.', 500);
 }

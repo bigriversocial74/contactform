@@ -128,7 +128,7 @@ final class CustomerInboxSidebarContractTest extends TestCase
         self::assertStringContainsString('$user !== null', $source);
         self::assertStringContainsString("require __DIR__ . '/personal-agent-sidebar.php'", $source);
         self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.2.0', $source);
-        self::assertStringContainsString('/assets/js/personal-agent-chat-history.js?v=1.1.0', $source);
+        self::assertStringContainsString('/assets/js/personal-agent-chat-history.js?v=1.2.0', $source);
     }
 
     public function testTrainingLabIsRemovedAndChatHistoryRemains(): void
@@ -146,7 +146,7 @@ final class CustomerInboxSidebarContractTest extends TestCase
         $source = $this->source('includes/gift-action-center.php');
 
         self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.2.0', $source);
-        self::assertStringContainsString('/assets/js/personal-agent-chat-history.js?v=1.1.0', $source);
+        self::assertStringContainsString('/assets/js/personal-agent-chat-history.js?v=1.2.0', $source);
     }
 
     public function testMerchantAdminNavigationRemainsIndependent(): void

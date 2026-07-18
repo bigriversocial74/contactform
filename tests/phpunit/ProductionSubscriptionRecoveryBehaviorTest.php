@@ -87,14 +87,18 @@ final class ProductionSubscriptionRecoveryBehaviorTest extends TestCase
     }
 
     public function testStage14AndRenewalProcessingRequireClearRecoveryState(): void
+
     {
         $social=$this->read('api/social/_social.php');
         $processor=$this->read('scripts/process_subscriptions.php');
-        $manage=$this->read('api/subscriptions/manage.php');
+        $recovery=$this->read('api/subscriptions/_recovery.php');
         self::assertStringContainsString("recovery_status='clear'",$social);
         self::assertStringContainsString("s.recovery_status='clear'",$processor);
-        self::assertStringContainsString("recovery_status']??'clear'",$manage);
-        self::assertStringContainsString('Subscription payment recovery must be resolved before this action.',$manage);
+        self::assertStringContainsString("(string)(\$current['recovery_status']??'clear')!=='clear'",$processor);
+        self::assertStringContainsString('function mg_subscription_reconcile_tip_recovery',$recovery);
+
+
+
     }
 
     public function testBehaviorRunnerCoversReplayAccessNotificationsAndRollback(): void

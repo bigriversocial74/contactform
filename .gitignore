@@ -1,5 +1,32 @@
+# Local secrets and environment overrides
 /api/config.local.php
 /.env
+/.env.*
+!/.env.example
+
+# Installed dependencies
 /vendor/
+/node_modules/
+
+# Generated build, test, and coverage output
+/build/
+/coverage/
 /.phpunit.cache/
+/.phpunit.result.cache
+
+# Runtime data must live outside the deploy tree
+/storage/logs/
+/storage/cache/
+/storage/tmp/
+/uploads/
+
+# Logs, database exports, archives, and editor recovery files
+*.log
+*.sql.gz
+*.zip
+*.bak
+*.orig
+
+# Operating-system metadata
 .DS_Store
+Thumbs.db

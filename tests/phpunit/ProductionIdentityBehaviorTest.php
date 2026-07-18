@@ -25,6 +25,7 @@ final class ProductionIdentityBehaviorTest extends TestCase
     }
 
     public function testIdentityEndpointsAndSecurityUseCanonicalAuthorities(): void
+
     {
         $root=dirname(__DIR__,2);
         $register=file_get_contents($root.'/api/auth/register.php');
@@ -32,16 +33,15 @@ final class ProductionIdentityBehaviorTest extends TestCase
         $core=file_get_contents($root.'/api/auth/_identity_core.php');
         $security=file_get_contents($root.'/api/security.php');
         $bootstrap=file_get_contents($root.'/api/bootstrap.php');
-        foreach([$register,$login,$core,$security,$bootstrap] as $source)self::assertIsString($source);
-        self::assertStringContainsString('mg_identity_register(',$register);
-        self::assertStringContainsString('mg_identity_authenticate(',$login);
-        self::assertStringContainsString('mg_identity_normalize_email(',$core);
-        self::assertStringContainsString('password_hash(',$core);
-        self::assertStringContainsString('password_verify(',$core);
-        self::assertStringContainsString('mg_record_user_session(',$security);
-        self::assertStringContainsString('mg_session_is_active(',$security);
-        self::assertStringContainsString('mg_revoke_user_sessions(',$security);
+        $identitySecurity=file_get_contents($root.'/includes/identity-security.php');
+        foreach([$register,$login,$core,$security,$bootstrap,$identitySecurity] as $source)self::assertIsString($source);
+        foreach(['mg_identity_register(','mg_identity_authenticate('] as $needle) self::assertStringContainsString($needle,$register.$login);
+        foreach(['mg_identity_normalize_email(','password_hash(','password_verify('] as $needle) self::assertStringContainsString($needle,$core);
+        foreach(['mg_record_user_session(','mg_session_is_active(','mg_revoke_user_sessions('] as $needle) self::assertStringContainsString($needle,$security);
         self::assertStringContainsString('mg_require_csrf_for_write(',$bootstrap);
-        self::assertStringContainsString('mg_require_permission(',$bootstrap);
+        self::assertStringContainsString('function mg_require_permission',$identitySecurity);
+
+
+
     }
 }

@@ -44,18 +44,20 @@ final class AdminPlatformPackageBillingContractTest extends TestCase
     }
 
     public function testCheckoutHandoffPrefersConfiguredPackagePrice(): void
+
     {
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_checkout_handoff.php');
         self::assertIsString($source);
         foreach ([
-            "require_once __DIR__ . '/_package_billing.php'",
-            'mg_platform_package_get',
-            'mg_platform_package_stripe_price_id',
-            "\$lineItem['price'] = \$priceId;",
-            "\$lineItem['price_data']",
+            "require_once __DIR__ . '/_billing_lifecycle_v2.php'",
+            'mg_subscription_billing_v2_price_id',
+            "'line_items' => [['quantity' => 1",
+            "'price' => \$priceId",
             'provider_price_id',
-        ] as $needle) {
-            self::assertStringContainsString($needle, $source);
-        }
+        ] as $needle) self::assertStringContainsString($needle, $source);
+        self::assertStringNotContainsString('price_data', $source);
+
+
+
     }
 }

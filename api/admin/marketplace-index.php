@@ -15,5 +15,5 @@ $days = max(7, min(365, (int)($_GET['days'] ?? 90)));
 try {
     mg_ok(mg_marketplace_index_build(mg_db(), $days), 'Marketplace index loaded.');
 } catch (Throwable $e) {
-    mg_fail($e->getMessage() ?: 'Unable to load marketplace index.', 500);
+    mg_fail_unexpected($e, 'admin.marketplace_index_failed', 'Unable to load the marketplace index.', 500);
 }

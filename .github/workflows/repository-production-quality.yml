@@ -1,0 +1,74 @@
+name: Repository Production Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - audit/repository-production-hardening-20260717
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    concurrency:
+      group: repository-production-quality-${{ github.event.pull_request.number || github.ref }}-${{ matrix.php-version }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: curl, mbstring, pdo_mysql
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run 100-point production quality gate
+        id: production-audit
+        continue-on-error: true
+        run: php scripts/audit_repository_production_quality.php --gate
+
+      - name: Publish PHP 8.3 audit report to pull request
+        if: always() && github.event_name == 'pull_request' && matrix.php-version == '8.3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '<!-- repository-production-quality-audit -->'
+            cat build/repository-production-audit.md
+          } > /tmp/repository-production-audit-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/repository-production-audit-comment.md
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-production-audit-php-${{ matrix.php-version }}
+          path: |
+            build/repository-production-audit.json
+            build/repository-production-audit.md
+          if-no-files-found: error
+
+      - name: Enforce 10 out of 10 score
+        if: steps.production-audit.outcome == 'failure'
+        run: exit 1

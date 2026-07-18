@@ -39,7 +39,7 @@ $summary=[
 $pdo->beginTransaction();
 try{
     $email=$runId.'@example.test';$password='IdentityPass!123';$newPassword='IdentityPass!456';
-    $registered=mg_identity_register($pdo,['email'=>strtoupper($email),'full_name'=>'Identity User','password'=>$password]);
+    $registered=mg_identity_register($pdo,['email'=>strtoupper($email),'full_name'=>'Identity User','password'=>$password,'password_confirmation'=>$password]);
     $userId=(int)$registered['user_id'];
     mg_identity_assert((string)mg_identity_scalar($pdo,'SELECT email FROM users WHERE id=?',[$userId])===$email,'Registration did not normalize email.');
     mg_identity_assert((int)mg_identity_scalar($pdo,'SELECT COUNT(*) FROM user_profiles WHERE user_id=?',[$userId])===1,'Registration did not create profile.');
@@ -47,7 +47,7 @@ try{
     $summary['registered']=true;
 
     $duplicate=false;
-    try{mg_identity_register($pdo,['email'=>'  '.strtoupper($email).'  ','full_name'=>'Duplicate','password'=>$password]);}
+    try{mg_identity_register($pdo,['email'=>'  '.strtoupper($email).'  ','full_name'=>'Duplicate','password'=>$password,'password_confirmation'=>$password]);}
     catch(MgIdentityException $error){$duplicate=$error->httpStatus===409;}
     mg_identity_assert($duplicate,'Normalized duplicate registration was accepted.');
     $summary['normalized_duplicate_rejected']=true;
@@ -107,7 +107,7 @@ try{
     $verify->execute([hash('sha256',$verifyToken)]);mg_identity_assert(!$verify->fetch(),'Verification token replay was accepted.');$summary['verification_single_use']=true;
 
     mg_identity_assert(!mg_identity_has_permission($pdo,$userId,'admin.users.view'),'Customer inherited admin permission.');
-    $admin=mg_identity_register($pdo,['email'=>'admin-'.$email,'full_name'=>'Identity Admin','password'=>$password]);$adminId=(int)$admin['user_id'];
+    $admin=mg_identity_register($pdo,['email'=>'admin-'.$email,'full_name'=>'Identity Admin','password'=>$password,'password_confirmation'=>$password]);$adminId=(int)$admin['user_id'];
     $pdo->prepare("INSERT IGNORE INTO user_roles (user_id,role_id,created_at) SELECT ?,id,NOW() FROM roles WHERE slug='admin'")->execute([$adminId]);
     mg_identity_assert(mg_identity_has_permission($pdo,$adminId,'admin.users.view'),'Admin permission was not derived from role.');$summary['permission_enforced']=true;
     $pdo->prepare("INSERT IGNORE INTO user_roles (user_id,role_id,created_at) SELECT ?,id,NOW() FROM roles WHERE slug='merchant'")->execute([$userId]);
@@ -117,7 +117,7 @@ try{
     mg_identity_assert((int)mg_identity_scalar($pdo,"SELECT COUNT(*) FROM audit_logs WHERE user_id=? AND action IN ('identity.role_assign','identity.role_remove')",[$adminId])===2,'Role changes were not audited.');$summary['role_audit_consistent']=true;
 
     $forcedEmail='forced-'.$email;$pdo->exec('SAVEPOINT identity_forced_failure');$forced=false;
-    try{mg_identity_register($pdo,['email'=>$forcedEmail,'full_name'=>'Forced User','password'=>$password],static function(): void {throw new RuntimeException('Forced identity failure.');});}
+    try{mg_identity_register($pdo,['email'=>$forcedEmail,'full_name'=>'Forced User','password'=>$password,'password_confirmation'=>$password],static function(): void {throw new RuntimeException('Forced identity failure.');});}
     catch(Throwable){$forced=true;$pdo->exec('ROLLBACK TO SAVEPOINT identity_forced_failure');}
     mg_identity_assert($forced&&(int)mg_identity_scalar($pdo,'SELECT COUNT(*) FROM users WHERE email=?',[$forcedEmail])===0,'Forced registration failure did not roll back.');$summary['forced_failure_rolled_back']=true;
 

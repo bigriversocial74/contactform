@@ -63,47 +63,26 @@ function mg_admin_recording_diag_first_line(string $output): string
 
 function mg_admin_recording_diag_find_binary(string $binary, array $absoluteCandidates): array
 {
-    $result = [
-        'available' => false,
+    unset($absoluteCandidates);
+    $path = mg_runtime_process_resolve($binary);
+    if ($path === null) {
+        return [
+            'available' => false,
+            'binary' => $binary,
+            'path' => '',
+            'version' => '',
+            'detail' => 'Not detected in the configured allowlist.',
+        ];
+    }
+    $probe = mg_runtime_process_run($binary, ['-version'], 5, 65536);
+    $line = mg_admin_recording_diag_first_line((string)$probe['stdout'] . "\n" . (string)$probe['stderr']);
+    return [
+        'available' => (int)$probe['code'] === 0,
         'binary' => $binary,
-        'path' => '',
-        'version' => '',
-        'detail' => 'Not detected.',
+        'path' => $path,
+        'version' => $line,
+        'detail' => (int)$probe['code'] === 0 ? 'Detected through the allowlisted process gateway.' : 'Binary exists but the version probe failed.',
     ];
-
-    if (!mg_admin_recording_diag_function_enabled('shell_exec') || !mg_admin_recording_diag_function_enabled('escapeshellarg')) {
-        $result['detail'] = 'PHP shell_exec or escapeshellarg is disabled.';
-        return $result;
-    }
-
-    $paths = [];
-    foreach ($absoluteCandidates as $candidate) {
-        if (is_string($candidate) && $candidate !== '' && is_file($candidate) && is_executable($candidate)) {
-            $paths[] = $candidate;
-        }
-    }
-
-    foreach (['command -v ', 'which '] as $prefix) {
-        $path = trim((string)@shell_exec($prefix . escapeshellarg($binary) . ' 2>/dev/null'));
-        if ($path !== '' && !in_array($path, $paths, true)) $paths[] = $path;
-    }
-
-    foreach ($paths as $path) {
-        if ($path === '' || str_contains($path, "\n") || str_contains($path, "\r")) continue;
-        $versionOutput = (string)@shell_exec(escapeshellarg($path) . ' -version 2>&1');
-        $line = mg_admin_recording_diag_first_line($versionOutput);
-        if ($line !== '') {
-            return [
-                'available' => true,
-                'binary' => $binary,
-                'path' => $path,
-                'version' => $line,
-                'detail' => 'Detected and executable.',
-            ];
-        }
-    }
-
-    return $result;
 }
 
 $schema = mg_screen_recordings_schema_ready($pdo);
@@ -133,19 +112,17 @@ $uploadMaxBytes = mg_admin_recording_diag_ini_bytes('upload_max_filesize');
 $postMaxBytes = mg_admin_recording_diag_ini_bytes('post_max_size');
 $memoryLimitBytes = mg_admin_recording_diag_ini_bytes('memory_limit');
 $functions = [
-    'shell_exec' => mg_admin_recording_diag_function_enabled('shell_exec'),
-    'exec' => mg_admin_recording_diag_function_enabled('exec'),
+    'process_gateway' => function_exists('mg_runtime_process_run'),
     'proc_open' => mg_admin_recording_diag_function_enabled('proc_open'),
-    'escapeshellarg' => mg_admin_recording_diag_function_enabled('escapeshellarg'),
 ];
-$ffmpeg = mg_admin_recording_diag_find_binary('ffmpeg', ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/ffmpeg/bin/ffmpeg', '/opt/cpanel/ea-ffmpeg/bin/ffmpeg']);
-$ffprobe = mg_admin_recording_diag_find_binary('ffprobe', ['/usr/bin/ffprobe', '/usr/local/bin/ffprobe', '/opt/ffmpeg/bin/ffprobe', '/opt/cpanel/ea-ffmpeg/bin/ffprobe']);
-$rendererReady = $ffmpeg['available'] && $functions['exec'] && $functions['escapeshellarg'];
+$ffmpeg = mg_admin_recording_diag_find_binary('ffmpeg', []);
+$ffprobe = mg_admin_recording_diag_find_binary('ffprobe', []);
+$rendererReady = $ffmpeg['available'] && $functions['process_gateway'] && $functions['proc_open'];
 $warnings = [];
 
 if (!$schema['ready']) $warnings[] = 'Base SQL migration is not ready. Run database/admin_screen_recordings.sql before using recordings.';
 if (!$stage3Schema['ready']) $warnings[] = 'Stage 3 SQL migration is not ready. Run database/admin_screen_recording_renderer_tutorials.sql before rendering, voiceover, or publishing tutorials.';
-if (!$functions['exec'] || !$functions['escapeshellarg']) $warnings[] = 'PHP exec or escapeshellarg is disabled. Server-side FFmpeg rendering cannot run from PHP until this is enabled or moved to a worker/server.';
+if (!$functions['process_gateway'] || !$functions['proc_open']) $warnings[] = 'The allowlisted process gateway is unavailable. Server-side media rendering cannot run until proc_open is enabled.';
 if (!$ffmpeg['available']) $warnings[] = 'FFmpeg was not detected. Rendered exports will fail until FFmpeg is available.';
 if (!$ffprobe['available']) $warnings[] = 'FFprobe was not detected. Duration/metadata probing for rendered exports will be limited.';
 if (!$storageReady) $warnings[] = 'One or more recording storage folders are missing or not writable.';

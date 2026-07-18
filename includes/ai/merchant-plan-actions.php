@@ -398,6 +398,6 @@ function mg_ai_plan_review_item(PDO $pdo, array $user, array $input): array
             'decision' => $decision,
             'item_id' => $itemPublicId,
         ], $merchantId);
-        mg_fail('Unable to review AI recommendation: ' . $error->getMessage(), 500);
+        mg_fail('Unable to review AI recommendation.', 500);
     }
 }

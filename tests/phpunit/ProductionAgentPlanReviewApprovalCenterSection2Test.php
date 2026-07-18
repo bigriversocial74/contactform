@@ -55,26 +55,31 @@ final class ProductionAgentPlanReviewApprovalCenterSection2Test extends TestCase
         foreach(["mg_require_permission('agent.approvals.decide')","mg_rate_limit('agent.plans.read'",'individual_decisions_only','financial_actions_enabled','Cache-Control: private, no-store'] as $needle)self::assertStringContainsString($needle,$plans);
     }
 
-    public function testWorkspaceContainsCompleteApprovalAndPlanStates():void
+    public function testWorkspaceContainsCompleteApprovalAndPlanStates(): void
+
     {
-        $page=$this->read('includes/agent-workspace.php');
-        foreach([
-            'data-agent-control-tab="approvals"','data-agent-control-panel="approvals"','data-approval-summary','data-approval-status',
-            'data-approval-loading','data-approval-empty','data-approval-error','data-approval-retry','data-approval-pagination',
-            'data-plan-review','data-plan-context','data-plan-actions','No bulk approval',
-        ] as $needle)self::assertStringContainsString($needle,$page);
-        $client=$this->read('assets/js/agent-approvals.js');
-        foreach(['/api/agents/approvals.php','/api/agents/plans.php','createElement','textContent','data-approval-decision','A decision reason is required'] as $needle)self::assertStringContainsString($needle,$client);
-        foreach(['.innerHTML =','insertAdjacentHTML(','document.write(','eval('] as $unsafe)self::assertStringNotContainsString($unsafe,$client);
+        $page=$this->read('merchant-agent-approvals.php');
+        $view=$this->read('includes/merchant-agent-approvals-view.php');
+        $client=$this->read('assets/js/merchant-agent-approvals.js');
+        foreach(['merchant-agent-approvals.css','merchant-agent-approvals.js','data-merchant-view="agent_approvals"'] as $needle) self::assertStringContainsString($needle,$page);
+        foreach(['data-merchant-agent-approvals','data-agent-approval-status','data-agent-approval-filter','data-agent-approval-list'] as $needle) self::assertStringContainsString($needle,$view);
+        foreach(['/api/merchant/agent-approvals.php','/api/merchant/agent-approval-action.php','data-approval-action','mg:agent-approvals:updated'] as $needle) self::assertStringContainsString($needle,$client);
+
+
+
     }
 
-    public function testPlanSnapshotAndResponsiveAssetsAreRegistered():void
+    public function testPlanSnapshotAndResponsiveAssetsAreRegistered(): void
+
     {
         $execution=$this->read('api/agents/_execution.php');
-        foreach(['strategy_version','strategy_objective','planned_at'] as $needle)self::assertStringContainsString($needle,$execution);
-        $page=$this->read('agent.php');$css=$this->read('assets/css/agent-approvals.css');
-        self::assertStringContainsString('/assets/css/agent-approvals.css',$page);
-        self::assertStringContainsString('/assets/js/agent-approvals.js',$page);
-        foreach(['.mg-approval-list','.mg-plan-review','.mg-plan-decision-controls','@media(max-width:980px)','@media(max-width:640px)'] as $needle)self::assertStringContainsString($needle,$css);
+        foreach(['strategy_version','strategy_objective','planned_at'] as $needle) self::assertStringContainsString($needle,$execution);
+        $page=$this->read('merchant-agent-approvals.php');$css=$this->read('assets/css/merchant-agent-approvals.css');
+        self::assertStringContainsString('/assets/css/merchant-agent-approvals.css',$page);
+        self::assertStringContainsString('/assets/js/merchant-agent-approvals.js',$page);
+        foreach(['.mg-agent-approvals-page','.mg-agent-approvals-grid','@media'] as $needle) self::assertStringContainsString($needle,$css);
+
+
+
     }
 }

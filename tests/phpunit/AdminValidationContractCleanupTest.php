@@ -64,15 +64,19 @@ final class AdminValidationContractCleanupTest extends TestCase
     }
 
     public function testCurrentTemplateContractsAvoidOldFileLocationAssertions(): void
+
     {
         $appHeader = $this->read('includes/header-components/app-header.php');
         $createMenu = $this->read('includes/header-templates/create-menu.php');
         $adminSidebar = $this->read('includes/admin-sidebar.php');
         $appSidebar = $this->read('includes/app-sidebar.php');
-
         self::assertStringContainsString('data-global-create', $appHeader);
-        self::assertStringContainsString('data-create-menu-option="post"', $createMenu);
+        self::assertStringContainsString("'option' => 'post'", $createMenu);
+        self::assertStringContainsString('data-create-menu-option="<?= mg_e', $createMenu);
         self::assertStringContainsString('mg_admin_user_can_view_page', $adminSidebar);
         self::assertStringContainsString('appSidebarNav', $appSidebar);
+
+
+
     }
 }

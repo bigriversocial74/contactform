@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
 composer validate --strict
+composer audit --locked --no-interaction
 php scripts/validate_migration_manifest.php
 php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
 php scripts/validate_stage10f_upgrade.php
@@ -16,6 +17,29 @@ find . \
   | xargs -0 -n1 php -l >/tmp/microgifter-php-lint.log
 
 echo "PHP syntax validation passed."
+
+js_failed=0
+while IFS= read -r -d '' file; do
+  case "$file" in
+    */vendor/*|*/node_modules/*|*/third-party/*|*/dist/*|*.min.js)
+      continue
+      ;;
+  esac
+  node --check "$file" || js_failed=1
+done < <(find . -path './vendor' -prune -o -path './.git' -prune -o -name '*.js' -type f -print0)
+if [ "$js_failed" -ne 0 ]; then
+  echo "JavaScript syntax validation failed." >&2
+  exit 1
+fi
+
+echo "JavaScript syntax validation passed."
+
+while IFS= read -r -d '' file; do
+  bash -n "$file"
+done < <(find scripts -name '*.sh' -type f -print0)
+
+echo "Shell syntax validation passed."
+php scripts/audit_repository_production_quality.php --gate
 php scripts/run_migrations.php
 
 composer test-security

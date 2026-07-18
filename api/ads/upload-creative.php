@@ -94,7 +94,5 @@ try {
         'height' => $height,
     ], 'Creative image uploaded.');
 } catch (Throwable $error) {
-    mg_security_log('warning', 'ads.creative_upload_failed', 'Campaign Ads creative upload failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)($user['id'] ?? 0));
-    if (function_exists('mg_fail')) mg_fail($error->getMessage(), 422);
-    throw $error;
+    mg_fail_unexpected($error, 'ads.upload_creative_failed', 'Unable to upload the ad creative.', 500);
 }

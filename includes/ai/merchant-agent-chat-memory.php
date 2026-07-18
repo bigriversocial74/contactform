@@ -387,6 +387,6 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
         if ($pdo->inTransaction()) $pdo->rollBack();
         mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'failed', [], ['source' => 'merchant_agent_chat', 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile, 'deep_database_context' => $deepContext, 'error' => $error->getMessage(), 'model_policy' => 'task_router_sonnet_haiku_only', 'model_route_task' => $modelRoute['task'] ?? '', 'model_preferred_family' => $modelRoute['preferred_family'] ?? '', 'model_selected_family' => $modelRoute['selected_family'] ?? ($model['_family'] ?? ''), 'model_selected_by' => $modelRoute['selected_by'] ?? '', 'recipe_engine_used' => true, 'memory_used' => true, 'memory_sources_used' => true, 'feed_posts_used' => true, 'policy_used' => true, 'skills' => $skillKeys, 'thread_id' => $threadId, 'query_preview' => mg_ai_chat_clean($message, 220)]);
         mg_security_log('error', 'merchant.agent_chat.failed', 'Merchant agent chat failed.', ['exception_class' => $error::class, 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile], $merchantId);
-        mg_fail('Unable to run merchant agent chat: ' . $error->getMessage(), 500);
+        mg_fail('Unable to run merchant agent chat.', 500);
     }
 }

@@ -71,14 +71,19 @@ final class Stage13SubscriptionsMonetizationTest extends TestCase
     }
 
     public function testLifecycleControlsEnforceSubscriberOwnership(): void
+
     {
         $source=$this->read('api/subscriptions/manage.php');
-        self::assertStringContainsString('s.subscriber_user_id=?',$source);
-        foreach(['pause','resume','cancel','cancel_at_period_end'] as $action){
-            self::assertStringContainsString("'{$action}'",$source);
-        }
+        self::assertStringContainsString("mg_require_permission('subscriptions.manage_own')",$source);
+        self::assertStringContainsString('SELECT * FROM platform_account_subscriptions WHERE public_id=? AND user_id=? LIMIT 1 FOR UPDATE',$source);
+        self::assertStringContainsString("\$stmt->execute([\$publicId, (int)\$user['id']])",$source);
+        foreach(['cancel_at_period_end','reactivate','resume','cancel'] as $action) self::assertStringContainsString("'{$action}'",$source);
         self::assertStringContainsString('mg_require_csrf_for_write(',$source);
-        self::assertStringContainsString('mg_subscription_event(',$source);
+        self::assertStringContainsString('provider_subscription_id',$source);
+        self::assertStringContainsString('mg_audit(',$source);
+
+
+
     }
 
     public function testWebhookUsesExistingPaymentAuthorityAndExactAttemptIdentity(): void

@@ -53,5 +53,5 @@ try {
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (Throwable $error) {
-    mg_fail('Unable to save message CRM operation.', 500, ['detail' => $error->getMessage()]);
+    mg_fail_unexpected($error, 'messages.crm_operation_failed', 'Unable to save message CRM operation.', 500);
 }

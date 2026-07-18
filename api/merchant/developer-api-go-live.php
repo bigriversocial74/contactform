@@ -140,7 +140,7 @@ if ($action === 'promote_live') {
         mg_ok(['app_id'=>$appId,'status'=>'active'], 'Live developer app promoted.');
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_fail($e instanceof RuntimeException ? $e->getMessage() : 'Unable to promote live app.', 409);
+        mg_fail_unexpected($e, 'merchant.developer_api.promote_live_failed', 'Unable to promote live app.', 500, [], (int)$user['id']);
     }
 }
 
@@ -161,7 +161,7 @@ if ($action === 'create_live_credential') {
         mg_ok(['credential_id'=>$credentialId,'app_id'=>$appId,'credential'=>$material['value'],'key_prefix'=>$material['prefix']], 'Live credential created. Copy it now; it will not be shown again.', 201);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_fail($e instanceof RuntimeException ? $e->getMessage() : 'Unable to create live credential.', 409);
+        mg_fail_unexpected($e, 'merchant.developer_api.create_live_credential_failed', 'Unable to create live credential.', 500, [], (int)$user['id']);
     }
 }
 

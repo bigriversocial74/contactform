@@ -204,6 +204,6 @@ function mg_ai_merchant_create_plan(PDO $pdo, array $user, array $input): array
         if ($pdo->inTransaction()) $pdo->rollBack();
         mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, $agent ? (int)$agent['id'] : null, 'failed', $rawResponse, ['source' => 'merchant_agent_plan', 'exception_class' => $error::class]);
         mg_security_log('error', 'merchant.ai_plan_failed', 'Merchant AI plan failed.', ['exception_class' => $error::class, 'scope' => $scope], $merchantId);
-        mg_fail('Unable to create merchant AI plan: ' . $error->getMessage(), 502);
+        mg_fail('Unable to create merchant AI plan.', 502);
     }
 }

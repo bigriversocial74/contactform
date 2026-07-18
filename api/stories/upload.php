@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_stories.php';
 require_once dirname(__DIR__) . '/social/_account_restrictions.php';
+require_once dirname(__DIR__, 2) . '/includes/runtime-process.php';
 
 mg_require_method('POST');
 $input = mg_input();
@@ -39,7 +40,7 @@ $mime = strtolower((string)$finfo->file($tmp));
 $types = ['image' => ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'], 'video' => ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov']];
 if (!isset($types[$kind][$mime])) mg_fail('That story format is not supported.', 422);
 
-$width = null; $height = null; $durationMs = null;
+$width = null; $height = null; $durationMs = null; $durationSource = $kind === 'image' ? 'image_dimensions' : 'client';
 if ($kind === 'image') {
     $dimensions = @getimagesize($tmp);
     if (!is_array($dimensions)) mg_fail('The image could not be verified.', 422);
@@ -49,13 +50,16 @@ if ($kind === 'image') {
     $clientDuration = isset($input['duration_seconds']) ? (float)$input['duration_seconds'] : 0.0;
     if ($clientDuration > (MG_STORIES_MAX_VIDEO_SECONDS + 0.25)) mg_fail('Stories must be 30 seconds or less.', 422);
     $durationSeconds = null;
-    if (function_exists('shell_exec')) {
-        $probe = @shell_exec('command -v ffprobe 2>/dev/null');
-        if (is_string($probe) && trim($probe) !== '') {
-            $cmd = trim($probe) . ' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($tmp) . ' 2>/dev/null';
-            $out = @shell_exec($cmd);
-            if (is_string($out) && trim($out) !== '' && is_numeric(trim($out))) $durationSeconds = (float)trim($out);
-        }
+    $probe = mg_runtime_process_run('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        $tmp,
+    ], 10, 65536);
+    $probeValue = trim((string)$probe['stdout']);
+    if ((int)$probe['code'] === 0 && $probeValue !== '' && is_numeric($probeValue)) {
+        $durationSeconds = (float)$probeValue;
+        $durationSource = 'ffprobe';
     }
     if ($durationSeconds !== null) {
         if ($durationSeconds > (MG_STORIES_MAX_VIDEO_SECONDS + 0.25)) mg_fail('Stories must be 30 seconds or less.', 422);
@@ -79,7 +83,7 @@ try {
 $checksum = hash_file('sha256', $absolutePath) ?: null;
 $original = preg_replace('/[\x00-\x1F\x7F]+/u', '', basename((string)($file['name'] ?? 'story'))) ?? 'story';
 $original = mb_substr($original !== '' ? $original : 'story', 0, 255);
-$metadata = json_encode(['source' => 'feed_story', 'story_state' => 'unattached', 'storage_class' => 'persistent', 'max_duration_seconds' => MG_STORIES_MAX_VIDEO_SECONDS, 'uploaded_at' => gmdate('c')], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+$metadata = json_encode(['source' => 'feed_story', 'story_state' => 'unattached', 'storage_class' => 'persistent', 'max_duration_seconds' => MG_STORIES_MAX_VIDEO_SECONDS, 'duration_source' => $durationSource, 'uploaded_at' => gmdate('c')], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
 try {
     $pdo->beginTransaction();

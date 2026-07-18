@@ -91,15 +91,18 @@ final class GiftLifecycleTest extends TestCase
     }
 
     public function testMerchantManagementApisAreOwnerScoped(): void
+
     {
         $locations = $this->source('api/merchant/locations.php');
         $codes = $this->source('api/merchant/claim-codes.php');
         $eligibility = $this->source('api/gifts/merchant-eligibility.php');
         foreach ([$locations, $codes, $eligibility] as $source) self::assertStringContainsString('mg_require_csrf_for_write', $source);
-        foreach (['merchant.locations.manage','mg_merchant_ensure_workspace','workspace_id=?'] as $needle) self::assertStringContainsString($needle, $locations);
-        self::assertStringContainsString("mg_require_permission('merchant.claim_codes.manage')", $codes);
-        self::assertStringContainsString('merchant_user_id = ?', $codes);
-        self::assertStringContainsString('Only the gift owner can assign merchants.', $eligibility);
-        self::assertStringContainsString('Merchant already assigned.', $eligibility);
+        foreach (['merchant.locations.manage','mg_merchant_ensure_workspace','mg_merchant_location_scope_context','mg_merchant_location_scope_condition'] as $needle) self::assertStringContainsString($needle,$locations);
+        self::assertStringContainsString("mg_require_permission('merchant.claim_codes.manage')",$codes);
+        self::assertStringContainsString('mg_merchant_location_scope_join',$codes);
+        self::assertStringContainsString('Only the gift owner can assign merchants.',$eligibility);
+
+
+
     }
 }

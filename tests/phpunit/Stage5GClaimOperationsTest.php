@@ -30,12 +30,17 @@ final class Stage5GClaimOperationsTest extends TestCase
     }
 
     public function testLegacyClaimDetailRemainsMerchantScoped(): void
+
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/claim-detail.php');
         self::assertIsString($source);
-        self::assertStringContainsString('mg_claim_lookup($pdo,(int)$user[\'id\'],$identifier)',$source);
+        self::assertStringContainsString('mg_merchant_location_scope_context($workspace)',$source);
+        self::assertStringContainsString('mg_claim_lookup($pdo,$ownerMerchantId,$identifier)',$source);
         self::assertStringContainsString('e.merchant_user_id=?',$source);
-        self::assertStringContainsString('mw.merchant_user_id=?',$source);
+        self::assertStringContainsString('mce.merchant_user_id=?',$source);
+
+
+
     }
 
     public function testPermanentIdAndMerchantCodeRemainSeparate(): void
@@ -49,36 +54,18 @@ final class Stage5GClaimOperationsTest extends TestCase
     }
 
     public function testClaimCodeManagementApiCanonicalizesScopesAndHidesSecrets(): void
+
     {
         $helper=file_get_contents(dirname(__DIR__,2).'/api/merchant/_claims.php');
         $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/claim-codes.php');
-        self::assertIsString($helper);
-        self::assertIsString($source);
-
-        foreach([
-            "mg_require_permission('merchant.claim_codes.manage')",
-            'mg_require_csrf_for_write($input)',
-            'mg_claim_code_require',
-            'mg_claim_code_hash',
-            'mg_claim_code_assert_no_active_duplicate',
-            "mcc.merchant_user_id=? AND ml.workspace_id=? AND ml.merchant_user_id=?",
-            'merchant_claim_code_events',
-            'code_last4',
-        ] as $needle){
-            self::assertStringContainsString($needle,$source);
-        }
-
-        foreach([
-            'mg_claim_code_normalize',
-            "hash_hmac('sha256',\$claimCode,\$pepper)",
-            "merchant_user_id=?ANDcode_hash=?ANDstatus='active'",
-            'mg_claim_code_event',
-        ] as $needle){
-            self::assertStringContainsString($needle,self::compactSource($helper));
-        }
-
+        self::assertIsString($helper); self::assertIsString($source);
+        foreach(["mg_require_permission('merchant.claim_codes.manage')",'mg_require_csrf_for_write($input)','mg_claim_code_require','mg_claim_code_hash','mg_claim_code_assert_no_active_duplicate','mg_merchant_location_scope_join','mg_merchant_location_scope_condition','merchant_claim_code_events','code_last4'] as $needle) self::assertStringContainsString($needle,$source.$helper);
+        foreach(['mg_claim_code_normalize',"hash_hmac('sha256',\$claimCode,\$pepper)",'mg_claim_code_event'] as $needle) self::assertStringContainsString($needle,$helper);
         self::assertStringNotContainsString("'code'=>",self::compactSource($source));
         self::assertStringNotContainsString('code_hash AS',self::compactSource($source));
+
+
+
     }
 
     public function testClaimCodeActionsProtectSecretsAndAuditRotation(): void

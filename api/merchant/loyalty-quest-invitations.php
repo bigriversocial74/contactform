@@ -78,7 +78,7 @@ try {
     mg_ok(['campaign_id'=>$campaignRef,'selected'=>count($contacts),'queued'=>$sent,'skipped'=>$skipped,'items'=>$items],$sent>0?'Loyalty Quest invitations queued.':'No invitations were queued.',201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    if ($error instanceof MgDeliveryException) mg_fail($error->getMessage(),$error->httpStatus);
+    if ($error instanceof MgDeliveryException) mg_fail('Unable to queue Loyalty Quest invitations.', $error->httpStatus);
     mg_security_log('error','merchant.loyalty_quest_invitation_failed','Unable to queue Loyalty Quest invitations.',['exception_class'=>$error::class],$merchantId);
     mg_fail('Unable to queue Loyalty Quest invitations.',500);
 }

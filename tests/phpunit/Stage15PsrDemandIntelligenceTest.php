@@ -100,16 +100,14 @@ final class Stage15PsrDemandIntelligenceTest extends TestCase
     }
 
     public function testMerchantDashboardIsScopedAndWindowed(): void
+
     {
         $source = $this->read('api/merchant/demand-dashboard.php');
-        self::assertStringContainsString("mg_require_permission('demand.dashboard.view')", $source);
-        self::assertStringContainsString('mw.merchant_user_id=?', $source);
-        self::assertStringContainsString('merchant_user_id=?', $source);
-        self::assertStringContainsString('demand_scope_snapshots', $source);
-        self::assertStringContainsString('demand_agent_signals', $source);
-        self::assertStringContainsString('mg_demand_window_predicate()', $source);
-        self::assertStringContainsString("'window_start'", $source);
-        self::assertStringContainsString("'window_end'", $source);
+        self::assertStringContainsString("mg_require_permission('demand.dashboard.view')",$source);
+        foreach(['mg_merchant_ensure_workspace','mg_merchant_location_scope_context','owner_merchant_id','merchant_user_id=?','demand_scope_snapshots','demand_agent_signals','mg_demand_window_predicate()',"'window_start'","'window_end'"] as $needle) self::assertStringContainsString($needle,$source);
+
+
+
     }
 
     public function testSnapshotProcessorUsesCanonicalWindowedService(): void

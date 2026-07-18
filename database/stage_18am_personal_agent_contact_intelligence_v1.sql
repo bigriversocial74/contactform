@@ -1,5 +1,5 @@
 -- Microgifter Personal Agent Contact, List, and Occasion Intelligence v1.
--- Import after database/stage_18al_personal_agent_followup_recovery_v1.sql.
+-- Import after database/20260714_personal_gifting_agent_phase2.sql so user_agent_threads exists.
 -- Safe to rerun after a successful import.
 
 START TRANSACTION;

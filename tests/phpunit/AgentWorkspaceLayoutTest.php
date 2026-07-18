@@ -7,20 +7,12 @@ final class AgentWorkspaceLayoutTest extends TestCase
 {
     public function testAgentCanvasActionsAreSeparatedFromTitleCopy(): void
     {
-        $root=dirname(__DIR__,2);
-        $workspace=file_get_contents($root.'/includes/agent-workspace.php');
+        $workspace=file_get_contents(dirname(__DIR__,2).'/includes/agent-workspace.php');
         self::assertIsString($workspace);
-        self::assertStringContainsString('mg-agent-canvas-toolbar',$workspace);
-        self::assertStringContainsString('mg-agent-toolbar-copy',$workspace);
-        self::assertStringContainsString('mg-agent-toolbar-actions',$workspace);
-        self::assertStringContainsString('data-change-category',$workspace);
-        self::assertStringContainsString('data-save-agent',$workspace);
+        foreach(['data-agent-control-center','personal-agent-sidebar.php','data-agent-composer','data-personal-agent-composer','data-open-agent-dialog="menu"'] as $needle) self::assertStringContainsString($needle,$workspace);
+        self::assertStringContainsString('workspace-dashboard.php',$workspace);
+        self::assertStringNotContainsString('mg-agent-canvas-toolbar',$workspace);
 
-        $actionsPosition=strpos($workspace,'mg-agent-toolbar-actions');
-        $savePosition=strpos($workspace,'data-save-agent');
-        self::assertNotFalse($actionsPosition);
-        self::assertNotFalse($savePosition);
-        self::assertGreaterThan($actionsPosition,$savePosition);
     }
 
     public function testAgentHeaderTabsKeepCanonicalNamesAndOrder(): void
