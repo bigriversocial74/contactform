@@ -98,10 +98,15 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
                     LEFT JOIN catalog_assets cover ON cover.id=(
                         SELECT pva.asset_id
                         FROM catalog_product_version_assets pva
-                        WHERE pva.product_version_id=cpv.id AND pva.role='cover'
-                        ORDER BY pva.sort_order ASC,pva.id ASC
+                        INNER JOIN catalog_assets ready_image
+                            ON ready_image.id=pva.asset_id
+                           AND ready_image.status='ready'
+                           AND ready_image.asset_type='image'
+                        WHERE pva.product_version_id=cpv.id
+                          AND pva.role IN ('thumbnail','cover')
+                        ORDER BY FIELD(pva.role,'thumbnail','cover'),pva.sort_order ASC,pva.id ASC
                         LIMIT 1
-                    ) AND cover.status='ready'
+                    ) AND cover.status='ready' AND cover.asset_type='image'
                     WHERE ac.user_id=? AND ac.public_id IN ({$placeholders})";
             $stmt = $pdo->prepare($sql);
             $stmt->execute(array_merge([$userId], $ids));
@@ -129,10 +134,15 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
                     LEFT JOIN catalog_assets cover ON cover.id=(
                         SELECT pva.asset_id
                         FROM catalog_product_version_assets pva
-                        WHERE pva.product_version_id=cp.current_version_id AND pva.role='cover'
-                        ORDER BY pva.sort_order ASC,pva.id ASC
+                        INNER JOIN catalog_assets ready_image
+                            ON ready_image.id=pva.asset_id
+                           AND ready_image.status='ready'
+                           AND ready_image.asset_type='image'
+                        WHERE pva.product_version_id=cp.current_version_id
+                          AND pva.role IN ('thumbnail','cover')
+                        ORDER BY FIELD(pva.role,'thumbnail','cover'),pva.sort_order ASC,pva.id ASC
                         LIMIT 1
-                    ) AND cover.status='ready'
+                    ) AND cover.status='ready' AND cover.asset_type='image'
                     WHERE cp.public_id IN ({$placeholders}) AND cp.status='published'";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($ids);
@@ -151,6 +161,7 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
         if (!is_array($item)) continue;
         $actionId = trim((string) ($item['action_item_id'] ?? ''));
         $productId = mg_action_center_product_media_public_id($item);
+        if ($productId !== '') $item['merchant_avatar_url'] = '';
         $media = $byActionId[$actionId] ?? ($productId !== '' ? ($byProductId[$productId] ?? null) : null);
         if (!is_array($media)) continue;
         foreach ($media as $key => $value) {
