@@ -7,7 +7,10 @@ on:
     paths:
       - index.php
       - includes/footer.php
+      - includes/header-components/public-header.php
+      - includes/pricing-cards.php
       - assets/css/homepage-parallax-exact-v2.css
+      - assets/css/pricing-local-business-v1.css
       - assets/css/universal-footer.css
       - assets/js/homepage-parallax-exact-v2.js
       - assets/images/foreground.png
@@ -29,6 +32,8 @@ jobs:
           set -euo pipefail
           php -l index.php
           php -l includes/footer.php
+          php -l includes/header-components/public-header.php
+          php -l includes/pricing-cards.php
           node --check assets/js/homepage-parallax-exact-v2.js
           test -s assets/images/foreground.png
           test -s assets/images/mountains.png
@@ -38,11 +43,12 @@ jobs:
           grep -q '/assets/images/orb.png' index.php
           grep -q '/assets/css/homepage-parallax-exact-v2.css' index.php
           grep -q '/assets/js/homepage-parallax-exact-v2.js' index.php
+          grep -q 'The Future of Gifting Has Arrived.' index.php
+          grep -q 'mg_render_public_pricing_cards' index.php
           grep -q 'body.mg-homepage-exact-v2' assets/css/universal-footer.css
           grep -q 'overflow-x:clip!important' assets/css/universal-footer.css
-          grep -q 'The Future of Gifting Has Arrived.' includes/footer.php
           grep -q 'mg-home-header-past-hero' includes/footer.php
           grep -q 'hero.getBoundingClientRect().bottom <= 0' includes/footer.php
-          grep -q '/merchant-landing.php' assets/css/universal-footer.css
-          grep -q '/featured-case-studies.php' assets/css/universal-footer.css
           grep -q 'font-weight:500!important' assets/css/universal-footer.css
+          ! grep -q 'pricingGrid.replaceChildren' includes/footer.php
+          ! grep -q 'mg-homepage-live-pricing' includes/footer.php

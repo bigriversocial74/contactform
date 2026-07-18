@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $headerPath = $root . '/includes/header-components/public-header.php';
+$loggedInPath = $root . '/includes/header-templates/logged-in.php';
 $failures = [];
 $passes = 0;
 
@@ -23,27 +24,29 @@ try {
     }
 
     $header = file_get_contents($headerPath);
+    $loggedIn = is_file($loggedInPath) ? file_get_contents($loggedInPath) : false;
     if (!is_string($header)) {
         throw new RuntimeException('Unable to read shared public header component.');
     }
 
     $expect(
-        str_contains($header, "['label' => 'For Businesses', 'href' => '/merchant-landing.php']"),
-        'Logged-out navigation includes the merchant landing page'
+        !str_contains($header, "['label' => 'For Businesses'")
+        && !str_contains($header, '/merchant-landing.php'),
+        'Logged-out navigation excludes For Businesses'
     );
     $expect(
-        !str_contains($header, "['label' => 'Explore', 'href' => '/discover.php']"),
-        'Logged-out navigation no longer includes Explore'
+        !str_contains($header, "['label' => 'Case Studies'")
+        && !str_contains($header, '/featured-case-studies.php'),
+        'Logged-out navigation excludes Case Studies'
     );
     $expect(
-        str_contains($header, "['label' => 'Case Studies', 'href' => '/featured-case-studies.php']")
-        && str_contains($header, "['label' => 'Blog', 'href' => '/blog.php']")
+        str_contains($header, "['label' => 'Blog', 'href' => '/blog.php']")
         && str_contains($header, "['label' => 'Pricing', 'href' => '/pricing.php']"),
-        'Existing logged-out navigation links remain intact'
+        'Remaining logged-out navigation links stay intact'
     );
     $expect(
         substr_count($header, 'foreach ($public_nav_links as $public_header_link)') >= 2,
-        'Desktop and mobile navigation share the same logged-out link source'
+        'Desktop and mobile navigation share the same cleaned link source'
     );
     $expect(
         str_contains($header, 'data-header-template="logged-out-public"')
@@ -55,17 +58,22 @@ try {
         && str_contains($header, '$public_nav_links = ['),
         'Navigation override remains limited to logged-out users'
     );
+    $expect(
+        is_string($loggedIn)
+        && str_contains($header, "require dirname(__DIR__) . '/header-templates/logged-in.php'"),
+        'Authenticated navigation remains separately rendered'
+    );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
     echo 'FAIL: ' . $error->getMessage() . "\n";
 }
 
 if ($failures !== []) {
-    fwrite(STDERR, sprintf("Logged-out header merchant-link validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
+    fwrite(STDERR, sprintf("Logged-out header navigation validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
     foreach ($failures as $failure) {
         fwrite(STDERR, " - {$failure}\n");
     }
     exit(1);
 }
 
-echo "Logged-out header merchant-link validation passed: {$passes} checks.\n";
+echo "Logged-out header navigation validation passed: {$passes} checks.\n";

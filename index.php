@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/pricing-cards.php';
+
 $page_title = 'Microgifter — Customer Relationship Agent';
 $page_section = 'public';
 $header_mode = 'public';
@@ -10,6 +12,7 @@ $page_styles = [
     '/assets/css/public-dark-shell.css',
     '/assets/css/public-header-cleanup.css',
     '/assets/css/homepage-parallax-exact-v2.css?v=2.1.0',
+    '/assets/css/pricing-local-business-v1.css?v=1.2.0',
 ];
 $page_scripts = [
     '/assets/js/homepage-parallax-exact-v2.js?v=2.0.0',
@@ -48,7 +51,7 @@ require __DIR__ . '/includes/header.php';
 
           <div class="hero-copy copy-one" id="heroCopy">
             <p class="eyebrow">Personal agent · active</p>
-            <h1>Create your personal social gifting and customer service agent.</h1>
+            <h1>The Future of Gifting Has Arrived.</h1>
             <p class="intro">One intelligent relationship system that understands, engages, gifts, and grows with every customer interaction.</p>
             <a class="primary-button" href="#relationship-system">Enter the system <span>→</span></a>
           </div>
@@ -141,53 +144,22 @@ require __DIR__ . '/includes/header.php';
 
         <div class="agent-console reveal-on-scroll" id="agent-workflow">
           <div class="agent-console__bar">
-            <div>
-              <span class="agent-status-dot"></span>
-              <span>Relationship agent online</span>
-            </div>
+            <div><span class="agent-status-dot"></span><span>Relationship agent online</span></div>
             <span>Customer memory · live</span>
           </div>
 
           <div class="agent-console__customer">
             <div class="customer-avatar" aria-hidden="true">AM</div>
-            <div>
-              <p>Active relationship</p>
-              <h3>Alex Morgan</h3>
-              <span>12 interactions · 3 gifts · loyalty member</span>
-            </div>
-            <div class="relationship-score">
-              <strong>86</strong>
-              <span>relationship score</span>
-            </div>
+            <div><p>Active relationship</p><h3>Alex Morgan</h3><span>12 interactions · 3 gifts · loyalty member</span></div>
+            <div class="relationship-score"><strong>86</strong><span>relationship score</span></div>
           </div>
 
           <div class="agent-console__stream" aria-label="Customer relationship workflow">
-            <article class="signal-card">
-              <span class="signal-card__number">01</span>
-              <div>
-                <p>Signal recognized</p>
-                <h4>Birthday mentioned in conversation</h4>
-                <span>Intent, timing, and relationship context captured.</span>
-              </div>
-            </article>
+            <article class="signal-card"><span class="signal-card__number">01</span><div><p>Signal recognized</p><h4>Birthday mentioned in conversation</h4><span>Intent, timing, and relationship context captured.</span></div></article>
             <div class="workflow-connector" aria-hidden="true"><span></span></div>
-            <article class="signal-card">
-              <span class="signal-card__number">02</span>
-              <div>
-                <p>Agent decides</p>
-                <h4>Recommend a personal local gift</h4>
-                <span>Matched to preference, budget, and merchant availability.</span>
-              </div>
-            </article>
+            <article class="signal-card"><span class="signal-card__number">02</span><div><p>Agent decides</p><h4>Recommend a personal local gift</h4><span>Matched to preference, budget, and merchant availability.</span></div></article>
             <div class="workflow-connector" aria-hidden="true"><span></span></div>
-            <article class="signal-card signal-card--active">
-              <span class="signal-card__number">03</span>
-              <div>
-                <p>Thoughtful action</p>
-                <h4>Send, follow up, and remember</h4>
-                <span>The relationship history updates for the next moment.</span>
-              </div>
-            </article>
+            <article class="signal-card signal-card--active"><span class="signal-card__number">03</span><div><p>Thoughtful action</p><h4>Send, follow up, and remember</h4><span>The relationship history updates for the next moment.</span></div></article>
           </div>
 
           <div class="agent-console__footer">
@@ -216,39 +188,18 @@ require __DIR__ . '/includes/header.php';
             <p>Microgifter turns scattered customer moments into a simple, intelligent sequence that keeps learning as the relationship grows.</p>
           </div>
           <div class="how-presentation__flow" aria-label="How Microgifter works">
-            <article class="how-step">
-              <span class="how-step__number">01</span>
-              <div class="how-step__icon" aria-hidden="true">◎</div>
-              <h3>Listen</h3>
-              <p>Capture signals from conversations, purchases, service requests, and gifting activity.</p>
-            </article>
+            <article class="how-step"><span class="how-step__number">01</span><div class="how-step__icon" aria-hidden="true">◎</div><h3>Listen</h3><p>Capture signals from conversations, purchases, service requests, and gifting activity.</p></article>
             <div class="how-connector" aria-hidden="true"><span></span></div>
-            <article class="how-step">
-              <span class="how-step__number">02</span>
-              <div class="how-step__icon" aria-hidden="true">◇</div>
-              <h3>Understand</h3>
-              <p>Build customer memory around intent, timing, preference, and relationship context.</p>
-            </article>
+            <article class="how-step"><span class="how-step__number">02</span><div class="how-step__icon" aria-hidden="true">◇</div><h3>Understand</h3><p>Build customer memory around intent, timing, preference, and relationship context.</p></article>
             <div class="how-connector" aria-hidden="true"><span></span></div>
-            <article class="how-step">
-              <span class="how-step__number">03</span>
-              <div class="how-step__icon" aria-hidden="true">→</div>
-              <h3>Act</h3>
-              <p>Recommend the next best message, gift, follow-up, reward, or service action.</p>
-            </article>
+            <article class="how-step"><span class="how-step__number">03</span><div class="how-step__icon" aria-hidden="true">→</div><h3>Act</h3><p>Recommend the next best message, gift, follow-up, reward, or service action.</p></article>
             <div class="how-connector" aria-hidden="true"><span></span></div>
-            <article class="how-step">
-              <span class="how-step__number">04</span>
-              <div class="how-step__icon" aria-hidden="true">↗</div>
-              <h3>Grow</h3>
-              <p>Measure the response, strengthen loyalty, and improve every future interaction.</p>
-            </article>
+            <article class="how-step"><span class="how-step__number">04</span><div class="how-step__icon" aria-hidden="true">↗</div><h3>Grow</h3><p>Measure the response, strengthen loyalty, and improve every future interaction.</p></article>
           </div>
         </div>
         <div class="mountain-zoom-progress" aria-hidden="true"><span></span></div>
       </div>
     </section>
-
 
     <section class="pppm-presentation" id="pppm-presentation" aria-labelledby="pppm-title">
       <div class="pppm-shell">
@@ -270,15 +221,8 @@ require __DIR__ . '/includes/header.php';
                     <div class="feature-shell">
                       <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
                       <main class="feature-main">
-                        <div class="feature-header">
-                          <div><small>Send now, enjoy later</small><h4>Gifts and experiences</h4></div>
-                          <button class="desktop-pill">Create gift</button>
-                        </div>
-                        <div class="gift-grid">
-                          <article class="gift-card"><strong>Coffee for two</strong><span>$18 · Send later</span></article>
-                          <article class="gift-card"><strong>Massage voucher</strong><span>$90 · Schedule delivery</span></article>
-                          <article class="gift-card"><strong>Dinner credit</strong><span>$65 · Add a note</span></article>
-                        </div>
+                        <div class="feature-header"><div><small>Send now, enjoy later</small><h4>Gifts and experiences</h4></div><button class="desktop-pill">Create gift</button></div>
+                        <div class="gift-grid"><article class="gift-card"><strong>Coffee for two</strong><span>$18 · Send later</span></article><article class="gift-card"><strong>Massage voucher</strong><span>$90 · Schedule delivery</span></article><article class="gift-card"><strong>Dinner credit</strong><span>$65 · Add a note</span></article></div>
                         <div class="feature-banner"><b>Group gifting</b><span>Friends, family, coworkers, and community programs in one flow.</span></div>
                       </main>
                     </div>
@@ -287,11 +231,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
               </div>
               <div class="pppm-marker"><span>01</span></div>
-              <div class="pppm-card">
-                <p>Social Gifting</p><h3>Sell now. Send later.</h3>
-                <span>Sell products and experiences that customers can purchase now and send later to friends, family, coworkers, and communities.</span>
-                <a class="pppm-link" href="#hero">Explore local gifts <span>→</span></a>
-              </div>
+              <div class="pppm-card"><p>Social Gifting</p><h3>Sell now. Send later.</h3><span>Sell products and experiences that customers can purchase now and send later to friends, family, coworkers, and communities.</span><a class="pppm-link" href="#hero">Explore local gifts <span>→</span></a></div>
             </div>
           </article>
 
@@ -304,16 +244,8 @@ require __DIR__ . '/includes/header.php';
                     <div class="feature-shell crm-shell">
                       <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
                       <main class="feature-main crm-main">
-                        <div class="crm-top">
-                          <div class="crm-profile"><em>AJ</em><div><strong>Alex Johnson</strong><span>6 visits · 3 claims · loyalty active</span></div></div>
-                          <div class="crm-score"><b>92</b><span>relationship score</span></div>
-                        </div>
-                        <div class="crm-grid">
-                          <div class="crm-panel"><small>Purchases</small><strong>18</strong></div>
-                          <div class="crm-panel"><small>Messages</small><strong>34</strong></div>
-                          <div class="crm-panel"><small>Referrals</small><strong>7</strong></div>
-                          <div class="crm-panel"><small>Reward events</small><strong>12</strong></div>
-                        </div>
+                        <div class="crm-top"><div class="crm-profile"><em>AJ</em><div><strong>Alex Johnson</strong><span>6 visits · 3 claims · loyalty active</span></div></div><div class="crm-score"><b>92</b><span>relationship score</span></div></div>
+                        <div class="crm-grid"><div class="crm-panel"><small>Purchases</small><strong>18</strong></div><div class="crm-panel"><small>Messages</small><strong>34</strong></div><div class="crm-panel"><small>Referrals</small><strong>7</strong></div><div class="crm-panel"><small>Reward events</small><strong>12</strong></div></div>
                         <div class="crm-timeline"><span></span><span></span><span></span><span></span></div>
                       </main>
                     </div>
@@ -322,11 +254,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
               </div>
               <div class="pppm-marker"><span>02</span></div>
-              <div class="pppm-card">
-                <p>Merchant CRM</p><h3>Every action becomes customer memory.</h3>
-                <span>Connect purchases, claims, visits, messages, referrals, and reward activity to usable customer records.</span>
-                <a class="pppm-link" href="#hero">See the CRM <span>→</span></a>
-              </div>
+              <div class="pppm-card"><p>Merchant CRM</p><h3>Every action becomes customer memory.</h3><span>Connect purchases, claims, visits, messages, referrals, and reward activity to usable customer records.</span><a class="pppm-link" href="#hero">See the CRM <span>→</span></a></div>
             </div>
           </article>
 
@@ -339,17 +267,9 @@ require __DIR__ . '/includes/header.php';
                     <div class="feature-shell campaign-shell">
                       <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
                       <main class="feature-main campaign-main">
-                        <div class="campaign-metrics">
-                          <div><small>Active campaigns</small><strong>12</strong></div>
-                          <div><small>QR claims</small><strong>1,842</strong></div>
-                          <div><small>Conversions</small><strong>42.3%</strong></div>
-                        </div>
+                        <div class="campaign-metrics"><div><small>Active campaigns</small><strong>12</strong></div><div><small>QR claims</small><strong>1,842</strong></div><div><small>Conversions</small><strong>42.3%</strong></div></div>
                         <div class="campaign-chart"><span></span><span></span><span></span><span></span></div>
-                        <div class="campaign-list">
-                          <article><b>Spring gifting rewards</b><span>Offers · Referrals · QR</span></article>
-                          <article><b>Weekend comeback contest</b><span>Leaderboard · Prizes</span></article>
-                          <article><b>Office lunch appreciation</b><span>Workplace rewards</span></article>
-                        </div>
+                        <div class="campaign-list"><article><b>Spring gifting rewards</b><span>Offers · Referrals · QR</span></article><article><b>Weekend comeback contest</b><span>Leaderboard · Prizes</span></article><article><b>Office lunch appreciation</b><span>Workplace rewards</span></article></div>
                       </main>
                     </div>
                   </div>
@@ -357,11 +277,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
               </div>
               <div class="pppm-marker"><span>03</span></div>
-              <div class="pppm-card">
-                <p>Campaigns &amp; Offers</p><h3>Launch measurable local growth.</h3>
-                <span>Launch offers, rewards, contests, referrals, QR campaigns, and local promotions with measurable outcomes.</span>
-                <a class="pppm-link" href="#hero">Build a campaign <span>→</span></a>
-              </div>
+              <div class="pppm-card"><p>Campaigns &amp; Offers</p><h3>Launch measurable local growth.</h3><span>Launch offers, rewards, contests, referrals, QR campaigns, and local promotions with measurable outcomes.</span><a class="pppm-link" href="#hero">Build a campaign <span>→</span></a></div>
             </div>
           </article>
 
@@ -374,11 +290,7 @@ require __DIR__ . '/includes/header.php';
                     <div class="feature-shell messaging-shell">
                       <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
                       <main class="feature-main messaging-main">
-                        <div class="message-thread">
-                          <div class="bubble bubble--left">Your gift was claimed yesterday—want to follow up?</div>
-                          <div class="bubble bubble--right">Yes, send a thank-you and invite them back.</div>
-                          <div class="bubble bubble--left">Draft ready with visit history and reward status attached.</div>
-                        </div>
+                        <div class="message-thread"><div class="bubble bubble--left">Your gift was claimed yesterday—want to follow up?</div><div class="bubble bubble--right">Yes, send a thank-you and invite them back.</div><div class="bubble bubble--left">Draft ready with visit history and reward status attached.</div></div>
                         <div class="message-actions"><span>Gift history</span><span>Reward status</span><span>Claim record</span><button class="desktop-pill">Send follow-up</button></div>
                       </main>
                     </div>
@@ -387,11 +299,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
               </div>
               <div class="pppm-marker"><span>04</span></div>
-              <div class="pppm-card">
-                <p>Customer Messaging</p><h3>Keep communication tied to the relationship.</h3>
-                <span>Follow up after a gift, reward, claim, or visit without separating customer communication from the transaction history.</span>
-                <a class="pppm-link" href="#hero">Connect conversations <span>→</span></a>
-              </div>
+              <div class="pppm-card"><p>Customer Messaging</p><h3>Keep communication tied to the relationship.</h3><span>Follow up after a gift, reward, claim, or visit without separating customer communication from the transaction history.</span><a class="pppm-link" href="#hero">Connect conversations <span>→</span></a></div>
             </div>
           </article>
 
@@ -405,12 +313,7 @@ require __DIR__ . '/includes/header.php';
                       <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
                       <main class="feature-main redemption-main">
                         <div class="claim-stage-row"><span class="active">Inbox</span><span class="active">Sent</span><span class="active">Claimed</span><span>Redeemed</span></div>
-                        <div class="claim-table">
-                          <div class="claim-head"><b>Gift</b><b>Status</b><b>Merchant</b><b>Verification</b></div>
-                          <div class="claim-row"><span>MG-2041</span><span>Claimed</span><span>North Side Spa</span><span>QR verified</span></div>
-                          <div class="claim-row"><span>MG-1988</span><span>Sent</span><span>Riverfront Café</span><span>Pending</span></div>
-                          <div class="claim-row"><span>MG-1915</span><span>Redeemed</span><span>Studio Nine</span><span>Confirmed</span></div>
-                        </div>
+                        <div class="claim-table"><div class="claim-head"><b>Gift</b><b>Status</b><b>Merchant</b><b>Verification</b></div><div class="claim-row"><span>MG-2041</span><span>Claimed</span><span>North Side Spa</span><span>QR verified</span></div><div class="claim-row"><span>MG-1988</span><span>Sent</span><span>Riverfront Café</span><span>Pending</span></div><div class="claim-row"><span>MG-1915</span><span>Redeemed</span><span>Studio Nine</span><span>Confirmed</span></div></div>
                       </main>
                     </div>
                   </div>
@@ -418,11 +321,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
               </div>
               <div class="pppm-marker"><span>05</span></div>
-              <div class="pppm-card">
-                <p>Claim &amp; Redemption</p><h3>Follow every Microgift through its lifecycle.</h3>
-                <span>Track every Microgift from purchase through inbox, sent, claimed, and merchant-verified redemption states.</span>
-                <a class="pppm-link" href="#hero">Follow the lifecycle <span>→</span></a>
-              </div>
+              <div class="pppm-card"><p>Claim &amp; Redemption</p><h3>Follow every Microgift through its lifecycle.</h3><span>Track every Microgift from purchase through inbox, sent, claimed, and merchant-verified redemption states.</span><a class="pppm-link" href="#hero">Follow the lifecycle <span>→</span></a></div>
             </div>
           </article>
 
@@ -435,11 +334,7 @@ require __DIR__ . '/includes/header.php';
                     <div class="feature-shell automation-shell">
                       <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
                       <main class="feature-main automation-main">
-                        <div class="automation-stats">
-                          <div><small>Recurring programs</small><strong>24</strong></div>
-                          <div><small>Agent assists</small><strong>1,206</strong></div>
-                          <div><small>Repeat revenue</small><strong>31%</strong></div>
-                        </div>
+                        <div class="automation-stats"><div><small>Recurring programs</small><strong>24</strong></div><div><small>Agent assists</small><strong>1,206</strong></div><div><small>Repeat revenue</small><strong>31%</strong></div></div>
                         <div class="automation-flow"><span>Trigger</span><i></i><span>Recommend</span><i></i><span>Send</span><i></i><span>Measure</span></div>
                         <div class="automation-cards"><article>Workplace rewards</article><article>Recurring gifting</article><article>Campaign automation</article></div>
                       </main>
@@ -449,11 +344,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
               </div>
               <div class="pppm-marker"><span>06</span></div>
-              <div class="pppm-card">
-                <p>Automated Commerce</p><h3>Create ongoing demand automatically.</h3>
-                <span>Use recurring programs, agent-assisted gifting, workplace rewards, and campaign automation to create ongoing demand.</span>
-                <a class="pppm-link" href="#hero">Automate demand <span>→</span></a>
-              </div>
+              <div class="pppm-card"><p>Automated Commerce</p><h3>Create ongoing demand automatically.</h3><span>Use recurring programs, agent-assisted gifting, workplace rewards, and campaign automation to create ongoing demand.</span><a class="pppm-link" href="#hero">Automate demand <span>→</span></a></div>
             </div>
           </article>
         </div>
@@ -472,51 +363,18 @@ require __DIR__ . '/includes/header.php';
           <h2 id="final-cta-title">Build stronger customer relationships with one intelligent agent.</h2>
           <p>Connect gifting, service, follow-up, loyalty, and post-purchase activity in one continuous customer relationship system.</p>
           <div class="final-cta__meta" aria-label="Microgifter platform benefits">
-            <span>Social gifting</span>
-            <span>Customer service</span>
-            <span>Loyalty automation</span>
-            <span>Post-purchase management</span>
+            <span>Social gifting</span><span>Customer service</span><span>Loyalty automation</span><span>Post-purchase management</span>
           </div>
         </div>
 
-        <section class="pricing-reveal" aria-labelledby="pricing-title">
+        <section class="pricing-reveal mg-pricing-v1" aria-labelledby="pricing-title">
           <div class="pricing-reveal__intro">
             <p class="eyebrow">Simple plans for relationship growth</p>
             <h2 id="pricing-title">Choose the system that fits your business.</h2>
             <p>Start with the essentials, then add automation and intelligence as your customer relationships grow.</p>
           </div>
-          <div class="pricing-grid">
-            <article class="pricing-card">
-              <p class="pricing-card__label">Starter</p>
-              <h3>$25<span>/month</span></h3>
-              <p>For independent businesses ready to organize gifting, customer activity, and follow-up.</p>
-              <ul><li>Customer relationship profiles</li><li>Social gifting tools</li><li>Basic loyalty automation</li></ul>
-              <a href="/signup.php">Create Account <span>→</span></a>
-            </article>
-            <article class="pricing-card pricing-card--featured">
-              <p class="pricing-card__label">Growth</p>
-              <h3>$79<span>/month</span></h3>
-              <p>For growing merchants that want an active customer relationship agent.</p>
-              <ul><li>Everything in Starter</li><li>Agentic recommendations</li><li>Campaign and lifecycle automation</li></ul>
-              <a href="/signup.php">Start Growing <span>→</span></a>
-            </article>
-            <article class="pricing-card">
-              <p class="pricing-card__label">Professional</p>
-              <h3>$149<span>/month</span></h3>
-              <p>For established teams coordinating campaigns, service, loyalty, and post-purchase activity.</p>
-              <ul><li>Advanced agent workflows</li><li>Team permissions and reporting</li><li>Expanded lifecycle automation</li></ul>
-              <a href="/signup.php">Choose Professional <span>→</span></a>
-            </article>
-            <article class="pricing-card">
-              <p class="pricing-card__label">Enterprise</p>
-              <h3>Custom</h3>
-              <p>For organizations managing teams, locations, group gifting, and customer programs.</p>
-              <ul><li>Multi-location management</li><li>Enterprise gifting programs</li><li>Custom integrations and support</li></ul>
-              <a href="/learn-more.php">Book Demo <span>↗</span></a>
-            </article>
-          </div>
+          <?php mg_render_public_pricing_cards(['grid_class' => 'mg-price-grid homepage-public-pricing-grid']); ?>
         </section>
-
       </div>
     </section>
 </div>

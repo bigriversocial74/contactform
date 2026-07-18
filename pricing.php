@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/pricing-packages.php';
+require_once __DIR__ . '/includes/pricing-cards.php';
 
 $page_title = 'Pricing | Microgifter for Local Business Growth';
 $page_section = 'pricing';
@@ -10,7 +11,7 @@ $header_mode = 'public';
 $page_body_class = 'mg-pricing-page';
 $page_styles = [
     '/assets/css/public-header-footer-fixes.css',
-    '/assets/css/pricing-local-business-v1.css?v=1.1.0',
+    '/assets/css/pricing-local-business-v1.css?v=1.2.0',
 ];
 $page_manifest = [
     'id' => 'pricing',
@@ -23,7 +24,6 @@ $page_manifest = [
         'presentation' => false,
         'links' => [
             ['label' => 'How It Works', 'href' => '/index.php#how-it-works'],
-            ['label' => 'For Businesses', 'href' => '/index.php#businesses'],
             ['label' => 'Book A Demo', 'href' => '/learn-more.php'],
         ],
     ],
@@ -47,7 +47,7 @@ $comparisonRows = [
 ];
 
 $formatLimit = static function (array $plan, array $row): string {
-    $key = (string) ($row['key'] ?? '');
+    $key = (string)($row['key'] ?? '');
     $value = $plan['limits'][$key] ?? null;
 
     if (!empty($row['boolean'])) {
@@ -58,7 +58,7 @@ $formatLimit = static function (array $plan, array $row): string {
         return $key === 'max_locations' ? 'Unlimited' : 'Custom';
     }
 
-    return is_numeric($value) ? number_format((int) $value) : (string) $value;
+    return is_numeric($value) ? number_format((int)$value) : (string)$value;
 };
 
 require __DIR__ . '/includes/header.php';
@@ -74,52 +74,12 @@ require __DIR__ . '/includes/header.php';
       </div>
 
       <div class="mg-price-trust" aria-label="Pricing assurances">
-        <span><b><?= (int) $summary['published'] ?></b> plans available</span>
+        <span><b><?= (int)$summary['published'] ?></b> plans available</span>
         <span><b>Monthly</b> subscriptions</span>
         <span><b>Flexible</b> upgrade path</span>
       </div>
 
-      <div class="mg-price-grid" aria-label="Microgifter pricing plans">
-        <?php foreach ($plans as $plan): ?>
-          <article class="mg-price-card<?= !empty($plan['featured']) ? ' is-featured' : '' ?>" data-package-id="<?= mg_e((string) $plan['id']) ?>">
-            <?php if (!empty($plan['featured'])): ?><div class="mg-price-popular">Most Popular</div><?php endif; ?>
-
-            <header class="mg-price-card-head">
-              <span class="mg-price-plan-index"><?= str_pad((string) max(1, (int) (($plan['sort_order'] ?? 10) / 10)), 2, '0', STR_PAD_LEFT) ?></span>
-              <div>
-                <h2><?= mg_e((string) $plan['name']) ?></h2>
-                <p><?= mg_e((string) $plan['description']) ?></p>
-              </div>
-            </header>
-
-            <div class="mg-price-amount"><strong><?= mg_e((string) $plan['price_label']) ?></strong><span><?= mg_e((string) $plan['billing_label']) ?></span></div>
-            <a class="mg-price-plan-action" href="<?= mg_e((string) $plan['cta_href']) ?>"><?= mg_e((string) $plan['cta_label']) ?><span aria-hidden="true">→</span></a>
-
-            <div class="mg-price-fit">
-              <span>Best fit</span>
-              <p><?= mg_e((string) $plan['fit']) ?></p>
-            </div>
-
-            <div class="mg-price-includes">
-              <h3><?= mg_e((string) $plan['included_label']) ?></h3>
-              <ul>
-                <?php foreach (($plan['included_features'] ?? []) as $feature): ?>
-                  <li><span aria-hidden="true">✓</span><?= mg_e((string) $feature) ?></li>
-                <?php endforeach; ?>
-              </ul>
-            </div>
-
-            <?php if (!empty($plan['excluded_features'])): ?>
-              <div class="mg-price-upgrade">
-                <span>Available in higher plans</span>
-                <ul>
-                  <?php foreach (($plan['excluded_features'] ?? []) as $feature): ?><li><?= mg_e((string) $feature) ?></li><?php endforeach; ?>
-                </ul>
-              </div>
-            <?php endif; ?>
-          </article>
-        <?php endforeach; ?>
-      </div>
+      <?php mg_render_public_pricing_cards(); ?>
     </div>
   </section>
 
@@ -154,13 +114,13 @@ require __DIR__ . '/includes/header.php';
           <thead>
             <tr>
               <th scope="col">Capability</th>
-              <?php foreach ($plans as $plan): ?><th scope="col"<?= !empty($plan['featured']) ? ' class="is-featured"' : '' ?>><?= mg_e((string) $plan['name']) ?></th><?php endforeach; ?>
+              <?php foreach ($plans as $plan): ?><th scope="col"<?= !empty($plan['featured']) ? ' class="is-featured"' : '' ?>><?= mg_e((string)$plan['name']) ?></th><?php endforeach; ?>
             </tr>
           </thead>
           <tbody>
             <?php foreach ($comparisonRows as $row): ?>
               <tr>
-                <th scope="row"><?= mg_e((string) $row['label']) ?></th>
+                <th scope="row"><?= mg_e((string)$row['label']) ?></th>
                 <?php foreach ($plans as $plan): ?>
                   <?php $displayValue = $formatLimit($plan, $row); ?>
                   <td<?= !empty($plan['featured']) ? ' class="is-featured"' : '' ?>><?php if ($displayValue === 'Included'): ?><span class="mg-price-included">✓ Included</span><?php else: ?><?= mg_e($displayValue) ?><?php endif; ?></td>
