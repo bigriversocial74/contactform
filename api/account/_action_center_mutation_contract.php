@@ -11,7 +11,7 @@ function mg_action_center_mutation_action(string $action): string
     $allowed = [
         'send', 'claim', 'follow-up', 'message', 'tip',
         'read', 'unread', 'archive', 'restore',
-        'voucher-redeem', 'merchant-redeem',
+        'voucher-token', 'voucher-redeem', 'merchant-redeem',
     ];
     if (!in_array($action, $allowed, true)) {
         throw new InvalidArgumentException('Unsupported Action Center mutation.');
