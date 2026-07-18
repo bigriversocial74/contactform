@@ -12,7 +12,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: audit-recovery-contract-finalization
@@ -24,20 +23,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Publish authoritative run id
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
-            -f body='<!-- recovery-finalization-run --> Recovery finalization run: `${{ github.run_id }}`'
-
       - name: Check out latest audit branch
         uses: actions/checkout@v4
         with:
           ref: audit/repository-production-hardening-20260717
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record authoritative run id
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${{ github.run_id }}" > .audit-recovery-finalization-run-id
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .audit-recovery-finalization-run-id
+          git commit -m 'Record temporary recovery finalization run'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin audit/repository-production-hardening-20260717
+            if git push origin HEAD:audit/repository-production-hardening-20260717; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep 2
+          done
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -103,9 +114,15 @@ jobs:
             echo 'No final recovery changes were required.'
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tests/phpunit
           git commit -m 'Finalize recovery contracts and authenticated fixtures'
-          git pull --rebase origin audit/repository-production-hardening-20260717
-          git push origin HEAD:audit/repository-production-hardening-20260717
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin audit/repository-production-hardening-20260717
+            if git push origin HEAD:audit/repository-production-hardening-20260717; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep 2
+          done
