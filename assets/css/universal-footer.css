@@ -90,3 +90,42 @@ body.mg-homepage-exact-v2 .homepage-exact-v2{
   transform:none!important;
   perspective:none!important;
 }
+
+body.mg-homepage-exact-v2 .hero-copy.copy-one h1{
+  font-size:0!important;
+  line-height:0!important;
+}
+body.mg-homepage-exact-v2 .hero-copy.copy-one h1::after{
+  content:"The Future of Gifting Has Arrived.";
+  display:block;
+  font-size:clamp(3rem,5.2vw,6.2rem);
+  font-weight:300;
+  letter-spacing:-.055em;
+  line-height:.99;
+}
+
+/* Homepage header visibility through the hero section. */
+body.mg-homepage-exact-v2 .mg-public-nav a[href="/merchant-landing.php"],
+body.mg-homepage-exact-v2 .mg-public-nav a[href="/featured-case-studies.php"],
+body.mg-homepage-exact-v2 .mg-public-mobile-nav a[href="/merchant-landing.php"],
+body.mg-homepage-exact-v2 .mg-public-mobile-nav a[href="/featured-case-studies.php"]{
+  display:none!important;
+}
+body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"] .mg-public-nav a,
+body.mg-homepage-exact-v2 .mg-public-mobile-nav a{
+  font-weight:500!important;
+}
+body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"]{
+  transition:transform .28s ease,opacity .22s ease,visibility 0s linear 0s!important;
+  will-change:transform,opacity;
+}
+body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"].mg-home-header-past-hero{
+  transform:translateY(calc(-100% - 12px))!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transition:transform .28s ease,opacity .22s ease,visibility 0s linear .28s!important;
+}
+@media(prefers-reduced-motion:reduce){
+  body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"]{transition:none!important}
+}
