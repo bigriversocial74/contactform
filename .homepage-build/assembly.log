@@ -3,6 +3,5 @@
 + cat .homepage-build/index.php.gz.b64.00
 + base64 --decode
 + gzip --decompress
-base64: invalid input
 
 gzip: stdin: unexpected end of file
