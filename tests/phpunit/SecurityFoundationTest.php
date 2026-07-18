@@ -61,17 +61,18 @@ final class SecurityFoundationTest extends TestCase
         self::assertStringContainsString("mg_fail('Security service temporarily unavailable. Please try again shortly.', 503);", $source);
     }
 
-    public function testLoginDefaultsToGiftInboxAndUsesOnlySafeReturnPath(): void
+    public function testLoginDefaultsToAgentAndUsesOnlySafeReturnPath(): void
     {
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/auth/login.php');
 
         self::assertIsString($source);
         self::assertStringContainsString(
-            "\$returnPath=mg_safe_return_path((string)(\$input['return']??'/inbox.php'));",
+            "\$returnPath=mg_safe_return_path((string)(\$input['return']??'/agent.php'));",
             $source
         );
         self::assertStringContainsString("'redirect'=>\$returnPath", $source);
         self::assertStringNotContainsString("'redirect'=>'/account.php'", $source);
+        self::assertStringNotContainsString("'redirect'=>'/inbox.php'", $source);
     }
 
     public function testMigrationRunnerUsesExistingMigrationKeySchema(): void
