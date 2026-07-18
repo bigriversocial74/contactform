@@ -7,7 +7,7 @@ window.Microgifter = window.Microgifter || {};
     if (data && data.data && data.data.redirect) return data.data.redirect;
     var explicit = form.getAttribute('data-success-redirect');
     if (explicit) return explicit;
-    if (form.dataset.authForm === 'signin' || form.dataset.authForm === 'signup') return '/inbox.php';
+    if (form.dataset.authForm === 'signin' || form.dataset.authForm === 'signup') return '/agent.php';
     return '';
   }
 
