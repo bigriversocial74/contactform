@@ -14,6 +14,7 @@ require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-contact-chat
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-thread-delete.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-snapshot.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-ai-report.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-ai-incident-alerts.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-admin-limits.php';
 
 function mg_agent_chat_admin_operator(array $user): bool
@@ -94,7 +95,10 @@ if ($method === 'POST') {
     if ($action === 'ai_report') {
         mg_rate_limit('merchant.agent.ai_report.chat', 'user:' . $actorId, 30, 60);
         $input['message'] = trim((string)($input['message'] ?? 'AI Report')) ?: 'AI Report';
-        $response = mg_merchant_ai_report_chat_response($pdo, $user, $packageContext, $input);
+        $reportMode = mg_merchant_ai_report_mode($input['message']);
+        $response = $reportMode === 'alerts' && mg_ai_reconciliation_schema_ready($pdo)
+            ? mg_merchant_ai_incident_alert_chat_response($pdo, $user, $input)
+            : mg_merchant_ai_report_chat_response($pdo, $user, $packageContext, $input);
         if (is_array($response['state'] ?? null)) $response['state'] = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, $response['state'], $input);
         mg_ok(mg_agent_chat_access_response($pdo, $user, $packageContext, $response), 'AI credit report generated.', 201);
     }
