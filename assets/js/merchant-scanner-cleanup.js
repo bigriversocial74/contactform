@@ -7,9 +7,20 @@ window.Microgifter = window.Microgifter || {};
   var detector = null;
   var scanLoop = 0;
   var scanBusy = false;
+  var cameraStarting = false;
   var lastScanValue = '';
   var lastScanAt = 0;
   var pendingConfirmation = null;
+  var settings = {
+    require_confirmation: 1,
+    lock_scanner_to_location: 0,
+    allow_manual_entry: 1,
+    max_failed_scans_per_hour: 8,
+    require_manager_review_high_risk: 1,
+    high_risk_threshold: 65
+  };
+
+  window.MicrogifterMerchantScannerRuntime = 'cleanup-v2';
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
@@ -19,22 +30,6 @@ window.Microgifter = window.Microgifter || {};
 
   function payload(response) {
     return response && response.data ? response.data : response;
-  }
-
-  function openModal() {
-    ensureModal();
-    if (!modal) return;
-    modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('mg-agent-tool-open');
-  }
-
-  function closeModal() {
-    stopScanner();
-    if (!modal) return;
-    modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden', 'true');
-    if (!document.querySelector('.mg-agent-tool-modal.is-open')) document.body.classList.remove('mg-agent-tool-open');
   }
 
   function ensureModal() {
@@ -63,61 +58,42 @@ window.Microgifter = window.Microgifter || {};
     node.className = 'mg-scanner-result is-' + (type || 'info');
     node.textContent = message;
     if (link && link.href) {
-      var a = document.createElement('a');
-      a.href = link.href;
-      a.className = 'mg-scanner-receipt-link';
-      a.textContent = link.label || 'View receipt';
+      var anchor = document.createElement('a');
+      anchor.href = link.href;
+      anchor.className = 'mg-scanner-receipt-link';
+      anchor.textContent = link.label || 'View receipt';
       node.appendChild(document.createElement('br'));
-      node.appendChild(a);
+      node.appendChild(anchor);
     }
   }
 
-  function formatMoney(cents, currency) {
-    var value = Number(cents || 0) / 100;
-    try { return new Intl.NumberFormat([], { style:'currency', currency:currency || 'USD' }).format(value); }
-    catch (error) { return '$' + value.toFixed(2); }
+  function openModal() {
+    ensureModal();
+    if (!modal) return;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('mg-agent-tool-open');
   }
 
-  function renderConfirmationDetails(data) {
-    data = data || {};
-    var confirmation = data.confirmation || null;
-    var gift = confirmation || data.gift || {};
-    var customer = confirmation && confirmation.customer ? confirmation.customer : null;
-    var location = confirmation && confirmation.location ? confirmation.location : { name:data.location_name || '' };
-    var rows = [
-      ['Gift', gift.title || data.gift_id || 'Microgift'],
-      ['Value', formatMoney(gift.value_cents || (data.gift && data.gift.value_cents), gift.currency || (data.gift && data.gift.currency) || 'USD')],
-      ['Customer', customer ? ((customer.name || 'Customer') + (customer.masked_email ? ' · ' + customer.masked_email : '')) : 'Customer present'],
-      ['Location', location.name || data.location_name || 'Selected location'],
-      ['Claim code', 'Ending ' + (data.claim_code_last4 || gift.claim_code_last4 || '••••')]
-    ];
-    return '<div class="mg-scanner-confirm-card">' + rows.map(function (row) {
-      return '<div class="mg-scanner-confirm-row"><span>' + esc(row[0]) + '</span><strong>' + esc(row[1]) + '</strong></div>';
-    }).join('') + '</div>';
-  }
-
-  function showConfirm(data) {
-    if (!ensureModal()) return;
-    pendingConfirmation = data || null;
-    var box = modal.querySelector('[data-scanner-confirm]');
-    var copy = modal.querySelector('[data-scanner-confirm-copy]');
-    var details = modal.querySelector('[data-scanner-confirm-details]');
-    if (!box) return;
-    if (!pendingConfirmation) {
-      box.hidden = true;
-      if (details) details.innerHTML = '';
-      return;
+  function stopScanner() {
+    if (scanLoop) cancelAnimationFrame(scanLoop);
+    scanLoop = 0;
+    cameraStarting = false;
+    if (stream) stream.getTracks().forEach(function (track) { track.stop(); });
+    stream = null;
+    detector = null;
+    if (modal) {
+      var video = modal.querySelector('[data-scanner-video]');
+      if (video) video.srcObject = null;
     }
-    box.hidden = false;
-    if (copy) {
-      var confirmation = pendingConfirmation.confirmation || {};
-      copy.textContent = confirmation.copy || ('Gift ' + (pendingConfirmation.gift_id || '') + ' is verified for ' + (pendingConfirmation.location_name || 'this location') + '. Confirm to permanently redeem it.');
-    }
-    if (details) details.innerHTML = renderConfirmationDetails(pendingConfirmation);
   }
 
-  function locationHasClaimCode(value) {
-    return value === true || value === 1 || String(value || '') === '1' || String(value || '').toLowerCase() === 'true';
+  function closeModal() {
+    stopScanner();
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.mg-agent-tool-modal.is-open')) document.body.classList.remove('mg-agent-tool-open');
   }
 
   function selectedLocation() {
@@ -133,45 +109,72 @@ window.Microgifter = window.Microgifter || {};
     };
   }
 
-  function updateScanButton() {
+  function locationHasClaimCode(value) {
+    return value === true || value === 1 || String(value || '') === '1' || String(value || '').toLowerCase() === 'true';
+  }
+
+  function renderSettings() {
     if (!ensureModal()) return;
-    var button = modal.querySelector('[data-scanner-start]');
-    var location = selectedLocation();
-    if (button) button.disabled = !(location && location.hasClaimCode);
+    var host = modal.querySelector('[data-scanner-active-settings]');
+    if (!host) {
+      host = document.createElement('div');
+      host.className = 'mg-scanner-active-settings';
+      host.setAttribute('data-scanner-active-settings', '');
+      var note = modal.querySelector('[data-scanner-location-note]');
+      if (note) note.insertAdjacentElement('afterend', host);
+    }
+    host.innerHTML = '<strong>Active scanner settings</strong>' +
+      '<span>' + (settings.require_confirmation ? 'Final confirmation required' : 'Immediate redemption allowed') + '</span>' +
+      '<span>' + (settings.lock_scanner_to_location ? 'Scanner locked to location' : 'Location can be selected') + '</span>' +
+      '<span>' + (settings.allow_manual_entry ? 'Manual entry allowed' : 'Camera scans only') + '</span>' +
+      '<span>Issue limit: ' + esc(settings.max_failed_scans_per_hour || 8) + '/hour</span>';
+    var select = modal.querySelector('[data-scanner-location]');
+    if (select) select.disabled = !!settings.lock_scanner_to_location && !!select.value;
+  }
+
+  async function loadSettings() {
+    try {
+      var response = await window.Microgifter.get('/api/merchant/scanner-settings.php');
+      var data = payload(response) || {};
+      settings = Object.assign(settings, data.settings || data);
+    } catch (error) {
+      result('Scanner settings could not be loaded. Safe confirmation defaults remain active.', 'warning');
+    }
+    renderSettings();
   }
 
   function updateLocationNote() {
     if (!ensureModal()) return;
     var note = modal.querySelector('[data-scanner-location-note]');
+    var button = modal.querySelector('[data-scanner-start]');
     var location = selectedLocation();
     if (!note) return;
     if (!location) {
-      note.textContent = 'Select a merchant location with an active claim code before scanning PPPM vouchers.';
+      note.textContent = 'Select a merchant location with an active claim code before scanning.';
       note.className = 'mg-scanner-location-note is-warning';
       status('Scanner blocked until a valid merchant location is selected.');
     } else if (location.hasClaimCode) {
-      note.textContent = 'Active claim code assigned to this location. Ending ' + (location.claimCodeLast4 || '••••') + '.';
+      note.textContent = 'Active claim code assigned. Ending ' + (location.claimCodeLast4 || '••••') + '.';
       note.className = 'mg-scanner-location-note is-ready';
-      status('Ready. Camera starts after permission is approved.');
+      status('Ready. Front camera starts after permission is approved.');
     } else {
-      note.textContent = 'This location does not have an active claim code. Add one under Locations before scanning PPPM vouchers.';
+      note.textContent = 'This location does not have an active claim code.';
       note.className = 'mg-scanner-location-note is-warning';
       status('Scanner blocked for this location.');
     }
-    updateScanButton();
+    if (button) button.disabled = !(location && location.hasClaimCode);
   }
 
   async function loadLocations() {
     if (!ensureModal()) return 0;
     var select = modal.querySelector('[data-scanner-location]');
     if (!select) return 0;
+    select.disabled = false;
     select.innerHTML = '<option value="">Loading scanner locations…</option>';
-    showConfirm(null);
-    result('', 'info');
     try {
       var response = await window.Microgifter.get('/api/merchant/locations.php');
       var data = payload(response) || {};
-      var locations = data && Array.isArray(data.locations) ? data.locations : (data.data && Array.isArray(data.data.locations) ? data.data.locations : []);
+      var locations = Array.isArray(data.locations) ? data.locations : [];
       select.innerHTML = '<option value="">Choose scanner location</option>';
       var readyCount = 0;
       locations.forEach(function (location) {
@@ -186,36 +189,19 @@ window.Microgifter = window.Microgifter || {};
         if (ready) readyCount++;
         select.appendChild(option);
       });
-      var firstReady = Array.prototype.slice.call(select.options).find(function (option) { return option.value && option.getAttribute('data-has-claim-code') === '1'; });
+      var firstReady = Array.prototype.slice.call(select.options).find(function (option) {
+        return option.value && option.getAttribute('data-has-claim-code') === '1';
+      });
       if (firstReady) select.value = firstReady.value;
-      if (!locations.length) {
-        select.innerHTML = '<option value="">No merchant locations set</option>';
-        result('Scanner unavailable. Add a merchant location before scanning PPPM vouchers.', 'error');
-      } else if (!readyCount) {
-        result('Scanner unavailable. Add an active claim code to a merchant location before scanning PPPM vouchers.', 'error');
-      }
+      if (!readyCount) result('Scanner unavailable. Add an active claim code to a merchant location.', 'error');
       updateLocationNote();
+      renderSettings();
       return readyCount;
     } catch (error) {
       select.innerHTML = '<option value="">Unable to load locations</option>';
-      updateLocationNote();
       result(error.message || 'Unable to load merchant locations.', 'error');
+      updateLocationNote();
       return 0;
-    }
-  }
-
-  function stopScanner() {
-    if (scanLoop) {
-      cancelAnimationFrame(scanLoop);
-      scanLoop = 0;
-    }
-    if (stream) {
-      stream.getTracks().forEach(function (track) { track.stop(); });
-      stream = null;
-    }
-    if (modal) {
-      var video = modal.querySelector('[data-scanner-video]');
-      if (video) video.srcObject = null;
     }
   }
 
@@ -226,7 +212,7 @@ window.Microgifter = window.Microgifter || {};
       var url = new URL(value, window.location.origin);
       var token = url.searchParams.get('t') || url.searchParams.get('token') || url.searchParams.get('voucher_token');
       if (token) return value;
-      var keys = ['gift', 'gift_id', 'id', 'item', 'action_item', 'action_item_id', 'voucher', 'voucher_id', 'g', 'claim', 'code'];
+      var keys = ['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','g','claim','code'];
       for (var i = 0; i < keys.length; i++) {
         var candidate = url.searchParams.get(keys[i]);
         if (candidate && /GFT-[A-Z0-9-]+/i.test(candidate)) return candidate.match(/GFT-[A-Z0-9-]+/i)[0].toUpperCase();
@@ -236,41 +222,51 @@ window.Microgifter = window.Microgifter || {};
     return match ? match[0].toUpperCase() : value;
   }
 
+  function showConfirm(data) {
+    if (!ensureModal()) return;
+    pendingConfirmation = data || null;
+    var box = modal.querySelector('[data-scanner-confirm]');
+    var copy = modal.querySelector('[data-scanner-confirm-copy]');
+    var details = modal.querySelector('[data-scanner-confirm-details]');
+    if (!box) return;
+    box.hidden = !pendingConfirmation;
+    if (!pendingConfirmation) {
+      if (details) details.innerHTML = '';
+      return;
+    }
+    var confirmation = pendingConfirmation.confirmation || {};
+    if (copy) copy.textContent = confirmation.copy || 'Voucher verified. Confirm to permanently redeem it.';
+    if (details) details.innerHTML = '<div class="mg-scanner-confirm-card"><div class="mg-scanner-confirm-row"><span>Gift</span><strong>' + esc(confirmation.title || pendingConfirmation.gift_id || 'Microgift') + '</strong></div><div class="mg-scanner-confirm-row"><span>Location</span><strong>' + esc((confirmation.location && confirmation.location.name) || pendingConfirmation.location_name || 'Selected location') + '</strong></div></div>';
+  }
+
   async function submitClaim(scanValue, confirmed) {
     if (!ensureModal() || scanBusy) return;
     var location = selectedLocation();
-    var api = modal.getAttribute('data-scanner-api') || '/api/merchant/scanner-claim-trust.php';
-    scanValue = extractScanIdentifier(scanValue || '');
-    showConfirm(null);
     if (!location || !location.hasClaimCode) {
-      result('Scanner unavailable. Select a merchant location with an active claim code first.', 'error');
+      result('Select a merchant location with an active claim code first.', 'error');
       return;
     }
-    if (!scanValue) {
-      result('No PPPM voucher QR code detected yet.', 'warning');
-      return;
-    }
+    scanValue = extractScanIdentifier(scanValue || '');
+    if (!scanValue) return;
     scanBusy = true;
-    result('Processing PPPM voucher…', 'info');
+    showConfirm(null);
+    result('Processing voucher…', 'info');
     try {
-      var response = await window.Microgifter.post(api, {
+      var response = await window.Microgifter.post(modal.getAttribute('data-scanner-api') || '/api/merchant/scanner-claim-ops.php', {
         action: 'redeem',
         scan: scanValue,
+        scan_source: 'camera',
         location_id: location.id,
-        require_confirmation: true,
+        require_confirmation: !!settings.require_confirmation,
         confirmed: !!confirmed
       });
       var data = payload(response) || {};
       if (data.needs_confirmation) {
         showConfirm(data);
-        result(response.message || 'Voucher verified. Confirm redemption before claiming.', 'warning');
+        result(response.message || 'Voucher verified. Confirm redemption.', 'warning');
       } else if (data.redeemed) {
         result(response.message || 'Voucher redeemed.', 'success', data.receipt_url ? { href:data.receipt_url, label:'View redemption receipt' } : null);
-        status('Voucher claimed successfully.');
-      } else if (data.verified) {
-        showConfirm(data);
-        result(response.message || 'Voucher verified for this location.', 'success');
-        status('Voucher verified.');
+        status('Voucher redeemed successfully.');
       } else {
         result(response.message || 'Scan processed.', 'success');
       }
@@ -283,85 +279,108 @@ window.Microgifter = window.Microgifter || {};
   }
 
   async function handleScan(rawValue) {
-    if (!rawValue) return;
     var value = extractScanIdentifier(rawValue);
+    if (!value) return;
     var now = Date.now();
     if (value === lastScanValue && now - lastScanAt < 3500) return;
     lastScanValue = value;
     lastScanAt = now;
     var input = modal.querySelector('[data-scanner-scan-value]');
     if (input) input.value = value;
-    status('Scan detected. Checking voucher…');
+    status('QR code detected. Checking voucher…');
     await submitClaim(value, false);
   }
 
   async function detectLoop(video) {
-    if (!modal || !video || !detector || !stream) return;
+    if (!video || !detector || !stream) return;
     try {
       if (video.readyState >= 2) {
         var codes = await detector.detect(video);
-        if (codes && codes.length) {
-          var raw = codes[0].rawValue || codes[0].rawData || '';
-          if (raw) await handleScan(raw);
-        }
+        if (codes && codes.length) await handleScan(codes[0].rawValue || codes[0].rawData || '');
       }
     } catch (error) {}
     if (stream) scanLoop = requestAnimationFrame(function () { detectLoop(video); });
   }
 
+  async function requestFrontCamera() {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ exact:'user' } }, audio:false });
+    } catch (strictError) {
+      return navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'user' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false });
+    }
+  }
+
   async function startScanner() {
-    if (!ensureModal()) return;
+    if (!ensureModal() || cameraStarting) return;
     var location = selectedLocation();
     var video = modal.querySelector('[data-scanner-video]');
     if (!location || !location.hasClaimCode) {
       stopScanner();
-      result('Scanner unavailable. Select a merchant location with an active claim code first.', 'error');
-      status('Scanner blocked until the merchant has a valid location claim code.');
-      updateScanButton();
+      result('Select a valid merchant location first.', 'error');
       return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       result('Camera access is not supported in this browser.', 'error');
-      status('Camera access is not supported.');
       return;
     }
+    cameraStarting = true;
     stopScanner();
+    cameraStarting = true;
     result('', 'info');
     status('Requesting front camera permission…');
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal:'user' } },
-        audio: false
-      });
+      stream = await requestFrontCamera();
+      var track = stream.getVideoTracks()[0];
+      var facing = track && track.getSettings ? String(track.getSettings().facingMode || '') : '';
       if (video) {
         video.srcObject = stream;
         await video.play();
       }
       if ('BarcodeDetector' in window) {
-        detector = new BarcodeDetector({ formats:['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-        status('Front camera active. Point camera at a Microgifter PPPM voucher QR code.');
+        detector = new BarcodeDetector({ formats:['qr_code'] });
+        status((facing === 'user' ? 'Front camera active.' : 'Camera active; front-camera preference applied.') + ' Point it at a Microgifter voucher QR code.');
         detectLoop(video);
       } else {
-        detector = null;
-        status('Front camera active. Browser scan detection is unavailable.');
-        result('This browser opened the camera but does not support QR detection. Use a supported mobile browser.', 'warning');
+        result('Camera opened, but this browser does not support QR detection.', 'warning');
+        status('Use a current mobile Chrome, Edge, or supported browser.');
       }
     } catch (error) {
-      result('Camera permission was denied or unavailable.', 'error');
-      status('Camera permission was denied or unavailable.');
+      var name = error && error.name ? error.name : '';
+      if (name === 'NotAllowedError' || name === 'SecurityError') result('Camera permission was denied. Allow camera access in browser settings and try again.', 'error');
+      else if (name === 'NotFoundError' || name === 'OverconstrainedError') result('A usable front camera was not found on this device.', 'error');
+      else result('Camera could not be started. Close other camera apps and try again.', 'error');
+      status('Camera unavailable.');
+      stopScanner();
+    } finally {
+      cameraStarting = false;
     }
+  }
+
+  function ensureMobileShortcut() {
+    if (!ensureModal() || document.querySelector('[data-scanner-mobile-primary]')) return;
+    var workspace = document.querySelector('.mg-app-workspace, [data-agent-control-center] .mg-agent-workspace');
+    if (!workspace) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mg-scanner-mobile-primary';
+    button.setAttribute('data-scanner-trigger', '');
+    button.setAttribute('data-scanner-mobile-primary', '');
+    button.innerHTML = '<span aria-hidden="true">⌗</span><strong>Scan QR Code</strong><small>Open front camera</small>';
+    workspace.insertBefore(button, workspace.firstChild);
   }
 
   async function openScanner() {
     openModal();
+    await loadSettings();
     var ready = await loadLocations();
     if (ready > 0) startScanner();
   }
 
   function install() {
     ensureModal();
-    if (!modal || modal.dataset.scannerCleanupReady === '1') return;
-    modal.dataset.scannerCleanupReady = '1';
+    if (!modal || modal.dataset.scannerCleanupReady === '2') return;
+    modal.dataset.scannerCleanupReady = '2';
+    ensureMobileShortcut();
 
     document.addEventListener('click', function (event) {
       var trigger = event.target.closest('[data-scanner-trigger]');
@@ -376,33 +395,20 @@ window.Microgifter = window.Microgifter || {};
     }, true);
 
     modal.addEventListener('click', function (event) {
-      if (event.target.closest('[data-scanner-start]')) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-        startScanner();
-      }
-      if (event.target.closest('[data-scanner-close]')) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-        closeModal();
-      }
-      if (event.target.closest('[data-scanner-confirm-claim]')) {
-        event.preventDefault();
-        event.stopPropagation();
-        submitClaim((modal.querySelector('[data-scanner-scan-value]') || {}).value || '', true);
-      }
+      if (event.target.closest('[data-scanner-start]')) startScanner();
+      if (event.target.closest('[data-scanner-close]')) closeModal();
+      if (event.target.closest('[data-scanner-confirm-claim]')) submitClaim((modal.querySelector('[data-scanner-scan-value]') || {}).value || '', true);
       if (event.target.closest('[data-scanner-cancel-confirm]')) {
-        event.preventDefault();
-        event.stopPropagation();
         showConfirm(null);
-        result('Redemption canceled. Voucher is verified but not claimed.', 'warning');
+        result('Redemption canceled. Voucher remains unredeemed.', 'warning');
       }
     }, true);
 
     var select = modal.querySelector('[data-scanner-location]');
-    if (select) select.addEventListener('change', function () { updateLocationNote(); if (selectedLocation()) startScanner(); });
+    if (select) select.addEventListener('change', function () {
+      updateLocationNote();
+      if (selectedLocation()) startScanner();
+    });
 
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
