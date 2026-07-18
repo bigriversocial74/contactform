@@ -14,5 +14,5 @@
 + cat .homepage-build/mountains.webp.b64.00 .homepage-build/mountains.webp.b64.01 .homepage-build/mountains.webp.b64.02 .homepage-build/mountains.webp.b64.03 .homepage-build/mountains.webp.b64.04
 + base64 --decode
 + cat .homepage-build/orb.webp.b64.00 .homepage-build/orb.webp.b64.01 .homepage-build/orb.webp.b64.02 .homepage-build/orb.webp.b64.03
-+ base64 --decode
++ base64 --decode --ignore-garbage
 base64: invalid input
