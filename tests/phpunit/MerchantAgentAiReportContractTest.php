@@ -46,6 +46,8 @@ final class MerchantAgentAiReportContractTest extends TestCase
         self::assertStringContainsString("'token_difference'=>\$difference", $helper);
         self::assertStringContainsString("'balanced'=>\$balanced", $helper);
         self::assertStringContainsString('WHERE user_id=?', $helper);
+        self::assertStringContainsString("array_key_exists('available_tokens', \$credits)", $helper);
+        self::assertStringContainsString("array_key_exists('package_tokens_remaining', \$credits)", $helper);
     }
 
     public function testReportRendersInsideTheExistingChatFeed(): void
