@@ -170,6 +170,39 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
   }
 })();
 </script>
+<?php if ((string) ($page_manifest['id'] ?? '') === 'index'): ?>
+<script>
+(() => {
+  'use strict';
+
+  const headline = document.querySelector('.hero-copy.copy-one h1');
+  if (headline) headline.textContent = 'The Future of Gifting Has Arrived.';
+
+  const removedLinks = new Set(['/merchant-landing.php', '/featured-case-studies.php']);
+  document.querySelectorAll('.mg-public-nav a, .mg-public-mobile-nav a').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (href && removedLinks.has(href)) link.remove();
+  });
+
+  const header = document.querySelector('[data-mg-universal-header][data-header-variant="logged-out"]');
+  const hero = document.getElementById('hero');
+  if (!header || !hero) return;
+
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    header.classList.toggle('mg-home-header-past-hero', hero.getBoundingClientRect().bottom <= 0);
+  };
+  const requestUpdate = () => {
+    if (!frame) frame = window.requestAnimationFrame(update);
+  };
+
+  window.addEventListener('scroll', requestUpdate, { passive:true });
+  window.addEventListener('resize', requestUpdate, { passive:true });
+  update();
+})();
+</script>
+<?php endif; ?>
 <?php endif; ?>
 <?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
 <?php foreach (array_unique($scripts) as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
