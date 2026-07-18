@@ -1,0 +1,34 @@
+name: Audit Clean Quality Verification
+
+on:
+  pull_request:
+    branches:
+      - audit/repository-production-hardening-20260717
+    paths:
+      - .github/workflows/audit-clean-quality-verification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          extensions: curl, mbstring, pdo_mysql, openssl
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: composer audit-repository-quality
