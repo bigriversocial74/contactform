@@ -4,7 +4,7 @@
   var csrf=root.getAttribute('data-csrf-token')||'';
   var incidents=[],selected=null,permissions={manage:false,retry:false};
   function qs(s,n){return (n||root).querySelector(s);}function qsa(s,n){return Array.prototype.slice.call((n||root).querySelectorAll(s));}
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function label(v){return String(v||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
   function num(v){return Number(v||0).toLocaleString();}
   function date(v){if(!v)return'—';var d=new Date(String(v).replace(' ','T')+'Z');return isNaN(d.getTime())?String(v):d.toLocaleString();}
