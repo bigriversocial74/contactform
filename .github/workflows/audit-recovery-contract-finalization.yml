@@ -12,6 +12,11 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: audit-recovery-contract-finalization
+  cancel-in-progress: true
 
 jobs:
   finalize:
@@ -19,6 +24,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Publish authoritative run id
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            -f body='<!-- recovery-finalization-run --> Recovery finalization run: `${{ github.run_id }}`'
+
       - name: Check out latest audit branch
         uses: actions/checkout@v4
         with:
