@@ -131,14 +131,42 @@ function mg_merchant_agent_state_with_access(PDO $pdo, array $user, array $conte
     return $state;
 }
 
+function mg_merchant_agent_ai_call_context(string $phase): array
+{
+    $call = $GLOBALS['mg_merchant_agent_ai_call'] ?? null;
+    if (
+        is_array($call)
+        && ($call['pdo'] ?? null) instanceof PDO
+        && is_array($call['user'] ?? null)
+        && is_array($call['context'] ?? null)
+        && str_starts_with((string)($call['source_type'] ?? ''), 'merchant_agent_')
+    ) {
+        return $call;
+    }
+
+    $userId = is_array($call) && is_array($call['user'] ?? null) ? (int)($call['user']['id'] ?? 0) : 0;
+    if (function_exists('mg_security_log')) {
+        mg_security_log('error', 'merchant_agent.ai_call_context_missing', 'Merchant Agent external AI call was blocked because its owner-credit context was missing or invalid.', ['phase'=>$phase], $userId > 0 ? $userId : null);
+    }
+    if (function_exists('mg_fail')) {
+        mg_fail('Merchant Agent AI accounting context is required before contacting the model provider.', 500, ['scope'=>'merchant_ai_call_context_required','phase'=>$phase]);
+    }
+    throw new RuntimeException('Merchant Agent AI accounting context is required before contacting the model provider.');
+}
+
 function mg_merchant_agent_ai_begin_call(PDO $pdo, array $user, array $context, string $sourceType, array $metadata = []): void
 {
+    $sourceType = mb_substr(trim($sourceType), 0, 80) ?: 'merchant_agent';
+    if (!str_starts_with($sourceType, 'merchant_agent_')) {
+        throw new InvalidArgumentException('Merchant Agent AI source types must begin with merchant_agent_.');
+    }
     $GLOBALS['mg_merchant_agent_ai_call'] = [
         'pdo'=>$pdo,
         'user'=>$user,
         'context'=>$context,
-        'source_type'=>mb_substr(trim($sourceType), 0, 80) ?: 'merchant_agent',
+        'source_type'=>$sourceType,
         'metadata'=>$metadata,
+        'preflighted'=>false,
     ];
     $GLOBALS['mg_merchant_agent_ai_last_result'] = [];
 }
@@ -150,12 +178,10 @@ function mg_merchant_agent_ai_end_call(): void
 
 function mg_merchant_agent_ai_before_anthropic_call(array $payload): void
 {
-    $call = $GLOBALS['mg_merchant_agent_ai_call'] ?? null;
-    if (!is_array($call)) return;
-    $pdo = $call['pdo'] ?? null;
-    $user = is_array($call['user'] ?? null) ? $call['user'] : [];
-    $context = is_array($call['context'] ?? null) ? $call['context'] : [];
-    if (!$pdo instanceof PDO) return;
+    $call = mg_merchant_agent_ai_call_context('preflight');
+    $pdo = $call['pdo'];
+    $user = $call['user'];
+    $context = $call['context'];
     $userId = (int)($user['id'] ?? 0);
     if (!mg_merchant_agent_owner_context($context, $userId)) {
         mg_fail('This Merchant Agent build is available to the merchant workspace owner only.', 403, ['scope'=>'merchant_owner_required']);
@@ -170,6 +196,7 @@ function mg_merchant_agent_ai_before_anthropic_call(array $payload): void
     $reserve = max(1, min(6000, (int)($payload['max_tokens'] ?? 1200)));
     try {
         mg_ai_credit_preflight($pdo, $userId, 'anthropic', $reserve, (string)$call['source_type']);
+        $GLOBALS['mg_merchant_agent_ai_call']['preflighted'] = true;
     } catch (MgAiCreditException $error) {
         mg_fail($error->getMessage(), $error->httpStatus(), $error->details() + ['ai_status'=>mg_merchant_agent_ai_status($pdo, $user, $context)]);
     }
@@ -177,13 +204,14 @@ function mg_merchant_agent_ai_before_anthropic_call(array $payload): void
 
 function mg_merchant_agent_ai_after_anthropic_call(array $payload, array $response): void
 {
-    $call = $GLOBALS['mg_merchant_agent_ai_call'] ?? null;
-    if (!is_array($call)) return;
-    $pdo = $call['pdo'] ?? null;
-    $user = is_array($call['user'] ?? null) ? $call['user'] : [];
-    $context = is_array($call['context'] ?? null) ? $call['context'] : [];
-    if (!$pdo instanceof PDO) return;
+    $call = mg_merchant_agent_ai_call_context('debit');
+    $pdo = $call['pdo'];
+    $user = $call['user'];
+    $context = $call['context'];
     $userId = (int)($user['id'] ?? 0);
+    if (empty($call['preflighted']) && function_exists('mg_security_log')) {
+        mg_security_log('error', 'merchant_agent.ai_preflight_state_missing', 'Merchant Agent model response arrived without a recorded credit preflight state.', ['source_type'=>(string)$call['source_type']], $userId);
+    }
     $usage = is_array($response['usage'] ?? null) ? $response['usage'] : [];
     $inputTokens = max(0, (int)($usage['input_tokens'] ?? 0));
     $outputTokens = max(0, (int)($usage['output_tokens'] ?? 0));
