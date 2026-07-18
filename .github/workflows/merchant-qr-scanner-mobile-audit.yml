@@ -1,0 +1,29 @@
+name: Merchant QR Scanner Mobile Audit
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'assets/js/merchant-scanner-cleanup.js'
+      - 'tests/phpunit/MerchantQrScannerMobileAuditContractTest.php'
+      - '.github/workflows/merchant-qr-scanner-mobile-audit.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - run: composer install --no-interaction --prefer-dist
+      - name: PHP syntax
+        run: php -l tests/phpunit/MerchantQrScannerMobileAuditContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-scanner-cleanup.js
+      - name: QR scanner mobile audit contracts
+        run: vendor/bin/phpunit tests/phpunit/MerchantQrScannerMobileAuditContractTest.php
