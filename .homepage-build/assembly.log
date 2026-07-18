@@ -9,10 +9,5 @@
 + cat .homepage-build/app.js.gz.b64.00
 + base64 --decode
 + gzip --decompress
-+ cat .homepage-build/foreground.webp.b64.00 .homepage-build/foreground.webp.b64.01
-+ base64 --decode
-+ cat .homepage-build/mountains.webp.b64.00 .homepage-build/mountains.webp.b64.01 .homepage-build/mountains.webp.b64.02 .homepage-build/mountains.webp.b64.03 .homepage-build/mountains.webp.b64.04
-+ base64 --decode
-+ cat .homepage-build/orb.webp.b64.00 .homepage-build/orb.webp.b64.01 .homepage-build/orb.webp.b64.02 .homepage-build/orb.webp.b64.03
-+ base64 --decode
-base64: invalid input
+
+gzip: stdin: unexpected end of file
