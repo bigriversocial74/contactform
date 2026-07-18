@@ -37,6 +37,7 @@ $page_styles = [
     '/assets/css/merchant-agent-integrated-compat.css?v=1.0.0',
     '/assets/css/merchant-agent-snapshot.css?v=1.0.0',
     '/assets/css/merchant-agent-snapshot-action-center.css?v=1.0.0',
+    '/assets/css/merchant-agent-automatic-snapshot.css?v=1.0.0',
     '/assets/css/merchant-agent-crm-mention-search.css?v=1.0.0',
     '/assets/css/merchant-agent-contact-action-center.css?v=1.0.0',
     '/assets/css/merchant-agent-contact-workspace-v1-1.css?v=1.1.0',
@@ -51,6 +52,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-contact-workspace-v1-1.js?v=1.1.0',
     '/assets/js/merchant-agent-ai-status.js?v=1.0.0',
     '/assets/js/merchant-agent-chat.js?v=2.4.0',
+    '/assets/js/merchant-agent-automatic-snapshot.js?v=1.0.0',
     '/assets/js/merchant-agent-snapshot-action-center.js?v=1.0.0',
     '/assets/js/merchant-agent-chat-voice.js',
     '/assets/js/merchant-agent-chat-speech-results.js',
@@ -97,6 +99,7 @@ require __DIR__ . '/includes/header.php';
         <span class="mg-merchant-agent-systematic-note">Database and systematic tools remain available.</span>
         <a href="<?= mg_e((string)$merchantAgentAiStatus['manage_url']) ?>" data-merchant-agent-ai-manage<?= !empty($merchantAgentAiStatus['can_generate']) ? ' hidden' : '' ?>>Manage AI access</a>
       </section>
+      <section class="mg-merchant-latest-snapshot is-loading" data-merchant-agent-latest-snapshot aria-live="polite"><p>Preparing your latest merchant snapshot…</p></section>
       <?php require __DIR__ . '/includes/merchant-agent-chat-view.php'; ?>
     <?php endif; ?>
   </div>
