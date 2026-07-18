@@ -1,0 +1,7 @@
++ test -f .homepage-build/.ready
++ mkdir -p assets/css assets/js assets/images/homepage-parallax-exact-v2
++ cat .homepage-build/index.php.gz.b64.00
++ base64 --decode
++ gzip --decompress
+
+gzip: stdin: unexpected end of file
