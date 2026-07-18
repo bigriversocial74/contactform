@@ -1,0 +1,2 @@
+# Run from the deployed Microgifter application root every five minutes.
+*/5 * * * * cd /path/to/contactform && php scripts/run_admin_agent_monitor_runtime.php --trigger=scheduled >> storage/logs/main-admin-agent.log 2>&1

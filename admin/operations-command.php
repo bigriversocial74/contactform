@@ -28,6 +28,7 @@ require dirname(__DIR__) . '/includes/header.php';
         </div>
         <div class="mg-ops-hero-actions">
           <span>Command score <strong>10/10</strong></span>
+          <a class="mg-btn mg-btn-primary" href="/admin/admin-agent.php">Open Main Admin Agent</a>
           <a class="mg-btn mg-btn-soft" href="/admin/ai-credit-incidents.php">AI credit incidents</a>
           <button class="mg-btn mg-btn-soft" type="button" data-ops-run>Run automation</button>
           <button class="mg-btn mg-btn-ghost" type="button" data-ops-refresh disabled>Refresh</button>

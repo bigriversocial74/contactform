@@ -1,0 +1,127 @@
+name: Main Admin Agent Phase 1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/admin-agent.php'
+      - 'admin/operations-command.php'
+      - 'api/admin/admin-agent.php'
+      - 'api/admin/admin-agent-stream.php'
+      - 'assets/css/admin-agent.css'
+      - 'assets/js/admin-agent.js'
+      - 'includes/admin-agent.php'
+      - 'includes/admin-agent-runtime.php'
+      - 'includes/admin-permission-matrix.php'
+      - 'database/20260718_main_admin_agent_phase1.sql'
+      - 'config/migrations.php'
+      - 'scripts/run_admin_agent_monitor.php'
+      - 'scripts/run_admin_agent_monitor_runtime.php'
+      - 'docs/operations/main-admin-agent.md'
+      - 'tests/phpunit/MainAdminAgentPhase1ContractTest.php'
+      - '.github/workflows/main-admin-agent-phase1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax
+        run: |
+          php -l admin/admin-agent.php
+          php -l admin/operations-command.php
+          php -l api/admin/admin-agent.php
+          php -l api/admin/admin-agent-stream.php
+          php -l includes/admin-agent.php
+          php -l includes/admin-agent-runtime.php
+          php -l includes/admin-permission-matrix.php
+          php -l scripts/run_admin_agent_monitor.php
+          php -l scripts/run_admin_agent_monitor_runtime.php
+          php -l tests/phpunit/MainAdminAgentPhase1ContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/admin-agent.js
+
+      - name: Contract — unified schema
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testMigrationCreatesUnifiedMonitoringAndChatSchema
+
+      - name: Contract — monitor registry
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testMonitorRegistryCoversExistingAdminFoundations
+
+      - name: Contract — event and finding lifecycle
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testRuntimeNormalizesEventsAndDeduplicatesFindings
+
+      - name: Contract — database-only reports
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testReportsAreDatabaseOnlyAndUseNoExternalModel
+
+      - name: Contract — chat workspace
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testAdminChatPageMatchesCurrentAgentWorkspacePattern
+
+      - name: Contract — live updates
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testLiveUpdatesUseSseWithBoundedPollingFallback
+
+      - name: Contract — API security
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testApiIsPermissionGatedRateLimitedAndCsrfProtected
+
+      - name: Contract — review-only actions
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testActionsAreReviewOnlyAndIdempotent
+
+      - name: Contract — scheduled operation
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testScheduledRunnerAndOperationsDocumentationExist
+
+      - name: Contract — platform integration
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testMigrationPermissionAndCommandCenterIntegrationAreRegistered
+
+      - name: Main Admin Agent full contract
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php
+
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Build focused deploy artifact
+        if: matrix.php == '8.3'
+        run: |
+          mkdir -p artifact/admin artifact/api/admin artifact/assets/css artifact/assets/js artifact/includes artifact/database artifact/scripts artifact/docs/operations
+          cp admin/admin-agent.php admin/operations-command.php artifact/admin/
+          cp api/admin/admin-agent.php api/admin/admin-agent-stream.php artifact/api/admin/
+          cp assets/css/admin-agent.css artifact/assets/css/
+          cp assets/js/admin-agent.js artifact/assets/js/
+          cp includes/admin-agent.php includes/admin-agent-runtime.php includes/admin-permission-matrix.php artifact/includes/
+          cp database/20260718_main_admin_agent_phase1.sql artifact/database/
+          cp scripts/run_admin_agent_monitor.php scripts/run_admin_agent_monitor_runtime.php artifact/scripts/
+          cp docs/operations/main-admin-agent.md artifact/docs/operations/
+          cp config/migrations.php artifact/
+
+      - name: Upload focused deploy artifact
+        if: matrix.php == '8.3'
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-main-admin-agent-phase1
+          path: artifact
