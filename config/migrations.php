@@ -151,6 +151,7 @@ return [
         '20260714_personal_gifting_workflows_phase3.sql',
         '20260715_ai_user_credit_packages.sql',
         '20260718_ai_credit_reconciliation_incidents.sql',
+        '20260718_merchant_agent_automatic_snapshots_v1.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
