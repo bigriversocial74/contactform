@@ -30,24 +30,24 @@ if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
     $page_scripts[] = '/assets/js/admin-commerce-workflow.js';
     $late_styles[] = '/assets/css/admin-commerce-drawer.css';
 }
-if ((string) ($page_manifest['id'] ?? '') === 'home') {
+if ((string)($page_manifest['id'] ?? '') === 'home') {
     $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
 }
-if ((string) ($page_manifest['id'] ?? '') === 'discover') {
+if ((string)($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
 }
-if ((string) ($page_manifest['id'] ?? '') === 'public-profile') {
+if ((string)($page_manifest['id'] ?? '') === 'public-profile') {
     $page_scripts[] = '/assets/js/public-profile-review-replies.js?v=1.0.0';
     $late_styles[] = '/assets/css/public-review-replies.css?v=1.0.0';
 }
-if ((string) ($page_manifest['id'] ?? '') === 'featured-case-studies') {
+if ((string)($page_manifest['id'] ?? '') === 'featured-case-studies') {
     $page_scripts[] = '/assets/js/featured-case-studies-curation.js?v=1.0.0';
 }
-if ((string) ($page_manifest['id'] ?? '') === 'case-study-detail') {
+if ((string)($page_manifest['id'] ?? '') === 'case-study-detail') {
     $page_scripts[] = '/assets/js/case-study-curation.js?v=1.0.0';
     $late_styles[] = '/assets/css/public-review-replies.css?v=1.0.0';
 }
-if ((string) ($page_manifest['id'] ?? '') === 'merchant-canvas' && !empty($hasMerchantAccess)) {
+if ((string)($page_manifest['id'] ?? '') === 'merchant-canvas' && !empty($hasMerchantAccess)) {
     $page_scripts[] = '/assets/js/merchant-canvas-containment.js';
 }
 $core_scripts = [
@@ -70,11 +70,6 @@ $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 $can_sales_crm = $user && (in_array('sales.leads.view_own', $user_permissions, true) || in_array('sales.leads.view_all', $user_permissions, true) || in_array('super_admin', $user_roles, true));
 $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_permissions, true) || in_array('demand.dashboard.view', $user_permissions, true) || in_array('super_admin', $user_roles, true));
-$homepage_pricing_plans = [];
-if ((string) ($page_manifest['id'] ?? '') === 'index') {
-    require_once __DIR__ . '/pricing-packages.php';
-    $homepage_pricing_plans = mg_public_pricing_packages();
-}
 ?>
 </main>
 <footer class="mg-site-footer mg-universal-footer" data-mg-universal-footer>
@@ -127,7 +122,7 @@ if ((string) ($page_manifest['id'] ?? '') === 'index') {
         <h2>Workspace</h2>
         <a href="/build.php">Build</a>
         <a href="/agent.php">Agent</a>
-        <?php if (!$user && (string) ($page_manifest['id'] ?? '') === 'index'): ?><a href="https://labs.microgifter.com">Training Labs</a><?php endif; ?>
+        <?php if (!$user && (string)($page_manifest['id'] ?? '') === 'index'): ?><a href="https://labs.microgifter.com">Training Labs</a><?php endif; ?>
         <?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?>
         <?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?>
         <a href="/account-commerce.php">Commerce Center</a>
@@ -147,70 +142,10 @@ if ((string) ($page_manifest['id'] ?? '') === 'index') {
     </div>
   </div>
 </footer>
-<?php if (!$user): ?>
-<script>
-(() => {
-  const addPricingLink = () => {
-    const addLink = (nav, beforeDemo) => {
-      if (!nav || nav.querySelector('a[href="/pricing.php"]')) return;
-      const link = document.createElement('a');
-      link.href = '/pricing.php';
-      link.textContent = 'Pricing';
-      if (beforeDemo) {
-        const demo = Array.from(nav.querySelectorAll('a')).find((item) => item.textContent.trim().toLowerCase().includes('demo'));
-        if (demo) {
-          nav.insertBefore(link, demo);
-          return;
-        }
-      }
-      nav.appendChild(link);
-    };
-    document.querySelectorAll('.mg-public-nav').forEach((nav) => addLink(nav, false));
-    document.querySelectorAll('.mg-public-mobile-nav').forEach((nav) => addLink(nav, true));
-  };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addPricingLink, { once:true });
-  } else {
-    addPricingLink();
-  }
-})();
-</script>
-<?php if ((string) ($page_manifest['id'] ?? '') === 'index'): ?>
-<template id="mg-homepage-live-pricing">
-  <?php foreach ($homepage_pricing_plans as $plan): ?>
-    <article class="pricing-card<?= !empty($plan['featured']) ? ' pricing-card--featured' : '' ?>" data-package-id="<?= mg_e((string) $plan['id']) ?>">
-      <p class="pricing-card__label"><?= mg_e((string) $plan['name']) ?></p>
-      <h3><?= mg_e((string) $plan['price_label']) ?><span><?= mg_e((string) $plan['billing_label']) ?></span></h3>
-      <p><?= mg_e((string) $plan['description']) ?></p>
-      <ul>
-        <?php foreach (array_slice((array) ($plan['included_features'] ?? []), 0, 3) as $feature): ?>
-          <li><?= mg_e((string) $feature) ?></li>
-        <?php endforeach; ?>
-      </ul>
-      <a href="<?= mg_e((string) $plan['cta_href']) ?>"><?= mg_e((string) $plan['cta_label']) ?> <span>→</span></a>
-    </article>
-  <?php endforeach; ?>
-</template>
+<?php if (!$user && (string)($page_manifest['id'] ?? '') === 'index'): ?>
 <script>
 (() => {
   'use strict';
-
-  const pricingGrid = document.querySelector('.pricing-reveal .pricing-grid');
-  const pricingTemplate = document.getElementById('mg-homepage-live-pricing');
-  if (pricingGrid && pricingTemplate) {
-    pricingGrid.replaceChildren(pricingTemplate.content.cloneNode(true));
-    pricingGrid.dataset.livePricing = 'true';
-  }
-
-  const headline = document.querySelector('.hero-copy.copy-one h1');
-  if (headline) headline.textContent = 'The Future of Gifting Has Arrived.';
-
-  const removedLinks = new Set(['/merchant-landing.php', '/featured-case-studies.php']);
-  document.querySelectorAll('.mg-public-nav a, .mg-public-mobile-nav a').forEach((link) => {
-    const href = link.getAttribute('href');
-    if (href && removedLinks.has(href)) link.remove();
-  });
-
   const header = document.querySelector('[data-mg-universal-header][data-header-variant="logged-out"]');
   const hero = document.getElementById('hero');
   if (!header || !hero) return;
@@ -229,7 +164,6 @@ if ((string) ($page_manifest['id'] ?? '') === 'index') {
   update();
 })();
 </script>
-<?php endif; ?>
 <?php endif; ?>
 <?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
 <?php foreach (array_unique($scripts) as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
