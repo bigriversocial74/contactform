@@ -1,0 +1,52 @@
+name: Merchant Agent Automatic Snapshot
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'merchant-agent-chat.php'
+      - 'api/ai/merchant-agent-snapshot.php'
+      - 'includes/ai/merchant-agent-automatic-snapshot.php'
+      - 'assets/js/merchant-agent-automatic-snapshot.js'
+      - 'assets/css/merchant-agent-automatic-snapshot.css'
+      - 'database/20260718_merchant_agent_automatic_snapshots_v1.sql'
+      - 'tests/phpunit/MerchantAgentAutomaticSnapshotContractTest.php'
+      - '.github/workflows/merchant-agent-automatic-snapshot.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - run: composer install --no-interaction --prefer-dist
+      - name: PHP syntax
+        run: |
+          php -l merchant-agent-chat.php
+          php -l api/ai/merchant-agent-snapshot.php
+          php -l includes/ai/merchant-agent-automatic-snapshot.php
+          php -l tests/phpunit/MerchantAgentAutomaticSnapshotContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-agent-automatic-snapshot.js
+      - name: Automatic snapshot contract
+        run: vendor/bin/phpunit tests/phpunit/MerchantAgentAutomaticSnapshotContractTest.php
+      - name: Build focused deploy artifact
+        run: |
+          mkdir -p artifact/api/ai artifact/includes/ai artifact/assets/js artifact/assets/css artifact/database
+          cp merchant-agent-chat.php artifact/
+          cp api/ai/merchant-agent-snapshot.php artifact/api/ai/
+          cp includes/ai/merchant-agent-automatic-snapshot.php artifact/includes/ai/
+          cp assets/js/merchant-agent-automatic-snapshot.js artifact/assets/js/
+          cp assets/css/merchant-agent-automatic-snapshot.css artifact/assets/css/
+          cp database/20260718_merchant_agent_automatic_snapshots_v1.sql artifact/database/
+      - uses: actions/upload-artifact@v4
+        if: matrix.php == '8.3'
+        with:
+          name: microgifter-merchant-agent-automatic-snapshot
+          path: artifact
