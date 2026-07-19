@@ -68,7 +68,7 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         self::assertStringContainsString('$allowedError=max(0.0001,100.0-(float)$policy[\'objective_percent\'])',$service);
         self::assertStringContainsString('$burn=$errorRate/$allowedError',$service);
         self::assertStringContainsString('$budget=max(0.0,100.0-(($errorRate/$allowedError)*100.0))',$service);
-        self::assertStringContainsString("$severity=$burn>=(float)$policy['critical_burn_rate']?'critical'",$service);
+        self::assertStringContainsString('$severity=$burn>=(float)$policy[\'critical_burn_rate\']?\'critical\'',$service);
         self::assertStringContainsString('critical_findings',$service);
         self::assertStringContainsString('high_findings',$service);
     }
@@ -83,6 +83,19 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         self::assertStringContainsString('function mg_admin_agent_phase3_incident_action',$service);
         self::assertStringContainsString("['watching','declared','investigating','mitigating','monitoring','resolved','dismissed']",$service);
         self::assertStringContainsString('A resolution or dismissal note is required.',$service);
+    }
+
+    public function testLinkedOperationsIncidentsPreventPrematureWorkspaceResolution(): void
+    {
+        $lifecycle=$this->file('includes/admin-agent-phase3-lifecycle.php');
+        $api=$this->file('api/admin/admin-agent-phase3.php');
+        $runner=$this->file('scripts/run_admin_agent_phase3.php');
+        self::assertStringContainsString('function mg_admin_agent_phase3_reconcile_linked_ops_incidents',$lifecycle);
+        self::assertStringContainsString("$opsStatus!=='resolved'",$lifecycle);
+        self::assertStringContainsString('Linked operations incident remains active',$lifecycle);
+        self::assertStringContainsString('function mg_admin_agent_phase3_run_hardened',$lifecycle);
+        self::assertStringContainsString('mg_admin_agent_phase3_run_hardened($pdo',$api);
+        self::assertStringContainsString('mg_admin_agent_phase3_run_hardened(mg_db()',$runner);
     }
 
     public function testCauseAnalysisRanksEvidenceAndLabelsHypotheses(): void
@@ -105,7 +118,7 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         self::assertStringContainsString('$criticalSlo',$service);
         self::assertStringContainsString('$criticalIncidents',$service);
         self::assertStringContainsString('$postDeployCritical',$service);
-        self::assertStringContainsString("$status=$reasons!==[]?'block'",$service);
+        self::assertStringContainsString('$status=$reasons!==[]?\'block\'',$service);
         self::assertStringContainsString('The gate is advisory.',$docs);
         self::assertStringContainsString('It does not deploy, roll back, freeze, or modify production by itself.',$docs);
     }
@@ -115,7 +128,7 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         $service=$this->file('includes/admin-agent-phase3.php');
         $sql=$this->file('database/20260719_main_admin_agent_phase3.sql');
         self::assertStringContainsString('function mg_admin_agent_phase3_process_briefs',$service);
-        self::assertStringContainsString("hash('sha256',(int)$subscription['id'].'|'.$cadence.'|'.$period)",$service);
+        self::assertStringContainsString('hash(\'sha256\',(int)$subscription[\'id\'].\'|\'.$cadence.\'|\'.$period)',$service);
         self::assertStringContainsString('mg_queue_notice_create($pdo',$service);
         self::assertStringContainsString('admin_agent_brief_deliveries',$service);
         self::assertStringContainsString("ENUM('notification_center')",$sql);
@@ -128,14 +141,14 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         $service=$this->file('includes/admin-agent-phase3-remediation.php');
         $api=$this->file('api/admin/admin-agent-phase3.php');
         $matrix=$this->file('includes/admin-permission-matrix.php');
-        self::assertStringContainsString("$adapterKey!=='declare_operations_incident'",$service);
+        self::assertStringContainsString('$adapterKey!==\'declare_operations_incident\'',$service);
         self::assertStringContainsString('mg_ops_incident_declare($pdo',$service);
-        self::assertStringContainsString("$expected='EXECUTE '.(string)$execution['adapter_key']",$service);
-        self::assertStringContainsString("status=\"running\"",$service);
-        self::assertStringContainsString("status=\"succeeded\"",$service);
+        self::assertStringContainsString('$expected=\'EXECUTE \'.(string)$execution[\'adapter_key\']',$service);
+        self::assertStringContainsString('status="running"',$service);
+        self::assertStringContainsString('status="succeeded"',$service);
         self::assertStringContainsString("'admin.admin_agent.execute'=>[]",$api);
         self::assertStringContainsString("'admin.admin_agent.execute' => []",$matrix);
-        self::assertStringContainsString("mg_admin_agent_phase3_api_require($actor,'admin.admin_agent.execute')",$api);
+        self::assertStringContainsString('mg_admin_agent_phase3_api_require($actor,\'admin.admin_agent.execute\')',$api);
         self::assertStringNotContainsString('shell_exec(',$service);
         self::assertStringNotContainsString('proc_open(',$service);
         self::assertStringNotContainsString('passthru(',$service);
@@ -151,7 +164,7 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         self::assertStringContainsString('mg_require_csrf_for_write($input)',$api);
         self::assertStringContainsString('Main Admin Agent Phase 3 SQL migration is required.',$api);
         foreach(['incident_workspace_action','evaluate_release','update_brief','execute_action'] as $action){
-            self::assertStringContainsString("$action==='".$action."'",$api);
+            self::assertStringContainsString('$action===\''.$action.'\'',$api);
         }
         self::assertStringContainsString('$error->httpStatus()',$api);
     }
@@ -206,7 +219,7 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
         $runner=$this->file('scripts/run_admin_agent_phase3.php');
         $docs=$this->file('docs/operations/main-admin-agent-phase3.md');
         self::assertStringContainsString("PHP_SAPI!=='cli'",$runner);
-        self::assertStringContainsString('mg_admin_agent_phase3_run',$runner);
+        self::assertStringContainsString('mg_admin_agent_phase3_run_hardened',$runner);
         self::assertStringContainsString('*/5 * * * *',$docs);
         self::assertStringContainsString('Do not run Phase 1, Phase 2, and Phase 3 runners together.',$docs);
         self::assertStringContainsString('evidence-ranked hypotheses, not proof',$docs);
@@ -228,7 +241,7 @@ final class MainAdminAgentPhase3ContractTest extends TestCase
     public function testPhase3UsesNoExternalModelOrArbitraryExecution(): void
     {
         foreach([
-            'includes/admin-agent-phase3.php','includes/admin-agent-phase3-remediation.php',
+            'includes/admin-agent-phase3.php','includes/admin-agent-phase3-lifecycle.php','includes/admin-agent-phase3-remediation.php',
             'api/admin/admin-agent-phase3.php','api/admin/admin-agent-phase3-stream.php',
         ] as $path){
             $source=$this->file($path);
