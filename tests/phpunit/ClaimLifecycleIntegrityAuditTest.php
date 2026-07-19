@@ -15,16 +15,16 @@ final class ClaimLifecycleIntegrityAuditTest extends TestCase
     public function testGiftVerificationUsesWorkspaceOwnerNotOperatorAsMerchant(): void
     {
         $php = file_get_contents($this->root . '/api/gifts/verify-merchant-claim.php');
-        self::assertStringContainsString("$ownerMerchantId = (int)$scope['owner_merchant_id']", $php);
+        self::assertStringContainsString('$ownerMerchantId = (int)$scope[\'owner_merchant_id\']', $php);
         self::assertStringContainsString('mg_claim_location($pdo, $user, $locationPublicId, true)', $php);
         self::assertStringContainsString('$ownerMerchantId, (int)$location[\'id\']', $php);
-        self::assertStringNotContainsString("merchant_user_id=? AND mcc.location_id=? AND ml.workspace_id=?", $php);
+        self::assertStringNotContainsString('merchant_user_id=? AND mcc.location_id=? AND ml.workspace_id=?', $php);
     }
 
     public function testPppmVerificationUsesWorkspaceOwnerAndCanonicalCodeHelpers(): void
     {
         $php = file_get_contents($this->root . '/api/pppm/verify-merchant-claim.php');
-        self::assertStringContainsString("$ownerMerchantId = (int) $scope['owner_merchant_id']", $php);
+        self::assertStringContainsString('$ownerMerchantId = (int) $scope[\'owner_merchant_id\']', $php);
         self::assertStringContainsString('mg_claim_code_hash(mg_claim_code_require(', $php);
         self::assertStringContainsString('mg_merchant_location_scope_condition', $php);
         self::assertStringContainsString('owner_merchant_id', $php);
