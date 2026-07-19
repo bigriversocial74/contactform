@@ -8,7 +8,7 @@ on:
       - 'assets/js/merchant-locations-multicode.js'
       - 'includes/merchant-locations-view.php'
       - 'merchant-locations.php'
-      - 'database/20260718_locations_multi_claim_code_safeguards.sql'
+      - 'database/manual/20260718_locations_multi_claim_code_safeguards.sql'
       - 'tests/phpunit/MerchantLocationsMultiClaimCodeContractTest.php'
       - '.github/workflows/merchant-locations-multicode.yml'
 
