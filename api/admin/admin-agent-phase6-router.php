@@ -12,13 +12,40 @@ require_once dirname(__DIR__, 2) . '/includes/admin-agent-phase6-readonly.php';
 $actor = mg_require_api_user();
 $actorId = (int) $actor['id'];
 $pdo = mg_db();
-$allowed = mg_admin_account_actor_has($actor, 'admin.admin_agent.view')
-    || mg_admin_account_actor_has($actor, 'admin.operations_command.view')
-    || mg_admin_account_actor_has($actor, 'admin.health.view')
-    || mg_admin_account_actor_has($actor, 'admin.audit.view')
-    || mg_admin_account_actor_has($actor, 'security.logs.view')
-    || mg_admin_account_actor_has($actor, 'admin.users.manage');
-if (!$allowed) {
+
+function mg_admin_agent_phase6_router_has(array $actor, string $permission): bool
+{
+    if (mg_admin_account_actor_has($actor, $permission)) return true;
+    $fallbacks = match ($permission) {
+        'admin.admin_agent.view' => ['admin.operations_command.view', 'admin.health.view', 'admin.audit.view', 'security.logs.view', 'admin.users.manage'],
+        'admin.admin_agent.chat' => ['admin.operations_command.view', 'admin.users.manage'],
+        'admin.admin_agent.manage' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.actions' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.escalations' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.deployments' => ['admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.incidents' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.releases' => ['admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.briefs' => ['admin.notifications.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.maintenance' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.reliability' => ['admin.operations_command.view', 'admin.health.view', 'admin.users.manage'],
+        'admin.admin_agent.learning' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.forecasts' => ['admin.operations_command.view', 'admin.health.view', 'admin.users.manage'],
+        'admin.admin_agent.continuity' => ['admin.operations_command.view', 'admin.health.view', 'admin.users.manage'],
+        'admin.admin_agent.recovery' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.evidence' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.readiness' => ['admin.operations_command.view', 'admin.health.view', 'admin.audit.view', 'admin.users.manage'],
+        'admin.admin_agent.setup' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.export' => ['admin.audit.view', 'admin.settings.manage', 'admin.users.manage'],
+        'admin.admin_agent.execute' => [],
+        default => [],
+    };
+    foreach ($fallbacks as $fallback) {
+        if (mg_admin_account_actor_has($actor, $fallback)) return true;
+    }
+    return false;
+}
+
+if (!mg_admin_agent_phase6_router_has($actor, 'admin.admin_agent.view')) {
     mg_audit('permission_denied', 'security', ['permission' => 'admin.admin_agent.view', 'area' => 'main_admin_agent_phase6_router'], $actorId);
     mg_fail('Permission denied.', 403);
 }
@@ -46,18 +73,11 @@ try {
                         : mg_admin_agent_state_runtime($pdo, $actorId, $options)))));
     $payload['phase6_schema'] = mg_admin_agent_phase6_schema_state($pdo);
     $payload['phase6_ready'] = mg_admin_agent_phase6_ready($pdo);
-    $payload['permissions'] = [
-        'chat' => mg_admin_account_actor_has($actor, 'admin.admin_agent.chat') || mg_admin_account_actor_has($actor, 'admin.operations_command.view') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'manage' => mg_admin_account_actor_has($actor, 'admin.admin_agent.manage') || mg_admin_account_actor_has($actor, 'admin.operations_command.manage') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'actions' => mg_admin_account_actor_has($actor, 'admin.admin_agent.actions') || mg_admin_account_actor_has($actor, 'admin.operations_command.manage') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'briefs' => mg_admin_account_actor_has($actor, 'admin.admin_agent.briefs') || mg_admin_account_actor_has($actor, 'admin.notifications.manage') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'recovery' => mg_admin_account_actor_has($actor, 'admin.admin_agent.recovery') || mg_admin_account_actor_has($actor, 'admin.operations_command.manage') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'evidence' => mg_admin_account_actor_has($actor, 'admin.admin_agent.evidence') || mg_admin_account_actor_has($actor, 'admin.operations_command.manage') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'readiness' => true,
-        'setup' => mg_admin_account_actor_has($actor, 'admin.admin_agent.setup') || mg_admin_account_actor_has($actor, 'admin.operations_command.manage') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'export' => mg_admin_account_actor_has($actor, 'admin.admin_agent.export') || mg_admin_account_actor_has($actor, 'admin.audit.view') || mg_admin_account_actor_has($actor, 'admin.settings.manage') || mg_admin_account_actor_has($actor, 'admin.users.manage'),
-        'execute' => mg_admin_account_actor_has($actor, 'admin.admin_agent.execute'),
-    ];
+    $keys = ['chat','manage','actions','escalations','deployments','incidents','releases','briefs','maintenance','reliability','learning','forecasts','continuity','recovery','evidence','readiness','setup','export','execute'];
+    $payload['permissions'] = [];
+    foreach ($keys as $key) {
+        $payload['permissions'][$key] = mg_admin_agent_phase6_router_has($actor, 'admin.admin_agent.' . $key);
+    }
     header('Cache-Control: private, no-store, max-age=0');
     header('Vary: Cookie, Authorization');
     mg_ok($payload, 'Main Admin Agent Phase 6 loaded.');
