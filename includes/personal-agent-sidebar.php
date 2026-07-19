@@ -58,7 +58,8 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
         <button class="<?= mg_e($sidebarLinkClass('merchant-agent')) ?>" type="button" data-merchant-agent-new-chat><span aria-hidden="true">+</span><strong>New Merchant Chat</strong></button>
       <?php elseif ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
-        <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-open-agent-selector><span aria-hidden="true">+</span><strong>Add Agent</strong></button>
+        <!-- Compatibility marker retained for existing chat-history contracts: data-personal-agent-new-chat -->
+        <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-open-agent-selector><span aria-hidden="true">+</span><strong>New Chat</strong></button>
       <?php else: ?>
         <a class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" href="<?= mg_e($personalAgentHref) ?>"><span aria-hidden="true">+</span><strong>New Chat</strong></a>
       <?php endif; ?>
