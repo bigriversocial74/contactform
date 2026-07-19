@@ -18,19 +18,22 @@ The complete static browser-game ZIP is generated outside the repository and upl
 - landing-page cover
 - package README
 
-Current upload package: `spaced-invaders-hosted-game-v1.1.0.zip`.
+Current upload package: `spaced-invaders-hosted-game-v1.1.1.zip`.
 
-## Settlement defense expansion v1.1.0
+## Settlement defense reliability v1.1.1
 
-- Adds **Tank Busters** as a buildable and equipable settlement defense.
-- Each settlement owns an elliptical ground-defense zone. Neighboring zones overlap, so multiple equipped settlements can engage the same tank inside shared coverage.
-- Tank Busters automatically lob anti-armor missiles at tanks inside the settlement zone and credit tank kills to the firing settlement.
-- Captured UFOs launched from the Alien Hangar now leave the ground and fly visibly as patrol craft.
+- Newly constructed defenses are enabled immediately, even when the settlement previously had every active slot occupied.
+- Settlement level-ups can no longer shrink defense capacity below the active loadout.
+- Every built Tank Buster zone remains visible: orange means active and gray means built but disabled.
+- Tank Buster zones were widened slightly to maintain intentional overlap and include the full tank hull at zone boundaries.
+- Tank Busters prioritize breached and furthest-advanced tanks, lob guided anti-armor missiles, and credit the firing settlement with the kill.
+- Radar, anti-air, swarm guns, hospitals, Tank Busters, and their UI status now use one consistent enabled-state check.
+- Converting a captured UFO to settlement defense immediately equips its radar and anti-air systems.
+- Launching a captured UFO as a patrol craft immediately provisions its supporting anti-air system.
+- Airborne patrol state is reconciled automatically so a launched craft cannot silently disappear after losing its transient runtime record.
 - When patrol craft originate from only one settlement, they protect all surviving settlements.
 - Once patrol craft originate from multiple settlements, each patrol focuses on its original settlement zone while naturally sharing overlapping coverage.
-- Patrol craft engage hostile UFOs, suicide drones, and incoming missiles.
-- UFO kills made by patrol craft are credited to the patrol craft's originating settlement.
-- Airborne patrol craft can be recalled through the Alien Hangar tab.
+- Patrol craft engage hostile UFOs, suicide drones, and incoming missiles, and UFO kills are credited to the patrol craft's originating settlement.
 
 The standalone browser package and the Microgifter Hosted Games upload package use the same defense behavior.
 
@@ -68,3 +71,7 @@ Initial low-value promotional qualification uses `game_reported` mode:
 - submit the final score and settlement result payload.
 
 High-value reward configurations should move to a reviewed `server_review` integration.
+
+## Validation performed
+
+Both game versions passed JavaScript syntax checks, JSON validation, ZIP integrity checks, targeted defense behavior tests, and an extended 5,000-step runtime simulation covering Tank Busters, patrol craft, anti-air, radar, swarm guns, hospitals, loadout capacity, and kill credit.
