@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_user_management.php';
-require_once dirname(__DIR__, 2) . '/includes/admin-agent-phase6.php';
+require_once dirname(__DIR__, 2) . '/includes/admin-agent-phase6-readonly.php';
 
 $actor = mg_require_api_user();
 $actorId = (int) $actor['id'];
@@ -48,7 +48,7 @@ if (!mg_admin_agent_schema_ready($pdo)) {
 }
 
 $options = ['after' => $after, 'event_limit' => 100, 'domain' => $domain, 'finding_status' => 'active', 'environment_key' => $environment];
-if (mg_admin_agent_phase6_ready($pdo)) $snapshot = mg_admin_agent_phase6_state($pdo, $actorId, $options);
+if (mg_admin_agent_phase6_ready($pdo)) $snapshot = mg_admin_agent_phase6_state_readonly($pdo, $actorId, $options);
 elseif (mg_admin_agent_phase5_ready($pdo)) $snapshot = mg_admin_agent_phase5_state($pdo, $actorId, $options);
 elseif (mg_admin_agent_phase4_ready($pdo)) $snapshot = mg_admin_agent_phase4_state($pdo, $actorId, $options);
 elseif (mg_admin_agent_phase3_ready($pdo)) $snapshot = mg_admin_agent_phase3_state($pdo, $actorId, $options);
