@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/app.php';
 /**
  * Source-level subscription contract retained for recovery validation.
  * This helper is intentionally not invoked by the current Personal Agent runtime.
+ * Contract revision: 2026-07-19 rerun trigger.
  */
 function mg_personal_agent_subscription_contract(array $user): array
 {
