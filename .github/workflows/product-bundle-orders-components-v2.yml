@@ -1,0 +1,44 @@
+name: Product Bundle Orders Components v2
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'database/20260719_product_bundle_orders_components_v2.sql'
+      - 'api/bundles/_orders.php'
+      - 'tests/phpunit/ProductBundleOrdersComponentsV2ContractTest.php'
+      - 'docs/commerce/product-bundle-orders-components-v2.md'
+      - 'config/migrations.php'
+      - '.github/workflows/product-bundle-orders-components-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl
+          coverage: none
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l api/bundles/_orders.php
+          php -l tests/phpunit/ProductBundleOrdersComponentsV2ContractTest.php
+      - name: Bundle order component contract
+        run: vendor/bin/phpunit tests/phpunit/ProductBundleOrdersComponentsV2ContractTest.php
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
