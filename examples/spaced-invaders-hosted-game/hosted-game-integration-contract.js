@@ -2,18 +2,15 @@
   'use strict';
 
   const TARGET_WAVE = 5;
+  const CLIENT_VERSION = '1.2.0';
 
-  /**
-   * Reviewable Hosted Games integration contract used by the Spaced Invaders package.
-   * The upload package embeds the same lifecycle into game.js so no extra network
-   * request or browser credential is required.
-   */
   window.createSpacedInvadersHostedIntegration = function createIntegration(options) {
     const showToast = typeof options.showToast === 'function' ? options.showToast : () => {};
     const getScore = options.getScore;
     const getWave = options.getWave;
     const getResult = options.getResult;
     const getSettlementsRemaining = options.getSettlementsRemaining;
+    const getSettlementCareer = options.getSettlementCareer;
 
     const runtime = {
       session: null,
@@ -46,8 +43,9 @@
       runtime.reward = reward.status === 'fulfilled' ? reward.value : runtime.session?.reward || null;
       await sdk().emitEvent('game_loaded', {
         game: 'spaced-invaders',
-        version: '1.1.2',
+        version: CLIENT_VERSION,
         target_wave: TARGET_WAVE,
+        settlement_model: 'specialty-v1',
       }).catch(() => {});
       return runtime;
     }
@@ -70,12 +68,27 @@
       return Boolean(player.connected);
     }
 
+    async function loadCareer() {
+      if (!sdk() || typeof sdk().loadState !== 'function') return null;
+      const response = await sdk().loadState('career');
+      return response?.state || response?.value || response?.data || response || null;
+    }
+
+    async function saveCareer(baseCareer = {}) {
+      if (!sdk() || typeof sdk().saveState !== 'function') return null;
+      return sdk().saveState('career', {
+        ...baseCareer,
+        settlements: typeof getSettlementCareer === 'function' ? getSettlementCareer() : {},
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
     async function startRun() {
       if (!sdk()) return true;
       if (!(await connect())) return false;
       await sdk().startRun({
         mode: 'settlement-siege',
-        clientVersion: '1.1.2',
+        clientVersion: CLIENT_VERSION,
         targetWave: TARGET_WAVE,
       });
       runtime.runActive = true;
@@ -136,8 +149,11 @@
       if (!sdk() || !runtime.runActive || runtime.completed) return;
       await updateScore(true);
       await sdk().levelCompleted(completedWave, getResult()).catch(() => {});
-      await sdk().levelStarted(getWave(), { mode: 'settlement-siege' }).catch(() => {});
-      if (completedWave >= TARGET_WAVE) await completeReward(completedWave);
+      if (completedWave >= TARGET_WAVE) {
+        await completeReward(completedWave);
+      } else {
+        await sdk().levelStarted(getWave(), { mode: 'settlement-siege' }).catch(() => {});
+      }
     }
 
     async function abandon(reason = 'player_exit') {
@@ -148,9 +164,12 @@
 
     return {
       targetWave: TARGET_WAVE,
+      version: CLIENT_VERSION,
       runtime,
       initialize,
       connect,
+      loadCareer,
+      saveCareer,
       startRun,
       updateScore,
       waveAdvanced,
