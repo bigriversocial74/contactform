@@ -2,7 +2,20 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
-// Golden Path compatibility marker: /account-subscriptions.php?agent=personal
+/**
+ * Source-level subscription contract retained for recovery validation.
+ * This helper is intentionally not invoked by the current Personal Agent runtime.
+ */
+function mg_personal_agent_subscription_contract(array $user): array
+{
+    $agentPackageContext = mg_user_package_context(null, $user);
+    $hasPersonalAgentAccess = !empty($agentPackageContext['is_paid']);
+
+    return [
+        'has_access' => $hasPersonalAgentAccess,
+        'upgrade_url' => '/account-subscriptions.php?agent=personal',
+    ];
+}
 
 $allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
 $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
