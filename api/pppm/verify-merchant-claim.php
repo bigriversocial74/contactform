@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_pppm.php';
+require_once dirname(__DIR__) . '/merchant/_claims.php';
 
 mg_require_method('POST');
 $user = mg_require_permission('pppm.redeem');
@@ -21,13 +22,14 @@ if ($merchantCode === '' || mb_strlen($merchantCode) > 64) {
     mg_fail('Invalid merchant code.', 422);
 }
 
-$config = require dirname(__DIR__) . '/config.php';
-$pepper = (string) ($config['security']['claim_code_pepper'] ?? '');
-if ($pepper === '') {
-    mg_fail('Merchant verification is not configured.', 503);
-}
-
 $pdo = mg_db();
+$workspace = mg_claim_workspace($pdo, $user);
+$scope = mg_merchant_location_scope_context($workspace);
+$workspaceId = (int) $scope['workspace_id'];
+$ownerMerchantId = (int) $scope['owner_merchant_id'];
+$actorUserId = (int) $user['id'];
+$pepper = mg_claim_code_pepper();
+
 try {
     $pdo->beginTransaction();
 
@@ -42,15 +44,9 @@ try {
         mg_fail('PPPM item is not available for redemption.', 404);
     }
 
-    $locationStmt = $pdo->prepare(
-        "SELECT * FROM merchant_locations
-         WHERE public_id = ? AND merchant_user_id = ? AND status = 'active'
-         LIMIT 1 FOR UPDATE"
-    );
-    $locationStmt->execute([$locationPublicId, (int) $user['id']]);
-    $location = $locationStmt->fetch();
-    if (!$location) {
-        mg_fail('Merchant location not found.', 404);
+    $location = mg_claim_location($pdo, $user, $locationPublicId, true);
+    if ((string) $location['status'] !== 'active') {
+        mg_fail('Merchant location is not active.', 409);
     }
 
     $eligibilityStmt = $pdo->prepare(
@@ -59,7 +55,7 @@ try {
            AND (merchant_location_id IS NULL OR merchant_location_id = ?)
          LIMIT 1'
     );
-    $eligibilityStmt->execute([(int) $item['id'], (int) $user['id'], (int) $location['id']]);
+    $eligibilityStmt->execute([(int) $item['id'], $ownerMerchantId, (int) $location['id']]);
     if (!$eligibilityStmt->fetchColumn()) {
         mg_fail('This merchant location is not authorized for the PPPM item.', 403);
     }
@@ -98,16 +94,20 @@ try {
         mg_fail('This PPPM item has expired.', 410);
     }
 
-    $candidateHash = hash_hmac('sha256', $merchantCode, $pepper);
+    $candidateHash = mg_claim_code_hash(mg_claim_code_require($merchantCode, 'Invalid merchant code.'), $pepper);
     $codesStmt = $pdo->prepare(
-        "SELECT * FROM merchant_claim_codes
-         WHERE merchant_user_id = ? AND location_id = ? AND status = 'active'
-           AND (valid_from IS NULL OR valid_from <= NOW())
-           AND (valid_until IS NULL OR valid_until >= NOW())
-           AND (usage_limit IS NULL OR usage_count < usage_limit)
+        "SELECT mcc.*
+         FROM merchant_claim_codes mcc
+         INNER JOIN merchant_locations ml ON ml.id = mcc.location_id
+         ".mg_merchant_location_scope_join('ml', 'claim_scope_mw')."
+         WHERE ".mg_merchant_location_scope_condition('ml', 'claim_scope_mw')."
+           AND mcc.location_id = ? AND mcc.status = 'active'
+           AND (mcc.valid_from IS NULL OR mcc.valid_from <= NOW())
+           AND (mcc.valid_until IS NULL OR mcc.valid_until >= NOW())
+           AND (mcc.usage_limit IS NULL OR mcc.usage_count < mcc.usage_limit)
          FOR UPDATE"
     );
-    $codesStmt->execute([(int) $user['id'], (int) $location['id']]);
+    $codesStmt->execute([$workspaceId, $ownerMerchantId, (int) $location['id']]);
     $matched = null;
     foreach ($codesStmt->fetchAll() as $candidate) {
         if (hash_equals((string) $candidate['code_hash'], $candidateHash)) {
@@ -123,7 +123,7 @@ try {
         'INSERT INTO pppm_claim_attempts
          (claim_id, actor_user_id, successful, ip_hash, user_agent_hash, created_at)
          VALUES (?, ?, ?, ?, ?, NOW())'
-    )->execute([(int) $claim['id'], (int) $user['id'], $success ? 1 : 0, $ipHash, $uaHash]);
+    )->execute([(int) $claim['id'], $actorUserId, $success ? 1 : 0, $ipHash, $uaHash]);
 
     if (!$success) {
         $attempts = (int) $claim['failed_attempts'] + 1;
@@ -143,8 +143,9 @@ try {
         mg_audit('pppm.claim_failed', 'pppm_item', [
             'item_id' => $itemPublicId,
             'location_id' => $locationPublicId,
+            'owner_merchant_id' => $ownerMerchantId,
             'locked' => $locked,
-        ], (int) $user['id']);
+        ], $actorUserId);
         mg_fail($locked ? 'This PPPM claim is locked.' : 'Invalid merchant code.', $locked ? 423 : 422);
     }
 
@@ -153,25 +154,25 @@ try {
          SET merchant_location_id = ?, merchant_claim_code_id = ?, verified_by_user_id = ?,
              status = 'verified', verified_at = NOW(), failed_attempts = 0, locked_at = NULL, updated_at = NOW()
          WHERE id = ?"
-    )->execute([(int) $location['id'], (int) $matched['id'], (int) $user['id'], (int) $claim['id']]);
+    )->execute([(int) $location['id'], (int) $matched['id'], $actorUserId, (int) $claim['id']]);
 
     $fromStatus = (string) $item['status'];
     $pdo->prepare(
         "UPDATE pppm_items SET status = 'verified', version_no = version_no + 1, updated_at = NOW() WHERE id = ?"
     )->execute([(int) $item['id']]);
-    $itemStmt = $pdo->prepare('SELECT * FROM pppm_items WHERE id = ? LIMIT 1');
-    $itemStmt->execute([(int) $item['id']]);
-    $updated = $itemStmt->fetch();
-    mg_pppm_record_event($pdo, $updated, 'merchant_verified', $fromStatus, 'verified', (int) $user['id'], null, [
+    $updated = mg_pppm_refresh($pdo, (int) $item['id']);
+    mg_pppm_record_event($pdo, $updated, 'merchant_verified', $fromStatus, 'verified', $actorUserId, null, [
         'location_id' => $locationPublicId,
         'claim_id' => (string) $claim['public_id'],
+        'owner_merchant_id' => $ownerMerchantId,
     ]);
 
     $pdo->commit();
     mg_audit('pppm.claim_verified', 'pppm_item', [
         'item_id' => $itemPublicId,
         'location_id' => $locationPublicId,
-    ], (int) $user['id']);
+        'owner_merchant_id' => $ownerMerchantId,
+    ], $actorUserId);
     mg_ok([
         'item_id' => $itemPublicId,
         'claim_id' => (string) $claim['public_id'],
@@ -184,7 +185,9 @@ try {
     }
     mg_security_log('error', 'pppm.claim_verify_failed', 'PPPM claim verification failed.', [
         'item_id' => $itemPublicId,
+        'workspace_id' => $workspaceId,
+        'owner_merchant_id' => $ownerMerchantId,
         'exception_type' => get_class($e),
-    ], (int) $user['id']);
+    ], $actorUserId);
     mg_fail('Unable to verify this PPPM item right now.', 500);
 }
