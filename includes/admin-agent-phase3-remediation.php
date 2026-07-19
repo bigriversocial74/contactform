@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/admin-agent-phase3.php';
+require_once __DIR__ . '/admin-agent-phase3-lifecycle.php';
 
 function mg_admin_agent_phase3_incident_mode_for_payload(array $payload): string
 {
@@ -20,6 +20,7 @@ function mg_admin_agent_phase3_incident_mode_for_payload(array $payload): string
 
 function mg_admin_agent_phase3_execute_adapter(PDO $pdo,string $adapterKey,int $adminId,array $payload): array
 {
+    if($adapterKey==='run_admin_agent_scan') return mg_admin_agent_phase3_run_hardened($pdo,['trigger_source'=>'api','initiated_by_user_id'=>$adminId,'environment_key'=>(string)($payload['environment_key']??'production')]);
     if($adapterKey!=='declare_operations_incident') return mg_admin_agent_phase2_execute_adapter($pdo,$adapterKey,$adminId,$payload);
     $workspacePublic=trim((string)($payload['workspace_id']??''));
     $workspace=$workspacePublic!==''?mg_admin_agent_safe_row($pdo,'SELECT id,public_id,title,severity,summary,status FROM admin_agent_incident_workspaces WHERE public_id=? LIMIT 1',[$workspacePublic]):[];
