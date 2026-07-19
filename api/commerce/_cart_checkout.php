@@ -86,16 +86,13 @@ function mg_cart_checkout_create_draft(PDO $pdo, int $buyerUserId, string $idemp
         throw new MgCartCheckoutException('A valid draft idempotency key is required.', 422);
     }
 
-    $existing = $pdo->prepare(
-        'SELECT * FROM checkout_drafts WHERE buyer_user_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE'
-    );
+    $existing = $pdo->prepare('SELECT * FROM checkout_drafts WHERE buyer_user_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE');
     $existing->execute([$buyerUserId, $idempotencyKey]);
     if ($draft = $existing->fetch(PDO::FETCH_ASSOC)) {
         $status = (string) $draft['status'];
         if ($status === 'expired' || ($status === 'open' && strtotime((string) $draft['expires_at']) < time())) {
             if ($status === 'open') {
-                $pdo->prepare("UPDATE checkout_drafts SET status='expired',updated_at=NOW() WHERE id=?")
-                    ->execute([(int) $draft['id']]);
+                $pdo->prepare("UPDATE checkout_drafts SET status='expired',updated_at=NOW() WHERE id=?")->execute([(int) $draft['id']]);
             }
             throw new MgCartCheckoutException('This checkout workflow expired. Start checkout again from the current cart.', 409);
         }
@@ -107,21 +104,22 @@ function mg_cart_checkout_create_draft(PDO $pdo, int $buyerUserId, string $idemp
 
     $cart = mg_cart_active($pdo, $buyerUserId, true);
     $payload = mg_cart_payload($pdo, $cart);
-    if (empty($payload['items'])) {
-        throw new MgCartCheckoutException('Cart is empty.', 409);
-    }
+    if (empty($payload['items'])) throw new MgCartCheckoutException('Cart is empty.', 409);
     mg_cart_checkout_validate_current_items($pdo, (int) $cart['id']);
 
-    $merchantIds = array_values(array_unique(array_map(
-        static fn(array $row): int => (int) $row['merchant_user_id'],
-        $payload['items']
-    )));
+    $merchantIds = array_values(array_unique(array_map(static fn(array $row): int => (int) $row['merchant_user_id'], $payload['items'])));
     if (count($merchantIds) !== 1) {
-        throw new MgCartCheckoutException('Checkout currently supports one merchant.', 409);
+        throw new MgCartCheckoutException('Checkout currently supports one merchant. Multi-merchant checkout must use the controlled bundle-commerce flow.', 409);
     }
 
+    $merchantUserId = $merchantIds[0];
     $subtotal = (int) $payload['totals']['subtotal_cents'];
-    $platformFee = mg_payment_platform_fee_cents($pdo, $subtotal);
+    $currency = (string) $payload['totals']['currency'];
+    $commissionQuote = mg_commission_quote_order($pdo, $merchantUserId, $subtotal, $currency, [
+        'source_type' => 'storefront_checkout',
+        'actor_user_id' => $buyerUserId,
+    ]);
+    $platformFee = (int)$commissionQuote['commission_amount_cents'];
     $draftId = mg_public_uuid();
     $expires = (new DateTimeImmutable('+30 minutes'))->format('Y-m-d H:i:s');
     $itemsJson = mg_commerce_json($payload['items']);
@@ -132,38 +130,25 @@ function mg_cart_checkout_create_draft(PDO $pdo, int $buyerUserId, string $idemp
           tax_cents,platform_fee_cents,total_cents,items_json,status,idempotency_key,expires_at,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,'open',?,?,NOW(),NOW())"
     )->execute([
-        $draftId,
-        (int) $cart['id'],
-        $buyerUserId,
-        $merchantIds[0],
-        (string) $payload['totals']['currency'],
-        $subtotal,
-        0,
-        0,
-        $platformFee,
-        $subtotal,
-        $itemsJson,
-        $idempotencyKey,
-        $expires,
+        $draftId,(int) $cart['id'],$buyerUserId,$merchantUserId,$currency,$subtotal,0,0,$platformFee,$subtotal,$itemsJson,$idempotencyKey,$expires,
+    ]);
+    $draftDbId = (int)$pdo->lastInsertId();
+    mg_commission_snapshot_checkout_draft($pdo, $draftDbId, $merchantUserId, $commissionQuote, [
+        'source_type' => 'storefront_checkout',
+        'cart_id' => (string)$cart['public_id'],
+        'checkout_draft_id' => $draftId,
     ]);
 
     $draft = [
-        'public_id' => $draftId,
-        'status' => 'open',
-        'expires_at' => $expires,
-        'currency' => (string) $payload['totals']['currency'],
-        'subtotal_cents' => $subtotal,
-        'discount_cents' => 0,
-        'tax_cents' => 0,
-        'platform_fee_cents' => $platformFee,
-        'total_cents' => $subtotal,
-        'items_json' => $itemsJson,
+        'id' => $draftDbId,'public_id' => $draftId,'status' => 'open','expires_at' => $expires,'currency' => $currency,
+        'subtotal_cents' => $subtotal,'discount_cents' => 0,'tax_cents' => 0,'platform_fee_cents' => $platformFee,
+        'total_cents' => $subtotal,'items_json' => $itemsJson,
     ];
 
     mg_audit('commerce.checkout_draft_created', 'checkout_draft', [
-        'checkout_draft_id' => $draftId,
-        'cart_id' => (string) $cart['public_id'],
-        'platform_fee_cents' => $platformFee,
+        'checkout_draft_id' => $draftId,'cart_id' => (string) $cart['public_id'],'merchant_user_id' => $merchantUserId,
+        'platform_fee_cents' => $platformFee,'commission_rate_bps' => (int)$commissionQuote['commission_rate_bps'],
+        'commission_rate_source' => (string)$commissionQuote['rate_source'],'commission_rule_version' => MG_COMMISSION_RULE_VERSION,
     ], $buyerUserId);
 
     return mg_cart_checkout_draft_payload($draft, false);
@@ -173,7 +158,6 @@ function mg_cart_checkout_run(PDO $pdo, int $buyerUserId, string $workflowKey, s
 {
     $workflowKey = mg_cart_checkout_workflow_key($workflowKey);
     $provider = mg_cart_checkout_provider($provider);
-
     $draftKey = 'draft:' . $workflowKey;
     $orderKey = 'order:' . $workflowKey;
     $paymentKey = 'payment:' . $provider . ':' . $workflowKey;
@@ -182,28 +166,13 @@ function mg_cart_checkout_run(PDO $pdo, int $buyerUserId, string $workflowKey, s
         $pdo->beginTransaction();
         $draft = mg_cart_checkout_create_draft($pdo, $buyerUserId, $draftKey);
         $pdo->commit();
-
         $pdo->beginTransaction();
-        $orderResult = mg_checkout_create_order(
-            $pdo,
-            $buyerUserId,
-            (string) $draft['checkout_draft_id'],
-            $orderKey
-        );
+        $orderResult = mg_checkout_create_order($pdo, $buyerUserId, (string) $draft['checkout_draft_id'], $orderKey);
         $pdo->commit();
-
         $pdo->beginTransaction();
-        $session = mg_payment_create_checkout_session(
-            $pdo,
-            $buyerUserId,
-            (string) $orderResult['order']['order_id'],
-            $paymentKey,
-            [
-                'provider_key' => $provider,
-                'success_url' => '/checkout-success.php',
-                'cancel_url' => '/cart.php',
-            ]
-        );
+        $session = mg_payment_create_checkout_session($pdo, $buyerUserId, (string) $orderResult['order']['order_id'], $paymentKey, [
+            'provider_key' => $provider,'success_url' => '/checkout-success.php','cancel_url' => '/cart.php',
+        ]);
         $pdo->commit();
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -211,11 +180,7 @@ function mg_cart_checkout_run(PDO $pdo, int $buyerUserId, string $workflowKey, s
     }
 
     return [
-        'workflow_key' => $workflowKey,
-        'provider' => $provider,
-        'draft' => $draft,
-        'order' => $orderResult['order'],
-        'session' => $session,
+        'workflow_key' => $workflowKey,'provider' => $provider,'draft' => $draft,'order' => $orderResult['order'],'session' => $session,
         'reused' => !empty($draft['duplicate']) || !empty($orderResult['duplicate']) || !empty($session['duplicate']),
     ];
 }
