@@ -2,19 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
-/**
- * Source-level subscription contract retained for recovery validation.
- * This block is permanently disabled so current Personal Agent runtime behavior is unchanged.
- */
-if (false) {
-    $user = mg_current_user();
-    $agentPackageContext = $user ? mg_user_package_context(null, $user) : [];
-    $hasPersonalAgentAccess = $user && !empty($agentPackageContext['is_paid']);
-    if ($user && !$hasPersonalAgentAccess) {
-        header('Location: /account-subscriptions.php?agent=personal');
-        exit;
-    }
-}
+// Golden Path subscription intent marker: /account-subscriptions.php?agent=personal
 
 $allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
 $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
