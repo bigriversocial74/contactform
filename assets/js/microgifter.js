@@ -94,10 +94,28 @@ window.Microgifter = window.Microgifter || {};
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
   };
 
+  MG.loadBundleProjections = function () {
+    var path = window.location.pathname;
+    if (path !== '/feed.php' && path !== '/profile.php' && !path.endsWith('/feed.php') && !path.endsWith('/profile.php')) return;
+    if (!document.querySelector('link[href="/assets/css/bundle-projections-v4.css"]')) {
+      var style = document.createElement('link');
+      style.rel = 'stylesheet';
+      style.href = '/assets/css/bundle-projections-v4.css';
+      document.head.appendChild(style);
+    }
+    if (!document.querySelector('script[src="/assets/js/bundle-projections-v4.js"]')) {
+      var script = document.createElement('script');
+      script.src = '/assets/js/bundle-projections-v4.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', function () {
     document.documentElement.classList.add('mg-js-ready');
     document.documentElement.classList.toggle('mg-is-authenticated', MG.isAuthenticated());
     document.documentElement.classList.toggle('mg-is-guest', !MG.isAuthenticated());
     MG.ensurePwaInstallSupport();
+    MG.loadBundleProjections();
   });
 })(window, document);

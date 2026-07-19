@@ -1,0 +1,64 @@
+name: Product Bundle Customer Storefront v4
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'api/bundles/storefront.php'
+      - 'api/bundles/projections.php'
+      - 'bundles.php'
+      - 'bundle.php'
+      - 'bundle-order.php'
+      - 'assets/js/bundle-storefront-v4.js'
+      - 'assets/js/bundle-projections-v4.js'
+      - 'assets/js/microgifter.js'
+      - 'assets/css/bundle-storefront-v4.css'
+      - 'assets/css/bundle-projections-v4.css'
+      - 'tests/phpunit/ProductBundleCustomerStorefrontV4ContractTest.php'
+      - '.github/workflows/product-bundle-customer-storefront-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l api/bundles/storefront.php
+          php -l api/bundles/projections.php
+          php -l bundles.php
+          php -l bundle.php
+          php -l bundle-order.php
+          php -l tests/phpunit/ProductBundleCustomerStorefrontV4ContractTest.php
+      - name: Contract test
+        run: vendor/bin/phpunit tests/phpunit/ProductBundleCustomerStorefrontV4ContractTest.php
+      - name: Projection contract
+        run: |
+          grep -q "owner_merchant_user_id" api/bundles/projections.php
+          grep -q "invitation_status" api/bundles/projections.php
+          grep -q "accepted" api/bundles/projections.php
+          grep -q "data-feed-bundle-projections" assets/js/bundle-projections-v4.js
+          grep -q "data-profile-bundle-projections" assets/js/bundle-projections-v4.js
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: No settlement execution
+        run: |
+          ! grep -R "stripe_transfers\|transfer_data\|settlement_release" api/bundles/storefront.php api/bundles/projections.php assets/js/bundle-storefront-v4.js assets/js/bundle-projections-v4.js
