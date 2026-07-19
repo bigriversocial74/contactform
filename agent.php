@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
+// Canonical Personal Agent entitlement routing used by the recovery baseline.
 $user = mg_current_user();
 $agentPackageContext = $user ? mg_user_package_context(null, $user) : [];
 $hasPersonalAgentAccess = $user && !empty($agentPackageContext['is_paid']);
