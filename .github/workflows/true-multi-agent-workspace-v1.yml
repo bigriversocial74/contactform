@@ -15,6 +15,7 @@ on:
       - 'assets/css/multi-agent-workspace.css'
       - 'assets/css/multi-agent-workspace-state.css'
       - 'scripts/validate_personal_agent_runtime_nav.php'
+      - 'scripts/validate_user_contact_lists_phase1.php'
       - 'tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php'
       - 'tests/phpunit/AgentHeaderTabBehaviorTest.php'
       - 'tests/phpunit/MobileAgentTabsTest.php'
@@ -51,18 +52,16 @@ jobs:
           php -l includes/multi-agent-workspace-data.php
           php -l includes/personal-agent/multi-agent-workspace.php
           php -l scripts/validate_personal_agent_runtime_nav.php
+          php -l scripts/validate_user_contact_lists_phase1.php
           php -l tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
           php -l tests/phpunit/AgentHeaderTabBehaviorTest.php
           php -l tests/phpunit/MobileAgentTabsTest.php
       - name: JavaScript syntax
         run: node --check assets/js/multi-agent-workspace.js
-      - name: Capture runtime validator output
-        run: php scripts/validate_personal_agent_runtime_nav.php > runtime-validator-${{ matrix.php }}.txt 2>&1 || true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: runtime-validator-${{ matrix.php }}
-          path: runtime-validator-${{ matrix.php }}.txt
-          if-no-files-found: error
+      - name: Runtime and navigation regression
+        run: php scripts/validate_personal_agent_runtime_nav.php
+      - name: User contact lists Phase 1 regression
+        run: php scripts/validate_user_contact_lists_phase1.php
       - name: Contract tests
         run: |
           vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
