@@ -1,0 +1,32 @@
+name: Product Bundle Settlement Review v8
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/bundle-settlement-reviews.php'
+      - 'admin/bundle-settlement-reviews.php'
+      - 'assets/js/bundle-settlement-review-v8.js'
+      - 'assets/css/bundle-settlement-review-v8.css'
+      - 'tests/phpunit/ProductBundleSettlementReviewV8ContractTest.php'
+      - '.github/workflows/product-bundle-settlement-review-v8.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2','8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - run: php -l api/admin/bundle-settlement-reviews.php
+      - run: php -l admin/bundle-settlement-reviews.php
+      - run: node --check assets/js/bundle-settlement-review-v8.js
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/phpunit tests/phpunit/ProductBundleSettlementReviewV8ContractTest.php
+      - name: Transfer execution guard
+        run: |
+          ! grep -R "Stripe\\\\Transfer\|transfers->create\|Transfer::create" api/admin/bundle-settlement-reviews.php
