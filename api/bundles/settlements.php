@@ -13,6 +13,15 @@ $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $input = $method === 'POST' ? mg_input() : [];
 $action = strtolower(trim((string)($input['action'] ?? $_GET['action'] ?? 'summary')));
 
+function mg_bundle_settlement_uuid(): string
+{
+    $bytes = random_bytes(16);
+    $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+    $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+    $hex = bin2hex($bytes);
+    return substr($hex,0,8).'-'.substr($hex,8,4).'-'.substr($hex,12,4).'-'.substr($hex,16,4).'-'.substr($hex,20);
+}
+
 function mg_bundle_settlement_require_schema(PDO $pdo): void
 {
     foreach (['gift_bundle_component_settlements','gift_bundle_settlement_events'] as $table) {
@@ -43,7 +52,7 @@ function mg_bundle_settlement_sync(PDO $pdo, int $merchantId, int $actorId): arr
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $status = in_array((string)$row['component_status'], ['claimed','redeemed'], true) ? 'eligible' : 'pending';
         $eligibleAt = $status === 'eligible' ? date('Y-m-d H:i:s') : null;
-        $publicId = mg_microgift_uuid();
+        $publicId = mg_bundle_settlement_uuid();
         $snapshot = json_encode([
             'component_public_id'=>$row['public_id'],
             'payment_status'=>$row['payment_status'],
@@ -58,7 +67,7 @@ function mg_bundle_settlement_sync(PDO $pdo, int $merchantId, int $actorId): arr
         if ($insert->rowCount() > 0) {
             $settlementId = (int)$pdo->lastInsertId();
             $pdo->prepare("INSERT INTO gift_bundle_settlement_events (public_id,settlement_id,actor_user_id,event_type,idempotency_key,event_data,created_at) VALUES (?,?,?,?,?,?,NOW())")
-                ->execute([mg_microgift_uuid(),$settlementId,$actorId,'settlement_created','bundle-settlement-created-'.$row['id'],json_encode(['readiness_status'=>$status],JSON_THROW_ON_ERROR)]);
+                ->execute([mg_bundle_settlement_uuid(),$settlementId,$actorId,'settlement_created','bundle-settlement-created-'.$row['id'],json_encode(['readiness_status'=>$status],JSON_THROW_ON_ERROR)]);
             $created++;
         }
     }
