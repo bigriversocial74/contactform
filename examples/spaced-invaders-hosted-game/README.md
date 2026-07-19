@@ -18,6 +18,22 @@ The complete static browser-game ZIP is generated outside the repository and upl
 - landing-page cover
 - package README
 
+Current upload package: `spaced-invaders-hosted-game-v1.1.0.zip`.
+
+## Settlement defense expansion v1.1.0
+
+- Adds **Tank Busters** as a buildable and equipable settlement defense.
+- Each settlement owns an elliptical ground-defense zone. Neighboring zones overlap, so multiple equipped settlements can engage the same tank inside shared coverage.
+- Tank Busters automatically lob anti-armor missiles at tanks inside the settlement zone and credit tank kills to the firing settlement.
+- Captured UFOs launched from the Alien Hangar now leave the ground and fly visibly as patrol craft.
+- When patrol craft originate from only one settlement, they protect all surviving settlements.
+- Once patrol craft originate from multiple settlements, each patrol focuses on its original settlement zone while naturally sharing overlapping coverage.
+- Patrol craft engage hostile UFOs, suicide drones, and incoming missiles.
+- UFO kills made by patrol craft are credited to the patrol craft's originating settlement.
+- Airborne patrol craft can be recalled through the Alien Hangar tab.
+
+The standalone browser package and the Microgifter Hosted Games upload package use the same defense behavior.
+
 ## Hosted runtime contract
 
 The game uses only `window.MicrogifterGame`. It does not contain API credentials, webhook secrets, database credentials, Microgifter cookies, or custom reward endpoints.
