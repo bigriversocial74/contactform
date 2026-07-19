@@ -161,6 +161,7 @@ return [
         '20260719_merchant_bundle_commission_authority_v1.sql',
         '20260719_product_bundles_foundation_builder_v1.sql',
         '20260719_product_bundle_orders_components_v2.sql',
+        '20260719_product_bundle_checkout_fulfillment_v3.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
