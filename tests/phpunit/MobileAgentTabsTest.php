@@ -5,40 +5,42 @@ use PHPUnit\Framework\TestCase;
 
 final class MobileAgentTabsTest extends TestCase
 {
-    public function testClaimedTabExistsAndCreateModalUsesExistingHeaderPlusControl(): void
+    public function testMobileAgentHeaderUsesDefaultAgentDynamicTabsAndAddControl(): void
     {
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
-        $menu=file_get_contents($root.'/includes/header-templates/create-menu.php');
-        $script=file_get_contents($root.'/assets/js/create-menu.js');
+        $css=file_get_contents($root.'/assets/css/multi-agent-workspace.css');
         self::assertIsString($header);
-        self::assertIsString($menu);
-        self::assertIsString($script);
-        self::assertStringContainsString("['claimed','Claimed','/claimed.php']",$header);
-        self::assertStringNotContainsString('data-agent-tab-add',$header);
-        self::assertStringNotContainsString('data-agent-header-create',$header);
-        self::assertStringNotContainsString('data-product-header-create',$header);
-        self::assertStringNotContainsString('mg-header-product-create',$header);
-        self::assertStringContainsString("'option' => 'microgift'",$menu);
-        self::assertStringContainsString('looksLikePlusControl',$script);
-        self::assertStringContainsString('href="/lists.php?action=create" data-global-create',$header);
-        self::assertStringContainsString("document.addEventListener('click'",$script);
+        self::assertIsString($css);
+
+        self::assertStringContainsString('data-system-tab="agent"',$header);
+        self::assertStringContainsString('data-agent-tab-id',$header);
+        self::assertStringContainsString('data-agent-add-tab',$header);
+        self::assertStringContainsString('overflow-x:auto',$css);
+        self::assertStringContainsString('scrollbar-width:none',$css);
+        self::assertStringContainsString('position:sticky',$css);
+        self::assertStringNotContainsString("['claimed','Claimed'",$header);
+        self::assertStringNotContainsString("['sent','Sent'",$header);
+        self::assertStringNotContainsString("['inbox','Inbox'",$header);
     }
 
-    public function testNoSecondCreateButtonIsInjectedIntoMobileAgentTabs(): void
+    public function testMobileAgentWorkspaceDoesNotInjectDuplicateGlobalCreateControls(): void
     {
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
         $script=file_get_contents($root.'/assets/js/create-menu.js');
+        $workspaceScript=file_get_contents($root.'/assets/js/multi-agent-workspace.js');
         self::assertIsString($header);
         self::assertIsString($script);
+        self::assertIsString($workspaceScript);
+
         self::assertStringNotContainsString('create_menu_button',$header);
         self::assertStringNotContainsString('data-agent-header-create',$header);
         self::assertStringNotContainsString('data-product-header-create',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringNotContainsString("createElement('button')",$script);
         self::assertStringContainsString('explicitTriggerSelector',$script);
-        self::assertStringContainsString('closestTrigger',$script);
-        self::assertStringNotContainsString('new MutationObserver',$script);
+        self::assertStringContainsString('[data-agent-add-tab]',$workspaceScript);
+        self::assertStringContainsString('data-open-agent-selector',$workspaceScript);
     }
 }
