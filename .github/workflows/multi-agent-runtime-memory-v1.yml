@@ -37,25 +37,13 @@ jobs:
           coverage: none
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
-      - name: Capture PHP syntax report
+      - name: PHP syntax
         run: |
-          set +e
-          failed=0
-          : > multi-agent-lint-${{ matrix.php }}.txt
-          for file in agent.php api/agents/runtime.php includes/multi-agent-runtime.php includes/personal-agent/multi-agent-workspace.php tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php; do
-            php -l "$file" >> multi-agent-lint-${{ matrix.php }}.txt 2>&1 || failed=1
-          done
-          echo "$failed" > multi-agent-lint-status-${{ matrix.php }}.txt
-          cat multi-agent-lint-${{ matrix.php }}.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: multi-agent-lint-${{ matrix.php }}
-          path: |
-            multi-agent-lint-${{ matrix.php }}.txt
-            multi-agent-lint-status-${{ matrix.php }}.txt
-          if-no-files-found: error
-      - name: Enforce PHP syntax
-        run: test "$(cat multi-agent-lint-status-${{ matrix.php }}.txt)" = "0"
+          php -l agent.php
+          php -l api/agents/runtime.php
+          php -l includes/multi-agent-runtime.php
+          php -l includes/personal-agent/multi-agent-workspace.php
+          php -l tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
       - name: JavaScript syntax
         run: node --check assets/js/multi-agent-runtime.js
       - name: Existing multi-agent workspace regressions
