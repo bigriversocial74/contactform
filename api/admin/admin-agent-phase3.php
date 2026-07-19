@@ -154,8 +154,10 @@ try{
         mg_ok(['result'=>$result,'state'=>$state],'Main Admin Agent Phase 3 action completed.');
     }
     mg_fail('Method not allowed.',405);
-}catch(InvalidArgumentException|MgAdminAccountException $error){
-    mg_fail($error->getMessage(),method_exists($error,'statusCode')?$error->statusCode():422);
+}catch(MgAdminAccountException $error){
+    mg_fail($error->getMessage(),$error->httpStatus());
+}catch(InvalidArgumentException $error){
+    mg_fail($error->getMessage(),422);
 }catch(Throwable $error){
     mg_security_log('error','admin_agent.phase3_request_failed','Main Admin Agent Phase 3 request failed.',['exception_class'=>$error::class],$actorId);
     mg_fail('Unable to process the Main Admin Agent Phase 3 request.',500);
