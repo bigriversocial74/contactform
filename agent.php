@@ -2,8 +2,6 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
-// Golden Path subscription intent marker: /account-subscriptions.php?agent=personal
-
 $allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
 $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
