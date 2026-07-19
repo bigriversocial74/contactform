@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+// Base-refresh marker: rerun against integration after PR #1207.
 final class ClaimLifecycleIntegrityAuditTest extends TestCase
 {
     private string $root;
