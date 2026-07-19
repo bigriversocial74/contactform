@@ -203,7 +203,7 @@ WHERE r.slug IN ('admin','super_admin');
 INSERT IGNORE INTO admin_agent_recovery_objectives
 (public_id,objective_key,service_id,environment_key,criticality,rto_minutes,rpo_minutes,backup_max_age_minutes,drill_interval_days,status,evidence_json)
 SELECT
-  REPLACE(UUID(),'-',''),
+  LEFT(REPLACE(UUID(),'-',''),26),
   SHA2(CONCAT('production|',s.service_key),256),
   s.id,
   'production',
@@ -220,7 +220,7 @@ WHERE s.status='active';
 INSERT IGNORE INTO admin_agent_recovery_plans
 (public_id,plan_key,service_id,environment_key,plan_version,status,recovery_order,prerequisites_json,validation_steps_json,runbook_path)
 SELECT
-  REPLACE(UUID(),'-',''),
+  LEFT(REPLACE(UUID(),'-',''),26),
   SHA2(CONCAT('production|',s.service_key,'|v1'),256),
   s.id,
   'production',
