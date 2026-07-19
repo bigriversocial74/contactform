@@ -1,0 +1,52 @@
+name: Product Bundle Settlement Accounting v7
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'api/bundles/settlements.php'
+      - 'bundle-settlements.php'
+      - 'assets/js/bundle-settlements-v7.js'
+      - 'assets/css/bundle-settlements-v7.css'
+      - 'database/20260719_product_bundle_settlement_accounting_v7.sql'
+      - 'config/migrations.php'
+      - 'tests/phpunit/ProductBundleSettlementAccountingV7ContractTest.php'
+      - '.github/workflows/product-bundle-settlement-accounting-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l api/bundles/settlements.php
+          php -l bundle-settlements.php
+          php -l tests/phpunit/ProductBundleSettlementAccountingV7ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/bundle-settlements-v7.js
+      - name: Contract test
+        run: vendor/bin/phpunit tests/phpunit/ProductBundleSettlementAccountingV7ContractTest.php
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: No transfer execution
+        run: |
+          ! grep -R "stripe_transfers\|transfer_data\|settlement_release\|released_at=NOW" api/bundles/settlements.php assets/js/bundle-settlements-v7.js
