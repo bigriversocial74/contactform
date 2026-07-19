@@ -28,9 +28,35 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 </section>
 
 <section class="mg-agent-instance-canvas" data-agent-instance-canvas hidden>
-  <header class="mg-agent-instance-head"><div><span data-agent-instance-eyebrow>Specialized agent</span><h2 data-agent-instance-name>Agent</h2><p data-agent-instance-description></p></div><button type="button" data-agent-manage-open>Manage</button></header>
-  <div class="mg-agent-instance-welcome"><div class="mg-agent-instance-avatar" data-agent-instance-icon>✦</div><div><strong data-agent-instance-welcome></strong><p>This agent keeps its own conversation context while sharing Microgifter’s protected commerce services and account permissions.</p></div></div>
-  <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
+  <header class="mg-agent-instance-head">
+    <div><span data-agent-instance-eyebrow>Specialized agent</span><h2 data-agent-instance-name>Agent</h2><p data-agent-instance-description></p></div>
+    <div class="mg-agent-instance-head-actions"><button type="button" data-agent-new-thread>New conversation</button><button type="button" data-agent-manage-open>Manage</button></div>
+  </header>
+  <div class="mg-agent-runtime-layout">
+    <aside class="mg-agent-runtime-rail">
+      <section data-agent-onboarding-panel>
+        <span>Agent setup</span><h3>Personalize this agent</h3><p data-agent-onboarding-copy>Answer a few questions so this agent can work with the right context.</p>
+        <form data-agent-onboarding-form>
+          <label>Primary goal<input name="primary_goal" maxlength="220" placeholder="What should this agent help you accomplish?"></label>
+          <label>Default budget or limits<input name="budget_guidance" maxlength="160" placeholder="Example: $25–$75 per occasion"></label>
+          <label>Important preferences<textarea name="preferences" rows="3" maxlength="1000" placeholder="Interests, restrictions, location, tone, or campaign rules"></textarea></label>
+          <button type="submit">Save agent setup</button><small data-agent-onboarding-status></small>
+        </form>
+      </section>
+      <section class="mg-agent-memory-panel"><span>Agent memory</span><div data-agent-memory-list><p>No saved memory yet.</p></div></section>
+      <section class="mg-agent-thread-panel"><div><span>Conversations</span><button type="button" data-agent-new-thread aria-label="New agent conversation">+</button></div><nav data-agent-thread-list></nav></section>
+    </aside>
+    <main class="mg-agent-runtime-main">
+      <div class="mg-agent-instance-welcome"><div class="mg-agent-instance-avatar" data-agent-instance-icon>✦</div><div><strong data-agent-instance-welcome></strong><p>This agent keeps its own conversations, memory, setup, and drafts while sharing protected Microgifter services.</p></div></div>
+      <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
+      <div class="mg-agent-runtime-messages" data-agent-runtime-messages aria-live="polite"></div>
+      <form class="mg-agent-runtime-composer" data-agent-runtime-composer>
+        <textarea name="message" rows="2" maxlength="3000" placeholder="Message this agent…" required></textarea>
+        <button type="submit">Send</button>
+        <small data-agent-runtime-status></small>
+      </form>
+    </main>
+  </div>
 </section>
 
 <div class="mg-agent-manage-modal" data-agent-manage-modal aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="mg-agent-manage-title">
