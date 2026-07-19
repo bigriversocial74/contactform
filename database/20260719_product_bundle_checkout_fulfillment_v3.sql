@@ -1,5 +1,3 @@
-START TRANSACTION;
-
 CREATE TABLE IF NOT EXISTS gift_bundle_checkout_attempts (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
@@ -55,13 +53,64 @@ CREATE TABLE IF NOT EXISTS gift_bundle_fulfillment_dispatches (
   CONSTRAINT fk_gift_bundle_dispatch_component FOREIGN KEY (component_id) REFERENCES gift_bundle_order_components(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE gift_bundle_orders
-  ADD COLUMN IF NOT EXISTS payment_intent_id BIGINT UNSIGNED NULL AFTER commerce_order_id,
-  ADD COLUMN IF NOT EXISTS checkout_started_at DATETIME NULL AFTER reserved_at,
-  ADD COLUMN IF NOT EXISTS paid_at DATETIME NULL AFTER checkout_started_at,
-  ADD COLUMN IF NOT EXISTS fulfillment_started_at DATETIME NULL AFTER paid_at,
-  ADD COLUMN IF NOT EXISTS fulfilled_at DATETIME NULL AFTER fulfillment_started_at,
-  ADD UNIQUE KEY IF NOT EXISTS uq_gift_bundle_orders_payment_intent (payment_intent_id),
-  ADD CONSTRAINT fk_gift_bundle_orders_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id);
+DELIMITER $$
 
-COMMIT;
+DROP PROCEDURE IF EXISTS mg_product_bundle_checkout_fulfillment_v3_upgrade$$
+CREATE PROCEDURE mg_product_bundle_checkout_fulfillment_v3_upgrade()
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND COLUMN_NAME = 'payment_intent_id'
+  ) THEN
+    ALTER TABLE gift_bundle_orders ADD COLUMN payment_intent_id BIGINT UNSIGNED NULL AFTER commerce_order_id;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND COLUMN_NAME = 'checkout_started_at'
+  ) THEN
+    ALTER TABLE gift_bundle_orders ADD COLUMN checkout_started_at DATETIME NULL AFTER reserved_at;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND COLUMN_NAME = 'paid_at'
+  ) THEN
+    ALTER TABLE gift_bundle_orders ADD COLUMN paid_at DATETIME NULL AFTER checkout_started_at;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND COLUMN_NAME = 'fulfillment_started_at'
+  ) THEN
+    ALTER TABLE gift_bundle_orders ADD COLUMN fulfillment_started_at DATETIME NULL AFTER paid_at;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND COLUMN_NAME = 'fulfilled_at'
+  ) THEN
+    ALTER TABLE gift_bundle_orders ADD COLUMN fulfilled_at DATETIME NULL AFTER fulfillment_started_at;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND INDEX_NAME = 'uq_gift_bundle_orders_payment_intent'
+  ) THEN
+    ALTER TABLE gift_bundle_orders ADD UNIQUE KEY uq_gift_bundle_orders_payment_intent (payment_intent_id);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_bundle_orders' AND CONSTRAINT_NAME = 'fk_gift_bundle_orders_payment_intent'
+  ) THEN
+    ALTER TABLE gift_bundle_orders
+      ADD CONSTRAINT fk_gift_bundle_orders_payment_intent
+      FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id);
+  END IF;
+END$$
+
+CALL mg_product_bundle_checkout_fulfillment_v3_upgrade()$$
+DROP PROCEDURE IF EXISTS mg_product_bundle_checkout_fulfillment_v3_upgrade$$
+
+DELIMITER ;
