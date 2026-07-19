@@ -112,8 +112,10 @@ try {
     }
 
     throw new MgBundleOrderException('Unsupported storefront operation.',405);
-} catch (Throwable $e) {
-    $status = $e instanceof MgBundleOrderException ? $e->httpStatus : ($e instanceof InvalidArgumentException ? 422 : 500);
-    if ($status >= 500) mg_fail_unexpected($e,'bundle.storefront.failure','Unable to complete the bundle request.',500);
-    mg_fail($e->getMessage(),$status);
+} catch (MgBundleOrderException $error) {
+    mg_fail($error->getMessage(), $error->httpStatus);
+} catch (InvalidArgumentException $error) {
+    mg_fail($error->getMessage(), 422);
+} catch (Throwable $error) {
+    mg_fail_unexpected($error, 'bundle.storefront.failure', 'Unable to complete the bundle request.', 500);
 }
