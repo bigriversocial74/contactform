@@ -33,6 +33,7 @@ $page_styles = [
     '/assets/css/personal-agent-ai-credits.css?v=1.0.0',
     '/assets/css/personal-agent-contact-intelligence.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
+    '/assets/css/multi-agent-workspace.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
@@ -53,6 +54,7 @@ $page_scripts = [
     '/assets/js/personal-agent-design-studio-calendar.js?v=1.0.0',
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
     '/assets/js/personal-agent-contact-intelligence.js?v=1.0.1',
+    '/assets/js/multi-agent-workspace.js?v=1.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
