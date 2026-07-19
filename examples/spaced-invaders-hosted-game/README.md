@@ -6,78 +6,68 @@ Branch: `feature/spaced-invaders-hosted-game-integration-20260718`
 
 The branch is intentionally not merged into `integration-from-repair-20260628` or `main`.
 
-## Upload package
+## Current upload package
 
-The complete static browser-game ZIP is generated outside the repository and uploaded through the existing Merchant or Admin Hosted Games workspace. The ZIP contains:
+`spaced-invaders-hosted-game-v1.2.0.zip`
 
-- `index.html`
-- `styles.css`
-- `game.js`
-- `game.json`
-- WebP game assets
-- landing-page cover
-- package README
+The complete static browser-game ZIP is generated outside the repository and uploaded through the Merchant or Admin Hosted Games workspace. It contains `index.html`, `styles.css`, `game.js`, `game.json`, WebP battlefield assets, the landing cover, and package documentation.
 
-Current upload package: `spaced-invaders-hosted-game-v1.1.2.zip`.
+## Specialty settlement gameplay v1.2.0
 
-## UFO kill-credit reliability v1.1.2
+The former eight-tab market and trade interface has been replaced with one specialty-driven command screen for each settlement.
 
-- Settlement UFO kill totals continue beyond the 10-kill Capture Beam milestone.
-- Unlocking capture technology no longer auto-arms the beam or changes normal missile-defense behavior.
-- Capture mode is armed manually from Settlement Control.
-- Stale capture targets are cleared automatically so a settlement cannot remain permanently blocked.
-- A settlement continues defending against other hostile UFOs while one craft is descending under the capture beam.
-- Significant patrol-craft, energy-weapon, and mixed-defense damage retains settlement credit during same-frame destruction.
-- Battlefield labels now display total UFO kills instead of presenting the 10-kill unlock target as a counter cap.
+- **Iron Hollow — Tank Defense Engineering:** Tank Buster range, reload, payload progression, overlapping-zone support, and the permanent Tank Buster ledger.
+- **Harvest Vale — Civilian Recovery Command:** population recovery, injury treatment, morale, hospital restoration, and emergency triage.
+- **Loom Ridge — Shield Engineering:** increased shield capacity, passive recharge, and emergency shield surge.
+- **Fort Ember — Air Defense Command:** anti-air missiles, radar, swarm guns, capture systems, and regional UFO patrol craft.
 
-## Settlement defense reliability v1.1.1
+Settlement levels 1–5 now unlock named specialty milestones and apply specialty-specific combat bonuses. Levels and XP persist between runs.
 
-- Newly constructed defenses are enabled immediately, even when the settlement previously had every active slot occupied.
-- Settlement level-ups can no longer shrink defense capacity below the active loadout.
-- Every built Tank Buster zone remains visible: orange means active and gray means built but disabled.
-- Tank Buster zones include the full tank hull at zone boundaries.
-- Tank Busters prioritize breached and furthest-advanced tanks and credit the firing settlement with the kill.
-- Radar, anti-air, swarm guns, hospitals, Tank Busters, and their UI status use one consistent enabled-state check.
-- Airborne patrol state is reconciled automatically so launched craft cannot silently disappear.
-- Patrol craft engage hostile UFOs, suicide drones, and incoming missiles, with UFO kills credited to the patrol craft's originating settlement.
+Trade routes, supply convoys, market inventory, production controls, and the expansion placeholder are removed from active settlement gameplay.
 
-The standalone browser package and the Microgifter Hosted Games upload package use the same defense behavior.
+## Permanent Tank Buster ledger
+
+Every settlement records:
+
+- lifetime Tank Buster kills;
+- current-run kills;
+- assists;
+- shots fired and hits;
+- accuracy;
+- elite tanks destroyed;
+- highest kills in one wave;
+- most recently destroyed tank;
+- recent kill entries.
+
+Every ground tank receives a unique runtime ID and per-settlement Tank Buster damage record. The settlement delivering final damage receives the kill. Other settlements that contributed Tank Buster damage receive assists. A tank can only be credited once.
+
+Standalone career records use browser local storage. Hosted Games stores the same settlement levels, XP, and lifetime ledger through the isolated `saveState()` / `loadState()` career record.
 
 ## Hosted runtime contract
 
-The game uses only `window.MicrogifterGame`. It does not contain API credentials, webhook secrets, database credentials, Microgifter cookies, or custom reward endpoints.
+The game uses only `window.MicrogifterGame`. It contains no API credentials, webhook secrets, database credentials, Microgifter cookies, hardcoded campaign IDs, or custom reward endpoints.
 
-Implemented SDK flow:
+The SDK flow uses:
 
-1. `ready()` loads the signed-in player, Distribution Program, and reward context.
-2. `connectPlayer()` connects the game to the player's Microgifter Inbox when required.
-3. `startRun()` creates a server-authorized game run.
-4. `levelStarted()`, `levelCompleted()`, and `updateScore()` report meaningful checkpoints.
-5. `saveState()` / `loadState()` preserve career totals.
-6. `submitScore()` records leaderboard-ready scores.
-7. `qualify()` and `complete()` issue the connected reward after the player completes Wave 5 with at least one settlement remaining.
-8. `abandonRun()` closes unfinished runs on page exit.
-9. `reportError()` reports runtime failures through Hosted Games diagnostics.
+1. `ready()` to load player, Distribution Program, and reward context.
+2. `connectPlayer()` to connect the game to the player's Inbox.
+3. `startRun()` to create a protected run.
+4. level and score events at meaningful wave checkpoints.
+5. `saveState()` / `loadState()` for career and settlement records.
+6. `submitScore()` for leaderboard-ready scores.
+7. `qualify()` and `complete()` after Wave 5 with at least one settlement alive.
+8. `abandonRun()` for unfinished sessions.
+9. `reportError()` for runtime diagnostics.
 
 ## Reward toast
 
-After the hosted runtime accepts completion, the game uses its existing right-side toast stack:
+After the runtime accepts completion, the existing game toast stack displays either:
 
-- Delivered: `Gift sent to your Microgifter Inbox: [reward name].`
-- Queued: `Gift earned! [reward name] was sent for delivery to your Microgifter Inbox.`
+- `Gift sent to your Microgifter Inbox: [reward name].`
+- `Gift earned! [reward name] was sent for delivery to your Microgifter Inbox.`
 
-The reward name is read from the Hosted Games reward context. Campaign, program, inventory, issuance, webhook, and Inbox delivery remain server-controlled by Microgifter.
+Campaign, program, reward inventory, issuance, webhook processing, and Inbox delivery remain server-controlled by Microgifter.
 
-## Qualification
+## Validation
 
-Initial low-value promotional qualification uses `game_reported` mode:
-
-- complete Wave 5;
-- keep at least one settlement alive;
-- submit the final score and settlement result payload.
-
-High-value reward configurations should move to a reviewed `server_review` integration.
-
-## Validation performed
-
-Both game versions passed JavaScript syntax checks, JSON validation, ZIP integrity checks, browser runtime checks, a 20-kill continuity test, two-hit automatic missile-credit testing, stale capture-lock recovery, mixed-defense credit testing, and manual Capture Beam landing validation.
+Both the standalone and Hosted Games packages pass JavaScript syntax validation, JSON validation, ZIP integrity checks, and runtime contract tests covering specialty selection, persistent settlement snapshots, final-hit Tank Buster credit, assist credit, and duplicate-kill prevention.
