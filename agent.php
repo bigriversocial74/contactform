@@ -7,12 +7,13 @@ $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
     $agent_personal_view = 'home';
 }
+$selected_agent_instance_id = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 
 $page_title = 'Personal Gifting Agent | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'agent';
-$page_body_class = 'mg-personal-gifting-agent-page';
+$page_body_class = 'mg-personal-gifting-agent-page' . ($selected_agent_instance_id !== '' ? ' mg-specialized-agent-selected' : '');
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
