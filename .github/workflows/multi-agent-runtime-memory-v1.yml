@@ -1,0 +1,55 @@
+name: Multi-Agent Runtime Memory v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'api/agents/runtime.php'
+      - 'includes/multi-agent-runtime.php'
+      - 'includes/personal-agent/multi-agent-workspace.php'
+      - 'assets/js/multi-agent-runtime.js'
+      - 'assets/css/multi-agent-runtime.css'
+      - 'database/20260719_multi_agent_runtime_memory_v1.sql'
+      - 'tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php'
+      - '.github/workflows/multi-agent-runtime-memory-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l api/agents/runtime.php
+          php -l includes/multi-agent-runtime.php
+          php -l includes/personal-agent/multi-agent-workspace.php
+          php -l tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/multi-agent-runtime.js
+      - name: Existing multi-agent workspace regressions
+        run: |
+          vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/AgentHeaderTabBehaviorTest.php
+          vendor/bin/phpunit tests/phpunit/MobileAgentTabsTest.php
+      - name: Runtime and memory contract
+        run: vendor/bin/phpunit tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
