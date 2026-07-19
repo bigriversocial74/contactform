@@ -4,11 +4,11 @@ Phase 8 adds an admin-controlled review gate between settlement eligibility and 
 
 ## Controls
 
-- Admin queue for unreviewed, held, blocked, approved, and release-ready settlements.
+- Admin queue for eligible, held, and blocked settlements.
 - Approve, hold, block, reopen, and mark-release-ready actions.
 - Hold and block actions require reasons.
-- Every action creates an immutable review record with idempotency protection.
-- Only eligible settlements may become release-ready.
+- Every action creates an immutable `gift_bundle_settlement_events` record with idempotency protection.
+- Only eligible or held settlements may return to release-ready eligibility.
 
 ## Safety boundary
 
@@ -16,4 +16,4 @@ Phase 8 adds an admin-controlled review gate between settlement eligibility and 
 
 ## SQL
 
-Import `database/20260719_product_bundle_settlement_review_controls_v8.sql` after merge and before using `/admin/bundle-settlement-reviews.php`.
+No SQL required. Phase 8 reuses the Phase 7 settlement ledger and settlement event tables.
