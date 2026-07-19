@@ -168,36 +168,30 @@ CREATE TABLE IF NOT EXISTS admin_agent_prevention_followups (
   CONSTRAINT fk_admin_agent_prevention_followups_approver FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO permission_catalog (public_id,permission_key,category,label,description,is_sensitive,created_at,updated_at)
-SELECT UUID(),'admin.admin_agent.maintenance','admin','Admin Agent maintenance windows','Create and manage planned maintenance windows.',1,NOW(),NOW()
-WHERE NOT EXISTS (SELECT 1 FROM permission_catalog WHERE permission_key='admin.admin_agent.maintenance');
+INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
+('admin.admin_agent.maintenance','Manage Admin Agent maintenance windows','Create, complete, and cancel planned maintenance windows without suppressing security or critical evidence.',NOW()),
+('admin.admin_agent.reliability','View Admin Agent reliability governance','View and generate historical reliability scorecards.',NOW()),
+('admin.admin_agent.learning','Manage Admin Agent incident learning','Review incident-learning drafts and prevention follow-up proposals.',NOW()),
+('admin.admin_agent.forecasts','View Admin Agent capacity forecasts','View deterministic metric-trend and operating-capacity forecasts.',NOW());
 
-INSERT INTO permission_catalog (public_id,permission_key,category,label,description,is_sensitive,created_at,updated_at)
-SELECT UUID(),'admin.admin_agent.reliability','admin','Admin Agent reliability governance','View and generate reliability scorecards and capacity forecasts.',0,NOW(),NOW()
-WHERE NOT EXISTS (SELECT 1 FROM permission_catalog WHERE permission_key='admin.admin_agent.reliability');
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW()
+FROM roles r
+JOIN permissions p ON p.slug IN ('admin.admin_agent.maintenance','admin.admin_agent.reliability','admin.admin_agent.learning','admin.admin_agent.forecasts')
+WHERE r.slug IN ('admin','super_admin');
 
-INSERT INTO permission_catalog (public_id,permission_key,category,label,description,is_sensitive,created_at,updated_at)
-SELECT UUID(),'admin.admin_agent.learning','admin','Admin Agent incident learning','Review incident learning drafts and prevention follow-ups.',1,NOW(),NOW()
-WHERE NOT EXISTS (SELECT 1 FROM permission_catalog WHERE permission_key='admin.admin_agent.learning');
+INSERT IGNORE INTO admin_agent_remediation_adapters
+(public_id,adapter_key,label,domain,description,risk_level,execution_mode,enabled,requires_confirmation,configuration_json)
+VALUES
+('01ADMINAGENTP4ADAPTER00001','create_prevention_followup','Create prevention follow-up','operations','Creates a deterministic incident-review draft and linked prevention follow-up after explicit review, approval, and typed confirmation.','medium','in_process',1,1,JSON_OBJECT('phase',4,'review_required',true,'financial',false,'destructive',false));
 
-INSERT INTO permission_catalog (public_id,permission_key,category,label,description,is_sensitive,created_at,updated_at)
-SELECT UUID(),'admin.admin_agent.forecasts','admin','Admin Agent capacity forecasts','View deterministic capacity and operating-risk forecasts.',0,NOW(),NOW()
-WHERE NOT EXISTS (SELECT 1 FROM permission_catalog WHERE permission_key='admin.admin_agent.forecasts');
+UPDATE admin_agent_remediation_adapters
+SET label='Create prevention follow-up',domain='operations',
+    description='Creates a deterministic incident-review draft and linked prevention follow-up after explicit review, approval, and typed confirmation.',
+    risk_level='medium',execution_mode='in_process',enabled=1,requires_confirmation=1,
+    configuration_json=JSON_OBJECT('phase',4,'review_required',true,'financial',false,'destructive',false),updated_at=NOW()
+WHERE adapter_key='create_prevention_followup';
 
-INSERT INTO role_permissions (role_id,permission_id,created_at)
-SELECT r.id,p.id,NOW() FROM roles r JOIN permission_catalog p ON p.permission_key IN (
-  'admin.admin_agent.maintenance','admin.admin_agent.reliability','admin.admin_agent.learning','admin.admin_agent.forecasts'
-) WHERE r.slug='super_admin'
-ON DUPLICATE KEY UPDATE role_id=VALUES(role_id);
-
-INSERT INTO admin_agent_remediation_adapters (
-  public_id,adapter_key,label,domain,description,risk_level,execution_mode,enabled,requires_confirmation,configuration_json,created_at,updated_at
-)
-VALUES (
-  UUID(),'create_prevention_followup','Create prevention follow-up','operations',
-  'Creates a deterministic incident-review draft and linked prevention follow-up after explicit approval.',
-  'medium','in_process',1,1,JSON_OBJECT('phase',4,'review_required',true),NOW(),NOW()
-)
-ON DUPLICATE KEY UPDATE
-  label=VALUES(label),description=VALUES(description),risk_level='medium',execution_mode='in_process',enabled=1,
-  requires_confirmation=1,configuration_json=VALUES(configuration_json),updated_at=NOW();
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('20260719_main_admin_agent_phase4','Main Admin Agent maintenance windows, change-risk assessments, reliability scorecards, capacity forecasts, incident learning, and controlled prevention follow-ups.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
