@@ -113,7 +113,7 @@ final class MainAdminAgentPhase6ContractTest extends TestCase
     {
         $router = $this->file('api/admin/admin-agent-phase6-router.php');
         $readonly = $this->file('includes/admin-agent-phase6-readonly.php');
-        self::assertStringContainsString("REQUEST_METHOD", $router);
+        self::assertStringContainsString('REQUEST_METHOD', $router);
         self::assertStringContainsString("require __DIR__ . '/admin-agent-phase6.php'", $router);
         self::assertStringContainsString('mg_admin_agent_phase6_state_readonly', $router);
         self::assertStringContainsString('mg_admin_agent_phase6_readiness_state', $readonly);
@@ -156,7 +156,7 @@ final class MainAdminAgentPhase6ContractTest extends TestCase
         ] as $endpoint) {
             self::assertStringContainsString($endpoint, $page);
         }
-        foreach (['Configured', 'Evidence Current', 'Drill Verified', 'Alerting Active', 'Production Ready', 'Run final readiness check', 'Upload validator JSON', 'Generate readiness export'] as $label) {
+        foreach (['Run final readiness check', 'Upload validator JSON', 'Generate readiness export', 'Finish setup without the command line'] as $label) {
             self::assertStringContainsString($label, $page);
         }
         foreach (['What changed?', 'Recovery objective report', 'Maintenance window report', 'Service topology report', 'Anomaly report', 'Executive summary', 'Controlled remediation report'] as $prompt) {
@@ -170,6 +170,9 @@ final class MainAdminAgentPhase6ContractTest extends TestCase
         $client = $this->file('assets/js/admin-agent-phase6.js');
         foreach (['runFinal', 'uploadEvidence', 'generateBrief', 'generateExport', 'downloadExport', 'configure', 'retention', 'new EventSource', 'window.setInterval', '15000'] as $marker) {
             self::assertStringContainsString($marker, $client);
+        }
+        foreach (['Configured', 'Evidence Current', 'Drill Verified', 'Alerting Active', 'Production Ready'] as $label) {
+            self::assertStringContainsString($label, $client);
         }
         self::assertStringContainsString("qa('[data-admin-agent-final-readiness]').forEach", $client);
         self::assertStringContainsString("action:'final_readiness'", $client);
