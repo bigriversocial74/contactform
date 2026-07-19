@@ -1,9 +1,9 @@
 {
   "schema": "microgifter.hosted-game/v1",
   "name": "Spaced Invaders",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "entry": "index.html",
-  "description": "Defend four mountain settlements, capture alien technology, and survive the UFO siege.",
+  "description": "Defend four specialty settlements, capture alien technology, and survive the UFO siege.",
   "category": "simulation",
   "orientation": "landscape",
   "viewport": {
