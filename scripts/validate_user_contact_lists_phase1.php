@@ -54,6 +54,7 @@ $createLayoutCss = $read('assets/css/create-center-layout.css');
 $agentPage = $read('agent.php');
 $agentWorkspace = $read('includes/agent-workspace.php');
 $agentCss = $read('assets/css/agent-workspace-layout.css');
+$multiAgentJs = $read('assets/js/multi-agent-workspace.js');
 $listsPage = $read('lists.php');
 $listPage = $read('list.php');
 $listCss = $read('assets/css/user-lists.css');
@@ -127,8 +128,8 @@ $checks['Create Center List view is contained and mutually exclusive'] = str_con
     && str_contains($createExtensionJs, "modal.querySelector('[data-create-center-view=\"list\"]')")
     && str_contains($createExtensionJs, "modal.querySelectorAll('[data-create-center-view]')")
     && str_contains($createExtensionJs, 'view.hidden = !active')
-    && str_contains($createExtensionJs, "event.target")
-    && str_contains($createExtensionJs, "[data-create-inline-target=\"list\"]")
+    && str_contains($createExtensionJs, 'event.target')
+    && str_contains($createExtensionJs, '[data-create-inline-target="list"]')
     && str_contains($createExtensionJs, 'event.stopImmediatePropagation()');
 $checks['My Lists modal open wins the Create Center mutation race'] = str_contains($createExtensionJs, 'window.MicrogifterCreateCenterList')
     && str_contains($createExtensionJs, 'createCenterRequestedView')
@@ -141,11 +142,16 @@ $checks['My Lists modal open wins the Create Center mutation race'] = str_contai
 $checks['List empty search state respects hidden'] = str_contains($createLayoutCss, '.mg-user-lists-state[hidden]')
     && str_contains($listCss, '.mg-user-lists-state')
     && str_contains($listJs, 'empty.hidden = visible !== 0');
-$checks['Agent tab restored for authenticated customers'] = str_contains($appHeader, '$is_authenticated_user = mg_current_user() !== null;')
-    && str_contains($appHeader, "['agent','Agent','/agent.php',\$can_agent_workspace]")
-    && str_contains($appHeader, "['inbox','Inbox','/inbox.php',true]")
-    && str_contains($appHeader, "['sent','Sent','/sent.php',true]")
-    && str_contains($appHeader, "['claimed','Claimed','/claimed.php',true]");
+$checks['Agent workspace remains available for authenticated customers'] = str_contains($appHeader, '$is_authenticated_user = mg_current_user() !== null;')
+    && str_contains($appHeader, "\$workspace_agent_tabs = ['agent'];")
+    && str_contains($appHeader, 'data-system-tab="agent"')
+    && str_contains($appHeader, 'mg_multi_agent_open_tabs')
+    && str_contains($appHeader, 'data-agent-tab-id')
+    && str_contains($appHeader, 'data-agent-add-tab')
+    && str_contains($multiAgentJs, '[data-agent-add-tab]')
+    && !str_contains($appHeader, "['inbox','Inbox'")
+    && !str_contains($appHeader, "['sent','Sent'")
+    && !str_contains($appHeader, "['claimed','Claimed'");
 $checks['existing Agent shell and sticky composer preserved'] = str_contains($agentPage, "require __DIR__ . '/includes/agent-workspace.php';")
     && str_contains($agentWorkspace, 'data-agent-composer')
     && str_contains($agentCss, '.mg-agent-workspace .mg-app-composer');
