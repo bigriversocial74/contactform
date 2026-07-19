@@ -76,7 +76,7 @@ The existing `/admin/admin-agent.php` chat supports additional database-only com
 - `Executive summary`
 - `Controlled remediation report`
 
-These reports do not contact an external model and consume no AI credits.
+No AI credits are consumed. These reports do not contact an external model.
 
 ## Correlation rules
 
