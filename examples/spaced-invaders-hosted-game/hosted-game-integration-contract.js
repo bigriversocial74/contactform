@@ -46,7 +46,7 @@
       runtime.reward = reward.status === 'fulfilled' ? reward.value : runtime.session?.reward || null;
       await sdk().emitEvent('game_loaded', {
         game: 'spaced-invaders',
-        version: '1.1.1',
+        version: '1.1.2',
         target_wave: TARGET_WAVE,
       }).catch(() => {});
       return runtime;
@@ -75,7 +75,7 @@
       if (!(await connect())) return false;
       await sdk().startRun({
         mode: 'settlement-siege',
-        clientVersion: '1.1.1',
+        clientVersion: '1.1.2',
         targetWave: TARGET_WAVE,
       });
       runtime.runActive = true;
