@@ -16,7 +16,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
     {
         $personal = file_get_contents($this->root . '/assets/js/agent-merchant-handoff.js');
         $receiver = file_get_contents($this->root . '/assets/js/merchant-agent-handoff-receiver.js');
-
         self::assertIsString($personal);
         self::assertIsString($receiver);
         self::assertStringContainsString('data-personal-gifting-agent', $personal);
@@ -31,7 +30,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
     {
         $personal = file_get_contents($this->root . '/assets/js/agent-merchant-handoff.js');
         $receiver = file_get_contents($this->root . '/assets/js/merchant-agent-handoff-receiver.js');
-
         self::assertIsString($personal);
         self::assertIsString($receiver);
         self::assertStringContainsString('sessionStorage.setItem', $personal);
@@ -45,7 +43,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
     {
         $sidebar = file_get_contents($this->root . '/includes/personal-agent-sidebar.php');
         $css = file_get_contents($this->root . '/assets/css/personal-agent-chat-history.css');
-
         self::assertIsString($sidebar);
         self::assertIsString($css);
         self::assertStringNotContainsString('class="mg-agent-mode-switch"', $sidebar);
@@ -70,13 +67,10 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
     {
         $catalog = file_get_contents($this->root . '/includes/agent-quick-actions.php');
         $runtime = file_get_contents($this->root . '/assets/js/agent-sidebar-tools.js');
-
         self::assertIsString($catalog);
         self::assertIsString($runtime);
         self::assertStringContainsString('function mg_agent_quick_action_catalog', $catalog);
-        foreach (["'keyword'=>'/snapshot'", "'keyword'=>'memory'", "'keyword'=>'contact count'", "'keyword'=>'saved opportunities'", "'keyword'=>'/m'", "'keyword'=>'review queue'"] as $marker) {
-            self::assertStringContainsString($marker, $catalog);
-        }
+        foreach (["'keyword'=>'/snapshot'", "'keyword'=>'memory'", "'keyword'=>'contact count'", "'keyword'=>'saved opportunities'", "'keyword'=>'/m'", "'keyword'=>'review queue'"] as $marker) self::assertStringContainsString($marker, $catalog);
         self::assertStringContainsString("event.target.closest('[data-agent-suggestion-prompt]')", $runtime);
         self::assertStringContainsString("event.target.closest('[data-agent-keyword-prompt]')", $runtime);
         self::assertStringContainsString('form.requestSubmit()', $runtime);
@@ -85,20 +79,18 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         self::assertStringContainsString('subscriptionsUrl', $runtime);
     }
 
-    public function testFreeUsersAreRedirectedAndSubscriptionsUseUniversalSidebar(): void
+    public function testSystematicPersonalAccessAndSubscriptionSidebarRemainCompatible(): void
     {
         $personalPage = file_get_contents($this->root . '/agent.php');
         $merchantPage = file_get_contents($this->root . '/merchant-agent-chat.php');
         $subscriptionsPage = file_get_contents($this->root . '/account-subscriptions.php');
         $sidebar = file_get_contents($this->root . '/includes/personal-agent-sidebar.php');
-
         self::assertIsString($personalPage);
         self::assertIsString($merchantPage);
         self::assertIsString($subscriptionsPage);
         self::assertIsString($sidebar);
-        self::assertStringContainsString("!empty(\$agentPackageContext['is_paid'])", $personalPage);
-        self::assertStringContainsString("!empty(\$agentPackageContext['merchant_access'])", $personalPage);
-        self::assertStringContainsString("header('Location: /account-subscriptions.php?agent=personal')", $personalPage);
+        self::assertStringNotContainsString('/account-subscriptions.php?agent=personal', $personalPage);
+        self::assertStringContainsString("\$header_mode = 'agent'", $personalPage);
         self::assertStringContainsString("header('Location: /account-subscriptions.php?agent=merchant')", $merchantPage);
         self::assertStringContainsString('/account-subscriptions.php?agent=personal', $sidebar);
         self::assertStringContainsString('/account-subscriptions.php?agent=merchant', $sidebar);
@@ -113,7 +105,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         $page = file_get_contents($this->root . '/agent.php');
         $view = file_get_contents($this->root . '/includes/personal-agent/workspace-dashboard.php');
         $css = file_get_contents($this->root . '/assets/css/personal-agent-full-canvas.css');
-
         self::assertIsString($page);
         self::assertIsString($view);
         self::assertIsString($css);
@@ -130,7 +121,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
     {
         $page = file_get_contents($this->root . '/merchant-agent-chat.php');
         $sidebar = file_get_contents($this->root . '/includes/personal-agent-sidebar.php');
-
         self::assertIsString($page);
         self::assertIsString($sidebar);
         self::assertStringContainsString("\$page_section = 'agent'", $page);
@@ -146,14 +136,13 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         $page = file_get_contents($this->root . '/merchant-agent-chat.php');
         $api = file_get_contents($this->root . '/api/ai/merchant-agent-chat.php');
         $view = file_get_contents($this->root . '/includes/merchant-agent-chat-view.php');
-
         self::assertIsString($page);
         self::assertIsString($api);
         self::assertIsString($view);
         self::assertStringContainsString("mg_has_permission('merchant.ai.plan')", $page);
         self::assertStringContainsString("mg_has_permission('merchant.ai.review')", $page);
         self::assertStringContainsString('mg_require_csrf_for_write($input)', $api);
-        self::assertStringContainsString('mg_merchant_require_permission($permission)', $api);
+        self::assertStringContainsString('mg_merchant_agent_require_owner_permission($user,', $api);
         self::assertStringContainsString('Business data only', $view);
         self::assertStringContainsString('Approval-first actions', $view);
     }
@@ -164,7 +153,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         $service = file_get_contents($this->root . '/includes/ai/merchant-agent-snapshot.php');
         $runtime = file_get_contents($this->root . '/assets/js/merchant-agent-chat.js');
         $css = file_get_contents($this->root . '/assets/css/merchant-agent-snapshot.css');
-
         self::assertIsString($api);
         self::assertIsString($service);
         self::assertIsString($runtime);
@@ -184,20 +172,8 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
     public function testSnapshotCoversRequestedMerchantSignals(): void
     {
         $service = file_get_contents($this->root . '/includes/ai/merchant-agent-snapshot.php');
-
         self::assertIsString($service);
-        foreach ([
-            'pppm_issuance_requests',
-            'social_follows',
-            'feed_post_comments',
-            'campaign_contacts',
-            'merchant_crm_contacts',
-            'merchant_crm_contact_events',
-            'microgift_claim_escalations',
-            'ai_merchant_plan_items',
-        ] as $table) {
-            self::assertStringContainsString($table, $service);
-        }
+        foreach (['pppm_issuance_requests','social_follows','feed_post_comments','campaign_contacts','merchant_crm_contacts','merchant_crm_contact_events','microgift_claim_escalations','ai_merchant_plan_items'] as $table) self::assertStringContainsString($table, $service);
     }
 
     public function testMerchantAgentMatchesChatFirstLayoutAndUsesControlsDrawer(): void
@@ -205,7 +181,6 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         $view = file_get_contents($this->root . '/includes/merchant-agent-chat-view.php');
         $css = file_get_contents($this->root . '/assets/css/merchant-agent-integrated-workspace.css');
         $drawer = file_get_contents($this->root . '/assets/js/merchant-agent-chat-mobile.js');
-
         self::assertIsString($view);
         self::assertIsString($css);
         self::assertIsString($drawer);

@@ -28,16 +28,12 @@ final class MerchantAgentCanvasContactContextV1Test extends TestCase
     }
 
     public function testMerchantSidebarUsesGroupedRowsWithRemovalControl(): void
-
     {
         $script = file_get_contents($this->root . '/assets/js/merchant-agent-sidebar-history.js');
         self::assertIsString($script);
         foreach (['data-merchant-agent-thread-groups','mg-personal-chat-row','mg-personal-chat-open','mg-personal-chat-delete','data-merchant-agent-delete-thread'] as $marker) self::assertStringContainsString($marker,$script);
         self::assertStringContainsString("action: 'delete_thread'",$script);
         self::assertStringContainsString('window.confirm',$script);
-
-
-
     }
 
     public function testThreadRemovalIsMerchantScoped(): void
@@ -58,7 +54,7 @@ final class MerchantAgentCanvasContactContextV1Test extends TestCase
         self::assertIsString($api);
         self::assertIsString($context);
         self::assertStringContainsString('$contactAware', $api);
-        self::assertStringContainsString("mg_merchant_require_permission('merchant.campaigns.view')", $api);
+        self::assertStringContainsString("mg_merchant_agent_require_owner_permission(\$user, 'merchant.campaigns.view')", $api);
         self::assertStringContainsString("['_merchant_owner_id']", $api);
         self::assertStringContainsString('LOWER(pp.slug)=?', $context);
         self::assertStringContainsString("LOWER(REPLACE(public_id,'-',''))", $context);

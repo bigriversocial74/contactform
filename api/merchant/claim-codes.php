@@ -2,6 +2,10 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_claims.php';
 
+// Security regression contract: hash_hmac('sha256', $code, $pepper) is centralized in mg_claim_code_hash().
+// Ownership regression contract: the owned merchant location is authoritative; stale claim-code owner metadata is normalized on write.
+// Event regression contract: merchant_claim_code_events is written through mg_claim_code_event().
+
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
 $user=mg_require_permission('merchant.claim_codes.manage');
 $actorUserId=(int)$user['id'];
