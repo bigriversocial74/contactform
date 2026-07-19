@@ -10,7 +10,7 @@ $pdo = mg_db();
 
 function mg_admin_notifications_types(): array
 {
-    return ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest','auto_routed','sla_breach','auto_escalated','workload_balance','playbook_applied','template_used','checklist_completed','case_comment','case_comment_pinned','timeline_viewed','automation_summary','automation_failed','quality_review','incident_declared','incident_updated','incident_resolved','incident_review_required','incident_review_completed','incident_review_followup_due','repeat_incident_detected','prevention_task_overdue','incident_trend_worsening','risk_forecast_high','forecasted_sla_breach','queue_overload_predicted'];
+    return ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest','auto_routed','sla_breach','auto_escalated','workload_balance','playbook_applied','template_used','checklist_completed','case_comment','case_comment_pinned','timeline_viewed','automation_summary','automation_failed','quality_review','incident_declared','incident_updated','incident_resolved','incident_review_required','incident_review_completed','incident_review_followup_due','repeat_incident_detected','prevention_task_overdue','incident_trend_worsening','risk_forecast_high','forecasted_sla_breach','queue_overload_predicted','continuity_alert','recovery_drill_due','recovery_objective_breach','continuity_digest','scheduler_missed'];
 }
 
 function mg_admin_notifications_has(array $actor, string $permission): bool
@@ -101,7 +101,7 @@ function mg_admin_notifications_list(PDO $pdo, array $filters): array
         ] : null,
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $summary = $pdo->query('SELECT COUNT(*) total, SUM(read_at IS NULL) unread_total, SUM(read_at IS NULL AND severity = "critical") critical_unread_total, SUM(read_at IS NULL AND severity = "warning") warning_unread_total, SUM(notification_type IN ("overdue","sla_breach") AND read_at IS NULL) overdue_unread_total, SUM(notification_type IN ("escalated","auto_escalated") AND read_at IS NULL) escalated_unread_total FROM admin_queue_notifications')->fetch(PDO::FETCH_ASSOC) ?: [];
+    $summary = $pdo->query('SELECT COUNT(*) total, SUM(read_at IS NULL) unread_total, SUM(read_at IS NULL AND severity = "critical") critical_unread_total, SUM(read_at IS NULL AND severity = "warning") warning_unread_total, SUM(notification_type IN ("overdue","sla_breach","recovery_drill_due","recovery_objective_breach") AND read_at IS NULL) overdue_unread_total, SUM(notification_type IN ("escalated","auto_escalated","scheduler_missed","continuity_alert") AND read_at IS NULL) escalated_unread_total FROM admin_queue_notifications')->fetch(PDO::FETCH_ASSOC) ?: [];
 
     return [
         'items' => $items,
