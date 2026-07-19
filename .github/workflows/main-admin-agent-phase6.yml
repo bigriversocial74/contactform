@@ -1,0 +1,95 @@
+name: Main Admin Agent Phase 6
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/admin-agent.php'
+      - 'api/admin/admin-agent-phase6.php'
+      - 'api/admin/admin-agent-phase6-router.php'
+      - 'api/admin/admin-agent-phase6-stream.php'
+      - 'api/admin/admin-agent-phase6-evidence-upload.php'
+      - 'api/admin/notifications.php'
+      - 'assets/css/admin-agent-phase6.css'
+      - 'assets/js/admin-agent-phase6.js'
+      - 'includes/admin-agent-phase6.php'
+      - 'includes/admin-agent-phase6-readonly.php'
+      - 'database/20260719_main_admin_agent_phase6.sql'
+      - 'config/migrations.php'
+      - 'scripts/run_admin_agent_phase6.php'
+      - 'docs/operations/main-admin-agent-phase6.md'
+      - 'tests/phpunit/MainAdminAgentPhase6ContractTest.php'
+      - '.github/workflows/main-admin-agent-phase6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl, fileinfo
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax — page and APIs
+        run: |
+          php -l admin/admin-agent.php
+          php -l api/admin/admin-agent-phase6.php
+          php -l api/admin/admin-agent-phase6-router.php
+          php -l api/admin/admin-agent-phase6-stream.php
+          php -l api/admin/admin-agent-phase6-evidence-upload.php
+          php -l api/admin/notifications.php
+
+      - name: PHP syntax — readiness services and runner
+        run: |
+          php -l includes/admin-agent-phase6.php
+          php -l includes/admin-agent-phase6-readonly.php
+          php -l scripts/run_admin_agent_phase6.php
+
+      - name: PHP syntax — contracts
+        run: php -l tests/phpunit/MainAdminAgentPhase6ContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/admin-agent-phase6.js
+
+      - name: Contract — schema and readiness engine
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase6ContractTest.php --filter '/testMigration|testFinalReadiness|testDrillCalendar/'
+
+      - name: Contract — upload, read-only state, and API security
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase6ContractTest.php --filter '/testBrowserEvidence|testReadOnlyRouter|testPhase6Api/'
+
+      - name: Contract — workspace, client, and scheduler
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase6ContractTest.php --filter '/testWorkspace|testClient|testScheduledRunner/'
+
+      - name: Contract — notifications, documentation, retention, and migration order
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase6ContractTest.php --filter '/testNotificationCenter|testOperationsGuide|testRetention|testMigrationManifest|testPhase6Uses/'
+
+      - name: Main Admin Agent Phase 6 full contract
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase6ContractTest.php
+
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
