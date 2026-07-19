@@ -164,6 +164,7 @@ return [
         '20260719_product_bundle_checkout_fulfillment_v3.sql',
         '20260719_product_bundle_checkout_fulfillment_v3_mysql_compat_repair.sql',
         '20260719_product_bundle_settlement_accounting_v7.sql',
+        '20260719_product_bundle_stripe_transfers_v9.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
