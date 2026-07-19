@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-// Base-refresh marker: rerun against integration after PR #1207.
+// Base-refresh marker: rerun against integration after PR #1208 Golden Path repair.
 final class ClaimLifecycleIntegrityAuditTest extends TestCase
 {
     private string $root;
