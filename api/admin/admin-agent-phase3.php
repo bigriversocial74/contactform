@@ -80,7 +80,7 @@ try{
             $last=mg_admin_agent_last_scan($pdo); $completed=(string)($last['completed_at']??'');
             $stale=$last===null||$completed===''||strtotime($completed.' UTC')<time()-300;
             if($stale&&(string)($_GET['skip_scan']??'')!=='1'){
-                if(mg_admin_agent_phase3_ready($pdo)) mg_admin_agent_phase3_run($pdo,['trigger_source'=>'workspace_load','initiated_by_user_id'=>$actorId]);
+                if(mg_admin_agent_phase3_ready($pdo)) mg_admin_agent_phase3_run_hardened($pdo,['trigger_source'=>'workspace_load','initiated_by_user_id'=>$actorId]);
                 elseif(mg_admin_agent_phase2_ready($pdo)) mg_admin_agent_phase2_run($pdo,['trigger_source'=>'workspace_load','initiated_by_user_id'=>$actorId]);
                 else mg_admin_agent_scan_runtime($pdo,['trigger_source'=>'workspace_load','initiated_by_user_id'=>$actorId]);
             }
@@ -100,7 +100,7 @@ try{
             $result=mg_admin_agent_phase3_ready($pdo)?mg_admin_agent_phase3_send($pdo,$actorId,$input):(mg_admin_agent_phase2_ready($pdo)?mg_admin_agent_phase2_send($pdo,$actorId,$input):mg_admin_agent_send_runtime($pdo,$actorId,$input));
         }elseif($action==='run_scan'){
             mg_admin_agent_phase3_api_require($actor,'admin.admin_agent.manage');
-            $result=mg_admin_agent_phase3_ready($pdo)?mg_admin_agent_phase3_run($pdo,['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]):(mg_admin_agent_phase2_ready($pdo)?mg_admin_agent_phase2_run($pdo,['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]):mg_admin_agent_scan_runtime($pdo,['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]));
+            $result=mg_admin_agent_phase3_ready($pdo)?mg_admin_agent_phase3_run_hardened($pdo,['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]):(mg_admin_agent_phase2_ready($pdo)?mg_admin_agent_phase2_run($pdo,['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]):mg_admin_agent_scan_runtime($pdo,['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]));
         }elseif($action==='new_thread'){
             mg_admin_agent_phase3_api_require($actor,'admin.admin_agent.chat'); $result=mg_admin_agent_new_thread($pdo,$actorId);
         }elseif($action==='finding_action'){
