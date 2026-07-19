@@ -1,0 +1,117 @@
+name: Main Admin Agent Phase 5
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/admin-agent.php'
+      - 'api/admin/admin-agent-phase5.php'
+      - 'api/admin/admin-agent-phase5-stream.php'
+      - 'assets/css/admin-agent-phase5.css'
+      - 'assets/js/admin-agent-phase5.js'
+      - 'includes/admin-agent-phase5.php'
+      - 'includes/admin-agent-phase5-remediation.php'
+      - 'includes/admin-permission-matrix.php'
+      - 'database/20260719_main_admin_agent_phase5.sql'
+      - 'config/migrations.php'
+      - 'scripts/run_admin_agent_phase5.php'
+      - 'scripts/record_admin_agent_recovery_evidence.php'
+      - 'docs/operations/main-admin-agent-phase5.md'
+      - 'tests/phpunit/MainAdminAgentPhase5ContractTest.php'
+      - '.github/workflows/main-admin-agent-phase5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax — page and APIs
+        run: |
+          php -l admin/admin-agent.php
+          php -l api/admin/admin-agent-phase5.php
+          php -l api/admin/admin-agent-phase5-stream.php
+
+      - name: PHP syntax — continuity services
+        run: |
+          php -l includes/admin-agent-phase5.php
+          php -l includes/admin-agent-phase5-remediation.php
+          php -l includes/admin-permission-matrix.php
+
+      - name: PHP syntax — runners
+        run: |
+          php -l scripts/run_admin_agent_phase5.php
+          php -l scripts/record_admin_agent_recovery_evidence.php
+
+      - name: PHP syntax — contracts
+        run: php -l tests/phpunit/MainAdminAgentPhase5ContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/admin-agent-phase5.js
+
+      - name: Contract — schema, objectives, and evidence
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testMigration|testRecoveryObjectives|testEvidence|testExistingIsolated/'
+
+      - name: Contract — drills, plans, gaps, and scorecards
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testDrill|testRecoveryPlans|testContinuity/'
+
+      - name: Contract — permissions, API, and workspace
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testPhase5Api|testWorkspace|testClient|testSse/'
+
+      - name: Contract — runners, migration order, and database-only boundary
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testRunner|testMigrationManifest|testPhase5IsDatabase/'
+
+      - name: Main Admin Agent Phase 5 full contract
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php
+
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Build focused deploy artifact
+        if: matrix.php == '8.3'
+        run: |
+          mkdir -p artifact/admin artifact/api/admin artifact/assets/css artifact/assets/js artifact/includes artifact/database artifact/scripts artifact/docs/operations artifact/config
+          cp admin/admin-agent.php artifact/admin/
+          cp api/admin/admin-agent-phase5.php api/admin/admin-agent-phase5-stream.php artifact/api/admin/
+          cp assets/css/admin-agent-phase5.css artifact/assets/css/
+          cp assets/js/admin-agent-phase5.js artifact/assets/js/
+          cp includes/admin-agent-phase5.php includes/admin-agent-phase5-remediation.php includes/admin-permission-matrix.php artifact/includes/
+          cp database/20260719_main_admin_agent_phase5.sql artifact/database/
+          cp scripts/run_admin_agent_phase5.php scripts/record_admin_agent_recovery_evidence.php artifact/scripts/
+          cp docs/operations/main-admin-agent-phase5.md artifact/docs/operations/
+          cp config/migrations.php artifact/config/
+
+      - name: Upload focused deploy artifact
+        if: matrix.php == '8.3'
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-main-admin-agent-phase5
+          path: artifact
