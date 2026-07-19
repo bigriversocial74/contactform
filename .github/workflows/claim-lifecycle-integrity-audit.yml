@@ -1,0 +1,39 @@
+name: Claim lifecycle integrity audit
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'api/gifts/verify-merchant-claim.php'
+      - 'api/gifts/redeem-merchant-claim.php'
+      - 'api/pppm/verify-merchant-claim.php'
+      - 'api/pppm/redeem-merchant-claim.php'
+      - 'tests/phpunit/ClaimLifecycleIntegrityAuditTest.php'
+      - '.github/workflows/claim-lifecycle-integrity-audit.yml'
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l api/gifts/verify-merchant-claim.php
+          php -l api/gifts/redeem-merchant-claim.php
+          php -l api/pppm/verify-merchant-claim.php
+          php -l api/pppm/redeem-merchant-claim.php
+          php -l tests/phpunit/ClaimLifecycleIntegrityAuditTest.php
+      - name: Claim lifecycle contracts
+        run: vendor/bin/phpunit tests/phpunit/ClaimLifecycleIntegrityAuditTest.php
