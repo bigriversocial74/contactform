@@ -60,7 +60,19 @@ jobs:
           php -l api/admin/admin-agent-phase4-stream.php
 
       - name: PHP syntax — governance engine
-        run: php -l includes/admin-agent-phase4.php
+        run: |
+          set +e
+          php -l includes/admin-agent-phase4.php > phase4-engine-lint.txt 2>&1
+          status=$?
+          cat phase4-engine-lint.txt
+          exit $status
+
+      - name: Upload governance-engine lint diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-engine-lint-${{ matrix.php }}
+          path: phase4-engine-lint.txt
 
       - name: PHP syntax — remediation adapter
         run: php -l includes/admin-agent-phase4-remediation.php
