@@ -35,7 +35,8 @@ final class MerchantBundleCommissionAuthorityV1ContractTest extends TestCase
             self::assertStringContainsString($mode, $service);
         }
         self::assertStringContainsString("\$context['include_fixed_fee'] = false", $service);
-        self::assertStringContainsString('intdiv(($amountCents * $bps) + 5000,10000)', $service);
+        self::assertMatchesRegularExpression('/intdiv\(\(\$amountCents \* \$bps\) \+ 5000,\s*10000\)/', $service);
+        self::assertStringContainsString("\$quote['quote_type'] = 'component'", $service);
     }
 
     public function testCheckoutUsesResolvedRateAndImmutableSnapshots(): void
