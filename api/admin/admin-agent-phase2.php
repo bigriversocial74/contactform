@@ -19,7 +19,7 @@ function mg_admin_agent_phase2_api_has(array $actor, string $permission): bool
         'admin.admin_agent.actions' => ['admin.operations_command.manage','admin.settings.manage','admin.users.manage'],
         'admin.admin_agent.escalations' => ['admin.operations_command.manage','admin.settings.manage','admin.users.manage'],
         'admin.admin_agent.deployments' => ['admin.settings.manage','admin.users.manage'],
-        'admin.admin_agent.execute' => ['admin.settings.manage','admin.users.manage'],
+        'admin.admin_agent.execute' => [],
         default => [],
     };
     foreach ($fallbacks as $fallback) if (mg_admin_account_actor_has($actor, $fallback)) return true;
