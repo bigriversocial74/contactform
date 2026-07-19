@@ -53,16 +53,23 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: PHP syntax
+      - name: PHP syntax — page and APIs
         run: |
           php -l admin/admin-agent.php
           php -l api/admin/admin-agent-phase4.php
           php -l api/admin/admin-agent-phase4-stream.php
+
+      - name: PHP syntax — governance services
+        run: |
           php -l includes/admin-agent-phase4.php
           php -l includes/admin-agent-phase4-remediation.php
           php -l includes/admin-permission-matrix.php
-          php -l scripts/run_admin_agent_phase4.php
-          php -l tests/phpunit/MainAdminAgentPhase4ContractTest.php
+
+      - name: PHP syntax — runner
+        run: php -l scripts/run_admin_agent_phase4.php
+
+      - name: PHP syntax — contracts
+        run: php -l tests/phpunit/MainAdminAgentPhase4ContractTest.php
 
       - name: JavaScript syntax
         run: node --check assets/js/admin-agent-phase4.js
