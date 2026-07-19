@@ -35,6 +35,7 @@ $page_styles = [
     '/assets/css/personal-agent-contact-intelligence.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
     '/assets/css/multi-agent-workspace.css?v=1.0.0',
+    '/assets/css/multi-agent-workspace-state.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
