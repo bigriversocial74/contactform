@@ -7,7 +7,7 @@ $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
     $agent_personal_view = 'home';
 }
-$selected_agent_instance_id = strtolower(trim((string) ($_GET['agent_id'] ?? ''));
+$selected_agent_instance_id = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 
 $page_title = 'Personal Gifting Agent | Microgifter';
 $page_section = 'agent';
