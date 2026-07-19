@@ -76,6 +76,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <p>Ask which service is degraded, how fast an error budget is burning, what likely caused an incident, whether the current release is safe, or which approved response can run. Cause candidates remain evidence-ranked hypotheses, and every operational mutation remains review-gated.</p>
             <div class="mg-admin-agent-quick-prompts" aria-label="Main Admin Agent quick reports">
               <button type="button" data-admin-agent-prompt="Overview">Overview</button>
+              <button type="button" data-admin-agent-prompt="What changed?">What changed?</button>
               <button type="button" data-admin-agent-prompt="Service topology report">Service map</button>
               <button type="button" data-admin-agent-prompt="SLO and error budget report">SLO budgets</button>
               <button type="button" data-admin-agent-prompt="Incident workspace report">Incident rooms</button>
