@@ -158,6 +158,7 @@ return [
         '20260719_main_admin_agent_phase4.sql',
         '20260719_main_admin_agent_phase5.sql',
         '20260719_main_admin_agent_phase6.sql',
+        '20260719_merchant_bundle_commission_authority_v1.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
