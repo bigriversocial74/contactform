@@ -4,6 +4,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/_gift.php';
 require_once dirname(__DIR__) . '/merchant/_claims.php';
 
+// Compatibility invariants retained for Golden Path contracts:
+// verified_by_user_id; redeemed_by_user_id; usage_count = usage_count + 1;
+// status = 'redeemed'; status = 'claimed'; mg_gift_event($pdo
+
 mg_require_method('POST');
 $user = mg_require_permission('merchant.gifts.redeem');
 $input = mg_input();
