@@ -22,7 +22,7 @@ final class MerchantContactActionCenterV11Test extends TestCase
         self::assertStringContainsString('INSERT INTO merchant_crm_notes', $service);
         self::assertStringContainsString("'merchant_internal'", $service);
         self::assertStringContainsString("'crm.note.added'", $service);
-        self::assertStringContainsString("'contact_note' => 'merchant.campaigns.manage'", $api);
+        self::assertStringContainsString("if ($action === 'contact_note') mg_merchant_agent_require_owner_permission($user, 'merchant.campaigns.manage')", $api);
         self::assertStringContainsString('mg_require_csrf_for_write($input)', $api);
     }
 
