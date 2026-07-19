@@ -1,15 +1,15 @@
 {
-  "package": "spaced-invaders-hosted-game-v1.1.2.zip",
-  "version": "1.1.2",
-  "sha256": "d8ca2119a4f02d20a039b0dbf675953149e8f17759456f6b63badd19d3c849ef",
+  "package": "spaced-invaders-hosted-game-v1.2.0.zip",
+  "version": "1.2.0",
+  "sha256": "7ef450f01eb5afaaba0390d1f2d1808979216582caa5289e94bc0cb9a483e052",
   "files": {
-    "README.md": "26804405f0cf73425f054925bf5e3a34e43ecbe82486323c5b2201aa6534f17a",
+    "README.md": "373d87e0caf60de5209fe1345f75e7a9b32d498b4463134997d72d50c4436736",
     "assets/foreground.webp": "033757a640c0f9191423915cd28b27ccb538ec541c79525a343cf39de8ee69bd",
     "assets/mountains.webp": "1ab0d09c2beca774668e3b20d77f8e9a49ca609babd6057900b15595589e09fa",
-    "game.js": "2bef7ed8f49c46a33af8b2058bff7527845321e963c2731757f99330fdcd01a9",
-    "game.json": "0658b983ca344e251e73df8864b3cd7456336c4cbc9bc20752c1f6bf0a792696",
-    "index.html": "63cd2bf6a0626b4cabb750d050acce45db352d770d83353c2778cdf31b1cf4d7",
+    "game.js": "5a4b48ef2072b1263b4e5d59531c48231d7e0e1e9bb786636b509a49592476ee",
+    "game.json": "50774f92cb217146d811ffa78d8a772fa97ca5235d3e86a04ac312bd3c7fba4b",
+    "index.html": "f8ce680f42ddd43fc1419438489895ae1ac33265507b70e4211321c9adb0a41d",
     "spaced-invaders-landing.webp": "cd91bfb6c64fd253b4e08fa1cf95f783bb2aee1da46b9d77d1fb8775765590bb",
-    "styles.css": "1803acd52add692de3106edbcbb2ccfa221113fddddae0bc8ac5b5d31c4ee026"
+    "styles.css": "64edd7536bb727bff7c2de73153a607379384cdd3aa80db1c45fce2119221373"
   }
 }
