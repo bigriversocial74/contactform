@@ -38,10 +38,12 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
         $workspaceScript=file_get_contents($root.'/assets/js/multi-agent-workspace.js');
-        $createMenu=file_get_contents($root.'/assets/js/create-menu.js');
+        $createMenu=file_get_contents($root.'/includes/header-templates/create-menu.php');
+        $createMenuScript=file_get_contents($root.'/assets/js/create-menu.js');
         self::assertIsString($header);
         self::assertIsString($workspaceScript);
         self::assertIsString($createMenu);
+        self::assertIsString($createMenuScript);
 
         self::assertStringContainsString('class="mg-agent-tab-add"',$header);
         self::assertStringContainsString('data-agent-add-tab',$header);
@@ -49,8 +51,8 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringContainsString('data-open-agent-selector',$workspaceScript);
         self::assertStringNotContainsString('create_menu_button',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
-        self::assertStringNotContainsString("createElement('button')",$createMenu);
-        self::assertStringContainsString('href="/lists.php?action=create" data-global-create',$header);
+        self::assertStringNotContainsString("createElement('button')",$createMenuScript);
+        self::assertStringContainsString("'option' => 'microgift'",$createMenu);
     }
 
     public function testSpecializedAgentsUseManagementModalInsteadOfInlineDelete(): void
@@ -61,12 +63,12 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertIsString($script);
         self::assertIsString($workspace);
 
-        self::assertStringContainsString('data-agent-management-modal',$workspace);
-        self::assertStringContainsString('data-agent-management-action="pause"',$workspace);
-        self::assertStringContainsString('data-agent-management-action="archive"',$workspace);
-        self::assertStringContainsString('data-agent-management-action="delete"',$workspace);
-        self::assertStringContainsString("/api/agents/item.php",$script);
-        self::assertStringContainsString("/api/agents/archive.php",$script);
-        self::assertStringContainsString("/api/agents/status.php",$script);
+        self::assertStringContainsString('data-agent-manage-modal',$workspace);
+        self::assertStringContainsString('data-agent-action="pause"',$workspace);
+        self::assertStringContainsString('data-agent-action="archive"',$workspace);
+        self::assertStringContainsString('data-agent-action="delete"',$workspace);
+        self::assertStringContainsString('/api/agents/item.php',$script);
+        self::assertStringContainsString('/api/agents/archive.php',$script);
+        self::assertStringContainsString('/api/agents/status.php',$script);
     }
 }
