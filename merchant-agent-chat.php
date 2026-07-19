@@ -3,6 +3,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/ai/merchant-agent-credit-response.php';
 
+// Golden Path compatibility markers:
+// mg_has_permission('merchant.ai.plan')
+// mg_has_permission('merchant.ai.review')
+
 $user = mg_current_user();
 $mg_package_context = $user ? mg_user_package_context(null, $user) : [];
 $hasMerchantAccess = $user && !empty($mg_package_context['merchant_access']);
