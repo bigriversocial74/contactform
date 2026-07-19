@@ -80,8 +80,17 @@ jobs:
       - name: Contract — schema, objectives, and evidence
         run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testMigration|testRecoveryObjectives|testEvidence|testExistingIsolated/'
 
-      - name: Contract — drills, plans, gaps, and scorecards
-        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testDrill|testRecoveryPlans|testContinuity/'
+      - name: Contract — drill lifecycle
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter testDrillLifecycleRequiresExternalPassingEvidenceBeforeReview
+
+      - name: Contract — recovery plans
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter testRecoveryPlansPreserveOrderDependenciesValidationAndRunbook
+
+      - name: Contract — continuity gaps and scorecards
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter testContinuityEvaluatorCreatesDurableGapTypesAndScorecards
+
+      - name: Contract — drill approval boundary
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter testDrillApprovalIsReviewGatedEvidenceOnlyAndTyped
 
       - name: Contract — permissions, API, and workspace
         run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase5ContractTest.php --filter '/testPhase5Api|testWorkspace|testClient|testSse/'
