@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_foundation.php';
+require_once dirname(__DIR__) . '/payments/_commissions.php';
 
 final class MgCheckoutWorkflowException extends RuntimeException
 {
@@ -64,13 +65,13 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
 
     $orderPublicId=mg_public_uuid();
     $pdo->prepare("INSERT INTO commerce_orders (public_id,buyer_user_id,merchant_user_id,currency,subtotal_cents,discount_cents,tax_cents,platform_fee_cents,total_cents,payment_status,fulfillment_status,source_type,source_reference,idempotency_key,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,'unpaid','pending','checkout_draft',?,?,?,NOW(),NOW())")
-        ->execute([$orderPublicId,$buyerUserId,(int)$draft['merchant_user_id'],$draft['currency'],(int)$draft['subtotal_cents'],(int)$draft['discount_cents'],(int)$draft['tax_cents'],(int)$draft['platform_fee_cents'],(int)$draft['total_cents'],$draftPublicId,$idempotencyKey,mg_commerce_json(['checkout_draft_id'=>$draftPublicId,'cart_id'=>(int)$draft['cart_id']])]);
+        ->execute([$orderPublicId,$buyerUserId,(int)$draft['merchant_user_id'],$draft['currency'],(int)$draft['subtotal_cents'],(int)$draft['discount_cents'],(int)$draft['tax_cents'],(int)$draft['platform_fee_cents'],(int)$draft['total_cents'],$draftPublicId,$idempotencyKey,mg_commerce_json(['checkout_draft_id'=>$draftPublicId,'cart_id'=>(int)$draft['cart_id'],'commission_rule_version'=>MG_COMMISSION_RULE_VERSION])]);
     $orderId=(int)$pdo->lastInsertId();
 
     if(mg_checkout_order_items_have_merchant($pdo)){
         $line=$pdo->prepare('INSERT INTO commerce_order_items (public_id,order_id,product_id,product_version_id,merchant_user_id,title_snapshot,quantity,unit_amount_cents,discount_cents,tax_cents,line_total_cents,currency,created_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?,NOW())');
         foreach($items as $item){
-            $line->execute([mg_public_uuid(),$orderId,(int)$item['product_id'],(int)$item['product_version_id'],(int)$draft['merchant_user_id'],(string)$item['title_snapshot'],(int)$item['quantity'],(int)$item['unit_amount_cents'],(int)$item['line_total_cents'],(string)$item['currency']]);
+            $line->execute([mg_public_uuid(),$orderId,(int)$item['product_id'],(int)$item['product_version_id'],(int)($item['merchant_user_id']??$draft['merchant_user_id']),(string)$item['title_snapshot'],(int)$item['quantity'],(int)$item['unit_amount_cents'],(int)$item['line_total_cents'],(string)$item['currency']]);
         }
     }else{
         $line=$pdo->prepare('INSERT INTO commerce_order_items (public_id,order_id,product_id,product_version_id,title_snapshot,quantity,unit_amount_cents,discount_cents,tax_cents,line_total_cents,currency,created_at) VALUES (?,?,?,?,?,?,?,0,0,?,?,NOW())');
@@ -79,18 +80,35 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
         }
     }
 
+    $commissionSnapshot=mg_commission_promote_draft_to_order($pdo,(int)$draft['id'],$orderId);
     $feeInputs=[
         'subtotal_cents'=>(int)$draft['subtotal_cents'],
         'platform_fee_cents'=>(int)$draft['platform_fee_cents'],
+        'percentage_commission_cents'=>(int)$commissionSnapshot['percentage_commission_cents'],
+        'fixed_fee_cents'=>(int)$commissionSnapshot['fixed_fee_cents'],
+        'merchant_net_amount_cents'=>(int)$commissionSnapshot['merchant_net_amount_cents'],
+        'commission_rate_bps'=>(int)$commissionSnapshot['commission_rate_bps'],
+        'rate_mode'=>(string)$commissionSnapshot['rate_mode'],
+        'rate_source'=>(string)$commissionSnapshot['rate_source'],
+        'merchant_profile_id'=>$commissionSnapshot['merchant_profile_id'],
+        'bundle_reference'=>$commissionSnapshot['bundle_reference'],
+        'bundle_terms_version'=>$commissionSnapshot['bundle_terms_version'],
         'currency'=>$draft['currency'],
         'fee_included_in_total'=>true,
+        'historical_snapshot'=>true,
     ];
-    $pdo->prepare('INSERT INTO order_fee_snapshots (public_id,order_id,rule_version,calculated_fee_cents,inputs_json,created_at) VALUES (?,?,?,?,?,NOW())')
-        ->execute([mg_public_uuid(),$orderId,'v1f-platform-share-v1',(int)$draft['platform_fee_cents'],mg_commerce_json($feeInputs)]);
-    mg_order_history($pdo,$orderId,'order',null,'pending','user',$buyerUserId,'checkout_draft_converted',['checkout_draft_id'=>$draftPublicId]);
+    $pdo->prepare('INSERT INTO order_fee_snapshots (public_id,order_id,rule_version,percentage_basis_points,fixed_fee_cents,calculated_fee_cents,inputs_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')
+        ->execute([mg_public_uuid(),$orderId,MG_COMMISSION_RULE_VERSION,(int)$commissionSnapshot['commission_rate_bps'],(int)$commissionSnapshot['fixed_fee_cents'],(int)$draft['platform_fee_cents'],mg_commerce_json($feeInputs)]);
+    mg_order_history($pdo,$orderId,'order',null,'pending','user',$buyerUserId,'checkout_draft_converted',['checkout_draft_id'=>$draftPublicId,'commission_rule_version'=>MG_COMMISSION_RULE_VERSION]);
     mg_order_history($pdo,$orderId,'payment',null,'unpaid','system',$buyerUserId,'order_created');
     mg_order_history($pdo,$orderId,'fulfillment',null,'pending','system',$buyerUserId,'order_created');
-    mg_order_event($pdo,$orderId,'order.created',$buyerUserId,['checkout_draft_id'=>$draftPublicId,'platform_fee_cents'=>(int)$draft['platform_fee_cents']]);
+    mg_order_event($pdo,$orderId,'order.created',$buyerUserId,[
+        'checkout_draft_id'=>$draftPublicId,
+        'platform_fee_cents'=>(int)$draft['platform_fee_cents'],
+        'commission_rate_bps'=>(int)$commissionSnapshot['commission_rate_bps'],
+        'commission_rate_source'=>(string)$commissionSnapshot['rate_source'],
+        'commission_rule_version'=>MG_COMMISSION_RULE_VERSION,
+    ]);
 
     $buyerStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');
     $buyerStmt->execute([$buyerUserId]);
@@ -98,6 +116,13 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
     $merchantStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');
     $merchantStmt->execute([(int)$draft['merchant_user_id']]);
     $merchant=$merchantStmt->fetch(PDO::FETCH_ASSOC)?:[];
+    $merchant['commission_snapshot']=[
+        'commission_rate_bps'=>(int)$commissionSnapshot['commission_rate_bps'],
+        'commission_amount_cents'=>(int)$commissionSnapshot['commission_amount_cents'],
+        'merchant_net_amount_cents'=>(int)$commissionSnapshot['merchant_net_amount_cents'],
+        'rate_source'=>(string)$commissionSnapshot['rate_source'],
+        'rule_version'=>MG_COMMISSION_RULE_VERSION,
+    ];
     $receiptNumber='MG-'.gmdate('Ymd').'-'.strtoupper(substr(str_replace('-','',$orderPublicId),0,12));
     $pdo->prepare("INSERT INTO receipts (public_id,order_id,receipt_number,status,currency,subtotal_cents,discount_cents,tax_cents,platform_fee_cents,total_cents,buyer_snapshot_json,merchant_snapshot_json,items_snapshot_json,created_at,updated_at) VALUES (?,?,?,'pending',?,?,?,?,?,?,?,?,?,NOW(),NOW())")
         ->execute([mg_public_uuid(),$orderId,$receiptNumber,$draft['currency'],(int)$draft['subtotal_cents'],(int)$draft['discount_cents'],(int)$draft['tax_cents'],(int)$draft['platform_fee_cents'],(int)$draft['total_cents'],mg_commerce_json($buyer),mg_commerce_json($merchant),mg_commerce_json($items)]);
