@@ -14,7 +14,7 @@ final class MerchantLocationsMultiClaimCodeContractTest extends TestCase
 
     public function testMigrationAddsAssignmentAndArchiveSafeguards(): void
     {
-        $sql = file_get_contents($this->root . '/database/20260718_locations_multi_claim_code_safeguards.sql');
+        $sql = file_get_contents($this->root . '/database/manual/20260718_locations_multi_claim_code_safeguards.sql');
         self::assertStringContainsString('assignment_type', $sql);
         self::assertStringContainsString('assignment_reference', $sql);
         self::assertStringContainsString('archived_at', $sql);
