@@ -54,7 +54,7 @@ final class MerchantAgentCanvasContactContextV1Test extends TestCase
         self::assertIsString($api);
         self::assertIsString($context);
         self::assertStringContainsString('$contactAware', $api);
-        self::assertStringContainsString("mg_merchant_agent_require_owner_permission($user, 'merchant.campaigns.view')", $api);
+        self::assertStringContainsString("mg_merchant_agent_require_owner_permission(\$user, 'merchant.campaigns.view')", $api);
         self::assertStringContainsString("['_merchant_owner_id']", $api);
         self::assertStringContainsString('LOWER(pp.slug)=?', $context);
         self::assertStringContainsString("LOWER(REPLACE(public_id,'-',''))", $context);
