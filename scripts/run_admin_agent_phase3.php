@@ -14,7 +14,7 @@ $trigger=preg_replace('/[^a-z0-9_-]/','',strtolower((string)($options['trigger']
 $environment=preg_replace('/[^a-z0-9_-]/','',strtolower((string)($options['environment']??getenv('MG_DEPLOY_ENV')?:'production')))?:'production';
 
 try{
-    $result=mg_admin_agent_phase3_run(mg_db(),[
+    $result=mg_admin_agent_phase3_run_hardened(mg_db(),[
         'trigger_source'=>$trigger,
         'environment_key'=>$environment,
     ]);
