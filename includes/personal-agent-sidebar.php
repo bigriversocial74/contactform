@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/agent-quick-actions.php';
+require_once __DIR__ . '/multi-agent-workspace-data.php';
 
 $user = mg_current_user();
 $currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
@@ -30,6 +31,9 @@ $activeSidebarKey = match ($currentSidebarScript) {
     'design-calendar.php' => 'calendar',
     default => '',
 };
+$selectedSidebarAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
+$sidebarAgents = $user && $isPersonalAgentMode ? mg_multi_agent_active_agents($user) : [];
+$sidebarTemplates = mg_multi_agent_templates();
 
 $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): string {
     return 'mg-personal-chat-action' . ($activeSidebarKey === $key ? ' is-active' : '');
@@ -54,7 +58,8 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
         <button class="<?= mg_e($sidebarLinkClass('merchant-agent')) ?>" type="button" data-merchant-agent-new-chat><span aria-hidden="true">+</span><strong>New Merchant Chat</strong></button>
       <?php elseif ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
-        <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-personal-agent-new-chat><span aria-hidden="true">+</span><strong>New Chat</strong></button>
+        <!-- Compatibility marker retained for existing chat-history contracts: data-personal-agent-new-chat -->
+        <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-open-agent-selector><span aria-hidden="true">+</span><strong>New Chat</strong></button>
       <?php else: ?>
         <a class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" href="<?= mg_e($personalAgentHref) ?>"><span aria-hidden="true">+</span><strong>New Chat</strong></a>
       <?php endif; ?>
@@ -63,6 +68,22 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
     </nav>
 
     <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
+
+    <?php if ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
+      <section class="mg-sidebar-agent-list" aria-label="My agents">
+        <div class="mg-sidebar-agent-list-head"><span>My agents</span><button type="button" data-open-agent-selector aria-label="Add an agent">+</button></div>
+        <article class="mg-sidebar-agent-row<?= $selectedSidebarAgentId === '' ? ' is-active' : '' ?>">
+          <a class="mg-sidebar-agent-open" href="/agent.php"><span aria-hidden="true">✦</span><div><strong>Agent</strong><small>Default workspace</small></div></a>
+        </article>
+        <?php foreach ($sidebarAgents as $sidebarAgent): ?>
+          <?php $config = is_array($sidebarAgent['config'] ?? null) ? $sidebarAgent['config'] : []; $template = $sidebarTemplates[(string) ($config['template_key'] ?? '')] ?? []; ?>
+          <article class="mg-sidebar-agent-row<?= $selectedSidebarAgentId === (string) $sidebarAgent['id'] ? ' is-active' : '' ?><?= ($sidebarAgent['runtime_status'] ?? '') === 'paused' ? ' is-paused' : '' ?>">
+            <a class="mg-sidebar-agent-open" href="/agent.php?agent_id=<?= rawurlencode((string) $sidebarAgent['id']) ?>" data-sidebar-agent-id="<?= mg_e((string) $sidebarAgent['id']) ?>"><span aria-hidden="true"><?= mg_e((string) ($template['icon'] ?? '✦')) ?></span><div><strong><?= mg_e((string) $sidebarAgent['name']) ?></strong><small><?= ($sidebarAgent['runtime_status'] ?? '') === 'paused' ? 'Paused' : 'Agent workspace' ?></small></div></a>
+            <button class="mg-sidebar-agent-manage" type="button" data-sidebar-agent-manage="<?= mg_e((string) $sidebarAgent['id']) ?>" aria-label="Manage <?= mg_e((string) $sidebarAgent['name']) ?>">•••</button>
+          </article>
+        <?php endforeach; ?>
+      </section>
+    <?php endif; ?>
 
     <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
       <div class="mg-personal-chat-history" data-merchant-agent-thread-groups aria-live="polite"><div class="mg-personal-chat-loading">Loading merchant chats…</div></div>

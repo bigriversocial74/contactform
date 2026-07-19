@@ -7,12 +7,17 @@ $can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && m
 $is_authenticated_user = mg_current_user() !== null;
 $can_create_list = (bool) ($can_create_list ?? $is_authenticated_user);
 $can_agent_workspace = $is_authenticated_user || $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
-$workspace_agent_tabs = ['agent', 'inbox', 'sent', 'claimed'];
-/* Recovery baseline tab markers: ['agent','Agent','/agent.php'] ['inbox','Inbox','/inbox.php'] ['sent','Sent','/sent.php'] ['claimed','Claimed','/claimed.php'] */
+$workspace_agent_tabs = ['agent'];
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
 $show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
 $show_header_cart = true;
+$multiAgentHeaderAgents = [];
+$multiAgentSelectedId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
+if ($is_agent_workspace_header && $is_authenticated_user) {
+    require_once dirname(__DIR__) . '/multi-agent-workspace-data.php';
+    $multiAgentHeaderAgents = mg_multi_agent_open_tabs(mg_multi_agent_active_agents(mg_current_user()));
+}
 ?>
 <header class="mg-site-header mg-unified-header" data-mg-universal-header data-header-variant="logged-in">
   <div class="mg-header-inner nav-inner">
@@ -27,14 +32,16 @@ $show_header_cart = true;
           </div>
         <?php elseif ($is_agent_workspace_header): ?>
           <div class="mg-header-agent-tools">
-            <div class="mg-header-agent-tabs" data-agent-tabs aria-label="Workspace tabs">
-              <?php foreach ([['agent','Agent','/agent.php',$can_agent_workspace],['inbox','Inbox','/inbox.php',true],['sent','Sent','/sent.php',true],['claimed','Claimed','/claimed.php',true]] as $tab): ?>
-                <?php if (!$tab[3]) { continue; } ?>
-                <?php $defaultGiftCount = ['inbox' => 3, 'sent' => 2, 'claimed' => 2][$tab[0]] ?? 0; ?>
-                <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="<?= $tab[0] ?>"><a class="<?= $agent_tab === $tab[0] ? 'is-active' : '' ?>" href="<?= $tab[2] ?>"><span><?= $tab[1] ?></span><?php if (in_array($tab[0], ['inbox','sent','claimed'], true)): ?><b class="mg-agent-tab-badge<?= $defaultGiftCount > 0 ? ' has-unread' : '' ?>" data-gift-nav-count="<?= $tab[0] ?>" data-gift-nav-unread="<?= $tab[0] ?>"><?= $defaultGiftCount ?></b><?php endif; ?></a></span>
+            <div class="mg-header-agent-tabs" data-agent-tabs aria-label="Agent workspace tabs">
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="agent"><a class="<?= $multiAgentSelectedId === '' ? 'is-active' : '' ?>" href="/agent.php"><span>Agent</span></a></span>
+              <?php foreach ($multiAgentHeaderAgents as $workspaceAgent): ?>
+                <?php $isSelected = $multiAgentSelectedId === (string) $workspaceAgent['id']; ?>
+                <span class="mg-agent-tab-item mg-agent-tab-item-agent<?= ($workspaceAgent['runtime_status'] ?? '') === 'paused' ? ' is-paused' : '' ?>" data-agent-tab-id="<?= mg_e((string) $workspaceAgent['id']) ?>">
+                  <a class="<?= $isSelected ? 'is-active' : '' ?>" href="/agent.php?agent_id=<?= rawurlencode((string) $workspaceAgent['id']) ?>"><i class="mg-agent-tab-status" aria-hidden="true"></i><span><?= mg_e((string) $workspaceAgent['name']) ?></span></a>
+                </span>
               <?php endforeach; ?>
+              <button class="mg-agent-tab-add" type="button" data-agent-add-tab aria-label="Add an agent" title="Add an agent">+</button>
             </div>
-            <?php if ($can_create_microgift || $can_create_list): ?><a class="mg-header-build-link" href="/lists.php?action=create" data-global-create aria-label="Create new item" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a><?php endif; ?>
           </div>
         <?php elseif ($header_mode === 'builder'): ?>
           <div class="mg-builder-header-toggle" aria-label="Preview size">
@@ -50,26 +57,10 @@ $show_header_cart = true;
   </div>
 </header>
 <style>
-/* The Agent tab is a first-class workspace destination and must match Inbox/Sent/Claimed. */
-html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"],
-html body.mg-app-page.mg-section-agent .mg-header-agent-tabs .mg-agent-tab-item[data-system-tab="agent"]{
-  display:inline-flex!important;
-  visibility:visible!important;
-  width:auto!important;
-  min-width:0!important;
-  max-width:none!important;
-  overflow:visible!important;
-  flex:0 0 auto!important;
-}
-@media(max-width:980px){
-  html body.mg-app-page.mg-section-agent .mg-header-agent-tabs .mg-agent-tab-item[data-system-tab="agent"]>a{
-    min-width:72px!important;
-  }
-}
+html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
 </style>
 
 <?php
-/* Stage 12 create-menu validation markers: data-create-menu-option="campaign" data-create-menu-option="agent_offer" data-create-menu-option="add_reward" /merchant-campaigns.php /merchant-reward-templates.php */
 require dirname(__DIR__) . '/header-templates/create-menu.php';
 require __DIR__ . '/create-list-extension.php';
 ?>

@@ -7,12 +7,13 @@ $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
     $agent_personal_view = 'home';
 }
+$selected_agent_instance_id = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 
 $page_title = 'Personal Gifting Agent | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'agent';
-$page_body_class = 'mg-personal-gifting-agent-page';
+$page_body_class = 'mg-personal-gifting-agent-page' . ($selected_agent_instance_id !== '' ? ' mg-specialized-agent-selected' : '');
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
@@ -33,6 +34,8 @@ $page_styles = [
     '/assets/css/personal-agent-ai-credits.css?v=1.0.0',
     '/assets/css/personal-agent-contact-intelligence.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
+    '/assets/css/multi-agent-workspace.css?v=1.0.0',
+    '/assets/css/multi-agent-workspace-state.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
@@ -53,6 +56,7 @@ $page_scripts = [
     '/assets/js/personal-agent-design-studio-calendar.js?v=1.0.0',
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
     '/assets/js/personal-agent-contact-intelligence.js?v=1.0.1',
+    '/assets/js/multi-agent-workspace.js?v=1.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';

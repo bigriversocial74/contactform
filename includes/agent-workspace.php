@@ -47,6 +47,7 @@ if ($user) {
       </section>
     <?php else: ?>
       <?php require __DIR__ . '/personal-agent/workspace-dashboard.php'; ?>
+      <?php require __DIR__ . '/personal-agent/multi-agent-workspace.php'; ?>
 
       <form class="mg-app-composer mg-personal-agent-composer" data-agent-composer data-personal-agent-composer>
         <button class="mg-personal-agent-context-chip" type="button" data-personal-agent-context-chip hidden aria-label="Clear selected gifting context"></button>
