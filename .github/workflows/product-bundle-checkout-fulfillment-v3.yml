@@ -1,0 +1,48 @@
+name: Product Bundle Checkout Fulfillment v3
+
+on:
+  pull_request:
+    paths:
+      - 'api/bundles/_checkout.php'
+      - 'database/20260719_product_bundle_checkout_fulfillment_v3.sql'
+      - 'tests/phpunit/ProductBundleCheckoutFulfillmentV3ContractTest.php'
+      - 'config/migrations.php'
+      - '.github/workflows/product-bundle-checkout-fulfillment-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Product Bundle Checkout Fulfillment (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l api/bundles/_checkout.php
+          php -l tests/phpunit/ProductBundleCheckoutFulfillmentV3ContractTest.php
+          php -l config/migrations.php
+      - name: Contract test
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/ProductBundleCheckoutFulfillmentV3ContractTest.php
+          else
+            composer install --no-interaction --prefer-dist
+            vendor/bin/phpunit tests/phpunit/ProductBundleCheckoutFulfillmentV3ContractTest.php
+          fi
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: No premature transfer execution
+        run: |
+          ! grep -R "stripe_transfers\|transfer_data" api/bundles/_checkout.php
