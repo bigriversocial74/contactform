@@ -1,0 +1,41 @@
+name: Product Bundle Stripe Transfers v9
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/bundle-settlement-transfers.php'
+      - 'admin/bundle-settlement-transfers.php'
+      - 'assets/js/bundle-settlement-transfer-v9.js'
+      - 'assets/css/bundle-settlement-transfer-v9.css'
+      - 'database/20260719_product_bundle_stripe_transfers_v9.sql'
+      - 'tests/phpunit/ProductBundleStripeTransfersV9ContractTest.php'
+      - '.github/workflows/product-bundle-stripe-transfers-v9.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2','8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - name: PHP syntax
+        run: |
+          php -l api/admin/bundle-settlement-transfers.php
+          php -l admin/bundle-settlement-transfers.php
+          php -l tests/phpunit/ProductBundleStripeTransfersV9ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/bundle-settlement-transfer-v9.js
+      - name: Install test dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Contract test
+        run: vendor/bin/phpunit tests/phpunit/ProductBundleStripeTransfersV9ContractTest.php
+      - name: Safety boundary
+        run: |
+          ! grep -q "'/v1/transfers'" api/admin/bundle-settlement-transfers.php
+          grep -q 'provider_dispatch_required' api/admin/bundle-settlement-transfers.php
+          grep -q 'MG_BUNDLE_TRANSFER_EXECUTION_ENABLED' api/admin/bundle-settlement-transfers.php
