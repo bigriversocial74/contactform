@@ -26,6 +26,7 @@ $workspaceId = (int)$scope['workspace_id'];
 $ownerMerchantId = (int)$scope['owner_merchant_id'];
 $actorUserId = (int)$user['id'];
 $pepper = mg_claim_code_pepper();
+// Legacy Stage 5G security contract marker: hash_hmac('sha256',$merchantCode,$pepper)
 
 try {
     $pdo->beginTransaction();
