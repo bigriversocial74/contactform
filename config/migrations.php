@@ -155,6 +155,7 @@ return [
         '20260718_main_admin_agent_phase1.sql',
         '20260718_main_admin_agent_phase2.sql',
         '20260719_main_admin_agent_phase3.sql',
+        '20260719_main_admin_agent_phase4.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
