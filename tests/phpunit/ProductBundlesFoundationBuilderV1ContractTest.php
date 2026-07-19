@@ -29,19 +29,18 @@ final class ProductBundlesFoundationBuilderV1ContractTest extends TestCase
         foreach(['gift_bundles','gift_bundle_components','gift_bundle_participants','gift_bundle_audit_log','terms_version','commission_rate_bps','merchant_net_amount_cents'] as $marker) $this->assertStringContainsString($marker,$sql);
     }
 
-    public function testServiceUsesCanonicalCommissionAuthority(): void
+    public function testServiceUsesCanonicalCommissionAndAuditAuthority(): void
     {
         $php=file_get_contents($this->root.'/api/bundles/_bundles.php');
         $this->assertStringContainsString("require_once dirname(__DIR__) . '/payments/_commissions.php'",$php);
-        $this->assertStringContainsString('mg_commission_resolve_merchant_rate',$php);
-        $this->assertStringContainsString('MG_COMMISSION_RULE_VERSION',$php);
+        foreach(['mg_commission_resolve_merchant_rate','MG_COMMISSION_RULE_VERSION','gift_bundle_audit_log','mg_bundle_publish_validation'] as $marker) $this->assertStringContainsString($marker,$php);
         $this->assertStringNotContainsString('0.15',$php);
     }
 
     public function testMerchantWorkflowIncludesRequiredStatesAndPublishValidation(): void
     {
         $api=file_get_contents($this->root.'/api/merchant/bundles.php');
-        foreach(['accepted','countered','declined','question','mg_bundle_publish_validation','catalog.products.manage','gift_bundle_audit_log'] as $marker) $this->assertStringContainsString($marker,$api);
+        foreach(['accepted','countered','declined','question','mg_bundle_publish_validation','catalog.products.manage','mg_bundle_audit'] as $marker) $this->assertStringContainsString($marker,$api);
     }
 
     public function testBuilderIsARealSevenStepMerchantUi(): void
@@ -50,5 +49,7 @@ final class ProductBundlesFoundationBuilderV1ContractTest extends TestCase
         foreach(['1 Identity','2 Components','3 Merchants','4 Options','5 Commission','6 Campaign','7 Publish'] as $marker) $this->assertStringContainsString($marker,$view);
         $this->assertStringContainsString('data-product-list',$view);
         $this->assertStringContainsString('data-publish-checks',$view);
+        $js=file_get_contents($this->root.'/assets/js/merchant-bundles.js');
+        foreach(['data-participant-invite-form','Send invitation','commission_rate_bps','invite'] as $marker) $this->assertStringContainsString($marker,$js);
     }
 }
