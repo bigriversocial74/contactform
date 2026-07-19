@@ -15,6 +15,8 @@ on:
       - 'assets/css/multi-agent-workspace.css'
       - 'assets/css/multi-agent-workspace-state.css'
       - 'tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php'
+      - 'tests/phpunit/AgentHeaderTabBehaviorTest.php'
+      - 'tests/phpunit/MobileAgentTabsTest.php'
       - '.github/workflows/true-multi-agent-workspace-v1.yml'
   workflow_dispatch:
 
@@ -48,7 +50,16 @@ jobs:
           php -l includes/multi-agent-workspace-data.php
           php -l includes/personal-agent/multi-agent-workspace.php
           php -l tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
+          php -l tests/phpunit/AgentHeaderTabBehaviorTest.php
+          php -l tests/phpunit/MobileAgentTabsTest.php
       - name: JavaScript syntax
         run: node --check assets/js/multi-agent-workspace.js
-      - name: Contract test
-        run: vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
+      - name: Discover stale agent header contracts
+        run: |
+          echo 'Files still referencing removed system tabs or forbidding the agent add control:'
+          grep -RIlE "data-agent-tab-add|\['(inbox|sent|claimed)','(Inbox|Sent|Claimed)'" tests/phpunit .github/workflows || true
+      - name: Contract tests
+        run: |
+          vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/AgentHeaderTabBehaviorTest.php
+          vendor/bin/phpunit tests/phpunit/MobileAgentTabsTest.php
