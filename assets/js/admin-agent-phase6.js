@@ -1,7 +1,7 @@
 (function(window,document){
 'use strict';
 var root=document.querySelector('[data-admin-agent]');if(!root)return;
-var api=root.getAttribute('data-api-endpoint')||'/api/admin/admin-agent-phase6.php';
+var api=root.getAttribute('data-api-endpoint')||'/api/admin/admin-agent-phase6-router.php';
 var streamUrl=root.getAttribute('data-stream-endpoint')||'/api/admin/admin-agent-phase6-stream.php';
 var uploadUrl=root.getAttribute('data-phase6-upload-endpoint')||'/api/admin/admin-agent-phase6-evidence-upload.php';
 var csrf=root.getAttribute('data-csrf-token')||'';
@@ -51,7 +51,7 @@ async function configure(){var item=state.phase6_settings||{};var alerts=window.
 async function retention(){setStatus('Refreshing the safe retention preview…');var data=await post({action:'retention_preview',environment_key:'production'});merge(data.state||data);setStatus('Retention preview refreshed. No data was deleted.');}
 function showError(error){setStatus(error&&error.message||'Main Admin Agent Phase 6 request failed.',true);}
 function connectStream(){if(!window.EventSource)return;if(source)source.close();source=new EventSource(streamUrl+'?after=0&environment_key=production',{withCredentials:true});source.addEventListener('snapshot',function(event){try{merge(JSON.parse(event.data));}catch(ignore){}});source.addEventListener('heartbeat',function(event){try{var data=JSON.parse(event.data);if(data.scheduler){state.scheduler_health=data.scheduler;schedulerCard();gates();}}catch(ignore){}});source.onerror=function(){if(source){source.close();source=null;}window.clearTimeout(reconnectTimer);reconnectTimer=window.setTimeout(connectStream,5000);};}
-var finalButton=q('[data-admin-agent-final-readiness]');if(finalButton)finalButton.onclick=function(){runFinal().catch(showError);};
+qa('[data-admin-agent-final-readiness]').forEach(function(button){button.onclick=function(){runFinal().catch(showError);};});
 var uploadButton=q('[data-phase6-evidence-upload]');if(uploadButton)uploadButton.onclick=function(){uploadEvidence().catch(showError);};
 var briefButton=q('[data-admin-agent-continuity-brief]');if(briefButton)briefButton.onclick=function(){generateBrief().catch(showError);};
 var exportButton=q('[data-admin-agent-readiness-export]');if(exportButton)exportButton.onclick=function(){generateExport().catch(showError);};
