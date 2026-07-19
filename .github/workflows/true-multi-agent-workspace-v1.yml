@@ -54,10 +54,19 @@ jobs:
           php -l tests/phpunit/MobileAgentTabsTest.php
       - name: JavaScript syntax
         run: node --check assets/js/multi-agent-workspace.js
-      - name: Discover stale agent header contracts
+      - name: Capture stale agent header contracts
         run: |
-          echo 'Files still referencing removed system tabs or forbidding the agent add control:'
-          grep -RIlE "data-agent-tab-add|\['(inbox|sent|claimed)','(Inbox|Sent|Claimed)'" tests/phpunit .github/workflows || true
+          {
+            echo 'FILES'
+            grep -RIlE "data-agent-tab-add|\['(inbox|sent|claimed)','(Inbox|Sent|Claimed)'" tests/phpunit .github/workflows || true
+            echo 'MATCHES'
+            grep -RInE "data-agent-tab-add|\['(inbox|sent|claimed)','(Inbox|Sent|Claimed)'" tests/phpunit .github/workflows || true
+          } > stale-agent-contracts-${{ matrix.php }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stale-agent-contracts-${{ matrix.php }}
+          path: stale-agent-contracts-${{ matrix.php }}.txt
+          if-no-files-found: error
       - name: Contract tests
         run: |
           vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
