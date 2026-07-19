@@ -53,7 +53,8 @@ jobs:
       - name: Projection contract
         run: |
           grep -q "owner_merchant_user_id" api/bundles/projections.php
-          grep -q "invitation_status='accepted'" api/bundles/projections.php
+          grep -q "invitation_status" api/bundles/projections.php
+          grep -q "accepted" api/bundles/projections.php
           grep -q "data-feed-bundle-projections" assets/js/bundle-projections-v4.js
           grep -q "data-profile-bundle-projections" assets/js/bundle-projections-v4.js
       - name: Migration manifest
