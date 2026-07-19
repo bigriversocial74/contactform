@@ -3,8 +3,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 $page_title='Bundle Order | Microgifter';
 $page_section='account';
-$page_styles=['/assets/css/bundle-storefront-v4.css','/assets/css/bundle-lifecycle-v5.css'];
-$page_scripts=['/assets/js/bundle-lifecycle-v5.js'];
+$page_styles=['/assets/css/bundle-storefront-v4.css','/assets/css/bundle-lifecycle-v5.css','/assets/css/bundle-delivery-v6.css'];
+$page_scripts=['/assets/js/bundle-delivery-v6.js'];
 $order_id=trim((string)($_GET['id']??''));
 require __DIR__ . '/includes/header.php';
 ?>
