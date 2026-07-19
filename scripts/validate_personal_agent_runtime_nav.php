@@ -19,6 +19,8 @@ $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $chatCss = $read('assets/css/personal-agent-chat-canvas.css');
 $fullCanvasCss = $read('assets/css/personal-agent-full-canvas.css');
 $historyCss = $read('assets/css/personal-agent-chat-history.css');
+$multiAgentCss = $read('assets/css/multi-agent-workspace.css');
+$multiAgentJs = $read('assets/js/multi-agent-workspace.js');
 $chatJs = $read('assets/js/personal-agent-chat-canvas.js');
 $toolsJs = $read('assets/js/agent-sidebar-tools.js');
 $chatActions = $read('assets/js/personal-gifting-agent-actions.js');
@@ -30,8 +32,17 @@ $footerPosition = strpos($personalSidebar, 'class="mg-personal-chat-sidebar-foot
 $modePosition = strpos($personalSidebar, 'class="mg-agent-footer-mode-switch"');
 
 $checks = [
-    'Agent top tab is present' => str_contains($header, "['agent','Agent','/agent.php'")
-        && str_contains($header, 'data-system-tab="agent"'),
+    'Agent workspace has permanent default, dynamic agent tabs, and add control' => str_contains($header, "\$workspace_agent_tabs = ['agent'];")
+        && str_contains($header, 'data-system-tab="agent"')
+        && str_contains($header, 'href="/agent.php"')
+        && str_contains($header, 'mg_multi_agent_open_tabs')
+        && str_contains($header, 'data-agent-tab-id')
+        && str_contains($header, 'data-agent-add-tab')
+        && str_contains($multiAgentJs, '[data-agent-add-tab]')
+        && str_contains($multiAgentCss, '.mg-header-agent-tabs')
+        && !str_contains($header, "['inbox','Inbox'")
+        && !str_contains($header, "['sent','Sent'")
+        && !str_contains($header, "['claimed','Claimed'"),
     'gift folders use the unified sidebar' => str_contains($giftSidebar, "require __DIR__ . '/personal-agent-sidebar.php'")
         && !str_contains($giftSidebar, '$myListsItem')
         && !str_contains($giftSidebar, 'mg-gift-center-my-lists'),
