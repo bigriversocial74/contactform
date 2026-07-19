@@ -59,11 +59,14 @@ jobs:
           php -l api/admin/admin-agent-phase4.php
           php -l api/admin/admin-agent-phase4-stream.php
 
-      - name: PHP syntax — governance services
-        run: |
-          php -l includes/admin-agent-phase4.php
-          php -l includes/admin-agent-phase4-remediation.php
-          php -l includes/admin-permission-matrix.php
+      - name: PHP syntax — governance engine
+        run: php -l includes/admin-agent-phase4.php
+
+      - name: PHP syntax — remediation adapter
+        run: php -l includes/admin-agent-phase4-remediation.php
+
+      - name: PHP syntax — permission matrix
+        run: php -l includes/admin-permission-matrix.php
 
       - name: PHP syntax — runner
         run: php -l scripts/run_admin_agent_phase4.php
