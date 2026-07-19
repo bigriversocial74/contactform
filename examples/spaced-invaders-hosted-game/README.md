@@ -18,22 +18,28 @@ The complete static browser-game ZIP is generated outside the repository and upl
 - landing-page cover
 - package README
 
-Current upload package: `spaced-invaders-hosted-game-v1.1.1.zip`.
+Current upload package: `spaced-invaders-hosted-game-v1.1.2.zip`.
+
+## UFO kill-credit reliability v1.1.2
+
+- Settlement UFO kill totals continue beyond the 10-kill Capture Beam milestone.
+- Unlocking capture technology no longer auto-arms the beam or changes normal missile-defense behavior.
+- Capture mode is armed manually from Settlement Control.
+- Stale capture targets are cleared automatically so a settlement cannot remain permanently blocked.
+- A settlement continues defending against other hostile UFOs while one craft is descending under the capture beam.
+- Significant patrol-craft, energy-weapon, and mixed-defense damage retains settlement credit during same-frame destruction.
+- Battlefield labels now display total UFO kills instead of presenting the 10-kill unlock target as a counter cap.
 
 ## Settlement defense reliability v1.1.1
 
 - Newly constructed defenses are enabled immediately, even when the settlement previously had every active slot occupied.
 - Settlement level-ups can no longer shrink defense capacity below the active loadout.
 - Every built Tank Buster zone remains visible: orange means active and gray means built but disabled.
-- Tank Buster zones were widened slightly to maintain intentional overlap and include the full tank hull at zone boundaries.
-- Tank Busters prioritize breached and furthest-advanced tanks, lob guided anti-armor missiles, and credit the firing settlement with the kill.
-- Radar, anti-air, swarm guns, hospitals, Tank Busters, and their UI status now use one consistent enabled-state check.
-- Converting a captured UFO to settlement defense immediately equips its radar and anti-air systems.
-- Launching a captured UFO as a patrol craft immediately provisions its supporting anti-air system.
-- Airborne patrol state is reconciled automatically so a launched craft cannot silently disappear after losing its transient runtime record.
-- When patrol craft originate from only one settlement, they protect all surviving settlements.
-- Once patrol craft originate from multiple settlements, each patrol focuses on its original settlement zone while naturally sharing overlapping coverage.
-- Patrol craft engage hostile UFOs, suicide drones, and incoming missiles, and UFO kills are credited to the patrol craft's originating settlement.
+- Tank Buster zones include the full tank hull at zone boundaries.
+- Tank Busters prioritize breached and furthest-advanced tanks and credit the firing settlement with the kill.
+- Radar, anti-air, swarm guns, hospitals, Tank Busters, and their UI status use one consistent enabled-state check.
+- Airborne patrol state is reconciled automatically so launched craft cannot silently disappear.
+- Patrol craft engage hostile UFOs, suicide drones, and incoming missiles, with UFO kills credited to the patrol craft's originating settlement.
 
 The standalone browser package and the Microgifter Hosted Games upload package use the same defense behavior.
 
@@ -74,4 +80,4 @@ High-value reward configurations should move to a reviewed `server_review` integ
 
 ## Validation performed
 
-Both game versions passed JavaScript syntax checks, JSON validation, ZIP integrity checks, targeted defense behavior tests, and an extended 5,000-step runtime simulation covering Tank Busters, patrol craft, anti-air, radar, swarm guns, hospitals, loadout capacity, and kill credit.
+Both game versions passed JavaScript syntax checks, JSON validation, ZIP integrity checks, browser runtime checks, a 20-kill continuity test, two-hit automatic missile-credit testing, stale capture-lock recovery, mixed-defense credit testing, and manual Capture Beam landing validation.
