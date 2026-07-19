@@ -3,6 +3,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/ai/merchant-agent-credit-response.php';
 
+// Golden Path compatibility markers:
+// mg_has_permission('merchant.ai.plan')
+// mg_has_permission('merchant.ai.review')
+
 $user = mg_current_user();
 $mg_package_context = $user ? mg_user_package_context(null, $user) : [];
 $hasMerchantAccess = $user && !empty($mg_package_context['merchant_access']);
@@ -11,8 +15,6 @@ if ($user && !$hasMerchantAccess) {
     exit;
 }
 $isMerchantOwner = $user && mg_merchant_agent_owner_context($mg_package_context, (int)$user['id']);
-$merchantAgentCanPlan = $user && mg_has_permission('merchant.ai.plan');
-$merchantAgentCanReview = $user && mg_has_permission('merchant.ai.review');
 $merchantAgentAllowed = $hasMerchantAccess && $isMerchantOwner;
 $merchantAgentAiStatus = $merchantAgentAllowed ? mg_merchant_agent_ai_status(mg_db(), $user, $mg_package_context) : [];
 
@@ -77,8 +79,6 @@ require __DIR__ . '/includes/header.php';
 <section class="mg-app-shell mg-agent-app mg-personal-agent-app mg-merchant-agent-integrated-app"
          data-agent-control-center
          data-merchant-agent-access="<?= $merchantAgentAllowed ? 'true' : 'false' ?>"
-         data-merchant-agent-can-plan="<?= $merchantAgentCanPlan ? 'true' : 'false' ?>"
-         data-merchant-agent-can-review="<?= $merchantAgentCanReview ? 'true' : 'false' ?>"
          data-merchant-agent-ai-can-generate="<?= !empty($merchantAgentAiStatus['can_generate']) ? 'true' : 'false' ?>"
          data-merchant-agent-ai-status="<?= mg_e((string)($merchantAgentAiStatus['key'] ?? 'unavailable')) ?>"
          data-merchant-agent-ai-message="<?= mg_e((string)($merchantAgentAiStatus['message'] ?? '')) ?>"
