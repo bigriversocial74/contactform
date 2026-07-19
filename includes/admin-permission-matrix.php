@@ -65,7 +65,7 @@ function mg_admin_permission_matrix(): array
             'admin.admin_agent.actions' => ['admin.admin_agent.manage', 'admin.settings.manage', 'admin.users.manage'],
             'admin.admin_agent.escalations' => ['admin.admin_agent.manage', 'admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
             'admin.admin_agent.deployments' => ['admin.settings.manage', 'admin.users.manage'],
-            'admin.admin_agent.execute' => ['admin.settings.manage', 'admin.users.manage'],
+            'admin.admin_agent.execute' => [],
             'admin.ai_credit_incidents.view' => ['admin.operations_command.view', 'admin.settings.manage', 'admin.users.manage'],
             'admin.ai_credit_incidents.manage' => ['admin.operations_command.manage', 'admin.settings.manage', 'admin.users.manage'],
             'admin.ai_credit_incidents.retry' => ['admin.settings.manage'],
