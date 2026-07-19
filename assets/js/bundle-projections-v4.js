@@ -16,6 +16,14 @@
       </div>
     </article>`;
   };
+  const section = (type) => {
+    const node = document.createElement('section');
+    node.className = 'mg-bundle-projection-section';
+    node.hidden = true;
+    node.setAttribute(type === 'feed' ? 'data-feed-bundle-projections' : 'data-profile-bundle-projections', '');
+    node.innerHTML = `<div class="mg-bundle-projection-head"><div><h2>${type === 'feed' ? 'Featured Product Bundles' : 'Product Bundles'}</h2><p>${type === 'feed' ? 'Published by bundle master merchants.' : 'Owned and collaborative bundles connected to this merchant.'}</p></div><a href="/bundles.php">Browse all bundles →</a></div><div class="mg-bundle-projection-grid" data-bundle-projection-grid></div>`;
+    return node;
+  };
   async function load(root, mode, slug = '') {
     const url = new URL('/api/bundles/projections.php', location.origin);
     url.searchParams.set('mode', mode);
@@ -25,16 +33,19 @@
       const payload = await response.json();
       const bundles = payload?.data?.bundles || [];
       if (!response.ok || !payload.ok || !bundles.length) { root.hidden = true; return; }
-      const grid = root.querySelector('[data-bundle-projection-grid]');
-      if (grid) grid.innerHTML = bundles.map(card).join('');
+      root.querySelector('[data-bundle-projection-grid]').innerHTML = bundles.map(card).join('');
       root.hidden = false;
     } catch (_) { root.hidden = true; }
   }
   document.addEventListener('DOMContentLoaded', () => {
-    const feed = document.querySelector('[data-feed-bundle-projections]');
-    if (feed) load(feed, 'feed');
-    const profile = document.querySelector('[data-profile-bundle-projections]');
-    const shell = document.querySelector('[data-public-profile-page]');
-    if (profile && shell?.dataset.profileSlug) load(profile, 'profile', shell.dataset.profileSlug);
+    if (location.pathname.endsWith('/feed.php') || location.pathname === '/feed.php') {
+      const anchor = document.querySelector('[data-campaign-feed-list]') || document.querySelector('[data-feed-list]');
+      if (anchor) { const root = section('feed'); anchor.insertAdjacentElement('afterend', root); load(root, 'feed'); }
+    }
+    if (location.pathname.endsWith('/profile.php') || location.pathname === '/profile.php') {
+      const shell = document.querySelector('[data-public-profile-page]');
+      const anchor = document.querySelector('.mg-profile-products-card') || document.querySelector('[data-profile-products-grid]');
+      if (shell?.dataset.profileSlug && anchor) { const root = section('profile'); anchor.insertAdjacentElement('afterend', root); load(root, 'profile', shell.dataset.profileSlug); }
+    }
   });
 })();
