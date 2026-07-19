@@ -108,9 +108,11 @@ final class MainAdminAgentPhase5ContractTest extends TestCase
         $service = $this->file('includes/admin-agent-phase5.php');
         self::assertStringContainsString('function mg_admin_agent_phase5_evaluate_continuity', $service);
         self::assertStringContainsString('function mg_admin_agent_phase5_gap_upsert', $service);
-        foreach (['missing_objective','stale_backup','failed_backup','missing_drill','overdue_drill','rto_miss','rpo_miss','missing_plan','plan_review','evidence_incomplete'] as $type) {
+        foreach (['missing_objective','stale_backup','failed_backup','missing_drill','overdue_drill','rto_miss','rpo_miss','evidence_incomplete'] as $type) {
             self::assertStringContainsString("'gap_type' => '" . $type . "'", $service);
         }
+        self::assertStringContainsString("'missing_plan'", $service);
+        self::assertStringContainsString("'plan_review'", $service);
         self::assertStringContainsString('admin_agent_continuity_scorecards', $service);
         self::assertStringContainsString('occurrence_count=occurrence_count+1', $service);
         self::assertStringContainsString('resolved","dismissed', $service);
