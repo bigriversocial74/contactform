@@ -8,7 +8,7 @@ $page_section='merchant';
 $header_mode='account';
 // Legacy recovery-baseline contract keeps this exact route assertion: $page_styles=['/assets/css/merchant-workspace.css']
 $page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-locations-redemption.css'];
-$page_scripts=['/assets/js/merchant-workspace.js','/assets/js/merchant-locations-tabs.js'];
+$page_scripts=['/assets/js/merchant-locations-multicode.js'];
 $merchantView='locations';
 
 require __DIR__.'/includes/header.php';

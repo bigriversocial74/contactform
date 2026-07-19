@@ -1,0 +1,43 @@
+name: Merchant locations multi-code
+
+on:
+  pull_request:
+    paths:
+      - 'api/merchant/locations-v2.php'
+      - 'api/merchant/claim-codes.php'
+      - 'assets/js/merchant-locations-multicode.js'
+      - 'includes/merchant-locations-view.php'
+      - 'merchant-locations.php'
+      - 'database/manual/20260718_locations_multi_claim_code_safeguards.sql'
+      - 'tests/phpunit/MerchantLocationsMultiClaimCodeContractTest.php'
+      - '.github/workflows/merchant-locations-multicode.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - name: PHP syntax
+        run: |
+          php -l api/merchant/locations-v2.php
+          php -l api/merchant/claim-codes.php
+          php -l includes/merchant-locations-view.php
+          php -l merchant-locations.php
+          php -l tests/phpunit/MerchantLocationsMultiClaimCodeContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-locations-multicode.js
+      - name: Contract tests
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/MerchantLocationsMultiClaimCodeContractTest.php
+          else
+            composer install --no-interaction --prefer-dist
+            vendor/bin/phpunit tests/phpunit/MerchantLocationsMultiClaimCodeContractTest.php
+          fi
