@@ -2,6 +2,15 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
+$user = mg_current_user();
+$agentPackageContext = $user ? mg_user_package_context(null, $user) : [];
+$hasPersonalAgentAccess = $user && !empty($agentPackageContext['is_paid']);
+$hasMerchantAgentAccess = $user && !empty($agentPackageContext['merchant_access']);
+if ($user && !$hasPersonalAgentAccess) {
+    header('Location: /account-subscriptions.php?agent=personal');
+    exit;
+}
+
 $allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
 $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
