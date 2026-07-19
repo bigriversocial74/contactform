@@ -5,63 +5,68 @@ use PHPUnit\Framework\TestCase;
 
 final class AgentHeaderTabBehaviorTest extends TestCase
 {
-    public function testSystemTabsAlwaysRemainInSharedHeader(): void
+    public function testAgentWorkspaceUsesPermanentDefaultAndDynamicAgentTabs(): void
     {
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
-        $createMenu=file_get_contents($root.'/includes/header-templates/create-menu.php');
-        self::assertIsString($header); self::assertIsString($createMenu);
-        foreach(["['agent','Agent','/agent.php'," . '$can_agent_workspace' . "]","['inbox','Inbox','/inbox.php',true]","['sent','Sent','/sent.php',true]","['claimed','Claimed','/claimed.php',true]"] as $needle) self::assertStringContainsString($needle,$header);
-        self::assertStringContainsString("'option' => 'microgift'",$createMenu);
-        self::assertStringNotContainsString('data-agent-tab-add',$header);
+        self::assertIsString($header);
 
+        self::assertStringContainsString("\$workspace_agent_tabs = ['agent'];",$header);
+        self::assertStringContainsString('data-system-tab="agent"',$header);
+        self::assertStringContainsString('href="/agent.php"',$header);
+        self::assertStringContainsString('>Agent</span>',$header);
+        self::assertStringContainsString('mg_multi_agent_open_tabs',$header);
+        self::assertStringContainsString('data-agent-tab-id',$header);
+        self::assertStringContainsString('data-agent-add-tab',$header);
+
+        foreach (["['inbox','Inbox'","['sent','Sent'","['claimed','Claimed'"] as $removedSystemTab) {
+            self::assertStringNotContainsString($removedSystemTab,$header);
+        }
     }
 
-    public function testAuthenticatedCustomersCanSeeAgentTabWithoutMerchantAccess(): void
-
+    public function testAuthenticatedCustomersCanSeeAgentWorkspaceWithoutMerchantAccess(): void
     {
         $header=file_get_contents(dirname(__DIR__,2).'/includes/header-components/app-header.php');
         self::assertIsString($header);
         self::assertStringContainsString('$is_authenticated_user = mg_current_user() !== null;',$header);
         self::assertStringContainsString('$can_agent_workspace = $is_authenticated_user || $can_merchant_nav',$header);
-        self::assertStringContainsString("['agent','Agent','/agent.php',\$can_agent_workspace]",$header);
-
-
-
+        self::assertStringContainsString("\$workspace_agent_tabs = ['agent'];",$header);
     }
 
-    public function testAddAgentTabAndDuplicateCreateControlsAreRemoved(): void
+    public function testAddAgentControlOpensTheEmbeddedMultiAgentSelector(): void
     {
         $root=dirname(__DIR__,2);
-        $script=file_get_contents($root.'/assets/js/agent-tabs.js');
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
+        $workspaceScript=file_get_contents($root.'/assets/js/multi-agent-workspace.js');
         $createMenu=file_get_contents($root.'/assets/js/create-menu.js');
-        $css=file_get_contents($root.'/assets/css/agent-workspace-layout.css');
-        self::assertIsString($script);
         self::assertIsString($header);
+        self::assertIsString($workspaceScript);
         self::assertIsString($createMenu);
-        self::assertIsString($css);
-        self::assertStringNotContainsString('data-agent-tab-add',$script);
-        self::assertStringContainsString('.mg-agent-tab-add{display:none!important}',$css);
+
+        self::assertStringContainsString('class="mg-agent-tab-add"',$header);
+        self::assertStringContainsString('data-agent-add-tab',$header);
+        self::assertStringContainsString('[data-agent-add-tab]',$workspaceScript);
+        self::assertStringContainsString('data-open-agent-selector',$workspaceScript);
         self::assertStringNotContainsString('create_menu_button',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringNotContainsString("createElement('button')",$createMenu);
-        self::assertStringContainsString('looksLikePlusControl',$createMenu);
-        self::assertStringContainsString('explicitTriggerSelector',$createMenu);
-        self::assertStringContainsString('.mg-header-build-link',$createMenu);
         self::assertStringContainsString('href="/lists.php?action=create" data-global-create',$header);
-        self::assertStringContainsString("document.addEventListener('click'",$createMenu);
     }
 
-    public function testDeleteControlLivesInsideActiveSavedAgentTab(): void
+    public function testSpecializedAgentsUseManagementModalInsteadOfInlineDelete(): void
     {
-        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/agent-tabs.js');
-        $css=file_get_contents(dirname(__DIR__,2).'/assets/css/agent-workspace-layout.css');
+        $root=dirname(__DIR__,2);
+        $script=file_get_contents($root.'/assets/js/multi-agent-workspace.js');
+        $workspace=file_get_contents($root.'/includes/personal-agent/multi-agent-workspace.php');
         self::assertIsString($script);
-        self::assertIsString($css);
-        self::assertStringContainsString('data-agent-tab-delete',$script);
-        self::assertStringContainsString("await Microgifter.delete('/api/agents/item.php'",$script);
-        self::assertStringContainsString('.mg-agent-tab-close{position:absolute;top:4px;right:4px',$css);
-        self::assertStringNotContainsString('data-agent-tab-close',$script);
+        self::assertIsString($workspace);
+
+        self::assertStringContainsString('data-agent-management-modal',$workspace);
+        self::assertStringContainsString('data-agent-management-action="pause"',$workspace);
+        self::assertStringContainsString('data-agent-management-action="archive"',$workspace);
+        self::assertStringContainsString('data-agent-management-action="delete"',$workspace);
+        self::assertStringContainsString("/api/agents/item.php",$script);
+        self::assertStringContainsString("/api/agents/archive.php",$script);
+        self::assertStringContainsString("/api/agents/status.php",$script);
     }
 }
