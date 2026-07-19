@@ -153,6 +153,7 @@ return [
         '20260718_ai_credit_reconciliation_incidents.sql',
         '20260718_merchant_agent_automatic_snapshots_v1.sql',
         '20260718_main_admin_agent_phase1.sql',
+        '20260718_main_admin_agent_phase2.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
