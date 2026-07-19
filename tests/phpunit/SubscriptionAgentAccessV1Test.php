@@ -23,7 +23,7 @@ final class SubscriptionAgentAccessV1Test extends TestCase
     {
         $personal=$this->source('agent.php');
         self::assertStringNotContainsString('/account-subscriptions.php?agent=personal',$personal);
-        self::assertStringContainsString("$header_mode = 'agent'",$personal);
+        self::assertStringContainsString("\$header_mode = 'agent'",$personal);
         self::assertStringContainsString('/account-subscriptions.php?agent=merchant',$this->source('merchant-agent-chat.php'));
     }
 
