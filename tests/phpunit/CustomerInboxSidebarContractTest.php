@@ -65,14 +65,14 @@ final class CustomerInboxSidebarContractTest extends TestCase
         self::assertStringContainsString('/account-subscriptions.php?agent=personal', $sidebar);
         self::assertStringContainsString('/account-subscriptions.php?agent=merchant', $sidebar);
         self::assertStringNotContainsString('/account-subscriptions.php?agent=personal', $personalPage);
-        self::assertStringContainsString("$header_mode = 'agent'", $personalPage);
+        self::assertStringContainsString("\$header_mode = 'agent'", $personalPage);
         self::assertStringContainsString("header('Location: /account-subscriptions.php?agent=merchant')", $merchantPage);
     }
 
     public function testSubscriptionsPageUsesUniversalInboxSidebar(): void
     {
         $source = $this->source('account-subscriptions.php');
-        self::assertStringContainsString("$agent_sidebar_mode='subscriptions'", $source);
+        self::assertStringContainsString("\$agent_sidebar_mode='subscriptions'", $source);
         self::assertStringContainsString("require __DIR__ . '/includes/personal-agent-sidebar.php'", $source);
         self::assertStringNotContainsString("require __DIR__ . '/includes/agent-sidebar.php'", $source);
         self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.4.0', $source);
@@ -128,7 +128,7 @@ final class CustomerInboxSidebarContractTest extends TestCase
     public function testMerchantAdminNavigationRemainsIndependent(): void
     {
         $source = $this->source('includes/agent-sidebar.php');
-        self::assertStringContainsString("str_starts_with($currentSidebarScript, 'merchant-')", $source);
+        self::assertStringContainsString("str_starts_with(\$currentSidebarScript, 'merchant-')", $source);
         self::assertStringContainsString("require_once __DIR__ . '/merchant-navigation.php'", $source);
         self::assertStringContainsString('mg_merchant_navigation_sidebar($agentSidebarActive)', $source);
     }
