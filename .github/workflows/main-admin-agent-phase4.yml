@@ -1,0 +1,107 @@
+name: Main Admin Agent Phase 4
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/admin-agent.php'
+      - 'api/admin/admin-agent-phase4.php'
+      - 'api/admin/admin-agent-phase4-stream.php'
+      - 'assets/css/admin-agent-phase4.css'
+      - 'assets/js/admin-agent-phase4.js'
+      - 'includes/admin-agent-phase4.php'
+      - 'includes/admin-agent-phase4-remediation.php'
+      - 'includes/admin-permission-matrix.php'
+      - 'database/20260719_main_admin_agent_phase4.sql'
+      - 'config/migrations.php'
+      - 'scripts/run_admin_agent_phase4.php'
+      - 'docs/operations/main-admin-agent-phase4.md'
+      - 'tests/phpunit/MainAdminAgentPhase4ContractTest.php'
+      - '.github/workflows/main-admin-agent-phase4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax
+        run: |
+          php -l admin/admin-agent.php
+          php -l api/admin/admin-agent-phase4.php
+          php -l api/admin/admin-agent-phase4-stream.php
+          php -l includes/admin-agent-phase4.php
+          php -l includes/admin-agent-phase4-remediation.php
+          php -l includes/admin-permission-matrix.php
+          php -l scripts/run_admin_agent_phase4.php
+          php -l tests/phpunit/MainAdminAgentPhase4ContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/admin-agent-phase4.js
+
+      - name: Contract — schema, maintenance, and change risk
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase4ContractTest.php --filter '/testMigration|testMaintenance|testChangeRisk/'
+
+      - name: Contract — reliability, capacity, and incident learning
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase4ContractTest.php --filter '/testReliability|testCapacity|testIncidentLearning/'
+
+      - name: Contract — prevention, permissions, and API
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase4ContractTest.php --filter '/testPrevention|testPhase4Api/'
+
+      - name: Contract — chat, live updates, and operations
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase4ContractTest.php --filter '/testChat|testClient|testSse|testScheduled/'
+
+      - name: Main Admin Agent Phase 4 full contract
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase4ContractTest.php
+
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Build focused deploy artifact
+        if: matrix.php == '8.3'
+        run: |
+          mkdir -p artifact/admin artifact/api/admin artifact/assets/css artifact/assets/js artifact/includes artifact/database artifact/scripts artifact/docs/operations artifact/config
+          cp admin/admin-agent.php artifact/admin/
+          cp api/admin/admin-agent-phase4.php api/admin/admin-agent-phase4-stream.php artifact/api/admin/
+          cp assets/css/admin-agent-phase4.css artifact/assets/css/
+          cp assets/js/admin-agent-phase4.js artifact/assets/js/
+          cp includes/admin-agent-phase4.php includes/admin-agent-phase4-remediation.php includes/admin-permission-matrix.php artifact/includes/
+          cp database/20260719_main_admin_agent_phase4.sql artifact/database/
+          cp scripts/run_admin_agent_phase4.php artifact/scripts/
+          cp docs/operations/main-admin-agent-phase4.md artifact/docs/operations/
+          cp config/migrations.php artifact/config/
+
+      - name: Upload focused deploy artifact
+        if: matrix.php == '8.3'
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-main-admin-agent-phase4
+          path: artifact
