@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/admin-agent-phase5.php';
+require_once __DIR__ . '/admin-agent-phase4-remediation.php';
 
 function mg_admin_agent_phase5_execute_adapter(PDO $pdo, string $adapterKey, int $adminId, array $payload): array
 {
