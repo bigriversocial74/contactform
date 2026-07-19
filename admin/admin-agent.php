@@ -28,7 +28,7 @@ $displayName = mg_user_display_name();
 
 require dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-admin-app mg-admin-agent-app" data-admin-agent data-csrf-token="<?= mg_e($csrfToken) ?>" data-api-endpoint="/api/admin/admin-agent-phase3.php" data-stream-endpoint="/api/admin/admin-agent-phase3-stream.php">
+<section class="mg-app-shell mg-admin-app mg-admin-agent-app" data-admin-agent data-csrf-token="<?= mg_e($csrfToken) ?>" data-api-endpoint="/api/admin/admin-agent-phase3.php" data-stream-endpoint="/api/admin/admin-agent-phase3-stream.php" data-phase2-api-endpoint="/api/admin/admin-agent-phase2.php" data-phase2-stream-endpoint="/api/admin/admin-agent-phase2-stream.php">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-admin-workspace mg-admin-agent-workspace">
@@ -85,6 +85,8 @@ require dirname(__DIR__) . '/includes/header.php';
               <button type="button" data-admin-agent-prompt="Scheduled brief delivery">Brief delivery</button>
               <button type="button" data-admin-agent-prompt="Cross-system correlations">Correlations</button>
               <button type="button" data-admin-agent-prompt="Anomaly report">Anomalies</button>
+              <button type="button" data-admin-agent-prompt="Deployment impact report">Deploy impact</button>
+              <button type="button" data-admin-agent-prompt="Escalation report">Escalations</button>
               <button type="button" data-admin-agent-prompt="Controlled remediation report">Remediation</button>
             </div>
           </article>
