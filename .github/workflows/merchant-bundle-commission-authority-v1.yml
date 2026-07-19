@@ -1,0 +1,63 @@
+name: Merchant Bundle Commission Authority v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'api/payments/_commissions.php'
+      - 'api/commerce/_cart_checkout.php'
+      - 'api/commerce/_checkout.php'
+      - 'api/admin/merchant-commissions.php'
+      - 'api/merchant/commission-profile.php'
+      - 'admin-commissions.php'
+      - 'merchant-payments.php'
+      - 'assets/js/admin-commissions.js'
+      - 'assets/js/merchant-commission-profile.js'
+      - 'assets/css/commission-authority.css'
+      - 'database/20260719_merchant_bundle_commission_authority_v1.sql'
+      - 'config/migrations.php'
+      - 'docs/commerce/merchant-bundle-commission-authority-v1.md'
+      - 'tests/phpunit/MerchantBundleCommissionAuthorityV1ContractTest.php'
+      - '.github/workflows/merchant-bundle-commission-authority-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl
+          coverage: none
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l api/payments/_commissions.php
+          php -l api/commerce/_cart_checkout.php
+          php -l api/commerce/_checkout.php
+          php -l api/admin/merchant-commissions.php
+          php -l api/merchant/commission-profile.php
+          php -l admin-commissions.php
+          php -l merchant-payments.php
+          php -l tests/phpunit/MerchantBundleCommissionAuthorityV1ContractTest.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/admin-commissions.js
+          node --check assets/js/merchant-commission-profile.js
+      - name: Commission authority contract
+        run: vendor/bin/phpunit tests/phpunit/MerchantBundleCommissionAuthorityV1ContractTest.php
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
