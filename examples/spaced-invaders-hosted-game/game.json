@@ -1,0 +1,53 @@
+{
+  "schema": "microgifter.hosted-game/v1",
+  "name": "Spaced Invaders",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "description": "Defend four mountain settlements, capture alien technology, and survive the UFO siege.",
+  "category": "simulation",
+  "orientation": "landscape",
+  "viewport": {
+    "min_width": 1024,
+    "min_height": 576
+  },
+  "session": {
+    "max_duration_seconds": 3600
+  },
+  "capabilities": [
+    "player",
+    "runs",
+    "events",
+    "state",
+    "scores",
+    "leaderboard",
+    "inbox",
+    "fullscreen",
+    "audio"
+  ],
+  "events": [
+    "game_loaded",
+    "run_started",
+    "level_started",
+    "score_updated",
+    "level_completed",
+    "player_qualified",
+    "run_completed",
+    "run_abandoned",
+    "runtime_error"
+  ],
+  "scoring": {
+    "mode": "points",
+    "sort": "high",
+    "integer": true
+  },
+  "qualification": {
+    "mode": "game_reported"
+  },
+  "network": {
+    "connect": []
+  },
+  "assets": {
+    "cover": "spaced-invaders-landing.webp",
+    "icon": null
+  }
+}
