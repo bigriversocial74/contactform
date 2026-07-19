@@ -64,7 +64,7 @@ $formatLimit = static function (array $plan, array $row): string {
 require __DIR__ . '/includes/header.php';
 ?>
 
-<div class="mg-pricing-v1">
+<div class="mg-pricing-v1" data-package-id="public-pricing">
   <section class="mg-price-plans" id="plans" aria-labelledby="plans-title">
     <div class="mg-price-shell">
       <div class="mg-price-section-heading mg-price-section-heading-center">
