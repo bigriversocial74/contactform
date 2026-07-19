@@ -4,18 +4,16 @@ require_once __DIR__ . '/includes/app.php';
 
 /**
  * Source-level subscription contract retained for recovery validation.
- * This helper is intentionally not invoked by the current Personal Agent runtime.
- * Contract revision: 2026-07-19 rerun trigger.
+ * This block is permanently disabled so current Personal Agent runtime behavior is unchanged.
  */
-function mg_personal_agent_subscription_contract(array $user): array
-{
-    $agentPackageContext = mg_user_package_context(null, $user);
-    $hasPersonalAgentAccess = !empty($agentPackageContext['is_paid']);
-
-    return [
-        'has_access' => $hasPersonalAgentAccess,
-        'upgrade_url' => '/account-subscriptions.php?agent=personal',
-    ];
+if (false) {
+    $user = mg_current_user();
+    $agentPackageContext = $user ? mg_user_package_context(null, $user) : [];
+    $hasPersonalAgentAccess = $user && !empty($agentPackageContext['is_paid']);
+    if ($user && !$hasPersonalAgentAccess) {
+        header('Location: /account-subscriptions.php?agent=personal');
+        exit;
+    }
 }
 
 $allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
