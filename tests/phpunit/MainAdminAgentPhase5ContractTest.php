@@ -39,6 +39,7 @@ final class MainAdminAgentPhase5ContractTest extends TestCase
         self::assertStringContainsString("'approve_recovery_drill_record'", $sql);
         self::assertStringContainsString("'01ADMINAGENTP5ADAPTER00001'", $sql);
         self::assertStringContainsString("'20260719_main_admin_agent_phase5'", $sql);
+        self::assertStringContainsString("LEFT(REPLACE(UUID(),'-',''),26)", $sql);
         self::assertStringNotContainsString('permission_catalog', $sql);
     }
 
@@ -119,16 +120,16 @@ final class MainAdminAgentPhase5ContractTest extends TestCase
     {
         $service = $this->file('includes/admin-agent-phase5-remediation.php');
         $api = $this->file('api/admin/admin-agent-phase5.php');
-        self::assertStringContainsString("approve_recovery_drill_record", $service);
-        self::assertStringContainsString("EXECUTE ", $service);
-        self::assertStringContainsString("review_ready", $service);
-        self::assertStringContainsString("evidence_status", $service);
-        self::assertStringContainsString("canary_verified", $service);
-        self::assertStringContainsString("manifest_verified", $service);
-        self::assertStringContainsString("migration_status_verified", $service);
+        self::assertStringContainsString('approve_recovery_drill_record', $service);
+        self::assertStringContainsString('EXECUTE ', $service);
+        self::assertStringContainsString('review_ready', $service);
+        self::assertStringContainsString('evidence_status', $service);
+        self::assertStringContainsString('canary_verified', $service);
+        self::assertStringContainsString('manifest_verified', $service);
+        self::assertStringContainsString('migration_status_verified', $service);
         self::assertStringContainsString("'admin.admin_agent.execute' => []", $api);
         self::assertStringContainsString("mg_admin_agent_phase5_api_require(\$actor, 'admin.admin_agent.execute')", $api);
-        self::assertStringContainsString("execution_mode') !== 'in_process'", $service);
+        self::assertStringContainsString("\$execution['execution_mode'] !== 'in_process'", $service);
     }
 
     public function testPhase5ApiIsProtectedRateLimitedCsrfGatedAndFailClosed(): void
