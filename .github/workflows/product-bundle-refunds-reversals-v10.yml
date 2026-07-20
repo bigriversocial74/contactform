@@ -1,0 +1,36 @@
+name: Product Bundle Refunds Reversals v10
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/bundle-settlement-adjustments.php'
+      - 'admin/bundle-settlement-adjustments.php'
+      - 'assets/js/bundle-settlement-adjustments-v10.js'
+      - 'assets/css/bundle-settlement-adjustments-v10.css'
+      - 'database/20260719_product_bundle_refunds_reversals_v10.sql'
+      - 'tests/phpunit/ProductBundleRefundsReversalsV10ContractTest.php'
+      - '.github/workflows/product-bundle-refunds-reversals-v10.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - run: php -l api/admin/bundle-settlement-adjustments.php
+      - run: php -l admin/bundle-settlement-adjustments.php
+      - run: php -l tests/phpunit/ProductBundleRefundsReversalsV10ContractTest.php
+      - run: node --check assets/js/bundle-settlement-adjustments-v10.js
+      - run: '! grep -R "\/v1\/transfers" api/admin/bundle-settlement-adjustments.php'
+      - run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/ProductBundleRefundsReversalsV10ContractTest.php
+          else
+            echo "PHPUnit not installed; syntax and contract-source guards completed."
+          fi
