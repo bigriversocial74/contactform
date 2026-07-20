@@ -81,11 +81,21 @@ jobs:
       - name: MCP canonical bridge executable contract
         run: php scripts/validate_mcp_phase1_canonical_bridge.php
       - name: MCP canonical bridge PHPUnit contract
+        shell: bash
         run: |
+          set -o pipefail
           vendor/bin/phpunit \
             tests/phpunit/McpPhase1CanonicalBridgeV1ContractTest.php \
             tests/phpunit/McpPhase1ProtocolV1ContractTest.php \
-            tests/phpunit/McpPhase1FoundationV1ContractTest.php
+            tests/phpunit/McpPhase1FoundationV1ContractTest.php \
+            2>&1 | tee /tmp/mcp-canonical-bridge-php-${{ matrix.php }}.log
+      - name: Upload PHP contract log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-canonical-bridge-php-${{ matrix.php }}-log
+          path: /tmp/mcp-canonical-bridge-php-${{ matrix.php }}.log
+          if-no-files-found: error
       - name: Task Agent Phase 4 and Approval Center regressions
         run: |
           vendor/bin/phpunit \
