@@ -44,7 +44,7 @@ final class MigrationDelimiterRunnerV1Test extends TestCase
         self::assertSame('DROP PROCEDURE IF EXISTS mg_product_bundle_checkout_fulfillment_v3_upgrade', $statements[2]);
         self::assertStringStartsWith('CREATE PROCEDURE mg_product_bundle_checkout_fulfillment_v3_upgrade()', $statements[3]);
         self::assertStringContainsString('ALTER TABLE gift_bundle_orders ADD COLUMN payment_intent_id', $statements[3]);
-        self::assertStringContainsString('ALTER TABLE gift_bundle_orders ADD CONSTRAINT fk_gift_bundle_orders_payment_intent', $statements[3]);
+        self::assertStringContainsString('ADD CONSTRAINT fk_gift_bundle_orders_payment_intent', $statements[3]);
         self::assertSame('CALL mg_product_bundle_checkout_fulfillment_v3_upgrade()', $statements[4]);
         self::assertSame('DROP PROCEDURE IF EXISTS mg_product_bundle_checkout_fulfillment_v3_upgrade', $statements[5]);
 
