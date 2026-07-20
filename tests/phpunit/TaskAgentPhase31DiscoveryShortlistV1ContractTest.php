@@ -30,17 +30,9 @@ final class TaskAgentPhase31DiscoveryShortlistV1ContractTest extends TestCase
         $runtime=file_get_contents($root.'/includes/multi-agent-runtime.php');
         foreach([$service,$router,$runtime] as $value)self::assertIsString($value);
         foreach([
-            'mg_product_discovery_search',
-            'mg_public_product_load',
-            "cp.status='published'",
-            "cpv.version_status='published'",
-            "cpvl.availability_status='available'",
-            'mg_task_agent_shortlist_add',
-            'mg_task_agent_shortlist_remove',
-            'owner_user_id=? AND agent_id=?',
-            'multi_agent.discovery_completed',
-            'multi_agent.shortlist_added',
-            'multi_agent.shortlist_removed',
+            'mg_product_discovery_search','mg_public_product_load',"cp.status='published'", "cpv.version_status='published'", "cpvl.availability_status='available'",
+            'mg_task_agent_shortlist_add','mg_task_agent_shortlist_remove','owner_user_id=? AND agent_id=?',
+            'multi_agent.discovery_completed','multi_agent.shortlist_added','multi_agent.shortlist_removed',
         ] as $marker) self::assertStringContainsString($marker,$service);
         self::assertStringNotContainsString('mg_anthropic_messages',$service);
         self::assertStringNotContainsString('mg_ai_credit_consume',$service);
@@ -56,7 +48,7 @@ final class TaskAgentPhase31DiscoveryShortlistV1ContractTest extends TestCase
         $script=file_get_contents($root.'/assets/js/multi-agent-runtime.js');
         $page=file_get_contents($root.'/agent.php');
         foreach([$api,$script,$page] as $value)self::assertIsString($value);
-        foreach(['mg_agent_require_owned','mg_require_csrf_for_write',"$action==='discover_products'","$action==='add_shortlist'","$action==='remove_shortlist'","'used_ai'=>false"] as $marker)self::assertStringContainsString($marker,$api);
+        foreach(['mg_agent_require_owned','mg_require_csrf_for_write','if($action===\'discover_products\')','if($action===\'add_shortlist\')','if($action===\'remove_shortlist\')',"'used_ai'=>false"] as $marker)self::assertStringContainsString($marker,$api);
         foreach(['data-shortlist-product','data-shortlist-remove',"action:'add_shortlist'","action:'remove_shortlist'",'Review product','Shortlisted'] as $marker)self::assertStringContainsString($marker,$script);
         self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.7.0',$page);
         self::assertStringContainsString('/assets/css/task-agent-shortlist-v1.css?v=1.0.0',$page);
@@ -81,10 +73,12 @@ final class TaskAgentPhase31DiscoveryShortlistV1ContractTest extends TestCase
         $router=file_get_contents(dirname(__DIR__,2).'/includes/task-agent-shortlist-router.php');
         $runtime=file_get_contents(dirname(__DIR__,2).'/includes/multi-agent-runtime.php');
         foreach([$service,$router,$runtime] as $value)self::assertIsString($value);
-        self::assertStringContainsString('mg_task_agent_shortlist_for_model',$service);
-        self::assertStringContainsString('array_slice($items,0,8)',$service);
+        $projectionStart=strpos($service,'function mg_task_agent_shortlist_for_model');
+        self::assertNotFalse($projectionStart);
+        $projection=substr($service,$projectionStart);
+        self::assertStringContainsString('array_slice($items,0,8)',$projection);
         self::assertStringContainsString('mg_task_agent_shortlist_model_context',$router);
         self::assertStringContainsString('mg_task_agent_shortlist_model_context($context)',$runtime);
-        self::assertStringNotContainsString('recipient_context',$service, 'Model shortlist projection must not include recipient contact identifiers.');
+        self::assertStringNotContainsString('recipient_context',$projection,'Model shortlist projection must not include recipient identifiers.');
     }
 }
