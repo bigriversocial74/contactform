@@ -53,7 +53,7 @@ function mg_bundle_provider_mark_succeeded(PDO $pdo, array $transfer, array $pro
         ->execute([$providerReference, $response, (int)$transfer['id']]);
 
     $pdo->prepare("UPDATE gift_bundle_component_settlements
-        SET readiness_status='released',released_amount_cents=payable_amount_cents,released_at=COALESCE(released_at,NOW()),updated_at=NOW()
+        SET readiness_status='released',released_at=COALESCE(released_at,NOW()),updated_at=NOW()
         WHERE id=? AND readiness_status='eligible'")
         ->execute([(int)$transfer['settlement_id']]);
 
