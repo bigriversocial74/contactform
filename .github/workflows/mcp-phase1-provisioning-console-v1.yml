@@ -1,0 +1,158 @@
+name: MCP Phase 1 Provisioning Console v1
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'admin/mcp-connections.php'
+      - 'api/admin/_mcp_connections.php'
+      - 'api/admin/mcp-connections.php'
+      - 'api/admin/mcp-connection-create.php'
+      - 'api/admin/mcp-connection-action.php'
+      - 'api/admin/mcp-runtime-credentials.php'
+      - 'assets/js/admin-mcp-connections.js'
+      - 'assets/css/admin-mcp-connections.css'
+      - 'includes/admin-permission-matrix.php'
+      - 'includes/admin-sidebar.php'
+      - 'services/mcp/README.md'
+      - 'config/mcp_phase1_provisioning_console_release.php'
+      - 'docs/MICROGIFTER_MCP_PHASE1_PROVISIONING_CONSOLE_RUNBOOK.md'
+      - 'scripts/validate_mcp_phase1_provisioning_console.php'
+      - 'tests/phpunit/McpPhase1ProvisioningConsoleV1ContractTest.php'
+      - '.github/workflows/mcp-phase1-provisioning-console-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typescript-and-browser-js:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: services/mcp/package-lock.json
+      - name: Install locked MCP dependencies
+        working-directory: services/mcp
+        run: npm ci --ignore-scripts
+      - name: Audit MCP dependencies
+        working-directory: services/mcp
+        run: npm audit --audit-level=high
+      - name: Build and test MCP service
+        working-directory: services/mcp
+        run: npm run check
+      - name: Browser JavaScript syntax
+        run: node --check assets/js/admin-mcp-connections.js
+
+  php-and-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: php-and-migration (${{ matrix.php }})
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: test
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: ci-mcp-provisioning-console-pepper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l admin/mcp-connections.php
+          php -l api/admin/_mcp_connections.php
+          php -l api/admin/mcp-connections.php
+          php -l api/admin/mcp-connection-create.php
+          php -l api/admin/mcp-connection-action.php
+          php -l api/admin/mcp-runtime-credentials.php
+          php -l includes/admin-permission-matrix.php
+          php -l includes/admin-sidebar.php
+          php -l config/mcp_phase1_provisioning_console_release.php
+          php -l scripts/validate_mcp_phase1_provisioning_console.php
+          php -l tests/phpunit/McpPhase1ProvisioningConsoleV1ContractTest.php
+      - name: MCP provisioning executable contract
+        run: php scripts/validate_mcp_phase1_provisioning_console.php
+      - name: MCP provisioning and Phase 1 PHPUnit contracts
+        run: |
+          vendor/bin/phpunit \
+            tests/phpunit/McpPhase1ProvisioningConsoleV1ContractTest.php \
+            tests/phpunit/McpPhase1CanonicalBridgeV1ContractTest.php \
+            tests/phpunit/McpPhase1ProtocolV1ContractTest.php \
+            tests/phpunit/McpPhase1FoundationV1ContractTest.php
+      - name: Build clean MySQL database
+        shell: bash
+        run: |
+          set -o pipefail
+          php scripts/run_migrations.php 2>&1 | tee /tmp/mcp-provisioning-migrations.log
+      - name: Verify provisioning schema dependencies
+        run: |
+          php -r '
+          $config = require "api/config.php";
+          $db = $config["db"];
+          $pdo = new PDO(
+              sprintf("mysql:host=%s;dbname=%s;charset=%s", $db["host"], $db["name"], $db["charset"]),
+              getenv("MG_MIGRATION_DB_USER"),
+              getenv("MG_MIGRATION_DB_PASS"),
+              [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+          );
+          $expected = ["mcp_scope_catalog", "mcp_clients", "mcp_connections", "mcp_connection_scopes", "mcp_tool_invocations"];
+          $placeholders = implode(",", array_fill(0, count($expected), "?"));
+          $stmt = $pdo->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN (" . $placeholders . ") ORDER BY table_name");
+          $stmt->execute($expected);
+          $actual = $stmt->fetchAll(PDO::FETCH_COLUMN);
+          sort($expected);
+          if ($actual !== $expected) {
+              fwrite(STDERR, "Provisioning dependency mismatch. Expected: " . json_encode($expected) . " Actual: " . json_encode($actual) . PHP_EOL);
+              exit(1);
+          }
+          echo "MCP provisioning schema dependencies verified." . PHP_EOL;
+          '
+      - name: Task Agent Phase 4 and Approval Center regressions
+        run: |
+          vendor/bin/phpunit \
+            tests/phpunit/TaskAgentPhase46ProductionQaV1ContractTest.php \
+            tests/phpunit/TaskAgentPhase46SafetyBoundaryV1ContractTest.php \
+            tests/phpunit/ProductionAgentPlanReviewApprovalCenterSection2Test.php
+      - name: Repository production-quality audit
+        run: composer audit-repository-quality
+      - name: Upload migration log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-provisioning-migration-log-php-${{ matrix.php }}
+          path: /tmp/mcp-provisioning-migrations.log
+          if-no-files-found: ignore
