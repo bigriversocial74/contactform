@@ -15,6 +15,9 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
         self::assertStringContainsString('href="/inbox.php"', $header);
         self::assertStringContainsString('href="/sent.php"', $header);
         self::assertStringContainsString('href="/claimed.php"', $header);
+        self::assertStringContainsString('data-gift-nav-count="inbox"', $header);
+        self::assertStringContainsString('data-gift-nav-count="sent"', $header);
+        self::assertStringContainsString('data-gift-nav-count="claimed"', $header);
         self::assertStringContainsString("\$workspace_agent_tabs = ['agent'];", $header);
 
         foreach (['inbox.php' => 'inbox', 'sent.php' => 'sent', 'claimed.php' => 'claimed'] as $file => $tab) {
@@ -23,6 +26,19 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
             self::assertStringContainsString('$agent_tab', $page);
             self::assertStringContainsString("'{$tab}'", $page);
         }
+    }
+
+    public function testMobileHeaderRestoresExistingGlobalCreateMenu(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $header = file_get_contents($root . '/includes/header-components/app-header.php');
+        $loggedIn = file_get_contents($root . '/includes/header-templates/logged-in.php');
+        self::assertIsString($header);
+        self::assertIsString($loggedIn);
+        self::assertStringContainsString('data-header-create', $loggedIn);
+        self::assertStringContainsString('data-global-create', $loggedIn);
+        self::assertStringContainsString('@media(max-width:640px)', $header);
+        self::assertStringContainsString('.mg-app-page .mg-header-create{display:grid!important', $header);
     }
 
     public function testAgentsUseOneOriginalSidebarAndOneVisibleCreationAction(): void
