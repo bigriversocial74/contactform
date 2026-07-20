@@ -11,6 +11,20 @@ $input = mg_input();
 mg_require_csrf_for_write($input);
 
 try {
+    $bridgeUrl = trim((string)($input['bridge_url'] ?? 'https://microgifter.com/api/internal/mcp-bridge.php'));
+    $parts = parse_url($bridgeUrl);
+    if (strlen($bridgeUrl) > 500
+        || preg_match('/[\x00-\x20\x7f]/', $bridgeUrl) === 1
+        || filter_var($bridgeUrl, FILTER_VALIDATE_URL) === false
+        || !is_array($parts)
+        || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+        || empty($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['fragment'])) {
+        throw new MgAdminMcpProvisioningException('Bridge URL must use HTTPS without embedded credentials or fragments.');
+    }
+    $input['bridge_url'] = $bridgeUrl;
     $credentials = mg_admin_mcp_runtime_credentials(mg_db(), $actor, $input);
 } catch (MgAdminMcpProvisioningException $error) {
     mg_security_log('warning', 'admin.mcp_runtime_credentials.rejected', 'MCP runtime credential generation was rejected.', [
