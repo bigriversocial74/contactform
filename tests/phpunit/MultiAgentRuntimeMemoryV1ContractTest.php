@@ -39,11 +39,11 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertStringContainsString('mg_task_agent_memory_for_model', $service);
         self::assertStringContainsString('mg_task_agent_memory_system_response', $router);
         self::assertStringContainsString('mg_task_agent_route', $service);
-        self::assertStringContainsString("$aiReason !== ''", $service);
+        self::assertStringContainsString('$aiReason !== \'\'', $service);
         self::assertStringContainsString('mg_ai_credit_preflight', $service);
         self::assertStringContainsString('mg_ai_credit_consume', $service);
-        self::assertStringContainsString("'ai_reason'=>$aiReason", $service);
-        self::assertStringContainsString('explicit confirmation', $service);
+        self::assertStringContainsString('\'ai_reason\'=>$aiReason', $service);
+        self::assertStringContainsString('user approval', $service);
     }
 
     public function testSelectedAgentUsesOnePersistentChatCanvasWithTabbedManagement(): void
