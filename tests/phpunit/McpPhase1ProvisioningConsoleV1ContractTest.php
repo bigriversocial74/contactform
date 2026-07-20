@@ -77,9 +77,9 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
         self::assertStringContainsString('mg_admin_mcp_connection_issues($pdo, $connection, true)', $helper);
         self::assertStringContainsString("['development', 'active']", $helper);
         self::assertStringContainsString("['profile:read', 'catalog:read']", $helper);
-        self::assertStringContainsString("isset($parts['user'])", $endpoint);
-        self::assertStringContainsString("isset($parts['pass'])", $endpoint);
-        self::assertStringContainsString("isset($parts['fragment'])", $endpoint);
+        self::assertStringContainsString('isset($parts[\'user\'])', $endpoint);
+        self::assertStringContainsString('isset($parts[\'pass\'])', $endpoint);
+        self::assertStringContainsString('isset($parts[\'fragment\'])', $endpoint);
     }
 
     public function testRuntimeSecretsAreOneTimeAndNeverPersisted(): void
