@@ -184,16 +184,18 @@ function mg_task_agent_recurring_chat(PDO $pdo,int $userId,array $agent,array $i
     if(!$route||!is_array($route['result']??null))return null;
     $result=$route['result'];
     $assistant=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'assistant',(string)$result['reply'],is_array($result['cards']??null)?$result['cards']:[],$context);
-    mg_audit('multi_agent.chat_completed','agent',[
+    $audit=[
         'agent_id'=>(string)$agent['public_id'],
         'thread_id'=>(string)$thread['public_id'],
         'response_source'=>'system_query',
         'model_key'=>'system_query',
         'ai_reason'=>'',
-        'tool'=>$intent==='monitor'?'task_agent_monitor':'recurring_programs',
+        'tool'=>'recurring_programs',
         'used_ai'=>false,
         'ai_tokens_total'=>0,
-    ],$userId);
+    ];
+    if($intent==='monitor')$audit['tool']='task_agent_monitor';
+    mg_audit('multi_agent.chat_completed','agent',$audit,$userId);
     return [
         'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],
         'user_message'=>$userMessage,
