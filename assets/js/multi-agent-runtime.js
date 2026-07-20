@@ -1,13 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
-
   var selectedNode = document.getElementById('mg-selected-agent-id');
   var agentId = selectedNode ? JSON.parse(selectedNode.textContent || '""') : '';
   if (!agentId) return;
-
   var root = document.querySelector('[data-agent-instance-canvas]');
   if (!root) return;
-
   var messages = root.querySelector('[data-agent-runtime-messages]');
   var composer = root.querySelector('[data-agent-runtime-composer]');
   var status = root.querySelector('[data-agent-runtime-status]');
@@ -18,263 +15,60 @@ document.addEventListener('DOMContentLoaded', function () {
   var onboardingForm = document.querySelector('[data-agent-onboarding-form]');
   var currentThread = '';
 
-  function csrf() {
-    var node = document.querySelector('meta[name="csrf-token"]');
-    return node ? node.content : '';
-  }
+  function csrf() { var node = document.querySelector('meta[name="csrf-token"]'); return node ? node.content : ''; }
+  function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) { return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[ch]; }); }
+  function internalUrl(value) { try { var parsed = new URL(String(value || ''), window.location.origin); if (parsed.origin !== window.location.origin || ['http:','https:'].indexOf(parsed.protocol) === -1) return ''; return parsed.pathname + parsed.search + parsed.hash; } catch (error) { return ''; } }
+  function money(cents, currency) { try { return new Intl.NumberFormat(undefined,{style:'currency',currency:String(currency || 'USD').toUpperCase()}).format(Number(cents || 0)/100); } catch (error) { return '$' + (Number(cents || 0)/100).toFixed(2); } }
+  async function request(method, url, payload) { var options={method:method,credentials:'same-origin',headers:{Accept:'application/json'}}; if(payload){options.headers['Content-Type']='application/json';options.headers['X-CSRF-Token']=csrf();options.body=JSON.stringify(payload);} var response=await fetch(url,options);var json=await response.json();if(!response.ok||!json.ok)throw new Error(json.message||'Unable to complete the agent request.');return json.data||json; }
 
-  function esc(value) {
-    return String(value || '').replace(/[&<>"']/g, function (ch) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[ch];
-    });
-  }
-
-  function internalUrl(value) {
-    try {
-      var parsed = new URL(String(value || ''), window.location.origin);
-      if (parsed.origin !== window.location.origin || !['http:', 'https:'].includes(parsed.protocol)) return '';
-      return parsed.pathname + parsed.search + parsed.hash;
-    } catch (error) {
-      return '';
-    }
-  }
-
-  async function request(method, url, payload) {
-    var options = { method: method, credentials: 'same-origin', headers: { Accept: 'application/json' } };
-    if (payload) {
-      options.headers['Content-Type'] = 'application/json';
-      options.headers['X-CSRF-Token'] = csrf();
-      options.body = JSON.stringify(payload);
-    }
-    var response = await fetch(url, options);
-    var json = await response.json();
-    if (!response.ok || !json.ok) throw new Error(json.message || 'Unable to complete the agent request.');
-    return json.data || json;
+  function marketplaceCard(card) {
+    var href = internalUrl(card.url || '');
+    var image = internalUrl(card.image_url || '');
+    var payload = esc(JSON.stringify(card.review_payload || {}));
+    var action = '';
+    if (card.action === 'shortlist_product') action = '<button type="button" data-shortlist-product data-shortlist-payload="' + payload + '">' + esc(card.action_label || 'Shortlist') + '</button>';
+    if (card.action === 'remove_shortlist') action = '<button type="button" data-shortlist-remove data-shortlist-payload="' + payload + '">' + esc(card.action_label || 'Remove from shortlist') + '</button>';
+    var media = href ? '<a class="mg-agent-shortlist-media" href="' + esc(href) + '" data-agent-open-link>' : '<div class="mg-agent-shortlist-media">';
+    media += image ? '<img src="' + esc(image) + '" alt="" loading="lazy" decoding="async">' : esc(String(card.title || 'G').charAt(0).toUpperCase());
+    media += href ? '</a>' : '</div>';
+    return '<article class="is-marketplace_product" data-agent-product-card>' + media + '<div class="mg-agent-shortlist-copy"><span>Published local gift</span><h4>' + esc(card.title || 'Local gift') + '</h4><p>' + esc(card.body || '') + '</p><div class="mg-agent-shortlist-meta"><strong>' + esc(money(card.price_cents,card.currency)) + '</strong><span>' + esc(card.merchant_name || 'Local merchant') + '</span>' + (card.location ? '<span>' + esc(card.location) + '</span>' : '') + '</div></div><div class="mg-agent-shortlist-actions">' + (href ? '<a href="' + esc(href) + '" data-agent-open-link>Review product</a>' : '') + action + '</div></article>';
   }
 
   function renderCards(cards) {
     if (!Array.isArray(cards) || !cards.length) return '';
     return '<div class="mg-agent-runtime-cards">' + cards.map(function (card) {
+      if (card.type === 'marketplace_product') return marketplaceCard(card);
       var action = '';
       var payload = esc(JSON.stringify(card.review_payload || {}));
       var label = esc(card.action_label || '');
-      if (card.action === 'save_draft') {
-        action = '<button type="button" data-save-agent-draft data-draft-title="' + esc(card.title || 'Agent draft') + '" data-draft-payload="' + payload + '">Save reviewable draft</button>';
-      } else if (card.action === 'save_reminder') {
-        action = '<button type="button" data-save-agent-reminder data-reminder-payload="' + payload + '">Create reminder</button>';
-      } else if (card.action === 'save_memory') {
-        action = '<button type="button" data-save-agent-memory data-memory-payload="' + payload + '">' + (label || 'Save preference') + '</button>';
-      } else if (card.action === 'manage_reminder') {
-        action = '<div class="mg-agent-reminder-actions" data-reminder-id="' + esc((card.review_payload || {}).reminder_id || '') + '"><button type="button" data-reminder-status="completed">Complete</button><button type="button" data-reminder-status="dismissed">Dismiss</button><button type="button" data-reminder-status="cancelled">Cancel</button></div>';
-      } else if (card.action === 'seed_prompt' && card.prompt) {
-        action = '<button type="button" data-agent-seed-prompt="' + esc(card.prompt) + '">' + (label || 'Open in chat') + '</button>';
-      } else if (card.action === 'open_link') {
-        var href = internalUrl(card.url || '');
-        if (href) action = '<a href="' + esc(href) + '" data-agent-open-link>' + (label || 'Open') + '</a>';
-      }
+      if (card.action === 'save_draft') action = '<button type="button" data-save-agent-draft data-draft-title="' + esc(card.title || 'Agent draft') + '" data-draft-payload="' + payload + '">Save reviewable draft</button>';
+      else if (card.action === 'save_reminder') action = '<button type="button" data-save-agent-reminder data-reminder-payload="' + payload + '">Create reminder</button>';
+      else if (card.action === 'save_memory') action = '<button type="button" data-save-agent-memory data-memory-payload="' + payload + '">' + (label || 'Save preference') + '</button>';
+      else if (card.action === 'manage_reminder') action = '<div class="mg-agent-reminder-actions" data-reminder-id="' + esc((card.review_payload || {}).reminder_id || '') + '"><button type="button" data-reminder-status="completed">Complete</button><button type="button" data-reminder-status="dismissed">Dismiss</button><button type="button" data-reminder-status="cancelled">Cancel</button></div>';
+      else if (card.action === 'seed_prompt' && card.prompt) action = '<button type="button" data-agent-seed-prompt="' + esc(card.prompt) + '">' + (label || 'Open in chat') + '</button>';
+      else if (card.action === 'open_link') { var href=internalUrl(card.url||''); if(href)action='<a href="'+esc(href)+'" data-agent-open-link>'+(label||'Open')+'</a>'; }
       return '<article class="is-' + esc(card.type || 'recommendation') + '"><span>' + esc(card.type || 'Agent card') + '</span><h4>' + esc(card.title || 'Next step') + '</h4><p>' + esc(card.body || '') + '</p>' + action + '</article>';
     }).join('') + '</div>';
   }
 
-  function renderMessages(items) {
-    messages.innerHTML = (items || []).map(function (item) {
-      return '<article class="mg-agent-runtime-message is-' + esc(item.role) + '"><div><strong>' + esc(item.role === 'assistant' ? 'Agent' : 'You') + '</strong><time>' + esc(item.created_at || '') + '</time></div><p>' + esc(item.body || '') + '</p>' + renderCards(item.cards || []) + '</article>';
-    }).join('');
-    messages.scrollTop = messages.scrollHeight;
-  }
+  function renderMessages(items) { messages.innerHTML=(items||[]).map(function(item){return '<article class="mg-agent-runtime-message is-'+esc(item.role)+'"><div><strong>'+esc(item.role==='assistant'?'Agent':'You')+'</strong><time>'+esc(item.created_at||'')+'</time></div><p>'+esc(item.body||'')+'</p>'+renderCards(item.cards||[])+'</article>';}).join('');messages.scrollTop=messages.scrollHeight; }
+  function renderMemory(items) { if(!memoryList)return;memoryList.innerHTML=(items&&items.length)?items.map(function(item){var value=item.value;return '<article data-agent-memory-id="'+esc(item.public_id||'')+'"><span>'+esc(item.category||'memory')+'</span><strong>'+esc(item.title||item.memory_key)+'</strong><p>'+esc(typeof value==='string'?value:JSON.stringify(value))+'</p><button type="button" data-archive-agent-memory aria-label="Archive '+esc(item.title||'memory')+'">Archive</button></article>';}).join(''):'<p>No saved memory yet.</p>'; }
+  function renderContext(snapshot) { if(!contextPanel||!snapshot||snapshot.source!=='system'){if(contextPanel)contextPanel.hidden=true;return;}var summary=snapshot.summary||{};var stats=[['Contacts',summary.contacts||0],['Upcoming',summary.upcoming_dates||0],['Missing birthdays',summary.missing_birthdays||0],['Plans',summary.active_plans||0],['Reminders',summary.scheduled_reminders||0],['Shortlist',summary.shortlisted_products||0]];contextStats.innerHTML=stats.map(function(item){var prompt=item[0]==='Missing birthdays'?'Show contacts missing birthdays.':(item[0]==='Shortlist'?'Show my shortlist.':'Show my '+item[0].toLowerCase()+'.');return '<button type="button" data-agent-seed-prompt="'+esc(prompt)+'"><strong>'+esc(item[1])+'</strong><span>'+esc(item[0])+'</span></button>';}).join('');var opportunities=Array.isArray(snapshot.upcoming)?snapshot.upcoming.slice(0,6):[];contextOpportunities.innerHTML=opportunities.length?opportunities.map(function(event){var name=event.contact_name||'Contact';var label=event.label||'Occasion';var timing=Number(event.days_until||0)===0?'Today':Number(event.days_until||0)+' days';var prompt='Show the gifting context for '+name+"'s "+String(label).toLowerCase()+'.';return '<article><div><span>'+esc(label)+'</span><strong>'+esc(name)+'</strong><small>'+esc(event.event_date||'')+' · '+esc(timing)+'</small></div><button type="button" data-agent-seed-prompt="'+esc(prompt)+'">Open context</button></article>';}).join(''):'<p>No upcoming saved dates in this window.</p>';contextPanel.hidden=false; }
 
-  function renderMemory(items) {
-    if (!memoryList) return;
-    memoryList.innerHTML = (items && items.length) ? items.map(function (item) {
-      var value = item.value;
-      return '<article data-agent-memory-id="' + esc(item.public_id || '') + '"><span>' + esc(item.category || 'memory') + '</span><strong>' + esc(item.title || item.memory_key) + '</strong><p>' + esc(typeof value === 'string' ? value : JSON.stringify(value)) + '</p><button type="button" data-archive-agent-memory aria-label="Archive ' + esc(item.title || 'memory') + '">Archive</button></article>';
-    }).join('') : '<p>No saved memory yet.</p>';
-  }
+  async function load(){status.textContent='Loading…';try{var data=await request('GET','/api/agents/runtime.php?id='+encodeURIComponent(agentId));currentThread=data.thread&&data.thread.id?data.thread.id:'';renderMessages(data.messages||[]);renderMemory(data.memory||[]);renderContext(data.context_snapshot||null);var answers=(data.onboarding&&data.onboarding.answers)||{};Object.keys(answers).forEach(function(key){if(onboardingForm&&onboardingForm.elements[key])onboardingForm.elements[key].value=answers[key]||'';});status.textContent=data.shortlist_schema_ready===false?'Gift shortlist setup is pending the Phase 3.1 SQL import.':'';}catch(error){status.textContent=error.message;}}
+  async function send(message){status.textContent='Checking Microgifter data…';var sendButton=composer.querySelector('button');sendButton.disabled=true;try{var data=await request('POST','/api/agents/runtime.php',{id:agentId,action:'chat',thread_id:currentThread,message:message});currentThread=data.thread&&data.thread.id?data.thread.id:currentThread;await load();if(data.response_source==='system_query'||data.response_source==='system_action')status.textContent='Answered from Microgifter data. No AI credits used.';else if(data.response_source==='anthropic'){var tokens=data.ai_tokens_used&&data.ai_tokens_used.total?data.ai_tokens_used.total:0;status.textContent='AI synthesis used for '+String(data.ai_reason||'contextual synthesis').replace(/_/g,' ')+(tokens?' · '+tokens+' tokens':'')+'.';}else status.textContent='Answered locally. No AI credits used.';}catch(error){status.textContent=error.message;}finally{sendButton.disabled=false;}}
 
-  function renderContext(snapshot) {
-    if (!contextPanel || !snapshot || snapshot.source !== 'system') {
-      if (contextPanel) contextPanel.hidden = true;
-      return;
-    }
-    var summary = snapshot.summary || {};
-    var stats = [
-      ['Contacts', summary.contacts || 0],
-      ['Upcoming', summary.upcoming_dates || 0],
-      ['Missing birthdays', summary.missing_birthdays || 0],
-      ['Plans', summary.active_plans || 0],
-      ['Reminders', summary.scheduled_reminders || 0]
-    ];
-    contextStats.innerHTML = stats.map(function (item) {
-      var prompt = item[0] === 'Missing birthdays' ? 'Show contacts missing birthdays.' : 'Show my ' + item[0].toLowerCase() + '.';
-      return '<button type="button" data-agent-seed-prompt="' + esc(prompt) + '"><strong>' + esc(item[1]) + '</strong><span>' + esc(item[0]) + '</span></button>';
-    }).join('');
-    var opportunities = Array.isArray(snapshot.upcoming) ? snapshot.upcoming.slice(0, 6) : [];
-    contextOpportunities.innerHTML = opportunities.length ? opportunities.map(function (event) {
-      var name = event.contact_name || 'Contact';
-      var label = event.label || 'Occasion';
-      var timing = Number(event.days_until || 0) === 0 ? 'Today' : Number(event.days_until || 0) + ' days';
-      var prompt = 'Show the gifting context for ' + name + "'s " + String(label).toLowerCase() + '.';
-      return '<article><div><span>' + esc(label) + '</span><strong>' + esc(name) + '</strong><small>' + esc(event.event_date || '') + ' · ' + esc(timing) + '</small></div><button type="button" data-agent-seed-prompt="' + esc(prompt) + '">Open context</button></article>';
-    }).join('') : '<p>No upcoming saved dates in this window.</p>';
-    contextPanel.hidden = false;
-  }
-
-  async function load() {
-    status.textContent = 'Loading…';
-    try {
-      var data = await request('GET', '/api/agents/runtime.php?id=' + encodeURIComponent(agentId));
-      currentThread = data.thread && data.thread.id ? data.thread.id : '';
-      renderMessages(data.messages || []);
-      renderMemory(data.memory || []);
-      renderContext(data.context_snapshot || null);
-      var answers = (data.onboarding && data.onboarding.answers) || {};
-      Object.keys(answers).forEach(function (key) {
-        if (onboardingForm && onboardingForm.elements[key]) onboardingForm.elements[key].value = answers[key] || '';
-      });
-      status.textContent = '';
-    } catch (error) {
-      status.textContent = error.message;
-    }
-  }
-
-  async function send(message) {
-    status.textContent = 'Checking Microgifter data…';
-    var sendButton = composer.querySelector('button');
-    sendButton.disabled = true;
-    try {
-      var data = await request('POST', '/api/agents/runtime.php', { id: agentId, action:'chat', thread_id: currentThread, message: message });
-      currentThread = data.thread && data.thread.id ? data.thread.id : currentThread;
-      await load();
-      if (data.response_source === 'system_query' || data.response_source === 'system_action') {
-        status.textContent = 'Answered from Microgifter data. No AI credits used.';
-      } else if (data.response_source === 'anthropic') {
-        var tokens = data.ai_tokens_used && data.ai_tokens_used.total ? data.ai_tokens_used.total : 0;
-        status.textContent = 'AI synthesis used for ' + String(data.ai_reason || 'contextual synthesis').replace(/_/g, ' ') + (tokens ? ' · ' + tokens + ' tokens' : '') + '.';
-      } else {
-        status.textContent = 'Answered locally. No AI credits used.';
-      }
-    } catch (error) {
-      status.textContent = error.message;
-    } finally {
-      sendButton.disabled = false;
-    }
-  }
-
-  composer.hidden = false;
-  composer.style.display = '';
-  composer.addEventListener('submit', function (event) {
-    event.preventDefault();
-    var field = composer.elements.message;
-    var value = field.value.trim();
-    if (!value) return;
-    field.value = '';
-    send(value);
-  });
-
-  document.addEventListener('click', function (event) {
-    var prompt = event.target.closest('[data-agent-seed-prompt]');
-    if (prompt) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      composer.elements.message.value = prompt.getAttribute('data-agent-seed-prompt') || '';
-      composer.elements.message.focus();
-      return;
-    }
-
-    var memoryArchive = event.target.closest('[data-archive-agent-memory]');
-    if (memoryArchive) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      var memoryHolder = memoryArchive.closest('[data-agent-memory-id]');
-      request('POST', '/api/agents/runtime.php', { id: agentId, action:'archive_memory', memory_id: memoryHolder ? memoryHolder.getAttribute('data-agent-memory-id') : '' }).then(function (data) {
-        renderMemory(data.memory || []);
-        status.textContent = 'Agent memory archived. No AI credits used.';
-      }).catch(function (error) { status.textContent = error.message; });
-      return;
-    }
-
-    var memorySave = event.target.closest('[data-save-agent-memory]');
-    if (memorySave) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      var memoryPayload = {};
-      try { memoryPayload = JSON.parse(memorySave.getAttribute('data-memory-payload') || '{}'); } catch (error) {}
-      var canonicalMemory = memoryPayload.canonical_memory || {};
-      request('POST', '/api/agents/runtime.php', Object.assign({ id: agentId, action:'save_memory' }, canonicalMemory)).then(function (data) {
-        renderMemory(data.memory || []);
-        status.textContent = 'Agent preference saved. No AI credits used.';
-      }).catch(function (error) { status.textContent = error.message; });
-      return;
-    }
-
-    var draft = event.target.closest('[data-save-agent-draft]');
-    if (draft) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      var draftPayload = {};
-      try { draftPayload = JSON.parse(draft.getAttribute('data-draft-payload') || '{}'); } catch (error) {}
-      request('POST', '/api/agents/runtime.php', {
-        id: agentId,
-        action:'save_draft',
-        thread_id: currentThread,
-        title: draft.getAttribute('data-draft-title') || 'Agent draft',
-        draft_type: 'plan',
-        payload: draftPayload
-      }).then(function () {
-        status.textContent = 'Reviewable draft saved. No AI credits used.';
-        load();
-      }).catch(function (error) { status.textContent = error.message; });
-      return;
-    }
-
-    var reminder = event.target.closest('[data-save-agent-reminder]');
-    if (reminder) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      var reminderPayload = {};
-      try { reminderPayload = JSON.parse(reminder.getAttribute('data-reminder-payload') || '{}'); } catch (error) {}
-      request('POST', '/api/agents/runtime.php', { id: agentId, action:'create_reminder', reminder: reminderPayload.canonical_reminder || {} }).then(function () {
-        status.textContent = 'In-app reminder created. No AI credits used.';
-        load();
-      }).catch(function (error) { status.textContent = error.message; });
-      return;
-    }
-
-    var reminderStatus = event.target.closest('[data-reminder-status]');
-    if (reminderStatus) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      var reminderHolder = reminderStatus.closest('[data-reminder-id]');
-      request('POST', '/api/agents/runtime.php', {
-        id: agentId,
-        action:'update_reminder_status',
-        reminder_id: reminderHolder ? reminderHolder.getAttribute('data-reminder-id') : '',
-        status: reminderStatus.getAttribute('data-reminder-status') || ''
-      }).then(function () {
-        status.textContent = 'Reminder updated. No AI credits used.';
-        load();
-      }).catch(function (error) { status.textContent = error.message; });
-    }
-  }, true);
-
-  if (onboardingForm) {
-    onboardingForm.addEventListener('submit', function (event) {
-      event.preventDefault();
-      var form = new FormData(onboardingForm);
-      var answers = {};
-      form.forEach(function (value, key) {
-        if (key !== 'settings_action') answers[key] = String(value).trim();
-      });
-      var action = (event.submitter && event.submitter.value) || 'save';
-      var note = onboardingForm.querySelector('[data-agent-onboarding-status]');
-      note.textContent = action === 'apply' ? 'Saving and applying…' : 'Saving…';
-      request('POST', '/api/agents/runtime.php', { id: agentId, action:'onboarding', status: 'completed', current_step: 'complete', answers: answers }).then(function (data) {
-        renderMemory(data.memory || []);
-        note.textContent = action === 'apply' ? 'Settings saved and applied.' : 'Settings saved.';
-        if (action === 'apply') load();
-      }).catch(function (error) { note.textContent = error.message; });
-    });
-  }
-
+  composer.hidden=false;composer.style.display='';composer.addEventListener('submit',function(event){event.preventDefault();var field=composer.elements.message;var value=field.value.trim();if(!value)return;field.value='';send(value);});
+  document.addEventListener('click',function(event){
+    var prompt=event.target.closest('[data-agent-seed-prompt]');if(prompt){event.preventDefault();event.stopImmediatePropagation();composer.elements.message.value=prompt.getAttribute('data-agent-seed-prompt')||'';composer.elements.message.focus();return;}
+    var shortlistAdd=event.target.closest('[data-shortlist-product]');if(shortlistAdd){event.preventDefault();event.stopImmediatePropagation();var addPayload={};try{addPayload=JSON.parse(shortlistAdd.getAttribute('data-shortlist-payload')||'{}');}catch(error){}shortlistAdd.disabled=true;request('POST','/api/agents/runtime.php',{id:agentId,action:'add_shortlist',product_id:addPayload.product_id||'',recipient_context:addPayload.recipient_context||{}}).then(function(){shortlistAdd.textContent='Shortlisted';status.textContent='Product added to this agent’s shortlist. No AI credits used.';}).catch(function(error){shortlistAdd.disabled=false;status.textContent=error.message;});return;}
+    var shortlistRemove=event.target.closest('[data-shortlist-remove]');if(shortlistRemove){event.preventDefault();event.stopImmediatePropagation();var removePayload={};try{removePayload=JSON.parse(shortlistRemove.getAttribute('data-shortlist-payload')||'{}');}catch(error){}shortlistRemove.disabled=true;request('POST','/api/agents/runtime.php',{id:agentId,action:'remove_shortlist',shortlist_id:removePayload.shortlist_id||''}).then(function(){var card=shortlistRemove.closest('[data-agent-product-card]');if(card)card.remove();status.textContent='Product removed from this agent’s shortlist. No AI credits used.';}).catch(function(error){shortlistRemove.disabled=false;status.textContent=error.message;});return;}
+    var memoryArchive=event.target.closest('[data-archive-agent-memory]');if(memoryArchive){event.preventDefault();event.stopImmediatePropagation();var memoryHolder=memoryArchive.closest('[data-agent-memory-id]');request('POST','/api/agents/runtime.php',{id:agentId,action:'archive_memory',memory_id:memoryHolder?memoryHolder.getAttribute('data-agent-memory-id'):''}).then(function(data){renderMemory(data.memory||[]);status.textContent='Agent memory archived. No AI credits used.';}).catch(function(error){status.textContent=error.message;});return;}
+    var memorySave=event.target.closest('[data-save-agent-memory]');if(memorySave){event.preventDefault();event.stopImmediatePropagation();var memoryPayload={};try{memoryPayload=JSON.parse(memorySave.getAttribute('data-memory-payload')||'{}');}catch(error){}var canonicalMemory=memoryPayload.canonical_memory||{};request('POST','/api/agents/runtime.php',Object.assign({id:agentId,action:'save_memory'},canonicalMemory)).then(function(data){renderMemory(data.memory||[]);status.textContent='Agent preference saved. No AI credits used.';}).catch(function(error){status.textContent=error.message;});return;}
+    var draft=event.target.closest('[data-save-agent-draft]');if(draft){event.preventDefault();event.stopImmediatePropagation();var draftPayload={};try{draftPayload=JSON.parse(draft.getAttribute('data-draft-payload')||'{}');}catch(error){}request('POST','/api/agents/runtime.php',{id:agentId,action:'save_draft',thread_id:currentThread,title:draft.getAttribute('data-draft-title')||'Agent draft',draft_type:'plan',payload:draftPayload}).then(function(){status.textContent='Reviewable draft saved. No AI credits used.';load();}).catch(function(error){status.textContent=error.message;});return;}
+    var reminder=event.target.closest('[data-save-agent-reminder]');if(reminder){event.preventDefault();event.stopImmediatePropagation();var reminderPayload={};try{reminderPayload=JSON.parse(reminder.getAttribute('data-reminder-payload')||'{}');}catch(error){}request('POST','/api/agents/runtime.php',{id:agentId,action:'create_reminder',reminder:reminderPayload.canonical_reminder||{}}).then(function(){status.textContent='In-app reminder created. No AI credits used.';load();}).catch(function(error){status.textContent=error.message;});return;}
+    var reminderStatus=event.target.closest('[data-reminder-status]');if(reminderStatus){event.preventDefault();event.stopImmediatePropagation();var reminderHolder=reminderStatus.closest('[data-reminder-id]');request('POST','/api/agents/runtime.php',{id:agentId,action:'update_reminder_status',reminder_id:reminderHolder?reminderHolder.getAttribute('data-reminder-id'):'',status:reminderStatus.getAttribute('data-reminder-status')||''}).then(function(){status.textContent='Reminder updated. No AI credits used.';load();}).catch(function(error){status.textContent=error.message;});}
+  },true);
+  if(onboardingForm)onboardingForm.addEventListener('submit',function(event){event.preventDefault();var form=new FormData(onboardingForm);var answers={};form.forEach(function(value,key){if(key!=='settings_action')answers[key]=String(value).trim();});var action=(event.submitter&&event.submitter.value)||'save';var note=onboardingForm.querySelector('[data-agent-onboarding-status]');note.textContent=action==='apply'?'Saving and applying…':'Saving…';request('POST','/api/agents/runtime.php',{id:agentId,action:'onboarding',status:'completed',current_step:'complete',answers:answers}).then(function(data){renderMemory(data.memory||[]);note.textContent=action==='apply'?'Settings saved and applied.':'Settings saved.';if(action==='apply')load();}).catch(function(error){note.textContent=error.message;});});
   load();
 });
