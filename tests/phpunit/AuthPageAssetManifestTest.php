@@ -18,7 +18,7 @@ final class AuthPageAssetManifestTest extends TestCase
             self::assertSame('mg-auth-page', $manifest['body_class'], "{$pageId} should use the auth page layout class.");
 
             $assets = mg_resolve_page_assets($manifest);
-            self::assertContains('/assets/css/auth-page.css?v=3.0.0', $assets['styles']);
+            self::assertContains('/assets/css/auth-page.css?v=4.0.0', $assets['styles']);
             self::assertNotContains('/assets/css/agent-presentation.css', $assets['styles']);
             self::assertNotContains('/assets/css/agent-presentation-layout.css', $assets['styles']);
             self::assertNotContains('/assets/js/agent-presentation.js', $assets['scripts']);
