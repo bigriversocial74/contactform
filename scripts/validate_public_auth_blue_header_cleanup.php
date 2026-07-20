@@ -76,9 +76,9 @@ try {
     }
 
     $expect(
-        str_contains($page, "'auth-pages'=>['styles'=>['/assets/css/auth-page.css?v=3.0.0']]")
+        str_contains($page, "'auth-pages'=>['styles'=>['/assets/css/auth-page.css?v=4.0.0']]")
         && str_contains($signin, 'class="mg-auth-shell"'),
-        'Auth pages load the cache-busted shared stylesheet without changing the sign-in structure'
+        'Auth pages load the v4 cache-busted shared stylesheet without changing the sign-in structure'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
