@@ -89,16 +89,25 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
         ] as $marker)self::assertStringContainsString($marker,$service.$skip);
     }
 
-    public function testRecurringChatIsInterceptedBeforeGeneralRuntimeAndUsesZeroAi(): void
+    public function testRecurringChatInterceptPrecedesGeneralRuntime(): void
     {
         $api=file_get_contents($this->root.'/api/agents/runtime.php');
-        $router=file_get_contents($this->root.'/includes/task-agent-recurring-programs-router.php');
-        foreach([$api,$router] as $source)self::assertIsString($source);
-        $intercept=strpos($api,'mg_task_agent_recurring_chat');
-        $general=strpos($api,'mg_multi_agent_runtime_chat');
+        self::assertIsString($api);
+        $chatBlock=strpos($api,"if(\$action==='chat')");
+        self::assertNotFalse($chatBlock);
+        $chatSource=substr($api,$chatBlock,700);
+        $intercept=strpos($chatSource,'mg_task_agent_recurring_chat');
+        $general=strpos($chatSource,'mg_multi_agent_runtime_chat');
         self::assertNotFalse($intercept);
         self::assertNotFalse($general);
-        self::assertLessThan($general,$intercept);
+        self::assertTrue($intercept<$general,'Recurring system-query intercept must execute before the general AI-capable runtime.');
+    }
+
+    public function testRecurringRouterUsesZeroAiProviderBoundary(): void
+    {
+        $router=file_get_contents($this->root.'/includes/task-agent-recurring-programs-router.php');
+        $service=file_get_contents($this->root.'/includes/task-agent-recurring-programs.php');
+        foreach([$router,$service] as $source)self::assertIsString($source);
         foreach([
             "'response_source'=>'system_query'",
             "'used_ai'=>false",
@@ -107,7 +116,7 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
         ] as $marker)self::assertStringContainsString($marker,$router);
         foreach(['mg_anthropic_messages','mg_ai_credit_consume','mg_openai','ai_reason'=>'recurring'] as $forbidden){
             self::assertStringNotContainsString($forbidden,$router);
-            self::assertStringNotContainsString($forbidden,file_get_contents($this->root.'/includes/task-agent-recurring-programs.php'));
+            self::assertStringNotContainsString($forbidden,$service);
         }
     }
 
