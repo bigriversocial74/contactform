@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/personal-gifting-agent.php';
+require_once __DIR__ . '/task-agent-context.php';
 require_once dirname(__DIR__) . '/api/agents/_agent.php';
 
 function mg_multi_agent_runtime_require_schema(PDO $pdo): void
@@ -44,8 +45,12 @@ function mg_multi_agent_runtime_thread(PDO $pdo,array $agent,int $userId,string 
         $row=$stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) return $row;
     }
+    $existing=$pdo->prepare('SELECT * FROM multi_agent_threads WHERE agent_id=? AND owner_user_id=? AND status=\'active\' ORDER BY id LIMIT 1');
+    $existing->execute([(int)$agent['id'],$userId]);
+    $row=$existing->fetch(PDO::FETCH_ASSOC);
+    if ($row) return $row;
     $id=mg_public_uuid();
-    $pdo->prepare("INSERT INTO multi_agent_threads(public_id,agent_id,owner_user_id,title,status,created_at,updated_at) VALUES (?,?,?,'New agent conversation','active',NOW(),NOW())")
+    $pdo->prepare("INSERT INTO multi_agent_threads(public_id,agent_id,owner_user_id,title,status,created_at,updated_at) VALUES (?,?,?,'Agent conversation','active',NOW(),NOW())")
         ->execute([$id,(int)$agent['id'],$userId]);
     $stmt=$pdo->prepare('SELECT * FROM multi_agent_threads WHERE id=?');
     $stmt->execute([(int)$pdo->lastInsertId()]);
@@ -92,11 +97,12 @@ function mg_multi_agent_runtime_onboarding(PDO $pdo,int $userId,int $agentId): a
 function mg_multi_agent_runtime_context(PDO $pdo,int $userId,array $agent,array $template): array
 {
     $context=['agent'=>['id'=>(string)$agent['public_id'],'name'=>(string)$agent['name'],'template_key'=>(string)($template['key']??'')],'memory'=>mg_multi_agent_runtime_memory($pdo,$userId,(int)$agent['id']),'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,$userId,(int)$agent['id'])];
-    if (($template['key']??'')==='birthday_occasion' && function_exists('mg_personal_agent_dashboard')) {
-        $dashboard=mg_personal_agent_dashboard($pdo,$userId);
-        $context['upcoming_dates']=array_slice($dashboard['upcoming_dates']??[],0,30);
-        $context['active_plans']=array_slice($dashboard['plans']??[],0,20);
-        $context['settings']=$dashboard['settings']??[];
+    if (($template['key']??'')==='birthday_occasion') {
+        $snapshot=mg_task_agent_context_snapshot($pdo,$userId,90);
+        $context['system_snapshot']=$snapshot;
+        $context['upcoming_dates']=$snapshot['upcoming'];
+        $context['active_plans']=$snapshot['plans'];
+        $context['scheduled_reminders']=$snapshot['reminders'];
     }
     return $context;
 }
@@ -126,27 +132,34 @@ function mg_multi_agent_runtime_chat(PDO $pdo,int $userId,array $agent,array $in
     $context=mg_multi_agent_runtime_context($pdo,$userId,$agent,$template);
     $userMessage=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'user',$message,[],$context);
     $history=mg_multi_agent_runtime_messages($pdo,$userId,(int)$agent['id'],(int)$thread['id'],14);
-    $result=null;$modelKey='';$model=null;$creditAfter=null;$tokens=['input'=>0,'output'=>0,'total'=>0];
-    $packageContext=mg_ai_credit_package_context($pdo,$userId);
-    if (mg_personal_agent_ai_package_eligible($packageContext)) {
-        $model=mg_personal_agent_model($pdo,$userId,mg_personal_agent_text($input['model_id']??'',80));
-        if ($model) {
-            mg_ai_credit_preflight($pdo,$userId,'anthropic',max(700,min(2200,(int)($model['max_output_tokens']??1600))),'specialized_agent');
-            try {
-                $messages=[];foreach($history as $item){if(in_array($item['role'],['user','assistant'],true))$messages[]=['role'=>$item['role'],'content'=>mb_substr((string)$item['body'],0,4000)];}
-                $response=mg_anthropic_messages(['model'=>(string)$model['model_key'],'max_tokens'=>max(500,min(1800,(int)($model['max_output_tokens']??1200))),'temperature'=>0.25,'system'=>mg_multi_agent_runtime_prompt($agent,$template)."\n\nAgent context JSON:\n".json_encode($context,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),'messages'=>$messages]);
-                $decoded=mg_anthropic_extract_json_object(mg_anthropic_text_from_response($response));
-                $reply=mg_personal_agent_text($decoded['reply']??'',6000);
-                if ($reply==='') throw new RuntimeException('AI returned an empty reply.');
-                $result=['reply'=>$reply,'cards'=>is_array($decoded['cards']??null)?array_slice($decoded['cards'],0,4):[]];$modelKey=(string)$model['model_key'];
-                $raw=mg_anthropic_last_response();$usage=is_array($raw['usage']??null)?$raw['usage']:[];$tokens=['input'=>(int)($usage['input_tokens']??0),'output'=>(int)($usage['output_tokens']??0),'total'=>(int)($usage['input_tokens']??0)+(int)($usage['output_tokens']??0)];
-                $creditAfter=mg_ai_credit_consume($pdo,$userId,(int)$model['provider_id'],(int)$model['id'],'anthropic',$tokens['input'],$tokens['output'],'specialized_agent',(string)($raw['id']??''),['agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id']]);
-            } catch(Throwable $e){mg_security_log('warning','multi_agent.ai_fallback','Specialized agent used safe fallback.',['exception_type'=>$e::class],$userId);}
+    $result=null;$modelKey='';$model=null;$creditAfter=null;$tokens=['input'=>0,'output'=>0,'total'=>0];$responseSource='safe_fallback';
+
+    if (($template['key']??'')==='birthday_occasion') {
+        $result=mg_task_agent_system_response($message,$context['system_snapshot']??[]);
+        if ($result) $responseSource='system_query';
+    }
+
+    if (!$result) {
+        $packageContext=mg_ai_credit_package_context($pdo,$userId);
+        if (mg_personal_agent_ai_package_eligible($packageContext)) {
+            $model=mg_personal_agent_model($pdo,$userId,mg_personal_agent_text($input['model_id']??'',80));
+            if ($model) {
+                mg_ai_credit_preflight($pdo,$userId,'anthropic',max(700,min(2200,(int)($model['max_output_tokens']??1600))),'specialized_agent');
+                try {
+                    $messages=[];foreach($history as $item){if(in_array($item['role'],['user','assistant'],true))$messages[]=['role'=>$item['role'],'content'=>mb_substr((string)$item['body'],0,4000)];}
+                    $response=mg_anthropic_messages(['model'=>(string)$model['model_key'],'max_tokens'=>max(500,min(1800,(int)($model['max_output_tokens']??1200))),'temperature'=>0.25,'system'=>mg_multi_agent_runtime_prompt($agent,$template)."\n\nAgent context JSON:\n".json_encode($context,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),'messages'=>$messages]);
+                    $decoded=mg_anthropic_extract_json_object(mg_anthropic_text_from_response($response));
+                    $reply=mg_personal_agent_text($decoded['reply']??'',6000);
+                    if ($reply==='') throw new RuntimeException('AI returned an empty reply.');
+                    $result=['reply'=>$reply,'cards'=>is_array($decoded['cards']??null)?array_slice($decoded['cards'],0,4):[]];$modelKey=(string)$model['model_key'];$responseSource='anthropic';
+                    $raw=mg_anthropic_last_response();$usage=is_array($raw['usage']??null)?$raw['usage']:[];$tokens=['input'=>(int)($usage['input_tokens']??0),'output'=>(int)($usage['output_tokens']??0),'total'=>(int)($usage['input_tokens']??0)+(int)($usage['output_tokens']??0)];
+                    $creditAfter=mg_ai_credit_consume($pdo,$userId,(int)$model['provider_id'],(int)$model['id'],'anthropic',$tokens['input'],$tokens['output'],'specialized_agent',(string)($raw['id']??''),['agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id']]);
+                } catch(Throwable $e){mg_security_log('warning','multi_agent.ai_fallback','Specialized agent used safe fallback.',['exception_type'=>$e::class],$userId);}
+            }
         }
     }
     if(!$result)$result=mg_multi_agent_runtime_fallback($agent,$template,$message,$context);
     $assistant=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'assistant',(string)$result['reply'],is_array($result['cards']??null)?$result['cards']:[],$context,$modelKey);
-    if ((string)$thread['title']==='New agent conversation') {$title=mg_personal_agent_thread_title_from_message($message);$pdo->prepare('UPDATE multi_agent_threads SET title=? WHERE id=?')->execute([$title,(int)$thread['id']]);$thread['title']=$title;}
-    mg_audit('multi_agent.chat_completed','agent',['agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id'],'model_key'=>$modelKey?:'safe_fallback'],$userId);
-    return ['thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],'user_message'=>$userMessage,'assistant_message'=>$assistant,'used_ai'=>$modelKey!=='','model_key'=>$modelKey,'ai_tokens_used'=>$tokens,'ai_credits'=>$creditAfter??mg_ai_credit_snapshot($pdo,$userId,'anthropic')];
+    mg_audit('multi_agent.chat_completed','agent',['agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id'],'response_source'=>$responseSource,'model_key'=>$modelKey?:$responseSource],$userId);
+    return ['thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],'user_message'=>$userMessage,'assistant_message'=>$assistant,'used_ai'=>$modelKey!=='','response_source'=>$responseSource,'model_key'=>$modelKey,'ai_tokens_used'=>$tokens,'ai_credits'=>$creditAfter??mg_ai_credit_snapshot($pdo,$userId,'anthropic')];
 }

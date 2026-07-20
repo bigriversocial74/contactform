@@ -17,6 +17,7 @@ try {
         $threadPublicId=trim((string)($_GET['thread_id']??''));
         $thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id'],$threadPublicId);
         $template=mg_multi_agent_runtime_template($agent);
+        $context=mg_multi_agent_runtime_context($pdo,(int)$user['id'],$agent,$template);
         $threadsStmt=$pdo->prepare('SELECT public_id,title,last_message_at,created_at,updated_at FROM multi_agent_threads WHERE owner_user_id=? AND agent_id=? AND status=\'active\' ORDER BY COALESCE(last_message_at,updated_at,created_at) DESC,id DESC LIMIT 100');
         $threadsStmt->execute([(int)$user['id'],(int)$agent['id']]);
         mg_ok([
@@ -27,6 +28,9 @@ try {
             'messages'=>mg_multi_agent_runtime_messages($pdo,(int)$user['id'],(int)$agent['id'],(int)$thread['id'],80),
             'memory'=>mg_multi_agent_runtime_memory($pdo,(int)$user['id'],(int)$agent['id']),
             'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),
+            'context_snapshot'=>$context['system_snapshot']??null,
+            'context_source'=>isset($context['system_snapshot'])?'system':'agent',
+            'used_ai_for_context'=>false,
         ]);
     }
 
