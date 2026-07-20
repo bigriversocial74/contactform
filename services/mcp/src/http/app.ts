@@ -40,11 +40,16 @@ export function createInternalMcpApp(
   runtime = new ServiceRuntimeState(),
   logger: RuntimeLogger = createRuntimeLogger(resolveRuntimeConfig(config.runtime).logLevel),
 ) {
-  const app = createMcpExpressApp(
-    config.allowedHosts.length > 0
-      ? { host: config.host, allowedHosts: [...config.allowedHosts] }
-      : { host: config.host },
-  );
+  const effectiveAllowedHosts = Array.from(new Set([
+    ...config.allowedHosts,
+    config.host,
+    "127.0.0.1",
+    "localhost",
+  ]));
+  const app = createMcpExpressApp({
+    host: config.host,
+    allowedHosts: effectiveAllowedHosts,
+  });
   const limiter = new FixedWindowRateLimiter(config.rateLimitRequests, config.rateLimitWindowMs);
   app.disable("x-powered-by");
 
