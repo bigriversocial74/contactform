@@ -61,7 +61,7 @@ $page_scripts = [
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
     '/assets/js/personal-agent-contact-intelligence.js?v=1.0.1',
     '/assets/js/multi-agent-workspace.js?v=1.0.0',
-    '/assets/js/multi-agent-runtime.js?v=1.3.0',
+    '/assets/js/multi-agent-runtime.js?v=1.4.0',
     '/assets/js/task-agent-manage-tabs-v1.js?v=1.0.0',
 ];
 
