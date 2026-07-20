@@ -33,6 +33,19 @@ if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
 if ((string)($page_manifest['id'] ?? '') === 'home') {
     $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
 }
+if ((string)($page_manifest['id'] ?? '') === 'index') {
+    $page_scripts = array_map(
+        static fn(string $script): string => str_starts_with($script, '/assets/js/homepage-parallax-exact-v2.js')
+            ? '/assets/js/homepage-parallax-exact-v2.js?v=2.1.0'
+            : $script,
+        $page_scripts
+    );
+    $page_scripts[] = '/assets/js/homepage-production-cleanup-v1.js?v=1.0.0';
+    $late_styles[] = '/assets/css/homepage-parallax-exact-v2.css?v=2.2.0';
+    $late_styles[] = '/assets/css/pricing-local-business-v1.css?v=1.3.0';
+    $late_styles[] = '/assets/css/homepage-mobile-stability-v1.css?v=1.1.0';
+    $late_styles[] = '/assets/css/homepage-production-cleanup-v1.css?v=1.0.0';
+}
 if ((string)($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
 }
