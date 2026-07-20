@@ -3,6 +3,7 @@ export * from "./contracts.js";
 export * from "./stateMachines.js";
 export * from "./protocolConfig.js";
 export * from "./auth/internalToken.js";
+export * from "./bridge/canonicalBridge.js";
 export * from "./http/origin.js";
 export * from "./http/app.js";
 export * from "./rateLimit.js";
