@@ -32,7 +32,7 @@ function mg_task_agent_ai_synthesis(
     string $message,
     string $aiReason,
     string $requestedModelId,
-    string $threadPublicId
+    string $threadPublicId = ''
 ): ?array {
     $packageContext = mg_ai_credit_package_context($pdo, $userId);
     if (!mg_personal_agent_ai_package_eligible($packageContext)) return null;
@@ -76,6 +76,12 @@ function mg_task_agent_ai_synthesis(
         'total' => (int)($usage['input_tokens'] ?? 0) + (int)($usage['output_tokens'] ?? 0),
     ];
 
+    $metadata = [
+        'agent_id' => (string)$agent['public_id'],
+        'ai_reason' => $aiReason,
+    ];
+    if ($threadPublicId !== '') $metadata['thread_id'] = $threadPublicId;
+
     $credits = mg_ai_credit_consume(
         $pdo,
         $userId,
@@ -86,11 +92,7 @@ function mg_task_agent_ai_synthesis(
         $tokens['output'],
         'specialized_agent',
         (string)($raw['id'] ?? ''),
-        [
-            'agent_id' => (string)$agent['public_id'],
-            'thread_id' => $threadPublicId,
-            'ai_reason' => $aiReason,
-        ]
+        $metadata
     );
 
     return [
