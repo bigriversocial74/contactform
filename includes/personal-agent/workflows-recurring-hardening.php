@@ -8,6 +8,7 @@ function mg_personal_workflows_skip_recurring_run(
     string $expectedNextRunAt = ''
 ): array {
     mg_personal_workflows_require_schema($pdo);
+    if($expectedNextRunAt==='') throw new InvalidArgumentException('Refresh the recurring program before skipping its next cycle.');
     $pdo->beginTransaction();
     try {
         $stmt=$pdo->prepare('SELECT * FROM user_recurring_gift_programs WHERE owner_user_id=? AND public_id=? LIMIT 1 FOR UPDATE');
@@ -17,7 +18,7 @@ function mg_personal_workflows_skip_recurring_run(
         if((string)$program['status']!=='active') throw new RuntimeException('Only an active recurring program can skip its next cycle.');
 
         $scheduledFor=(string)$program['next_run_at'];
-        if($expectedNextRunAt!=='' && !hash_equals($scheduledFor,$expectedNextRunAt)) {
+        if(!hash_equals($scheduledFor,$expectedNextRunAt)) {
             throw new RuntimeException('The recurring program changed. Refresh it before skipping the next cycle.');
         }
         if(!empty($program['end_at']) && strtotime($scheduledFor)>strtotime((string)$program['end_at'])) {
