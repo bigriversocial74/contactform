@@ -65,7 +65,7 @@ final class TaskAgentPhase2ProductionQaV1ContractTest extends TestCase
         self::assertStringContainsString('mg_task_agent_memory_system_response', $router);
         self::assertStringContainsString('mg_task_agent_system_response', $router);
         self::assertStringContainsString('mg_task_agent_ai_reason', $router);
-        self::assertStringContainsString("if(!$result&&$aiReason!=='')", $this->compact($runtime));
+        self::assertStringContainsString('if(!$result&&$aiReason!==\'\')', $this->compact($runtime));
         self::assertStringContainsString('mg_multi_agent_runtime_messages($pdo,$userId,(int)$agent[\'id\'],(int)$thread[\'id\'],8)', $this->compact($runtime));
         self::assertStringContainsString('max(350,min(900', $this->compact($runtime));
         self::assertStringNotContainsString('mg_anthropic_messages', $context);
@@ -92,8 +92,8 @@ final class TaskAgentPhase2ProductionQaV1ContractTest extends TestCase
         }
         self::assertStringContainsString("'used_ai'=>false", $this->compact($api));
         self::assertStringContainsString("'response_source'=>'system_action'", $this->compact($api));
-        self::assertStringContainsString("'ai_reason'=>$aiReason", $this->compact($runtime));
-        self::assertStringContainsString("'ai_tokens_total'=>$tokens['total']", $this->compact($runtime));
+        self::assertStringContainsString("'ai_reason'=>\$aiReason", $this->compact($runtime));
+        self::assertStringContainsString("'ai_tokens_total'=>\$tokens['total']", $this->compact($runtime));
     }
 
     public function testOnePersistentCanvasExposesEveryReviewControl(): void
