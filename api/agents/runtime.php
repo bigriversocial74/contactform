@@ -21,16 +21,13 @@ try {
         $threadsStmt=$pdo->prepare('SELECT public_id,title,last_message_at,created_at,updated_at FROM multi_agent_threads WHERE owner_user_id=? AND agent_id=? AND status=\'active\' ORDER BY COALESCE(last_message_at,updated_at,created_at) DESC,id DESC LIMIT 100');
         $threadsStmt->execute([(int)$user['id'],(int)$agent['id']]);
         mg_ok([
-            'agent'=>mg_agent_row_to_public($agent),
-            'template'=>$template,
+            'agent'=>mg_agent_row_to_public($agent),'template'=>$template,
             'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],
             'threads'=>$threadsStmt->fetchAll(PDO::FETCH_ASSOC),
             'messages'=>mg_multi_agent_runtime_messages($pdo,(int)$user['id'],(int)$agent['id'],(int)$thread['id'],80),
             'memory'=>mg_multi_agent_runtime_memory($pdo,(int)$user['id'],(int)$agent['id']),
             'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),
-            'context_snapshot'=>$context['system_snapshot']??null,
-            'context_source'=>isset($context['system_snapshot'])?'system':'agent',
-            'used_ai_for_context'=>false,
+            'context_snapshot'=>$context['system_snapshot']??null,'context_source'=>isset($context['system_snapshot'])?'system':'agent','used_ai_for_context'=>false,
         ]);
     }
 
@@ -44,6 +41,15 @@ try {
         if ($action==='new_thread') {
             $thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id']);
             mg_ok(['thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']]],'Agent conversation created.',201);
+        }
+        if ($action==='create_gift_plan') {
+            $template=mg_multi_agent_runtime_template($agent);
+            if (($template['key']??'')!=='birthday_occasion') throw new InvalidArgumentException('This agent cannot create occasion gift plans.');
+            $planInput=is_array($input['plan']??null)?$input['plan']:[];
+            $planInput['source']='important_date';
+            $plan=mg_personal_agent_create_plan($pdo,(int)$user['id'],$planInput);
+            mg_audit('multi_agent.gift_plan_draft_created','agent',['agent_id'=>(string)$agent['public_id'],'plan_id'=>(string)$plan['id'],'used_ai'=>false],(int)$user['id']);
+            mg_ok(['plan'=>$plan,'used_ai'=>false,'response_source'=>'system_action'],'Gift-plan draft saved for review.',201);
         }
         if ($action==='onboarding') {
             $answers=is_array($input['answers']??null)?$input['answers']:[];
@@ -60,21 +66,16 @@ try {
             mg_ok(['onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),'memory'=>mg_multi_agent_runtime_memory($pdo,(int)$user['id'],(int)$agent['id'])],'Agent onboarding saved.');
         }
         if ($action==='save_memory') {
-            $key=mb_substr(trim((string)($input['memory_key']??'')),0,160);
-            $title=mb_substr(trim((string)($input['title']??'')),0,190);
+            $key=mb_substr(trim((string)($input['memory_key']??'')),0,160);$title=mb_substr(trim((string)($input['title']??'')),0,190);
             if ($key===''||$title==='') throw new InvalidArgumentException('Memory key and title are required.');
-            $value=$input['value']??null;
-            $category=mb_substr(trim((string)($input['category']??'preference')),0,64)?:'preference';
+            $value=$input['value']??null;$category=mb_substr(trim((string)($input['category']??'preference')),0,64)?:'preference';
             $pdo->prepare("INSERT INTO multi_agent_memory(public_id,agent_id,owner_user_id,memory_key,category,title,value_json,source,confidence,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'user',1.000,'active',NOW(),NOW()) ON DUPLICATE KEY UPDATE category=VALUES(category),title=VALUES(title),value_json=VALUES(value_json),source='user',status='active',updated_at=NOW()")
                 ->execute([mg_public_uuid(),(int)$agent['id'],(int)$user['id'],$key,$category,$title,json_encode($value,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)]);
             mg_ok(['memory'=>mg_multi_agent_runtime_memory($pdo,(int)$user['id'],(int)$agent['id'])],'Agent memory saved.');
         }
         if ($action==='save_draft') {
-            $title=mb_substr(trim((string)($input['title']??'Agent draft')),0,190)?:'Agent draft';
-            $type=mb_substr(trim((string)($input['draft_type']??'plan')),0,64)?:'plan';
-            $payload=is_array($input['payload']??null)?$input['payload']:[];
-            $threadId=null;
-            $threadPublicId=trim((string)($input['thread_id']??''));
+            $title=mb_substr(trim((string)($input['title']??'Agent draft')),0,190)?:'Agent draft';$type=mb_substr(trim((string)($input['draft_type']??'plan')),0,64)?:'plan';$payload=is_array($input['payload']??null)?$input['payload']:[];
+            $threadId=null;$threadPublicId=trim((string)($input['thread_id']??''));
             if ($threadPublicId!=='') {$stmt=$pdo->prepare('SELECT id FROM multi_agent_threads WHERE public_id=? AND agent_id=? AND owner_user_id=? LIMIT 1');$stmt->execute([$threadPublicId,(int)$agent['id'],(int)$user['id']]);$threadId=$stmt->fetchColumn()?:null;}
             $publicId=mg_public_uuid();
             $pdo->prepare("INSERT INTO multi_agent_drafts(public_id,agent_id,owner_user_id,thread_id,draft_type,title,payload_json,status,approval_required,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'draft',1,NOW(),NOW())")
@@ -84,14 +85,7 @@ try {
         mg_fail('Unsupported agent runtime action.',422);
     }
     mg_fail('Method not allowed.',405);
-} catch (MgAiCreditException $e) {
-    mg_fail($e->getMessage(),$e->httpStatus(),$e->details());
-} catch (InvalidArgumentException $e) {
-    mg_fail($e->getMessage(),422);
-} catch (RuntimeException $e) {
-    $status=str_contains(strtolower($e->getMessage()),'not found')?404:(str_contains(strtolower($e->getMessage()),'migration')?503:409);
-    mg_fail($e->getMessage(),$status);
-} catch (Throwable $e) {
-    mg_security_log('error','multi_agent.runtime_api_failed','Specialized agent runtime request failed.',['exception_type'=>$e::class],(int)$user['id']);
-    mg_fail('Unable to complete the specialized agent request.',500);
-}
+} catch (MgAiCreditException $e) {mg_fail($e->getMessage(),$e->httpStatus(),$e->details());
+} catch (InvalidArgumentException $e) {mg_fail($e->getMessage(),422);
+} catch (RuntimeException $e) {$status=str_contains(strtolower($e->getMessage()),'not found')?404:(str_contains(strtolower($e->getMessage()),'migration')?503:409);mg_fail($e->getMessage(),$status);
+} catch (Throwable $e) {mg_security_log('error','multi_agent.runtime_api_failed','Specialized agent runtime request failed.',['exception_type'=>$e::class],(int)$user['id']);mg_fail('Unable to complete the specialized agent request.',500);}
