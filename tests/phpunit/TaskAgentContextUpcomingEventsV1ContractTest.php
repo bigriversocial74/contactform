@@ -34,7 +34,7 @@ final class TaskAgentContextUpcomingEventsV1ContractTest extends TestCase
         self::assertNotFalse($providerPosition);
         self::assertLessThan($providerPosition, $routePosition);
         self::assertStringContainsString('mg_task_agent_system_response', $router);
-        self::assertStringContainsString("'response_source'=>'system_query'", preg_replace('/\s+/', '', $runtime));
+        self::assertStringContainsString("'response_source'=>'system_query'", preg_replace('/\s+/', '', $router));
 
         self::assertStringContainsString("'context_snapshot'", $api);
         self::assertStringContainsString("'used_ai_for_context'=>false", preg_replace('/\s+/', '', $api));
