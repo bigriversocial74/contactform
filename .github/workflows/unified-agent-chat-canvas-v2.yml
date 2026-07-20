@@ -1,0 +1,42 @@
+name: Unified Agent Chat Canvas v2
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'agent.php'
+      - 'includes/personal-agent-sidebar.php'
+      - 'includes/multi-agent-workspace-data.php'
+      - 'assets/css/multi-agent-runtime.css'
+      - 'assets/css/unified-agent-sidebar-v2.css'
+      - 'tests/phpunit/UnifiedAgentChatCanvasV2ContractTest.php'
+      - '.github/workflows/unified-agent-chat-canvas-v2.yml'
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l includes/personal-agent-sidebar.php
+          php -l includes/multi-agent-workspace-data.php
+          php -l tests/phpunit/UnifiedAgentChatCanvasV2ContractTest.php
+      - name: Unified chat contract
+        run: vendor/bin/phpunit tests/phpunit/UnifiedAgentChatCanvasV2ContractTest.php
+      - name: Existing multi-agent regressions
+        run: |
+          vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/GiftCenterTabsUnifiedAgentSidebarTest.php
+          vendor/bin/phpunit tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php

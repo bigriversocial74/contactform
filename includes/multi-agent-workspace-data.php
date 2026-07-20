@@ -6,6 +6,15 @@ require_once dirname(__DIR__) . '/api/agents/_agent.php';
 function mg_multi_agent_templates(): array
 {
     return [
+        'chat_agent' => [
+            'name' => 'Chat Agent',
+            'category' => 'personal',
+            'icon' => '✦',
+            'description' => 'Create another general-purpose Microgifter chat with its own tab, conversations, memory, setup, and lifecycle controls.',
+            'welcome' => 'What would you like this Chat Agent to help you with?',
+            'prompts' => ['Start a new plan', 'Help me organize an idea', 'Explore Microgifter options'],
+            'status' => 'active',
+        ],
         'birthday_occasion' => [
             'name' => 'Birthday & Occasion',
             'category' => 'family',

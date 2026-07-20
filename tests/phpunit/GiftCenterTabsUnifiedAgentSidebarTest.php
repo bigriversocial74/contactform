@@ -25,16 +25,22 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
         }
     }
 
-    public function testSpecializedAgentsUseTheOriginalSidebarMenuInsteadOfASecondAgentSystem(): void
+    public function testAgentsUseOneOriginalSidebarAndOneVisibleCreationAction(): void
     {
-        $sidebar = file_get_contents(dirname(__DIR__, 2) . '/includes/personal-agent-sidebar.php');
+        $root = dirname(__DIR__, 2);
+        $sidebar = file_get_contents($root . '/includes/personal-agent-sidebar.php');
+        $templates = file_get_contents($root . '/includes/multi-agent-workspace-data.php');
         self::assertIsString($sidebar);
-        self::assertStringContainsString('data-personal-agent-new-chat', $sidebar);
-        self::assertStringContainsString('data-sidebar-agent-row', $sidebar);
-        self::assertStringContainsString('data-sidebar-agent-id', $sidebar);
+        self::assertIsString($templates);
+        self::assertStringContainsString('data-sidebar-agent-row="default"', $sidebar);
+        self::assertStringContainsString('data-sidebar-agent-id="default"', $sidebar);
         self::assertStringContainsString('data-sidebar-agent-manage', $sidebar);
         self::assertStringContainsString('data-open-agent-selector', $sidebar);
         self::assertStringContainsString('>Add Agent</strong>', $sidebar);
+        self::assertSame(1, substr_count($sidebar, '>Add Agent</strong>'));
+        self::assertStringContainsString("'chat_agent'", $templates);
+        self::assertSame(1, substr_count($sidebar, 'data-personal-agent-new-chat'));
+        self::assertStringContainsString('Legacy non-rendered compatibility contract', $sidebar);
         self::assertStringNotContainsString('mg-sidebar-agent-list', $sidebar);
         self::assertStringNotContainsString('Default workspace', $sidebar);
     }
