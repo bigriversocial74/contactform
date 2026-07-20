@@ -41,6 +41,11 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
         </div>
       </div>
       <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
+      <section class="mg-task-agent-context" data-task-agent-context hidden aria-label="Upcoming gifting context">
+        <header><div><span>System context</span><strong>Upcoming opportunities</strong></div><small>No AI credits used</small></header>
+        <div class="mg-task-agent-stats" data-task-agent-stats></div>
+        <div class="mg-task-agent-opportunities" data-task-agent-opportunities></div>
+      </section>
       <div class="mg-agent-runtime-messages" data-agent-runtime-messages aria-live="polite"></div>
       <form class="mg-agent-runtime-composer" data-agent-runtime-composer>
         <textarea name="message" rows="2" maxlength="3000" placeholder="Message this agent…" required></textarea>
