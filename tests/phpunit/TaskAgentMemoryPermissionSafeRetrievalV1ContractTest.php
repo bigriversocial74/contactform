@@ -39,7 +39,7 @@ final class TaskAgentMemoryPermissionSafeRetrievalV1ContractTest extends TestCas
         self::assertNotFalse($providerPosition);
         self::assertLessThan($providerPosition, $routePosition);
         self::assertStringContainsString('mg_task_agent_model_context', $router);
-        self::assertStringContainsString('Permission-safe task-agent context JSON', $runtime);
+        self::assertStringContainsString('Permission-safe focused context JSON', $runtime);
         self::assertStringContainsString("'used_ai'=>false", preg_replace('/\s+/', '', $memory));
         self::assertStringNotContainsString('mg_anthropic_messages', $memory);
         self::assertStringNotContainsString('mg_ai_credit_consume', $memory);
