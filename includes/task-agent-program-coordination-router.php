@@ -3,10 +3,14 @@ declare(strict_types=1);
 
 require_once __DIR__.'/task-agent-policy-approvals.php';
 require_once __DIR__.'/task-agent-policy-approvals-router.php';
+require_once __DIR__.'/task-agent-monitoring.php';
+require_once __DIR__.'/task-agent-monitoring-router.php';
 
 function mg_task_agent_program_intent(string $message,array $agent): string
 {
     if (!mg_task_agent_program_template_ready($agent)) return '';
+    $monitorIntent=mg_task_agent_monitor_intent($message,$agent);
+    if($monitorIntent!=='')return 'monitor';
     $policyIntent=mg_task_agent_policy_intent($message,$agent);
     if($policyIntent!=='')return 'policy';
     $text=mg_task_agent_intent_lower($message);
@@ -33,6 +37,7 @@ function mg_task_agent_program_route(string $message,array $context,array $agent
 {
     $intent=mg_task_agent_program_intent($message,$agent);
     if ($intent==='') return null;
+    if($intent==='monitor')return mg_task_agent_monitor_route(is_array($context['monitor_snapshot']??null)?$context['monitor_snapshot']:[]);
     if($intent==='policy')return mg_task_agent_policy_route($message,$context,$agent);
     if (empty($context['distribution_program_schema_ready'])) {
         return [
@@ -95,12 +100,21 @@ function mg_task_agent_program_chat(PDO $pdo,int $userId,array $agent,array $inp
     $thread=mg_multi_agent_runtime_thread($pdo,$agent,$userId,mg_personal_agent_text($input['thread_id']??'',80));
     $context=mg_task_agent_program_append_context($pdo,$userId,$agent,mg_multi_agent_runtime_context($pdo,$userId,$agent,$template));
     if($intent==='policy')$context=mg_task_agent_policy_append_context($pdo,$userId,$agent,$context);
+    if($intent==='monitor'){
+        $monitor=mg_task_agent_monitor_snapshot($pdo,$userId,$agent);
+        $context['monitor_snapshot']=$monitor;
+        $context['monitor_for_model']=mg_task_agent_monitor_for_model($monitor);
+    }
     $userMessage=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'user',$message,[],$context);
-    $route=$intent==='policy'?mg_task_agent_policy_route($message,$context,$agent):mg_task_agent_program_route($message,$context,$agent);
+    $route=match($intent){
+        'monitor'=>mg_task_agent_monitor_route(is_array($context['monitor_snapshot']??null)?$context['monitor_snapshot']:[]),
+        'policy'=>mg_task_agent_policy_route($message,$context,$agent),
+        default=>mg_task_agent_program_route($message,$context,$agent),
+    };
     if (!$route || !is_array($route['result']??null)) return null;
     $result=$route['result'];
     $assistant=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'assistant',(string)$result['reply'],is_array($result['cards']??null)?$result['cards']:[],$context);
-    $tool=$intent==='policy'?'policy_approvals':'distribution_programs';
+    $tool=match($intent){'monitor'=>'task_agent_monitor','policy'=>'policy_approvals',default=>'distribution_programs'};
     mg_audit('multi_agent.chat_completed','agent',[
         'agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id'],'response_source'=>'system_query','model_key'=>'system_query','ai_reason'=>'','tool'=>$tool,'used_ai'=>false,'ai_tokens_total'=>0,
     ],$userId);
