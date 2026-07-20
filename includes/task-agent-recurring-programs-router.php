@@ -109,11 +109,16 @@ function mg_task_agent_recurring_route(string $message,array $context,array $tem
     $programs=is_array($context['recurring_programs']??null)?$context['recurring_programs']:[];
     $matches=array_slice(mg_task_agent_recurring_matches($message,$programs),0,8);
     if(!$matches){
+        $available=is_array($context['available_recurring_programs']??null)?$context['available_recurring_programs']:[];
+        $cards=array_map(static fn(array $program):array=>mg_task_agent_recurring_link_card($program),array_slice($available,0,6));
+        $cards[]=mg_task_agent_recurring_builder($message,$context);
         return [
             'result'=>[
-                'reply'=>'This agent does not have a recurring gift program yet. Create one to generate approval-first draft plans on a schedule.',
-                'cards'=>[mg_task_agent_recurring_builder($message,$context)],
-                'system_intent'=>'recurring_programs_empty',
+                'reply'=>$available
+                    ? 'This agent has no linked recurring program yet. Reuse one of your existing Personal Agent programs below, or create a new program.'
+                    : 'This agent does not have a recurring gift program yet. Create one to generate approval-first draft plans on a schedule.',
+                'cards'=>array_slice($cards,0,8),
+                'system_intent'=>$available?'link_existing_recurring_program':'recurring_programs_empty',
             ],
             'response_source'=>'system_query','ai_reason'=>'',
         ];
@@ -138,12 +143,15 @@ function mg_task_agent_recurring_model_context(array $context): array
 function mg_task_agent_recurring_append_context(PDO $pdo,int $userId,array $agent,array $context): array
 {
     $programs=mg_task_agent_recurring_programs($pdo,$userId,(int)$agent['id'],40);
+    $available=mg_task_agent_recurring_available_programs($pdo,$userId,40);
     $context['recurring_programs']=$programs;
     $context['recurring_programs_for_model']=mg_task_agent_recurring_for_model($programs);
+    $context['available_recurring_programs']=$available;
     $context['recurring_schema_ready']=mg_task_agent_recurring_schema_ready($pdo);
     if(is_array($context['system_snapshot']['summary']??null)){
         $context['system_snapshot']['summary']['recurring_programs']=count($programs);
         $context['system_snapshot']['summary']['recurring_programs_due']=count(array_filter($programs,static fn(array $program):bool=>!empty($program['due'])));
+        $context['system_snapshot']['summary']['available_recurring_programs']=count($available);
     }
     return $context;
 }
