@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var composer = root.querySelector('[data-agent-runtime-composer]');
   var status = root.querySelector('[data-agent-runtime-status]');
   var memoryList = root.querySelector('[data-agent-memory-list]');
+  var contextPanel = root.querySelector('[data-task-agent-context]');
+  var contextStats = root.querySelector('[data-task-agent-stats]');
+  var contextOpportunities = root.querySelector('[data-task-agent-opportunities]');
   var onboardingForm = document.querySelector('[data-agent-onboarding-form]');
   var currentThread = '';
 
@@ -41,9 +44,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderCards(cards) {
     if (!Array.isArray(cards) || !cards.length) return '';
     return '<div class="mg-agent-runtime-cards">' + cards.map(function (card) {
-      return '<article><span>' + esc(card.type || 'Agent draft') + '</span><h4>' + esc(card.title || 'Next step') + '</h4><p>' + esc(card.body || '') + '</p>'
-        + (card.action === 'save_draft' ? '<button type="button" data-save-agent-draft data-draft-title="' + esc(card.title || 'Agent draft') + '" data-draft-payload="' + esc(JSON.stringify(card.review_payload || {})) + '">Save reviewable draft</button>' : '')
-        + '</article>';
+      var action = '';
+      if (card.action === 'save_draft') {
+        action = '<button type="button" data-save-agent-draft data-draft-title="' + esc(card.title || 'Agent draft') + '" data-draft-payload="' + esc(JSON.stringify(card.review_payload || {})) + '">Save reviewable draft</button>';
+      } else if (card.action === 'seed_prompt' && card.prompt) {
+        action = '<button type="button" data-agent-seed-prompt="' + esc(card.prompt) + '">Open in chat</button>';
+      }
+      return '<article><span>' + esc(card.type || 'Agent draft') + '</span><h4>' + esc(card.title || 'Next step') + '</h4><p>' + esc(card.body || '') + '</p>' + action + '</article>';
     }).join('') + '</div>';
   }
 
@@ -62,6 +69,34 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('') : '<p>No saved memory yet.</p>';
   }
 
+  function renderContext(snapshot) {
+    if (!contextPanel || !snapshot || snapshot.source !== 'system') {
+      if (contextPanel) contextPanel.hidden = true;
+      return;
+    }
+    var summary = snapshot.summary || {};
+    var stats = [
+      ['Contacts', summary.contacts || 0],
+      ['Upcoming', summary.upcoming_dates || 0],
+      ['Missing birthdays', summary.missing_birthdays || 0],
+      ['Plans', summary.active_plans || 0],
+      ['Reminders', summary.scheduled_reminders || 0]
+    ];
+    contextStats.innerHTML = stats.map(function (item) {
+      return '<button type="button" data-agent-seed-prompt="' + esc(item[0] === 'Missing birthdays' ? 'Show contacts missing birthdays.' : 'Show my ' + item[0].toLowerCase() + '.') + '"><strong>' + esc(item[1]) + '</strong><span>' + esc(item[0]) + '</span></button>';
+    }).join('');
+
+    var opportunities = Array.isArray(snapshot.upcoming) ? snapshot.upcoming.slice(0, 6) : [];
+    contextOpportunities.innerHTML = opportunities.length ? opportunities.map(function (event) {
+      var name = event.contact_name || 'Contact';
+      var label = event.label || 'Occasion';
+      var timing = Number(event.days_until || 0) === 0 ? 'Today' : Number(event.days_until || 0) + ' days';
+      var prompt = 'Help me prepare for ' + name + "'s " + String(label).toLowerCase() + '.';
+      return '<article><div><span>' + esc(label) + '</span><strong>' + esc(name) + '</strong><small>' + esc(event.event_date || '') + ' · ' + esc(timing) + '</small></div><button type="button" data-agent-seed-prompt="' + esc(prompt) + '">Plan</button></article>';
+    }).join('') : '<p>No upcoming saved dates in this window.</p>';
+    contextPanel.hidden = false;
+  }
+
   async function load() {
     status.textContent = 'Loading…';
     try {
@@ -69,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
       currentThread = data.thread && data.thread.id ? data.thread.id : '';
       renderMessages(data.messages || []);
       renderMemory(data.memory || []);
+      renderContext(data.context_snapshot || null);
       var answers = (data.onboarding && data.onboarding.answers) || {};
       Object.keys(answers).forEach(function (key) {
         if (onboardingForm && onboardingForm.elements[key]) onboardingForm.elements[key].value = answers[key] || '';
@@ -80,13 +116,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   async function send(message) {
-    status.textContent = 'Thinking…';
+    status.textContent = 'Checking Microgifter data…';
     var sendButton = composer.querySelector('button');
     sendButton.disabled = true;
     try {
       var data = await request('POST', '/api/agents/runtime.php', { id: agentId, action: 'chat', thread_id: currentThread, message: message });
       currentThread = data.thread && data.thread.id ? data.thread.id : currentThread;
       await load();
+      if (data.response_source === 'system_query') status.textContent = 'Answered from Microgifter data. No AI credits used.';
     } catch (error) {
       status.textContent = error.message;
     } finally {
