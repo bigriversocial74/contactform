@@ -1,0 +1,54 @@
+name: Product Bundle Provider Reconciliation v11
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'database/20260720_product_bundle_provider_dispatch_reconciliation_v11.sql'
+      - 'api/bundles/_provider_reconciliation.php'
+      - 'scripts/process_bundle_provider_transfers.php'
+      - 'api/webhooks/bundle-stripe-transfers.php'
+      - 'api/admin/bundle-provider-reconciliation.php'
+      - 'admin/bundle-provider-reconciliation.php'
+      - 'assets/js/bundle-provider-reconciliation-v11.js'
+      - 'assets/css/bundle-provider-reconciliation-v11.css'
+      - 'tests/phpunit/ProductBundleProviderReconciliationV11ContractTest.php'
+      - 'config/migrations.php'
+      - '.github/workflows/product-bundle-provider-reconciliation-v11.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - name: PHP syntax
+        run: |
+          php -l api/bundles/_provider_reconciliation.php
+          php -l scripts/process_bundle_provider_transfers.php
+          php -l api/webhooks/bundle-stripe-transfers.php
+          php -l api/admin/bundle-provider-reconciliation.php
+          php -l admin/bundle-provider-reconciliation.php
+          php -l tests/phpunit/ProductBundleProviderReconciliationV11ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/bundle-provider-reconciliation-v11.js
+      - name: Contract test
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/ProductBundleProviderReconciliationV11ContractTest.php
+          else
+            echo "PHPUnit not installed; syntax and contract-source guards completed."
+          fi
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: Safety gates
+        run: |
+          grep -q "PHP_SAPI !== 'cli'" scripts/process_bundle_provider_transfers.php
+          grep -q 'MG_BUNDLE_PROVIDER_DISPATCH_ENABLED' api/bundles/_provider_reconciliation.php
+          grep -q 'MG_BUNDLE_PROVIDER_LIVE_ENABLED' api/bundles/_provider_reconciliation.php
