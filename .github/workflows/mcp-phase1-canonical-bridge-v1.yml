@@ -6,6 +6,7 @@ on:
     paths:
       - 'api/internal/_mcp_bridge.php'
       - 'api/internal/mcp-bridge.php'
+      - 'api/profiles/_product_discovery.php'
       - 'includes/profiles/_product_discovery.php'
       - 'services/mcp/**'
       - 'config/mcp_phase1_canonical_bridge_release.php'
@@ -74,6 +75,7 @@ jobs:
         run: |
           php -l api/internal/_mcp_bridge.php
           php -l api/internal/mcp-bridge.php
+          php -l api/profiles/_product_discovery.php
           php -l includes/profiles/_product_discovery.php
           php -l config/mcp_phase1_canonical_bridge_release.php
           php -l scripts/validate_mcp_phase1_canonical_bridge.php
