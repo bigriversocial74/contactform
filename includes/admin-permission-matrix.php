@@ -28,6 +28,7 @@ function mg_admin_permission_matrix(): array
             'admin.loyalty_quests' => ['admin.operations_command.view', 'admin.operations_command.manage'],
             'admin.loyalty_quest_integrity' => ['admin.operations_command.view', 'admin.operations_command.manage'],
             'admin.hosted_games' => ['admin.hosted_games.view', 'admin.hosted_games.manage', 'admin.settings.manage'],
+            'admin.mcp_connections' => ['admin.settings.manage'],
             'admin.settings' => ['admin.settings.manage'],
             'admin.pwa_branding' => ['admin.pwa_branding.view', 'admin.pwa_branding.manage', 'admin.settings.manage'],
             'admin.ai' => ['admin.settings.manage'],
