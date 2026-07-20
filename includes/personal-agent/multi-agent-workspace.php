@@ -29,6 +29,7 @@ $openAgentSettings = $selectedAgentId !== '' && (string) ($_GET['settings'] ?? '
 </section>
 
 <section class="mg-agent-instance-canvas" data-agent-instance-canvas data-open-agent-settings="<?= $openAgentSettings ? 'true' : 'false' ?>" hidden>
+  <button class="mg-agent-canvas-manage" type="button" data-agent-manage-open aria-label="Manage this agent" title="Manage agent">••• <span>Manage agent</span></button>
   <div class="mg-agent-runtime-layout">
     <main class="mg-agent-runtime-main">
       <div class="mg-agent-instance-welcome mg-agent-chat-landing">
@@ -42,7 +43,6 @@ $openAgentSettings = $selectedAgentId !== '' && (string) ($_GET['settings'] ?? '
         <div class="mg-agent-chat-landing-actions" aria-label="Agent options">
           <button type="button" data-agent-new-thread>New conversation</button>
           <button type="button" data-agent-settings-open>Settings</button>
-          <button type="button" data-agent-manage-open>Manage</button>
         </div>
       </div>
       <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
