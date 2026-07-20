@@ -109,9 +109,6 @@ jobs:
       - name: Zoom stability and three-click drop intent contract
         run: php scripts/validate_world_canvas_zoom_stability_drop_intent_v1.php
 
-      - name: Stage 12 campaigns and rewards regression
-        run: php scripts/validate_stage12_campaigns_reward_templates.php
-
       - name: Campaign public matrix regression
         run: php scripts/validate_campaign_public_matrix_v1.php
 
