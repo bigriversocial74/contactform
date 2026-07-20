@@ -10,17 +10,17 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
         $root = dirname(__DIR__, 2);
         $header = file_get_contents($root . '/includes/header-components/app-header.php');
         self::assertIsString($header);
-        self::assertStringContainsString("$gift_center_tabs = ['inbox', 'sent', 'claimed'];", $header);
+        self::assertStringContainsString("\$gift_center_tabs = ['inbox', 'sent', 'claimed'];", $header);
         self::assertStringContainsString('data-gift-center-tabs', $header);
         self::assertStringContainsString('href="/inbox.php"', $header);
         self::assertStringContainsString('href="/sent.php"', $header);
         self::assertStringContainsString('href="/claimed.php"', $header);
-        self::assertStringContainsString("$workspace_agent_tabs = ['agent'];", $header);
+        self::assertStringContainsString("\$workspace_agent_tabs = ['agent'];", $header);
 
         foreach (['inbox.php' => 'inbox', 'sent.php' => 'sent', 'claimed.php' => 'claimed'] as $file => $tab) {
             $page = file_get_contents($root . '/' . $file);
             self::assertIsString($page);
-            self::assertStringContainsString("$agent_tab", $page);
+            self::assertStringContainsString('$agent_tab', $page);
             self::assertStringContainsString("'{$tab}'", $page);
         }
     }
