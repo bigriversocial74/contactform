@@ -22,7 +22,7 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
         self::assertContains('microgifter_mcp_phase1_canonical_bridge_v1', $this->release['depends_on']);
     }
 
-    public function testAdminSurfaceAndApisArePermissionProtected(): void
+    public function testAdminSurfaceAndApisUseTheSamePermissionGate(): void
     {
         $page = (string)file_get_contents($this->root . '/admin/mcp-connections.php');
         $helper = (string)file_get_contents($this->root . '/api/admin/_mcp_connections.php');
@@ -31,7 +31,7 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
 
         self::assertStringContainsString("mg_require_admin_page_key('admin.mcp_connections')", $page);
         self::assertStringContainsString("mg_require_permission('admin.settings.manage')", $helper);
-        self::assertStringContainsString("'admin.mcp_connections'", $permissions);
+        self::assertStringContainsString("'admin.mcp_connections' => ['admin.settings.manage']", $permissions);
         self::assertStringContainsString("'mcp-connections'", $sidebar);
     }
 
@@ -59,6 +59,29 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
         self::assertStringContainsString('maximum_operation_class,metadata_json', $helper);
     }
 
+    public function testLifecycleChangesUseAStableRowLockAndDenyExpiredResume(): void
+    {
+        $helper = (string)file_get_contents($this->root . '/api/admin/_mcp_connections.php');
+
+        self::assertStringContainsString('SELECT id FROM mcp_connections WHERE public_id=? LIMIT 1 FOR UPDATE', $helper);
+        self::assertStringNotContainsString('GROUP BY c.id,u.id,cl.id,mw.id" . $suffix', $helper);
+        self::assertStringContainsString('Expired connections cannot be resumed.', $helper);
+        self::assertStringContainsString('mg_admin_mcp_workspace($pdo, (int)$connection[\'user_id\']', $helper);
+    }
+
+    public function testDeploymentBundleRequiresCurrentRuntimeReadiness(): void
+    {
+        $helper = (string)file_get_contents($this->root . '/api/admin/_mcp_connections.php');
+        $endpoint = (string)file_get_contents($this->root . '/api/admin/mcp-runtime-credentials.php');
+
+        self::assertStringContainsString('mg_admin_mcp_connection_issues($pdo, $connection, true)', $helper);
+        self::assertStringContainsString("['development', 'active']", $helper);
+        self::assertStringContainsString("['profile:read', 'catalog:read']", $helper);
+        self::assertStringContainsString("isset($parts['user'])", $endpoint);
+        self::assertStringContainsString("isset($parts['pass'])", $endpoint);
+        self::assertStringContainsString("isset($parts['fragment'])", $endpoint);
+    }
+
     public function testRuntimeSecretsAreOneTimeAndNeverPersisted(): void
     {
         $helper = (string)file_get_contents($this->root . '/api/admin/_mcp_connections.php');
@@ -70,6 +93,7 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
         self::assertStringContainsString('random_bytes(48)', $helper);
         self::assertStringContainsString("'secrets_persisted' => false", $helper);
         self::assertDoesNotMatchRegularExpression('/(?:INSERT|UPDATE)[^;]{0,400}(?:bearer_token|bridge_secret)/is', $helper);
+        self::assertStringContainsString("mg_security_log('warning', 'admin.mcp_runtime_credentials.generated'", $helper);
         self::assertStringContainsString("header('Cache-Control: private, no-store, max-age=0')", $endpoint);
         self::assertStringNotContainsString('localStorage', $javascript);
         self::assertStringNotContainsString('sessionStorage', $javascript);
