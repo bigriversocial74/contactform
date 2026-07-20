@@ -1,9 +1,13 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__.'/task-agent-monitoring.php';
+require_once __DIR__.'/task-agent-monitoring-router.php';
+
 function mg_task_agent_recurring_intent(string $message): string
 {
     $text=mg_task_agent_intent_lower($message);
+    if(preg_match('/\b(monitor|monitoring|attention|needs attention|status review|health|readiness|due now|what is due|upcoming work|review queue|issues|risks|blocked|prepare next|next actions?)\b/u',$text))return 'monitor';
     $recurring=preg_match('/\b(recurring|repeat(?:ing)?|program|every (?:week|month|quarter|year)|weekly|monthly|quarterly|yearly)\b/u',$text)===1;
     if(!$recurring)return '';
     if(preg_match('/\b(create|set up|setup|start|build|add)\b/u',$text))return 'create';
@@ -84,6 +88,7 @@ function mg_task_agent_recurring_route(string $message,array $context,array $tem
     if(($template['key']??'')!=='birthday_occasion')return null;
     $intent=mg_task_agent_recurring_intent($message);
     if($intent==='')return null;
+    if($intent==='monitor')return mg_task_agent_monitor_route(is_array($context['monitor_snapshot']??null)?$context['monitor_snapshot']:[]);
     if(empty($context['recurring_schema_ready'])){
         return [
             'result'=>[
@@ -148,10 +153,15 @@ function mg_task_agent_recurring_append_context(PDO $pdo,int $userId,array $agen
     $context['recurring_programs_for_model']=mg_task_agent_recurring_for_model($programs);
     $context['available_recurring_programs']=$available;
     $context['recurring_schema_ready']=mg_task_agent_recurring_schema_ready($pdo);
+    $monitor=mg_task_agent_monitor_snapshot($pdo,$userId,$agent);
+    $context['monitor_snapshot']=$monitor;
+    $context['monitor_for_model']=mg_task_agent_monitor_for_model($monitor);
     if(is_array($context['system_snapshot']['summary']??null)){
         $context['system_snapshot']['summary']['recurring_programs']=count($programs);
         $context['system_snapshot']['summary']['recurring_programs_due']=count(array_filter($programs,static fn(array $program):bool=>!empty($program['due'])));
         $context['system_snapshot']['summary']['available_recurring_programs']=count($available);
+        $context['system_snapshot']['summary']['monitor_high']=(int)($monitor['counts']['high']??0);
+        $context['system_snapshot']['summary']['monitor_medium']=(int)($monitor['counts']['medium']??0);
     }
     return $context;
 }
@@ -159,7 +169,8 @@ function mg_task_agent_recurring_append_context(PDO $pdo,int $userId,array $agen
 function mg_task_agent_recurring_chat(PDO $pdo,int $userId,array $agent,array $input): ?array
 {
     $message=mg_personal_agent_text($input['message']??'',3000);
-    if($message===''||mg_task_agent_recurring_intent($message)==='')return null;
+    $intent=$message!==''?mg_task_agent_recurring_intent($message):'';
+    if($message===''||$intent==='')return null;
     $template=mg_multi_agent_runtime_template($agent);
     if(($template['key']??'')!=='birthday_occasion')return null;
     mg_multi_agent_runtime_require_schema($pdo);
@@ -173,7 +184,7 @@ function mg_task_agent_recurring_chat(PDO $pdo,int $userId,array $agent,array $i
     if(!$route||!is_array($route['result']??null))return null;
     $result=$route['result'];
     $assistant=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'assistant',(string)$result['reply'],is_array($result['cards']??null)?$result['cards']:[],$context);
-    mg_audit('multi_agent.chat_completed','agent',[
+    $audit=[
         'agent_id'=>(string)$agent['public_id'],
         'thread_id'=>(string)$thread['public_id'],
         'response_source'=>'system_query',
@@ -182,7 +193,9 @@ function mg_task_agent_recurring_chat(PDO $pdo,int $userId,array $agent,array $i
         'tool'=>'recurring_programs',
         'used_ai'=>false,
         'ai_tokens_total'=>0,
-    ],$userId);
+    ];
+    if($intent==='monitor')$audit['tool']='task_agent_monitor';
+    mg_audit('multi_agent.chat_completed','agent',$audit,$userId);
     return [
         'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],
         'user_message'=>$userMessage,

@@ -1,0 +1,13 @@
+(function(){
+'use strict';
+var prior=window.MicrogifterTaskAgentShortlist||{};
+var priorRender=typeof prior.renderCard==='function'?prior.renderCard:function(){return '';};
+function esc(value){return String(value==null?'':value).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c];});}
+function label(value){return String(value||'').replace(/[_-]+/g,' ').replace(/\b\w/g,function(letter){return letter.toUpperCase();});}
+function formatFact(value){if(value===true)return 'Yes';if(value===false)return 'No';if(value==null||value==='')return 'Not set';if(typeof value==='number')return String(value);if(Array.isArray(value))return value.map(label).join(', ');return label(value);}
+function facts(values){var entries=Object.keys(values||{}).slice(0,8);if(!entries.length)return '';return '<dl class="mg-monitor-facts">'+entries.map(function(key){return '<div><dt>'+esc(label(key))+'</dt><dd>'+esc(formatFact(values[key]))+'</dd></div>';}).join('')+'</dl>';}
+function severity(value){var allowed=['high','medium','low','info'];value=String(value||'info').toLowerCase();return allowed.indexOf(value)>=0?value:'info';}
+function monitor(card){if(!card||card.type!=='task_agent_monitor')return '';var item=card.monitor||{};var level=severity(item.severity);return '<article class="mg-monitor-card is-'+esc(level)+'"><header><span>'+esc(label(item.source||'system'))+'</span><strong>'+esc(label(level))+'</strong></header><h4>'+esc(card.title||'Monitoring review')+'</h4><p>'+esc(card.body||'')+'</p>'+facts({status:item.status,due_at:item.due_at})+facts(item.facts||{})+'<div class="mg-monitor-boundary">Calculated on demand from canonical records. No alert row or automated action was created.</div><footer><a href="'+esc(card.url||'#')+'">'+esc(card.action_label||'Review canonical source')+'</a></footer><small>System query · Read-only review · Zero AI credits</small></article>';}
+function summary(card){if(!card||card.type!=='task_agent_monitor_summary')return '';var item=card.monitor||{};return '<article class="mg-monitor-card is-summary"><header><span>System monitoring</span><strong>Current snapshot</strong></header><h4>'+esc(card.title||'Agent monitoring review')+'</h4><p>'+esc(card.body||'')+'</p>'+facts(item.counts||{})+'<div class="mg-monitor-boundary">This is an on-demand snapshot, not a stored alert feed. Refreshing recalculates from the source systems.</div><small>No purchase · No message · No allocation · No issuance · No approval decision</small></article>';}
+window.MicrogifterTaskAgentShortlist={renderCard:function(card,helpers){return monitor(card)||summary(card)||priorRender(card,helpers);}};
+})();
