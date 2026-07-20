@@ -31,14 +31,20 @@ final class UnifiedAgentChatCanvasV2ContractTest extends TestCase
         self::assertStringContainsString('mg-agent-nav-icon', $sidebar);
     }
 
-    public function testAgentChatUsesOneColumnAndStickyComposer(): void
+    public function testTaskAgentChatUsesOneCanvasAndAlwaysVisibleComposer(): void
     {
-        $css = file_get_contents(dirname(__DIR__, 2) . '/assets/css/multi-agent-runtime.css');
-        self::assertIsString($css);
-        self::assertStringContainsString('.mg-agent-runtime-layout{display:flex;flex-direction:column', $css);
-        self::assertStringNotContainsString('grid-template-columns:290px minmax(0,1fr)', $css);
-        self::assertStringContainsString('.mg-agent-runtime-main{order:1', $css);
-        self::assertStringContainsString('.mg-agent-runtime-rail{order:2', $css);
-        self::assertStringContainsString('.mg-agent-runtime-composer{position:sticky;bottom:0', $css);
+        $root = dirname(__DIR__, 2);
+        $workspace = file_get_contents($root . '/includes/personal-agent/multi-agent-workspace.php');
+        $layout = file_get_contents($root . '/assets/css/task-agent-single-chat-v1.css');
+        self::assertIsString($workspace);
+        self::assertIsString($layout);
+        self::assertStringContainsString('data-agent-runtime-messages', $workspace);
+        self::assertStringContainsString('data-agent-runtime-composer', $workspace);
+        self::assertStringNotContainsString('data-agent-thread-list', $workspace);
+        self::assertStringNotContainsString('data-agent-new-thread', $workspace);
+        self::assertStringContainsString('.mg-agent-runtime-layout{height:100%', $layout);
+        self::assertStringContainsString('.mg-agent-runtime-messages{flex:1 1 auto;min-height:0!important;overflow-y:auto!important}', $layout);
+        self::assertStringContainsString('.mg-agent-runtime-composer{position:relative!important', $layout);
+        self::assertStringContainsString('display:grid!important', $layout);
     }
 }

@@ -39,28 +39,31 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertStringContainsString('explicit confirmation',$service);
     }
 
-    public function testSelectedSpecializedAgentHasResponsiveChatSettingsMemoryAndDraftUi(): void
+    public function testSelectedAgentUsesOnePersistentChatCanvasWithTabbedManagement(): void
     {
         $root=dirname(__DIR__,2);
         $workspace=file_get_contents($root.'/includes/personal-agent/multi-agent-workspace.php');
         $script=file_get_contents($root.'/assets/js/multi-agent-runtime.js');
-        $css=file_get_contents($root.'/assets/css/multi-agent-runtime.css');
+        $layout=file_get_contents($root.'/assets/css/task-agent-single-chat-v1.css');
         $page=file_get_contents($root.'/agent.php');
         self::assertIsString($workspace);
         self::assertIsString($script);
-        self::assertIsString($css);
+        self::assertIsString($layout);
         self::assertIsString($page);
-        foreach (['data-agent-runtime-messages','data-agent-runtime-composer','data-agent-onboarding-form','data-agent-memory-list','data-agent-thread-list','data-agent-new-thread','data-agent-settings-modal','data-agent-manage-open'] as $marker) {
+        foreach (['data-agent-runtime-messages','data-agent-runtime-composer','data-agent-onboarding-form','data-agent-memory-list','data-agent-manage-open','data-agent-manage-tab="manage"','data-agent-manage-tab="settings"','data-agent-action="duplicate"'] as $marker) {
             self::assertStringContainsString($marker,$workspace);
         }
+        self::assertStringNotContainsString('data-agent-thread-list',$workspace);
+        self::assertStringNotContainsString('data-agent-new-thread',$workspace);
         self::assertStringContainsString('/api/agents/runtime.php',$script);
-        self::assertStringContainsString("action:'chat'",$script);
-        self::assertStringContainsString("action:'onboarding'",$script);
-        self::assertStringContainsString("action:'save_draft'",$script);
+        self::assertStringContainsString("action: 'chat'",$script);
+        self::assertStringContainsString("action: 'onboarding'",$script);
+        self::assertStringContainsString("action: 'save_draft'",$script);
         self::assertStringContainsString('stopImmediatePropagation',$script);
-        self::assertStringContainsString('@media(max-width:760px)',$css);
-        self::assertStringContainsString('safe-area-inset-bottom',$css);
-        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.1.0',$page);
-        self::assertStringContainsString('/assets/css/multi-agent-runtime.css?v=1.2.0',$page);
+        self::assertStringContainsString('.mg-agent-runtime-composer{position:relative!important',$layout);
+        self::assertStringContainsString('display:grid!important',$layout);
+        self::assertStringContainsString('safe-area-inset-bottom',$layout);
+        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.2.0',$page);
+        self::assertStringContainsString('/assets/css/task-agent-single-chat-v1.css?v=1.0.0',$page);
     }
 }
