@@ -15,6 +15,7 @@ $page_styles = [
 ];
 $page_scripts = [
     '/assets/js/admin-mcp-connections.js?v=20260720-phase1-provisioning',
+    '/assets/js/admin-mcp-credential-guards.js?v=20260720-phase1-provisioning',
 ];
 $adminActive = 'mcp-connections';
 
