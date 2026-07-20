@@ -22,11 +22,12 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $service = file_get_contents($root . '/includes/multi-agent-runtime.php');
+        $ai = file_get_contents($root . '/includes/task-agent-ai-synthesis.php');
         $memory = file_get_contents($root . '/includes/task-agent-memory.php');
         $router = file_get_contents($root . '/includes/task-agent-intent-router.php');
         $shortlistRouter = file_get_contents($root . '/includes/task-agent-shortlist-router.php');
         $api = file_get_contents($root . '/api/agents/runtime.php');
-        foreach ([$service,$memory,$router,$shortlistRouter,$api] as $value) self::assertIsString($value);
+        foreach ([$service,$ai,$memory,$router,$shortlistRouter,$api] as $value) self::assertIsString($value);
         foreach (['mg_agent_require_owned','mg_require_csrf_for_write','mg_multi_agent_runtime_chat'] as $marker) self::assertStringContainsString($marker,$api);
         foreach (['mg_task_agent_memory_save','mg_task_agent_memory_list','mg_task_agent_memory_archive'] as $marker) {
             self::assertStringContainsString($marker,$api);
@@ -37,11 +38,11 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertStringContainsString('mg_task_agent_memory_for_model',$service);
         self::assertStringContainsString('mg_task_agent_memory_system_response',$router);
         self::assertStringContainsString('mg_task_agent_shortlist_route',$service);
-        self::assertStringContainsString('$aiReason!==\'\'',$service);
-        self::assertStringContainsString('mg_ai_credit_preflight',$service);
-        self::assertStringContainsString('mg_ai_credit_consume',$service);
-        self::assertStringContainsString('\'ai_reason\'=>$aiReason',$service);
-        self::assertStringContainsString('user approval',$service);
+        self::assertStringContainsString('mg_task_agent_ai_synthesis',$service);
+        self::assertStringContainsString('mg_ai_credit_preflight',$ai);
+        self::assertStringContainsString('mg_ai_credit_consume',$ai);
+        self::assertStringContainsString("'ai_reason' => \$aiReason",$ai);
+        self::assertStringContainsString('user approval',$ai);
     }
 
     public function testSelectedAgentUsesOnePersistentChatCanvasWithTabbedManagement(): void
