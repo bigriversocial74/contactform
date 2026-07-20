@@ -18,6 +18,7 @@ $succeeded = 0;
 $failed = 0;
 
 while ($processed < $limit) {
+    $transfer = null;
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->query("SELECT * FROM gift_bundle_settlement_transfers
@@ -39,13 +40,11 @@ while ($processed < $limit) {
             ->execute([$lockToken, (int)$transfer['id']]);
         $pdo->commit();
 
-        $transfer['dispatch_attempt_count'] = (int)$transfer['dispatch_attempt_count'] + 1;
-        $payload = mg_bundle_provider_transfer_payload($transfer);
         $provider = mg_stripe_api_request(
             $pdo,
             'POST',
             '/v1/transfers',
-            $payload,
+            mg_bundle_provider_transfer_payload($transfer),
             'bundle-transfer-' . (string)$transfer['public_id']
         );
 
@@ -57,7 +56,7 @@ while ($processed < $limit) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        if (!empty($transfer)) {
+        if (is_array($transfer)) {
             $pdo->beginTransaction();
             mg_bundle_provider_mark_failed($pdo, $transfer, $error);
             $pdo->commit();
