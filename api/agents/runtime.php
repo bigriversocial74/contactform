@@ -10,6 +10,8 @@ require_once dirname(__DIR__,2).'/includes/task-agent-recurring-program-links.ph
 require_once dirname(__DIR__,2).'/includes/task-agent-recurring-programs-router.php';
 require_once dirname(__DIR__,2).'/includes/task-agent-group-gifts.php';
 require_once dirname(__DIR__,2).'/includes/task-agent-group-gifts-router.php';
+require_once dirname(__DIR__,2).'/includes/task-agent-program-coordination.php';
+require_once dirname(__DIR__,2).'/includes/task-agent-program-coordination-router.php';
 
 $user=mg_require_api_user();
 $pdo=mg_db();
@@ -27,6 +29,7 @@ try {
         $context=mg_multi_agent_runtime_context($pdo,(int)$user['id'],$agent,$template);
         $context=mg_task_agent_recurring_append_context($pdo,(int)$user['id'],$agent,$context);
         $context=mg_task_agent_group_append_context($pdo,(int)$user['id'],$agent,$context);
+        $context=mg_task_agent_program_append_context($pdo,(int)$user['id'],$agent,$context);
         $threadsStmt=$pdo->prepare("SELECT public_id,title,last_message_at,created_at,updated_at FROM multi_agent_threads WHERE owner_user_id=? AND agent_id=? AND status='active' ORDER BY COALESCE(last_message_at,updated_at,created_at) DESC,id DESC LIMIT 100");
         $threadsStmt->execute([(int)$user['id'],(int)$agent['id']]);
         mg_ok([
@@ -42,6 +45,7 @@ try {
             'recurring_programs'=>$context['recurring_programs']??[],'available_recurring_programs'=>$context['available_recurring_programs']??[],'recurring_schema_ready'=>$context['recurring_schema_ready']??false,
             'group_gifts'=>$context['group_gifts']??[],'available_group_gifts'=>$context['available_group_gifts']??[],'group_schema_ready'=>$context['group_schema_ready']??false,
             'group_contributor_lists'=>$context['group_contributor_lists']??[],
+            'distribution_programs'=>$context['distribution_programs']??[],'available_distribution_programs'=>$context['available_distribution_programs']??[],'distribution_program_schema_ready'=>$context['distribution_program_schema_ready']??false,
             'shortlist_schema_ready'=>mg_task_agent_shortlist_schema_ready($pdo),
             'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),
             'context_snapshot'=>$context['system_snapshot']??null,'context_source'=>isset($context['system_snapshot'])?'system':'agent','used_ai_for_context'=>false,
@@ -56,6 +60,7 @@ try {
         if($action==='chat'){
             $recurring=mg_task_agent_recurring_chat($pdo,(int)$user['id'],$agent,$input);if($recurring!==null)mg_ok($recurring);
             $group=mg_task_agent_group_chat($pdo,(int)$user['id'],$agent,$input);if($group!==null)mg_ok($group);
+            $program=mg_task_agent_program_chat($pdo,(int)$user['id'],$agent,$input);if($program!==null)mg_ok($program);
             mg_ok(mg_multi_agent_runtime_chat($pdo,(int)$user['id'],$agent,$input));
         }
 
@@ -95,6 +100,15 @@ try {
         if($action==='update_group_gift'){
             $group=mg_task_agent_group_update($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['group_id']??'')),trim((string)($input['group_action']??'')),trim((string)($input['expected_status']??'')));
             mg_ok(['group_gift'=>$group,'card'=>mg_task_agent_group_card($group),'used_ai'=>false,'response_source'=>'system_action'],'Group gift updated through the canonical pledge-only workflow.');
+        }
+
+        if($action==='link_distribution_program'){
+            $program=mg_task_agent_program_link($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['program_id']??'')),$agent);
+            mg_ok(['distribution_program'=>$program,'card'=>mg_task_agent_program_card($program,false),'used_ai'=>false,'response_source'=>'system_action'],'Existing canonical distribution program connected to this agent.',201);
+        }
+        if($action==='unlink_distribution_program'){
+            mg_task_agent_program_unlink($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['program_id']??'')),$agent);
+            mg_ok(['used_ai'=>false,'response_source'=>'system_action'],'Program disconnected from this agent. The canonical distribution program was not changed.');
         }
 
         if($action==='discover_products'){
