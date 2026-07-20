@@ -22,7 +22,7 @@ $page_styles = [
     '/assets/css/personal-agent-full-canvas.css?v=1.0.0',
     '/assets/css/personal-agent-inline-intro.css?v=1.0.0',
     '/assets/css/personal-agent-chat-history.css?v=1.4.0',
-    '/assets/css/unified-agent-sidebar-v2.css?v=1.0.0',
+    '/assets/css/unified-agent-sidebar-v2.css?v=1.1.0',
     '/assets/css/agent-mode-switch.css?v=1.0.0',
     '/assets/css/personal-agent-marketplace-cards.css?v=1.1.0',
     '/assets/css/personal-agent-opportunity-actions.css?v=1.0.0',
@@ -37,7 +37,7 @@ $page_styles = [
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
     '/assets/css/multi-agent-workspace.css?v=1.0.0',
     '/assets/css/multi-agent-workspace-state.css?v=1.0.0',
-    '/assets/css/multi-agent-runtime.css?v=1.1.0',
+    '/assets/css/multi-agent-runtime.css?v=1.2.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
@@ -59,7 +59,7 @@ $page_scripts = [
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
     '/assets/js/personal-agent-contact-intelligence.js?v=1.0.1',
     '/assets/js/multi-agent-workspace.js?v=1.0.0',
-    '/assets/js/multi-agent-runtime.js?v=1.0.0',
+    '/assets/js/multi-agent-runtime.js?v=1.1.0',
 ];
 
 require __DIR__ . '/includes/header.php';

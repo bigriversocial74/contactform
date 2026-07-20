@@ -30,7 +30,7 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
 <aside class="mg-app-sidebar mg-universal-sidebar mg-utility-sidebar is-text-sidebar mg-personal-chat-sidebar" data-app-sidebar data-sidebar-variant="utility" data-personal-agent-chat-sidebar data-agent-sidebar-mode="<?= mg_e($agentSidebarMode) ?>">
   <div class="mg-app-sidebar-brand mg-universal-sidebar-brand"><a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a></div>
   <?php if ($user): ?>
-    <nav class="mg-personal-chat-actions" aria-label="Customer and Agent navigation">
+    <nav class="mg-personal-chat-actions" aria-label="Customer navigation">
       <a class="<?= mg_e($sidebarLinkClass('inbox')) ?>" href="/inbox.php"><span aria-hidden="true">▣</span><strong>Inbox</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('feed')) ?>" href="/feed.php"><span aria-hidden="true">◈</span><strong>My Feed</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('loyalty-cards')) ?>" href="/loyalty-cards.php"><span aria-hidden="true">◇</span><strong>My Loyalty Cards</strong></a>
@@ -40,6 +40,18 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
         <button class="<?= mg_e($sidebarLinkClass('merchant-agent')) ?>" type="button" data-merchant-agent-new-chat><span aria-hidden="true">+</span><strong>New Merchant Chat</strong></button>
       <?php elseif ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
+        <button class="mg-personal-chat-action" type="button" data-open-agent-selector><span aria-hidden="true">+</span><strong>Add Agent</strong></button>
+      <?php else: ?>
+        <a class="<?= mg_e($sidebarLinkClass('agent')) ?>" href="<?= mg_e($personalAgentHref) ?>"><span aria-hidden="true">✦</span><strong>Agent</strong></a>
+      <?php endif; ?>
+      <a class="<?= mg_e($sidebarLinkClass('design')) ?>" href="/design-studio.php"><span aria-hidden="true">✦</span><strong>Design</strong></a>
+      <a class="<?= mg_e($sidebarLinkClass('calendar')) ?>" href="/design-calendar.php"><span aria-hidden="true">▦</span><strong>Calendar</strong></a>
+    </nav>
+
+    <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
+
+    <?php if ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
+      <div class="mg-unified-agent-list" data-unified-agent-list aria-label="Agents and chats">
         <div class="mg-personal-chat-row mg-agent-nav-row<?= $selectedSidebarAgentId === '' && $activeSidebarKey === 'agent' ? ' is-active' : '' ?>" data-sidebar-agent-row="default">
           <a class="mg-personal-chat-open" href="/agent.php" data-sidebar-agent-id="default"><span class="mg-agent-nav-icon" aria-hidden="true">✦</span><span class="mg-agent-nav-copy"><strong>Agent</strong><small>Default chat agent</small></span></a>
         </div>
@@ -50,17 +62,14 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
             <button class="mg-personal-chat-delete" type="button" data-sidebar-agent-manage="<?= mg_e((string) $sidebarAgent['id']) ?>" aria-label="Manage <?= mg_e((string) $sidebarAgent['name']) ?>">•••</button>
           </div>
         <?php endforeach; ?>
-        <button class="mg-personal-chat-action" type="button" data-open-agent-selector><span aria-hidden="true">+</span><strong>Add Agent</strong></button>
-      <?php else: ?>
-        <a class="<?= mg_e($sidebarLinkClass('agent')) ?>" href="<?= mg_e($personalAgentHref) ?>"><span aria-hidden="true">✦</span><strong>Agent</strong></a>
-      <?php endif; ?>
-      <a class="<?= mg_e($sidebarLinkClass('design')) ?>" href="/design-studio.php"><span aria-hidden="true">✦</span><strong>Design</strong></a>
-      <a class="<?= mg_e($sidebarLinkClass('calendar')) ?>" href="/design-calendar.php"><span aria-hidden="true">▦</span><strong>Calendar</strong></a>
-    </nav>
-    <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
-    <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?><div class="mg-personal-chat-history" data-merchant-agent-thread-groups aria-live="polite"><div class="mg-personal-chat-loading">Loading merchant chats…</div></div>
-    <?php elseif ($hasPersonalAgentAccess): ?><div class="mg-personal-chat-history" data-personal-agent-thread-groups aria-live="polite"><div class="mg-personal-chat-loading">Loading chats…</div></div>
-    <?php else: ?><div class="mg-personal-chat-history" aria-live="polite"><div class="mg-personal-chat-empty">Choose a paid customer or merchant package to unlock Agent chats.</div></div><?php endif; ?>
+        <div class="mg-personal-chat-history mg-unified-agent-chat-rows" data-personal-agent-thread-groups aria-live="polite"><div class="mg-personal-chat-loading">Loading chats…</div></div>
+      </div>
+    <?php elseif ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
+      <div class="mg-personal-chat-history" data-merchant-agent-thread-groups aria-live="polite"><div class="mg-personal-chat-loading">Loading merchant chats…</div></div>
+    <?php else: ?>
+      <div class="mg-personal-chat-history" aria-live="polite"><div class="mg-personal-chat-empty">Choose a paid customer or merchant package to unlock Agent chats.</div></div>
+    <?php endif; ?>
+
     <?php if (!$suppressAgentSidebarFooter): ?>
       <footer class="mg-personal-chat-sidebar-footer" data-agent-sidebar-footer-tools>
         <button class="mg-agent-footer-suggestions" type="button" data-agent-suggestions-open aria-haspopup="dialog" aria-controls="agent-sidebar-tools-modal"><span aria-hidden="true">✦</span><strong>Suggestions</strong><small>Ideas + keywords</small></button>

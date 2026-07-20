@@ -39,7 +39,7 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertStringContainsString('explicit confirmation',$service);
     }
 
-    public function testSelectedSpecializedAgentHasResponsiveChatOnboardingMemoryAndDraftUi(): void
+    public function testSelectedSpecializedAgentHasResponsiveChatSettingsMemoryAndDraftUi(): void
     {
         $root=dirname(__DIR__,2);
         $workspace=file_get_contents($root.'/includes/personal-agent/multi-agent-workspace.php');
@@ -50,7 +50,7 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertIsString($script);
         self::assertIsString($css);
         self::assertIsString($page);
-        foreach (['data-agent-runtime-messages','data-agent-runtime-composer','data-agent-onboarding-form','data-agent-memory-list','data-agent-thread-list','data-agent-new-thread'] as $marker) {
+        foreach (['data-agent-runtime-messages','data-agent-runtime-composer','data-agent-onboarding-form','data-agent-memory-list','data-agent-thread-list','data-agent-new-thread','data-agent-settings-modal','data-agent-manage-open'] as $marker) {
             self::assertStringContainsString($marker,$workspace);
         }
         self::assertStringContainsString('/api/agents/runtime.php',$script);
@@ -60,7 +60,7 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertStringContainsString('stopImmediatePropagation',$script);
         self::assertStringContainsString('@media(max-width:760px)',$css);
         self::assertStringContainsString('safe-area-inset-bottom',$css);
-        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.0.0',$page);
-        self::assertStringContainsString('/assets/css/multi-agent-runtime.css?v=1.1.0',$page);
+        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.1.0',$page);
+        self::assertStringContainsString('/assets/css/multi-agent-runtime.css?v=1.2.0',$page);
     }
 }
