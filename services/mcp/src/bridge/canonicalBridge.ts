@@ -23,7 +23,7 @@ export interface CatalogSearchResult {
   readonly next_cursor: string | null;
 }
 
-export interface CanonicalPhpBridge {
+export interface CanonicalBridge {
   resolveConnection(connectionId: string): Promise<ConnectionContext>;
   searchCatalog(connectionId: string, arguments_: CatalogSearchArguments): Promise<CatalogSearchResult>;
   getCatalogItem(
@@ -73,7 +73,7 @@ function stringArray(value: unknown, name: string): readonly string[] {
   return [...new Set(value)].sort();
 }
 
-export class HttpCanonicalBridge implements CanonicalPhpBridge {
+export class HttpCanonicalBridge implements CanonicalBridge {
   public constructor(
     private readonly config: CanonicalBridgeConfig,
     private readonly connectionId: string,
