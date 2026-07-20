@@ -43,15 +43,12 @@ final class TaskAgentPhase33RecipientSendLaterDeliveryPrepV1ContractTest extends
         self::assertNotFalse($modelStart);
         $projection=substr($service,$projectionStart,$modelStart-$projectionStart);
         $model=substr($service,$modelStart);
-        foreach(['delivery_address_available','gift_preferences_available','address_value_exposed'=>false] as $marker) {
-            if(is_array($marker))continue;
-        }
         self::assertStringContainsString("'delivery_address_available'=>(bool)",$projection);
+        self::assertStringContainsString("'gift_preferences_available'=>(bool)",$projection);
         self::assertStringContainsString("'address_value_exposed'=>false",$projection);
-        self::assertStringNotContainsString('address_line_1',$model);
-        self::assertStringNotContainsString('postal_code',$model);
-        self::assertStringNotContainsString('phone',$model);
-        self::assertStringNotContainsString('email',$model);
+        foreach(['address_line_1','address_line_2','postal_code','phone','email'] as $privateField) {
+            self::assertStringNotContainsString($privateField,$model);
+        }
         self::assertStringContainsString('array_slice($items,0,8)',$model);
     }
 
