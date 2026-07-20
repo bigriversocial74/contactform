@@ -38,6 +38,7 @@ $page_styles = [
     '/assets/css/multi-agent-workspace.css?v=1.0.0',
     '/assets/css/multi-agent-workspace-state.css?v=1.0.0',
     '/assets/css/multi-agent-runtime.css?v=1.2.0',
+    '/assets/css/task-agent-single-chat-v1.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
@@ -59,7 +60,8 @@ $page_scripts = [
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
     '/assets/js/personal-agent-contact-intelligence.js?v=1.0.1',
     '/assets/js/multi-agent-workspace.js?v=1.0.0',
-    '/assets/js/multi-agent-runtime.js?v=1.1.0',
+    '/assets/js/multi-agent-runtime.js?v=1.2.0',
+    '/assets/js/task-agent-manage-tabs-v1.js?v=1.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
