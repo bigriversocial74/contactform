@@ -10,11 +10,11 @@ export interface CanonicalBridgeConfig {
 }
 
 export interface CatalogSearchArguments {
-  readonly query?: string;
-  readonly location?: string;
-  readonly category?: string;
-  readonly limit?: number;
-  readonly cursor?: string;
+  readonly query?: string | undefined;
+  readonly location?: string | undefined;
+  readonly category?: string | undefined;
+  readonly limit?: number | undefined;
+  readonly cursor?: string | undefined;
 }
 
 export interface CatalogSearchResult {
@@ -28,7 +28,7 @@ export interface CanonicalBridge {
   searchCatalog(connectionId: string, arguments_: CatalogSearchArguments): Promise<CatalogSearchResult>;
   getCatalogItem(
     connectionId: string,
-    arguments_: Readonly<{ product_id: string; slug?: string }>,
+    arguments_: Readonly<{ product_id: string; slug?: string | undefined }>,
   ): Promise<Readonly<Record<string, unknown>>>;
   recordReceipt(receipt: InvocationReceipt): Promise<void>;
 }
@@ -95,6 +95,9 @@ export class HttpCanonicalBridge implements CanonicalBridge {
       };
     }
     const expiresAt = typeof data.expiresAt === "string" && data.expiresAt !== "" ? data.expiresAt : undefined;
+    const tokenVersion = typeof data.tokenVersion === "number" && Number.isSafeInteger(data.tokenVersion)
+      ? data.tokenVersion
+      : 1;
     return {
       connectionId: text(data.connectionId, "connection id"),
       clientKey: text(data.clientKey, "client key"),
@@ -102,7 +105,7 @@ export class HttpCanonicalBridge implements CanonicalBridge {
       ...(workspace ? { workspace } : {}),
       scopes: stringArray(data.scopes, "scopes"),
       maximumOperationClass: "read",
-      tokenVersion: Number.isSafeInteger(data.tokenVersion) ? Number(data.tokenVersion) : 1,
+      tokenVersion,
       ...(expiresAt ? { expiresAt } : {}),
     };
   }
@@ -112,16 +115,19 @@ export class HttpCanonicalBridge implements CanonicalBridge {
     if (!Array.isArray(data.items)) {
       throw new CanonicalBridgeError("Invalid catalog search response.", "MCP_BRIDGE_RESPONSE_INVALID", 502);
     }
+    const limit = typeof data.limit === "number" && Number.isSafeInteger(data.limit)
+      ? data.limit
+      : arguments_.limit ?? 10;
     return {
       items: data.items.map((item) => object(item, "catalog item")),
-      limit: Number.isSafeInteger(data.limit) ? Number(data.limit) : arguments_.limit ?? 10,
+      limit,
       next_cursor: typeof data.next_cursor === "string" && data.next_cursor !== "" ? data.next_cursor : null,
     };
   }
 
   public async getCatalogItem(
     connectionId: string,
-    arguments_: Readonly<{ product_id: string; slug?: string }>,
+    arguments_: Readonly<{ product_id: string; slug?: string | undefined }>,
   ): Promise<Readonly<Record<string, unknown>>> {
     return object(await this.request("catalog.get_item", connectionId, arguments_), "catalog item");
   }
@@ -136,16 +142,12 @@ export class HttpCanonicalBridge implements CanonicalBridge {
       http_status: receipt.httpStatus,
       duration_ms: receipt.durationMs,
       record_count: receipt.recordCount,
-      error_code: receipt.errorCode,
-      denial_reason: receipt.denialReason,
+      ...(receipt.errorCode ? { error_code: receipt.errorCode } : {}),
+      ...(receipt.denialReason ? { denial_reason: receipt.denialReason } : {}),
     });
   }
 
-  private async request(
-    operation: string,
-    connectionId: string,
-    arguments_: Readonly<Record<string, unknown>>,
-  ): Promise<unknown> {
+  private async request(operation: string, connectionId: string, arguments_: unknown): Promise<unknown> {
     const requestId = randomUUID();
     const body = JSON.stringify({
       request_id: requestId,
