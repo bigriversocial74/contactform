@@ -9,7 +9,6 @@ on:
       - 'config/mcp_phase0_release.php'
       - 'scripts/validate_mcp_phase0_contract.php'
       - 'tests/phpunit/McpPhase0ArchitectureContractV1Test.php'
-      - 'composer.json'
       - '.github/workflows/mcp-phase0-architecture-contract-v1.yml'
   workflow_dispatch:
 
