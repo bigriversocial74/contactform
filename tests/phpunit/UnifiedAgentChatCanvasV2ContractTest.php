@@ -13,7 +13,8 @@ final class UnifiedAgentChatCanvasV2ContractTest extends TestCase
         self::assertIsString($sidebar);
         self::assertIsString($templates);
         self::assertSame(1, substr_count($sidebar, 'data-open-agent-selector'));
-        self::assertStringNotContainsString('data-personal-agent-new-chat', $sidebar);
+        self::assertStringContainsString('data-personal-agent-new-chat', $sidebar);
+        self::assertStringContainsString('hidden aria-hidden="true"', $sidebar);
         self::assertStringContainsString("'chat_agent' => [", $templates);
         self::assertStringContainsString("'name' => 'Chat Agent'", $templates);
         self::assertStringContainsString("'status' => 'active'", $templates);
