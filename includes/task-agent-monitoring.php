@@ -86,7 +86,7 @@ function mg_task_agent_monitor_snapshot(PDO $pdo,int $userId,array $agent): arra
 
 function mg_task_agent_monitor_for_model(array $snapshot): array
 {
-    return ['counts'=>$snapshot['counts']??[],'items'=>array_map(static fn(array $item):array=>['source'=>$item['source'],'severity'=>$item['severity'],'title'=>$item['title'],'due_at'=>$item['due_at'],'status'=>$item['status'],'facts'=>$item['facts'],'stored_alert'=>false],array_slice($snapshot['items']??[],0,16)),'source'=>'system_query','used_ai'=>false];
+    return ['counts'=>$snapshot['counts']??[],'items'=>array_map(static fn(array $item):array=>['source'=>$item['source'],'severity'=>$item['severity'],'due_at'=>$item['due_at'],'status'=>$item['status'],'facts'=>$item['facts'],'stored_alert'=>false],array_slice($snapshot['items']??[],0,16)),'source'=>'system_query','used_ai'=>false];
 }
 
 function mg_task_agent_monitor_card(array $item): array
