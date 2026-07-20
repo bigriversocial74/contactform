@@ -1,0 +1,55 @@
+<?php
+declare(strict_types=1);
+
+return [
+    'release_key' => 'microgifter_mcp_phase1_provisioning_console_v1',
+    'program' => 'microgifter_platform_phase5',
+    'phase' => 'mcp_phase1_provisioning_console',
+    'depends_on' => [
+        'microgifter_mcp_phase1_foundation_v1',
+        'microgifter_mcp_phase1_protocol_v1',
+        'microgifter_mcp_phase1_canonical_bridge_v1',
+    ],
+    'required_migrations' => [],
+    'foundation_migration' => '20260720_microgifter_mcp_automation_foundation_v1.sql',
+    'admin_page' => '/admin/mcp-connections.php',
+    'permission' => 'admin.settings.manage',
+    'apis' => [
+        'read' => '/api/admin/mcp-connections.php',
+        'provision' => '/api/admin/mcp-connection-create.php',
+        'action' => '/api/admin/mcp-connection-action.php',
+        'runtime_credentials' => '/api/admin/mcp-runtime-credentials.php',
+    ],
+    'capabilities' => [
+        'client_registry_read',
+        'connection_provisioning',
+        'user_and_workspace_binding',
+        'database_scope_grant_and_revocation',
+        'connection_pause_resume_revoke',
+        'token_version_rotation',
+        'deployment_readiness_diagnostics',
+        'one_time_runtime_credential_generation',
+    ],
+    'security' => [
+        'admin_permission_required',
+        'csrf_required_for_writes',
+        'rate_limited_reads_and_writes',
+        'active_user_required',
+        'workspace_membership_verified',
+        'read_only_operation_ceiling',
+        'grantable_active_scope_catalog_enforced',
+        'action_reason_required',
+        'audit_event_and_security_records',
+        'runtime_secrets_never_persisted',
+        'runtime_credentials_no_store_response',
+    ],
+    'boundaries' => [
+        'internal_mcp_only',
+        'no_external_oauth',
+        'no_write_capable_mcp_tools',
+        'no_scheduler_or_worker',
+        'no_node_database_credentials',
+        'no_secret_storage',
+        'no_environment_mutation',
+    ],
+];
