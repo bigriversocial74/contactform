@@ -60,6 +60,9 @@
   const renderHeroShowcase = () => {
     if (!hero || !growthStage || !showcaseCards.length) return;
     if (reduced.matches) {
+      growthStage.style.opacity = '1';
+      growthStage.style.visibility = 'visible';
+      growthStage.style.transform = 'none';
       showcaseCards.forEach((card, index) => {
         card.style.opacity = index === 0 ? '1' : '0';
         card.style.transform = 'none';
@@ -71,6 +74,14 @@
     const rect = hero.getBoundingClientRect();
     const distance = Math.max(1, hero.offsetHeight - window.innerHeight);
     const progress = clamp(-rect.top / distance);
+    const stageEnter = range(progress, .685, .715);
+    const stageExit = range(progress, .992, 1);
+    const stageOpacity = stageEnter * (1 - stageExit);
+
+    growthStage.style.opacity = stageOpacity.toFixed(3);
+    growthStage.style.visibility = stageOpacity > .01 ? 'visible' : 'hidden';
+    growthStage.style.transform = `translateY(${((1 - stageEnter) * 28 - stageExit * 18).toFixed(1)}px)`;
+    growthStage.setAttribute('aria-hidden', stageOpacity > .1 ? 'false' : 'true');
 
     const beats = [
       { enterStart: .705, enterEnd: .735, holdEnd: .790, exitEnd: .815 },
