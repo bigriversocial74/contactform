@@ -1,9 +1,14 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__.'/task-agent-policy-approvals.php';
+require_once __DIR__.'/task-agent-policy-approvals-router.php';
+
 function mg_task_agent_program_intent(string $message,array $agent): string
 {
     if (!mg_task_agent_program_template_ready($agent)) return '';
+    $policyIntent=mg_task_agent_policy_intent($message,$agent);
+    if($policyIntent!=='')return 'policy';
     $text=mg_task_agent_intent_lower($message);
     if (preg_match('/\b(connect|link|attach|reuse)\b/u',$text) && preg_match('/\b(program|reward|fundraiser|contest|giveaway)\b/u',$text)) return 'link';
     if (preg_match('/\b(create|new|start|build|set up|setup)\b/u',$text) && preg_match('/\b(program|reward|fundraiser|contest|giveaway)\b/u',$text)) return 'handoff_create';
@@ -28,6 +33,7 @@ function mg_task_agent_program_route(string $message,array $context,array $agent
 {
     $intent=mg_task_agent_program_intent($message,$agent);
     if ($intent==='') return null;
+    if($intent==='policy')return mg_task_agent_policy_route($message,$context,$agent);
     if (empty($context['distribution_program_schema_ready'])) {
         return [
             'result'=>[
@@ -80,20 +86,23 @@ function mg_task_agent_program_route(string $message,array $context,array $agent
 function mg_task_agent_program_chat(PDO $pdo,int $userId,array $agent,array $input): ?array
 {
     $message=mg_personal_agent_text($input['message']??'',3000);
-    if ($message==='' || mg_task_agent_program_intent($message,$agent)==='') return null;
+    $intent=$message!==''?mg_task_agent_program_intent($message,$agent):'';
+    if ($message==='' || $intent==='') return null;
     mg_multi_agent_runtime_require_schema($pdo);
     if (($agent['lifecycle_status']??'')!=='active') throw new RuntimeException('Agent is not active.');
     if (($agent['runtime_status']??'')==='paused') throw new RuntimeException('Agent is paused. Resume it before chatting.');
     $template=mg_multi_agent_runtime_template($agent);
     $thread=mg_multi_agent_runtime_thread($pdo,$agent,$userId,mg_personal_agent_text($input['thread_id']??'',80));
     $context=mg_task_agent_program_append_context($pdo,$userId,$agent,mg_multi_agent_runtime_context($pdo,$userId,$agent,$template));
+    if($intent==='policy')$context=mg_task_agent_policy_append_context($pdo,$userId,$agent,$context);
     $userMessage=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'user',$message,[],$context);
-    $route=mg_task_agent_program_route($message,$context,$agent);
+    $route=$intent==='policy'?mg_task_agent_policy_route($message,$context,$agent):mg_task_agent_program_route($message,$context,$agent);
     if (!$route || !is_array($route['result']??null)) return null;
     $result=$route['result'];
     $assistant=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'assistant',(string)$result['reply'],is_array($result['cards']??null)?$result['cards']:[],$context);
+    $tool=$intent==='policy'?'policy_approvals':'distribution_programs';
     mg_audit('multi_agent.chat_completed','agent',[
-        'agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id'],'response_source'=>'system_query','model_key'=>'system_query','ai_reason'=>'','tool'=>'distribution_programs','used_ai'=>false,'ai_tokens_total'=>0,
+        'agent_id'=>(string)$agent['public_id'],'thread_id'=>(string)$thread['public_id'],'response_source'=>'system_query','model_key'=>'system_query','ai_reason'=>'','tool'=>$tool,'used_ai'=>false,'ai_tokens_total'=>0,
     ],$userId);
     return [
         'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],
