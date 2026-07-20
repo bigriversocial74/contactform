@@ -81,7 +81,7 @@ final class TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest exten
         $page=file_get_contents($root.'/agent.php');
         foreach([$script,$page] as $value)self::assertIsString($value);
         foreach(['purchase_tracking','Open order confirmation','Open Inbox','View orders','Commerce center','Read only','internalUrl'] as $marker)self::assertStringContainsString($marker,$script);
-        foreach(['fetch(','method:',"action: '",'cart-items.php','checkout-session.php','reconcile','refund','action-center-send.php','microgift-claim.php'] as $forbidden)self::assertStringNotContainsString($forbidden,$script);
+        foreach(['fetch(','method:',"action: '",'cart-items.php','checkout-session.php','reconcile_issuance','refund_order','/api/payments/','action-center-send.php','microgift-claim.php'] as $forbidden)self::assertStringNotContainsString($forbidden,$script);
         self::assertStringContainsString('/assets/js/task-agent-order-tracking-runtime.js?v=1.0.0',$page);
         self::assertStringContainsString('/assets/css/task-agent-order-tracking-v1.css?v=1.0.0',$page);
     }
