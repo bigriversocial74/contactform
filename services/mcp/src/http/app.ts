@@ -1,6 +1,8 @@
 import type { Server } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { CanonicalBridge } from "../bridge/canonicalBridge.js";
+import { CanonicalBridgeError } from "../bridge/canonicalBridge.js";
 import type { InternalProtocolConfig } from "../protocolConfig.js";
 import { authenticateInternalBearer } from "../auth/internalToken.js";
 import { isOriginAllowed } from "./origin.js";
@@ -12,7 +14,11 @@ function jsonError(code: number, message: string) {
   return { jsonrpc: "2.0", id: null, error: { code, message } };
 }
 
-export function createInternalMcpApp(config: InternalProtocolConfig, receipts: InvocationReceiptSink) {
+export function createInternalMcpApp(
+  config: InternalProtocolConfig,
+  receipts: InvocationReceiptSink,
+  bridge?: CanonicalBridge,
+) {
   const app = createMcpExpressApp(
     config.allowedHosts.length > 0
       ? { host: config.host, allowedHosts: [...config.allowedHosts] }
@@ -39,7 +45,23 @@ export function createInternalMcpApp(config: InternalProtocolConfig, receipts: I
       return;
     }
 
-    const rate = limiter.consume(principal.connection.connectionId);
+    let connection = principal.connection;
+    if (config.bridge.enabled) {
+      if (!bridge) {
+        response.status(503).json(jsonError(-32050, "Canonical authority is unavailable."));
+        return;
+      }
+      try {
+        connection = await bridge.resolveConnection(config.connection.connectionId);
+      } catch (error) {
+        const status = error instanceof CanonicalBridgeError && [401, 403].includes(error.status) ? error.status : 503;
+        const message = status === 403 ? "The Microgifter connection is not authorized." : "Canonical authority is unavailable.";
+        response.status(status).json(jsonError(status === 403 ? -32003 : -32050, message));
+        return;
+      }
+    }
+
+    const rate = limiter.consume(connection.connectionId);
     response.setHeader("X-RateLimit-Remaining", String(rate.remaining));
     if (!rate.allowed) {
       response.setHeader("Retry-After", String(rate.retryAfterSeconds));
@@ -47,7 +69,7 @@ export function createInternalMcpApp(config: InternalProtocolConfig, receipts: I
       return;
     }
 
-    const server = createInternalMcpServer({ connection: principal.connection, receipts });
+    const server = createInternalMcpServer({ connection, receipts, ...(bridge ? { bridge } : {}) });
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
@@ -80,8 +102,9 @@ export function createInternalMcpApp(config: InternalProtocolConfig, receipts: I
 export function listenInternalMcp(
   config: InternalProtocolConfig,
   receipts: InvocationReceiptSink,
+  bridge?: CanonicalBridge,
 ): Promise<Server> {
-  const app = createInternalMcpApp(config, receipts);
+  const app = createInternalMcpApp(config, receipts, bridge);
   return new Promise((resolve, reject) => {
     const server = app.listen(config.port, config.host, () => resolve(server));
     server.once("error", reject);
