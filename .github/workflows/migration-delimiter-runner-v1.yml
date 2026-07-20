@@ -1,0 +1,45 @@
+name: Migration Delimiter Runner v1
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'includes/migrations.php'
+      - 'scripts/run_migrations.php'
+      - 'database/20260719_product_bundle_checkout_fulfillment_v3.sql'
+      - 'tests/phpunit/MigrationDelimiterRunnerV1Test.php'
+      - '.github/workflows/migration-delimiter-runner-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: validate (${{ matrix.php }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l includes/migrations.php
+          php -l scripts/run_migrations.php
+          php -l tests/phpunit/MigrationDelimiterRunnerV1Test.php
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: Delimiter parser contract
+        run: vendor/bin/phpunit tests/phpunit/MigrationDelimiterRunnerV1Test.php
+      - name: Repository production-quality audit
+        run: composer audit-repository-quality
