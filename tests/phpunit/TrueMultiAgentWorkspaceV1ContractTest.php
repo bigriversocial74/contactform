@@ -27,9 +27,13 @@ final class TrueMultiAgentWorkspaceV1ContractTest extends TestCase
     {
         $sidebar = file_get_contents($this->root . '/includes/personal-agent-sidebar.php');
         self::assertStringContainsString('mg_multi_agent_active_agents', $sidebar);
+        self::assertStringContainsString('data-sidebar-agent-row', $sidebar);
         self::assertStringContainsString('data-sidebar-agent-id', $sidebar);
         self::assertStringContainsString('data-sidebar-agent-manage', $sidebar);
-        self::assertStringContainsString('Default workspace', $sidebar);
+        self::assertStringContainsString('data-open-agent-selector', $sidebar);
+        self::assertStringContainsString('data-personal-agent-new-chat', $sidebar);
+        self::assertStringNotContainsString('mg-sidebar-agent-list', $sidebar);
+        self::assertStringNotContainsString('Default workspace', $sidebar);
     }
 
     public function testSelectorAndLifecycleControlsExist(): void
