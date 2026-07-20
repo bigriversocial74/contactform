@@ -36,6 +36,7 @@ $files = [
     'api/admin/mcp-connection-action.php',
     'api/admin/mcp-runtime-credentials.php',
     'assets/js/admin-mcp-connections.js',
+    'assets/js/admin-mcp-credential-guards.js',
     'assets/css/admin-mcp-connections.css',
     'docs/MICROGIFTER_MCP_PHASE1_PROVISIONING_CONSOLE_RUNBOOK.md',
     'tests/phpunit/McpPhase1ProvisioningConsoleV1ContractTest.php',
@@ -51,6 +52,7 @@ $action = $source('api/admin/mcp-connection-action.php');
 $credentials = $source('api/admin/mcp-runtime-credentials.php');
 $page = $source('admin/mcp-connections.php');
 $javascript = $source('assets/js/admin-mcp-connections.js');
+$credentialGuard = $source('assets/js/admin-mcp-credential-guards.js');
 $permissions = $source('includes/admin-permission-matrix.php');
 $sidebar = $source('includes/admin-sidebar.php');
 
@@ -79,14 +81,20 @@ $check(str_contains($helper, 'Expired connections cannot be resumed.'), 'expired
 $check(str_contains($helper, 'mg_admin_mcp_connection_issues($pdo, $connection, true)'), 'credential_readiness_revalidated');
 $check(str_contains($helper, "['development', 'active']"), 'development_client_runtime_parity');
 $check(str_contains($helper, 'embedded credentials or fragments'), 'bridge_url_credentials_denied');
+$check(str_contains($credentials, "isset($parts['user'])"), 'bridge_url_userinfo_denied');
+$check(str_contains($credentials, "isset($parts['pass'])"), 'bridge_url_password_denied');
+$check(str_contains($credentials, "isset($parts['fragment'])"), 'bridge_url_fragment_denied');
 $check(str_contains($credentials, "header('Cache-Control: private, no-store, max-age=0')"), 'credential_response_no_store');
 $check(str_contains($page, "mg_require_admin_page_key('admin.mcp_connections')"), 'page_permission_gate');
-$check(str_contains($permissions, "'admin.mcp_connections'"), 'permission_page_registered');
+$check(str_contains($page, 'admin-mcp-credential-guards.js'), 'credential_guard_loaded');
+$check(str_contains($permissions, "'admin.mcp_connections' => ['admin.settings.manage']"), 'permission_page_registered');
 $check(str_contains($sidebar, "'mcp-connections'"), 'sidebar_registered');
 $check(str_contains($javascript, '/api/admin/mcp-connection-create.php'), 'ui_provision_api_wired');
 $check(str_contains($javascript, '/api/admin/mcp-runtime-credentials.php'), 'ui_credentials_api_wired');
-$check(!str_contains($javascript, 'localStorage'), 'secrets_not_local_storage');
-$check(!str_contains($javascript, 'sessionStorage'), 'secrets_not_session_storage');
+$check(str_contains($credentialGuard, "event.stopImmediatePropagation()"), 'inflight_close_blocked');
+$check(str_contains($credentialGuard, "event.key !== 'Escape'"), 'inflight_escape_blocked');
+$check(!str_contains($javascript . $credentialGuard, 'localStorage'), 'secrets_not_local_storage');
+$check(!str_contains($javascript . $credentialGuard, 'sessionStorage'), 'secrets_not_session_storage');
 
 $score = (int)round((count(array_filter($checks)) / max(1, count($checks))) * 10, 1);
 if ($failures !== []) {
