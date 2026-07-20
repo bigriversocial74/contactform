@@ -42,8 +42,20 @@ jobs:
           php -l agent.php
       - name: JavaScript syntax
         run: node --check assets/js/task-agent-order-tracking-runtime.js
-      - name: Phase 3.4 contract
-        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Exact-version ownership contract
+        run: vendor/bin/phpunit --filter testTrackingAuthorityUsesBuyerOwnedExactProductVersionMatches tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Canonical projection contract
+        run: vendor/bin/phpunit --filter testTrackingProjectionContainsCanonicalPaymentReceiptAndIssuanceState tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Read-only zero-AI contract
+        run: vendor/bin/phpunit --filter testAuthorityAndRouterAreReadOnlyAndZeroAi tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Route-order contract
+        run: vendor/bin/phpunit --filter testOrderTrackingRoutePrecedesDeliveryPlanningAndAi tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Compact model-context contract
+        run: vendor/bin/phpunit --filter testModelContextIsCompactAndContainsNoInternalIdentifiers tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Read-only canvas contract
+        run: vendor/bin/phpunit --filter testCanvasUsesSafeInternalLinksAndNoMutationRequests tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Agent API read-context contract
+        run: vendor/bin/phpunit --filter testAgentApiExposesTrackingOnlyThroughReadContext tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
       - name: Purchase issuance authority regression
         run: vendor/bin/phpunit tests/phpunit/PostCheckoutMicrogiftIssuanceContractTest.php
       - name: Order confirmation regression
