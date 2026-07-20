@@ -19,7 +19,7 @@ function config(overrides = {}) {
     host: "127.0.0.1",
     port: 0,
     allowedOrigins: [],
-    allowedHosts: [],
+    allowedHosts: ["mcp.microgifter.test"],
     tokenSha256: hashBearerToken(token),
     rateLimitRequests: 20,
     rateLimitWindowMs: 60_000,
