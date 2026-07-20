@@ -1,0 +1,83 @@
+<?php
+declare(strict_types=1);
+
+return [
+    'release_key' => 'microgifter_mcp_phase0_contract_v1',
+    'program' => 'microgifter_platform_phase5',
+    'depends_on' => ['task_agent_phase4_v1'],
+    'runtime_enabled' => false,
+    'sql_required' => false,
+    'documents' => [
+        'docs/MICROGIFTER_MCP_AUTOMATION_PLATFORM_SPEC.md',
+        'docs/MICROGIFTER_MCP_PHASE0_ARCHITECTURE_CONTRACT_LOCK.md',
+    ],
+    'service_boundary' => [
+        'gateway' => 'services/mcp/',
+        'gateway_runtime' => 'typescript_node',
+        'domain_bridge' => 'protected_internal_php_contracts',
+        'database_access' => 'php_canonical_services_only',
+    ],
+    'initial_tools' => [
+        'microgifter.account.get_connection_context' => [
+            'operation_class' => 'read',
+            'scope' => 'profile:read',
+        ],
+        'microgifter.catalog.search' => [
+            'operation_class' => 'read',
+            'scope' => 'catalog:read',
+            'maximum_page_size' => 25,
+        ],
+        'microgifter.catalog.get_item' => [
+            'operation_class' => 'read',
+            'scope' => 'catalog:read',
+        ],
+    ],
+    'operation_classes' => [
+        'read',
+        'monitor',
+        'recommend',
+        'task',
+        'draft',
+        'approval_gated',
+        'bounded_auto',
+        'prohibited',
+    ],
+    'canonical_authorities' => [
+        'bootstrap' => ['includes/app.php', 'api/bootstrap.php', 'api/db.php', 'api/security.php'],
+        'migrations' => ['config/migrations.php'],
+        'catalog' => ['api/catalog/_catalog.php', 'includes/public-product-foundation.php', 'api/public/product.php'],
+        'recurring_programs' => ['user_recurring_gift_programs', 'user_recurring_gift_runs', 'user_gifting_plans'],
+        'group_gifting' => ['user_group_gifts', 'user_group_gift_participants', 'user_contact_lists'],
+        'distribution_programs' => ['distribution_programs', 'distribution_program_products', 'distribution_recipients', 'distribution_allocations', 'distribution_issuance_jobs'],
+        'agent_workflows' => ['api/agents/_execution.php', 'api/agents/_workflow.php', 'agent_strategies', 'agent_workflow_runs', 'agent_workflow_actions', 'agent_approval_requests', 'agent_execution_events'],
+        'commerce_lifecycle' => ['orders', 'pppm_items', 'microgift_instances', 'action_center_items'],
+    ],
+    'automation_foundation' => [
+        'durable_grants',
+        'automation_definitions',
+        'trigger_contracts',
+        'scheduler_interfaces',
+        'queue_and_worker_interfaces',
+        'run_and_action_state_machines',
+        'approval_linkage',
+        'fresh_state_validation',
+        'idempotency',
+        'budgets_and_limits',
+        'invocation_and_action_receipts',
+        'revocation_and_kill_switches',
+    ],
+    'planned_phase1_migration' => '20260720_microgifter_mcp_automation_foundation_v1.sql',
+    'release_boundaries' => [
+        'read_only_first_automation_capable_by_design',
+        'microgifter_remains_domain_and_execution_authority',
+        'oauth_scope_is_necessary_but_not_sufficient',
+        'unattended_execution_requires_active_durable_grant',
+        'node_gateway_has_no_database_credentials',
+        'protected_php_bridge_calls_canonical_services',
+        'browser_session_and_csrf_controls_remain_unchanged',
+        'no_generic_sql_file_shell_callback_webhook_or_url_tools',
+        'no_unbounded_autonomous_mode',
+        'no_phase0_runtime_endpoint',
+        'no_phase0_sql',
+    ],
+];
