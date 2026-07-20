@@ -33,11 +33,12 @@ $endpoint = $source('api/internal/mcp-bridge.php');
 $bridge = $source('services/mcp/src/bridge/canonicalBridge.ts');
 $registry = $source('services/mcp/src/tools/registry.ts');
 $config = $source('services/mcp/src/protocolConfig.ts');
-$productDiscovery = $source('includes/profiles/_product_discovery.php');
+$productDiscovery = $source('api/profiles/_product_discovery.php');
 
 foreach ([
     'api/internal/_mcp_bridge.php',
     'api/internal/mcp-bridge.php',
+    'api/profiles/_product_discovery.php',
     'services/mcp/src/bridge/canonicalBridge.ts',
     'services/mcp/tests/bridge.test.mjs',
 ] as $path) {
