@@ -99,13 +99,11 @@
     const shoot = range(p, .217, .315);
     const entrance = easeOutExpo(clamp(p / .315));
 
-    let left = 66;
-    let top = mix(114, 39, rise);
-    let scale = mix(.42, .30, rise);
-    let rotation = mix(-8, -2, rise);
-
-    // Slight arc gives the rise a natural lift while the shrinking scale creates depth.
-    top += Math.sin(rise * Math.PI) * -5;
+    const riseArc = Math.sin(rise * Math.PI);
+    let left = mix(61, 69, rise) + riseArc * 7.5;
+    let top = mix(114, 39, rise) - riseArc * 7;
+    let scale = mix(.44, .11, rise);
+    let rotation = mix(-8, -2, rise) + riseArc * 5;
 
     // Keep the orb behind the foreground until it clears the ridge line.
     orb.style.zIndex = p < .082 ? '2' : '5';
