@@ -52,11 +52,11 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
     {
         $helper = (string)file_get_contents($this->root . '/api/admin/_mcp_connections.php');
 
-        self::assertStringContainsString("(string)$user['status'] !== 'active'", $helper);
+        self::assertStringContainsString('(string)$user[\'status\'] !== \'active\'', $helper);
         self::assertStringContainsString('merchant_team_members', $helper);
         self::assertStringContainsString("active=1 AND grantable=1 AND operation_class='read'", $helper);
         self::assertStringContainsString("'active','read',1,NOW()", $helper);
-        self::assertStringContainsString("maximum_operation_class,metadata_json", $helper);
+        self::assertStringContainsString('maximum_operation_class,metadata_json', $helper);
     }
 
     public function testRuntimeSecretsAreOneTimeAndNeverPersisted(): void
@@ -66,7 +66,7 @@ final class McpPhase1ProvisioningConsoleV1ContractTest extends TestCase
         $javascript = (string)file_get_contents($this->root . '/assets/js/admin-mcp-connections.js');
 
         self::assertStringContainsString('random_bytes(32)', $helper);
-        self::assertStringContainsString("hash('sha256', $bearerToken)", $helper);
+        self::assertStringContainsString('hash(\'sha256\', $bearerToken)', $helper);
         self::assertStringContainsString('random_bytes(48)', $helper);
         self::assertStringContainsString("'secrets_persisted' => false", $helper);
         self::assertDoesNotMatchRegularExpression('/(?:INSERT|UPDATE)[^;]{0,400}(?:bearer_token|bridge_secret)/is', $helper);
