@@ -6,6 +6,7 @@ require_once dirname(__DIR__,2).'/includes/multi-agent-workspace-data.php';
 require_once dirname(__DIR__,2).'/includes/multi-agent-runtime.php';
 require_once dirname(__DIR__,2).'/includes/task-agent-plan-selection-guard.php';
 require_once dirname(__DIR__,2).'/includes/task-agent-recurring-programs.php';
+require_once dirname(__DIR__,2).'/includes/task-agent-recurring-program-links.php';
 require_once dirname(__DIR__,2).'/includes/task-agent-recurring-programs-router.php';
 
 $user=mg_require_api_user();
@@ -41,6 +42,7 @@ try {
             'lifecycle_tracking'=>$context['lifecycle_tracking']??[],
             'lifecycle_schema_ready'=>$context['lifecycle_schema_ready']??false,
             'recurring_programs'=>$context['recurring_programs']??[],
+            'available_recurring_programs'=>$context['available_recurring_programs']??[],
             'recurring_schema_ready'=>$context['recurring_schema_ready']??false,
             'shortlist_schema_ready'=>mg_task_agent_shortlist_schema_ready($pdo),
             'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),
@@ -68,6 +70,12 @@ try {
             if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot create recurring gift programs.');
             $program=mg_task_agent_recurring_create($pdo,(int)$user['id'],(int)$agent['id'],$input);
             mg_ok(['program'=>$program,'card'=>mg_task_agent_recurring_card($program),'used_ai'=>false,'response_source'=>'system_action'],'Recurring draft program created. No commerce was executed.',201);
+        }
+        if($action==='link_recurring_program'){
+            $template=mg_multi_agent_runtime_template($agent);
+            if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot link recurring gift programs.');
+            $program=mg_task_agent_recurring_link_existing($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['program_id']??'')));
+            mg_ok(['program'=>$program,'card'=>mg_task_agent_recurring_card($program),'used_ai'=>false,'response_source'=>'system_action'],'Existing recurring program connected to this agent.',201);
         }
         if($action==='update_recurring_program'){
             $program=mg_task_agent_recurring_update(
