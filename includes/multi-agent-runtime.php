@@ -6,9 +6,11 @@ require_once __DIR__ . '/task-agent-context.php';
 require_once __DIR__ . '/task-agent-memory.php';
 require_once __DIR__ . '/task-agent-shortlist.php';
 require_once __DIR__ . '/task-agent-plan-selection.php';
+require_once __DIR__ . '/task-agent-delivery-preparation.php';
 require_once __DIR__ . '/task-agent-intent-router.php';
 require_once __DIR__ . '/task-agent-shortlist-router.php';
 require_once __DIR__ . '/task-agent-plan-selection-router.php';
+require_once __DIR__ . '/task-agent-delivery-router.php';
 require_once __DIR__ . '/task-agent-ai-synthesis.php';
 require_once dirname(__DIR__) . '/api/agents/_agent.php';
 
@@ -135,6 +137,7 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
     $memory = mg_task_agent_memory_list($pdo, $userId, $agentId, 50);
     $shortlist = mg_task_agent_shortlist_list($pdo, $userId, $agentId, 20);
     $selections = mg_task_agent_plan_selections($pdo, $userId, $agentId, 20);
+    $delivery = mg_task_agent_delivery_preparations($pdo, $userId, $agentId, 20);
 
     $context = [
         'agent' => [
@@ -148,6 +151,9 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
         'shortlist_for_model' => mg_task_agent_shortlist_for_model($shortlist),
         'plan_selections' => $selections,
         'plan_selections_for_model' => mg_task_agent_plan_selection_for_model($selections),
+        'delivery_preparations' => $delivery,
+        'delivery_preparations_for_model' => mg_task_agent_delivery_for_model($delivery),
+        'delivery_schema_ready' => mg_task_agent_delivery_schema_ready($pdo),
         'onboarding' => mg_multi_agent_runtime_onboarding($pdo, $userId, $agentId),
     ];
 
@@ -155,6 +161,7 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
         $snapshot = mg_task_agent_context_snapshot($pdo, $userId, 90);
         $snapshot['summary']['shortlisted_products'] = count($shortlist);
         $snapshot['summary']['selected_plan_products'] = count($selections);
+        $snapshot['summary']['delivery_preparations'] = count($delivery);
         $context['system_snapshot'] = $snapshot;
         $context['upcoming_dates'] = $snapshot['upcoming'];
         $context['active_plans'] = $snapshot['plans'];
@@ -169,7 +176,8 @@ function mg_multi_agent_runtime_model_context(array $context, string $message = 
     return array_merge(
         mg_task_agent_model_context($message, $context),
         mg_task_agent_shortlist_model_context($context),
-        mg_task_agent_plan_selection_model_context($context)
+        mg_task_agent_plan_selection_model_context($context),
+        mg_task_agent_delivery_model_context($context)
     );
 }
 
@@ -177,7 +185,7 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
 {
     if (($template['key'] ?? '') === 'birthday_occasion') {
         $next = ($context['upcoming_dates'] ?? [])[0] ?? null;
-        $reply = 'I can search local gifts, manage a shortlist, attach a reviewed product to a gift plan, prepare a cart handoff, create reminders, and answer saved-data questions without using AI.';
+        $reply = 'I can search local gifts, manage a shortlist, attach a reviewed product to a gift plan, prepare a cart handoff, create recipient permission requests, and manage prepare-only send-later checkpoints without using AI.';
         if (is_array($next)) {
             $reply .= ' Your next saved occasion is ' . (string)($next['label'] ?? 'an occasion')
                 . ' on ' . (string)($next['event_date'] ?? 'the saved date') . '.';
@@ -187,9 +195,9 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
             'cards' => [[
                 'type' => 'question',
                 'title' => 'Choose a deterministic action',
-                'body' => 'Name a recipient, shortlisted product, or editable gift plan.',
+                'body' => 'Name a recipient, shortlisted product, editable gift plan, or send-later preparation.',
                 'action' => 'seed_prompt',
-                'prompt' => 'Show my selected plan product.',
+                'prompt' => 'Show my delivery preparation status.',
                 'review_payload' => [],
             ]],
         ];
@@ -230,7 +238,8 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
     );
     $history = mg_multi_agent_runtime_messages($pdo, $userId, (int)$agent['id'], (int)$thread['id'], 8);
 
-    $route = mg_task_agent_plan_selection_route($message, $context, $template)
+    $route = mg_task_agent_delivery_route($message, $context, $template)
+        ?? mg_task_agent_plan_selection_route($message, $context, $template)
         ?? mg_task_agent_shortlist_route($message, $context, $template)
         ?? mg_task_agent_route($message, $context, $template);
 
