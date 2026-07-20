@@ -55,6 +55,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderCards(cards) {
     if (!Array.isArray(cards) || !cards.length) return '';
     return '<div class="mg-agent-runtime-cards">' + cards.map(function (card) {
+      var extension = window.MicrogifterTaskAgentShortlist;
+      if (extension && typeof extension.renderCard === 'function') {
+        var extendedCard = extension.renderCard(card, { esc: esc, internalUrl: internalUrl });
+        if (extendedCard) return extendedCard;
+      }
+
       var action = '';
       var payload = esc(JSON.stringify(card.review_payload || {}));
       var label = esc(card.action_label || '');
@@ -102,10 +108,14 @@ document.addEventListener('DOMContentLoaded', function () {
       ['Upcoming', summary.upcoming_dates || 0],
       ['Missing birthdays', summary.missing_birthdays || 0],
       ['Plans', summary.active_plans || 0],
-      ['Reminders', summary.scheduled_reminders || 0]
+      ['Reminders', summary.scheduled_reminders || 0],
+      ['Shortlist', summary.shortlisted_products || 0]
     ];
     contextStats.innerHTML = stats.map(function (item) {
-      var prompt = item[0] === 'Missing birthdays' ? 'Show contacts missing birthdays.' : 'Show my ' + item[0].toLowerCase() + '.';
+      var prompt;
+      if (item[0] === 'Missing birthdays') prompt = 'Show contacts missing birthdays.';
+      else if (item[0] === 'Shortlist') prompt = 'Show my shortlist.';
+      else prompt = 'Show my ' + item[0].toLowerCase() + '.';
       return '<button type="button" data-agent-seed-prompt="' + esc(prompt) + '"><strong>' + esc(item[1]) + '</strong><span>' + esc(item[0]) + '</span></button>';
     }).join('');
     var opportunities = Array.isArray(snapshot.upcoming) ? snapshot.upcoming.slice(0, 6) : [];
@@ -131,7 +141,9 @@ document.addEventListener('DOMContentLoaded', function () {
       Object.keys(answers).forEach(function (key) {
         if (onboardingForm && onboardingForm.elements[key]) onboardingForm.elements[key].value = answers[key] || '';
       });
-      status.textContent = '';
+      status.textContent = data.shortlist_schema_ready === false
+        ? 'Gift shortlist setup is pending the Phase 3.1 SQL import.'
+        : '';
     } catch (error) {
       status.textContent = error.message;
     }

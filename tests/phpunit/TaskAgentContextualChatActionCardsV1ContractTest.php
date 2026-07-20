@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 
 final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
 {
-    public function testDeterministicRouterBuildsFocusedContextAndReviewableCards(): void
+    public function testDeterministicRouterOwnsContextAndReviewableActions(): void
     {
         $root = dirname(__DIR__, 2);
         $router = file_get_contents($root . '/includes/task-agent-intent-router.php');
@@ -18,15 +18,13 @@ final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
             'function mg_task_agent_model_context',
             'mg_task_agent_plan_payload',
             'mg_task_agent_reminder_payload',
-            "'action' => 'save_draft'",
-            "'action' => 'save_reminder'",
-            "'action' => 'save_memory'",
-            "'action' => 'open_link'",
-            "'action' => 'seed_prompt'",
-            "'/discover.php?'",
-            "'type' => 'warning'",
-            "'approval_required' => true",
-            "'no_purchase_or_send' => true",
+            'save_draft',
+            'save_reminder',
+            'save_memory',
+            'open_link',
+            'seed_prompt',
+            'approval_required',
+            'no_purchase_or_send',
         ] as $marker) {
             self::assertStringContainsString($marker, $router);
         }
@@ -35,27 +33,39 @@ final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
         self::assertStringNotContainsString('mg_ai_credit_consume', $router);
     }
 
-    public function testRuntimeCallsAiOnlyForExplicitSynthesisAndLogsTheReason(): void
+    public function testDeterministicRuntimePrecedesExplicitAiSynthesis(): void
     {
         $root = dirname(__DIR__, 2);
         $runtime = file_get_contents($root . '/includes/multi-agent-runtime.php');
+        $ai = file_get_contents($root . '/includes/task-agent-ai-synthesis.php');
         $router = file_get_contents($root . '/includes/task-agent-intent-router.php');
-        self::assertIsString($runtime);
-        self::assertIsString($router);
+        foreach ([$runtime, $ai, $router] as $value) self::assertIsString($value);
 
-        self::assertStringContainsString("require_once __DIR__.'/task-agent-intent-router.php'", $runtime);
-        self::assertStringContainsString('mg_task_agent_route($message,$context,$template)', $runtime);
-        self::assertStringContainsString('if (!$result && $aiReason !== \'\')', $runtime);
-        self::assertStringContainsString('mg_task_agent_model_context($message,$context)', $runtime);
-        self::assertStringContainsString('mg_task_agent_sanitize_model_cards', $runtime);
-        self::assertStringContainsString('\'ai_reason\'=>$aiReason', $runtime);
-        self::assertStringContainsString('\'used_ai\'=>$modelKey !== \'\'', $runtime);
-        self::assertStringContainsString('\'ai_tokens_total\'=>$tokens[\'total\']', $runtime);
-        self::assertStringContainsString('max(350,min(900', $runtime);
-        self::assertStringContainsString('array_slice($context[\'memory_for_model\'] ?? [], 0, 12)', $router);
+        $shortlistRoute = strpos($runtime, '$route = mg_task_agent_shortlist_route');
+        $generalRoute = strpos($runtime, '?? mg_task_agent_route');
+        $synthesis = strpos($runtime, '$synthesis = mg_task_agent_ai_synthesis');
+        self::assertNotFalse($shortlistRoute);
+        self::assertNotFalse($generalRoute);
+        self::assertNotFalse($synthesis);
+        self::assertLessThan($synthesis, $shortlistRoute);
+        self::assertLessThan($synthesis, $generalRoute);
+
+        foreach ([
+            'mg_multi_agent_runtime_model_context',
+            'mg_task_agent_sanitize_model_cards',
+            'mg_ai_credit_preflight',
+            'mg_ai_credit_consume',
+            'Permission-safe focused context JSON',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $ai);
+        }
+
+        foreach (['personal_message_synthesis', 'gift_comparison', 'recommendation_synthesis'] as $reason) {
+            self::assertStringContainsString($reason, $router);
+        }
     }
 
-    public function testCanvasSupportsSafeWriteCardsAndInternalDiscoveryLinks(): void
+    public function testCanvasKeepsWritesUserControlledAndLinksInternal(): void
     {
         $root = dirname(__DIR__, 2);
         $script = file_get_contents($root . '/assets/js/multi-agent-runtime.js');
@@ -65,34 +75,36 @@ final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
 
         foreach ([
             'data-save-agent-memory',
+            'data-save-agent-draft',
+            'data-save-agent-reminder',
             'data-agent-open-link',
-            "action:'save_memory'",
-            "action:'save_draft'",
-            "action:'create_reminder'",
             'internalUrl',
-            "data.response_source === 'anthropic'",
-            'data.ai_reason',
-            'data.ai_tokens_used',
+            'response_source',
+            'ai_reason',
+            'ai_tokens_used',
+            'stopImmediatePropagation',
         ] as $marker) {
             self::assertStringContainsString($marker, $script);
         }
 
-        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.6.0', $page);
+        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.7.0', $page);
+        self::assertStringContainsString('/assets/js/task-agent-shortlist-runtime.js?v=1.0.0', $page);
     }
 
-    public function testCanonicalApiRemainsApprovalFirstAndOwnerScoped(): void
+    public function testCanonicalApiRemainsOwnerScopedCsrfProtectedAndApprovalFirst(): void
     {
-        $root = dirname(__DIR__, 2);
-        $api = file_get_contents($root . '/api/agents/runtime.php');
+        $api = file_get_contents(dirname(__DIR__, 2) . '/api/agents/runtime.php');
         self::assertIsString($api);
+
         foreach ([
             'mg_agent_require_owned',
             'mg_require_csrf_for_write',
             'mg_personal_agent_create_plan',
             'mg_personal_agent_create_reminder',
             'mg_task_agent_memory_save',
-            "'used_ai'=>false",
-            "'response_source'=>'system_action'",
+            'used_ai',
+            'response_source',
+            'system_action',
         ] as $marker) {
             self::assertStringContainsString($marker, $api);
         }

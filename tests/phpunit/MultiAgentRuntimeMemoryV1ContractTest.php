@@ -22,28 +22,27 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $service = file_get_contents($root . '/includes/multi-agent-runtime.php');
+        $ai = file_get_contents($root . '/includes/task-agent-ai-synthesis.php');
         $memory = file_get_contents($root . '/includes/task-agent-memory.php');
         $router = file_get_contents($root . '/includes/task-agent-intent-router.php');
+        $shortlistRouter = file_get_contents($root . '/includes/task-agent-shortlist-router.php');
         $api = file_get_contents($root . '/api/agents/runtime.php');
-        foreach ([$service,$memory,$router,$api] as $value) self::assertIsString($value);
-
-        foreach (['mg_agent_require_owned','mg_require_csrf_for_write','mg_multi_agent_runtime_chat'] as $marker) {
-            self::assertStringContainsString($marker, $api);
-        }
+        foreach ([$service,$ai,$memory,$router,$shortlistRouter,$api] as $value) self::assertIsString($value);
+        foreach (['mg_agent_require_owned','mg_require_csrf_for_write','mg_multi_agent_runtime_chat'] as $marker) self::assertStringContainsString($marker,$api);
         foreach (['mg_task_agent_memory_save','mg_task_agent_memory_list','mg_task_agent_memory_archive'] as $marker) {
-            self::assertStringContainsString($marker, $api);
-            self::assertStringContainsString('function ' . $marker, $memory);
+            self::assertStringContainsString($marker,$api);
+            self::assertStringContainsString('function ' . $marker,$memory);
         }
-        self::assertStringContainsString('owner_user_id', $memory);
-        self::assertStringContainsString('agent_id', $memory);
-        self::assertStringContainsString('mg_task_agent_memory_for_model', $service);
-        self::assertStringContainsString('mg_task_agent_memory_system_response', $router);
-        self::assertStringContainsString('mg_task_agent_route', $service);
-        self::assertStringContainsString('$aiReason !== \'\'', $service);
-        self::assertStringContainsString('mg_ai_credit_preflight', $service);
-        self::assertStringContainsString('mg_ai_credit_consume', $service);
-        self::assertStringContainsString('\'ai_reason\'=>$aiReason', $service);
-        self::assertStringContainsString('user approval', $service);
+        self::assertStringContainsString('owner_user_id',$memory);
+        self::assertStringContainsString('agent_id',$memory);
+        self::assertStringContainsString('mg_task_agent_memory_for_model',$service);
+        self::assertStringContainsString('mg_task_agent_memory_system_response',$router);
+        self::assertStringContainsString('mg_task_agent_shortlist_route',$service);
+        self::assertStringContainsString('mg_task_agent_ai_synthesis',$service);
+        self::assertStringContainsString('mg_ai_credit_preflight',$ai);
+        self::assertStringContainsString('mg_ai_credit_consume',$ai);
+        self::assertStringContainsString("'ai_reason' => \$aiReason",$ai);
+        self::assertStringContainsString('user approval',$ai);
     }
 
     public function testSelectedAgentUsesOnePersistentChatCanvasWithTabbedManagement(): void
@@ -54,20 +53,15 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         $layout = file_get_contents($root . '/assets/css/task-agent-single-chat-v1.css');
         $page = file_get_contents($root . '/agent.php');
         foreach ([$workspace,$script,$layout,$page] as $value) self::assertIsString($value);
-
-        foreach (['data-agent-runtime-messages','data-agent-runtime-composer','data-agent-onboarding-form','data-agent-memory-list','data-agent-manage-open','data-agent-manage-tab="manage"','data-agent-manage-tab="settings"','data-agent-action="duplicate"'] as $marker) {
-            self::assertStringContainsString($marker, $workspace);
-        }
-        self::assertStringNotContainsString('data-agent-thread-list', $workspace);
-        self::assertStringNotContainsString('data-agent-new-thread', $workspace);
-        foreach (['/api/agents/runtime.php',"'chat'","'onboarding'","'save_draft'","'save_memory'","'archive_memory'",'stopImmediatePropagation'] as $marker) {
-            self::assertStringContainsString($marker, $script);
-        }
-        self::assertStringContainsString('.mg-agent-runtime-composer', $layout);
-        self::assertStringContainsString('position:relative!important', $layout);
-        self::assertStringContainsString('display:grid!important', $layout);
-        self::assertStringContainsString('safe-area-inset-bottom', $layout);
-        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.6.0', $page);
-        self::assertStringContainsString('/assets/css/task-agent-single-chat-v1.css?v=1.0.0', $page);
+        foreach (['data-agent-runtime-messages','data-agent-runtime-composer','data-agent-onboarding-form','data-agent-memory-list','data-agent-manage-open','data-agent-manage-tab="manage"','data-agent-manage-tab="settings"','data-agent-action="duplicate"'] as $marker) self::assertStringContainsString($marker,$workspace);
+        self::assertStringNotContainsString('data-agent-thread-list',$workspace);
+        self::assertStringNotContainsString('data-agent-new-thread',$workspace);
+        foreach (['/api/agents/runtime.php',"action:'chat'","action:'onboarding'","action:'save_draft'","action:'save_memory'","action:'archive_memory'",'stopImmediatePropagation'] as $marker) self::assertStringContainsString($marker,$script);
+        self::assertStringContainsString('.mg-agent-runtime-composer',$layout);
+        self::assertStringContainsString('position:relative!important',$layout);
+        self::assertStringContainsString('display:grid!important',$layout);
+        self::assertStringContainsString('safe-area-inset-bottom',$layout);
+        self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.7.0',$page);
+        self::assertStringContainsString('/assets/css/task-agent-single-chat-v1.css?v=1.0.0',$page);
     }
 }
