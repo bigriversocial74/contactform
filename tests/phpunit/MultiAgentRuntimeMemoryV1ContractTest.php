@@ -61,6 +61,6 @@ final class MultiAgentRuntimeMemoryV1ContractTest extends TestCase
         self::assertStringContainsString('@media(max-width:760px)',$css);
         self::assertStringContainsString('safe-area-inset-bottom',$css);
         self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.0.0',$page);
-        self::assertStringContainsString('/assets/css/multi-agent-runtime.css?v=1.0.0',$page);
+        self::assertStringContainsString('/assets/css/multi-agent-runtime.css?v=1.1.0',$page);
     }
 }
