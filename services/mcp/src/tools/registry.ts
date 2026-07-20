@@ -147,7 +147,7 @@ export function createInternalMcpServer(dependencies: ToolRegistryDependencies):
             durationMs: Date.now() - started,
             recordCount: 0,
             errorCode: failure.code,
-            denialReason: failure.status === 403 ? failure.message : undefined,
+            ...(failure.status === 403 ? { denialReason: failure.message } : {}),
             startedAt,
             completedAt: new Date().toISOString(),
           });
@@ -208,7 +208,7 @@ export function createInternalMcpServer(dependencies: ToolRegistryDependencies):
             durationMs: Date.now() - started,
             recordCount: 0,
             errorCode: failure.code,
-            denialReason: failure.status === 403 ? failure.message : undefined,
+            ...(failure.status === 403 ? { denialReason: failure.message } : {}),
             startedAt,
             completedAt: new Date().toISOString(),
           });
