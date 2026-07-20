@@ -159,6 +159,17 @@
       window.setTimeout(function () { window.location.reload(); }, 250);
     }
 
+    function requireFreshState(programAction, payload) {
+      if (programAction === 'link_existing') return;
+      if (!String(payload.expected_status || '').trim()) {
+        throw new Error('Refresh this recurring program before changing its status.');
+      }
+      if ((programAction === 'generate_draft' || programAction === 'skip_next')
+        && !String(payload.expected_next_run_at || '').trim()) {
+        throw new Error('Refresh this recurring program before changing its next cycle.');
+      }
+    }
+
     document.addEventListener('submit', function (event) {
       var form = event.target.closest('[data-recurring-program-create]');
       if (!form) return;
@@ -187,6 +198,13 @@
       button.disabled = true;
       var programAction = button.getAttribute('data-recurring-program-action') || '';
       var payload = parse(button.getAttribute('data-recurring-payload'));
+      try {
+        requireFreshState(programAction, payload);
+      } catch (error) {
+        button.disabled = false;
+        if (status) status.textContent = error.message;
+        return;
+      }
       if (programAction === 'link_existing') payload.action = 'link_recurring_program';
       else if (programAction === 'generate_draft') payload.action = 'generate_recurring_draft';
       else if (programAction === 'skip_next') payload.action = 'skip_recurring_run';
