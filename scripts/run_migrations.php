@@ -128,7 +128,7 @@ try {
         }
 
         echo "APPLY {$file}\n";
-        $pdo->exec($sql);
+        mg_migration_execute_sql($pdo, $sql);
         foreach ($keys as $key) {
             $record->execute([$key, "Applied by {$file}", $checksum]);
             $applied[$key] = $checksum;
@@ -149,7 +149,7 @@ try {
         $releaseStmt = $pdo->prepare('SELECT RELEASE_LOCK(?)');
         $releaseStmt->execute([$lockName]);
     } catch (Throwable) {
-        fwrite(STDERR, "Warning: could not release schema migration lock.\n");
+        fwrite(STDERR, "Warning: could not release migration lock.\n");
     }
 }
 
