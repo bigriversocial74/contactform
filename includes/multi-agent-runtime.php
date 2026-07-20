@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__.'/personal-gifting-agent.php';
 require_once __DIR__.'/task-agent-context.php';
 require_once __DIR__.'/task-agent-memory.php';
+require_once __DIR__.'/task-agent-shortlist.php';
 require_once __DIR__.'/task-agent-intent-router.php';
 require_once dirname(__DIR__).'/api/agents/_agent.php';
 
@@ -31,20 +32,20 @@ function mg_multi_agent_runtime_prompt(array $agent, array $template): string
     $name = (string)($agent['name'] ?? 'Specialized Agent');
     $key = (string)($template['key'] ?? '');
     $mission = match ($key) {
-        'birthday_occasion' => 'Help the customer compare gift options, explain fit, or write a thoughtful message using the supplied recipient and occasion context.',
-        'local_shopping' => 'Help the customer compare local products, services, experiences, and creative work using supplied recipient, occasion, budget, and location constraints. Never invent inventory.',
+        'birthday_occasion' => 'Help the customer compare shortlisted gift options, explain fit, or write a thoughtful message using the supplied recipient and occasion context.',
+        'local_shopping' => 'Help the customer compare shortlisted local products, services, experiences, and creative work using supplied recipient, occasion, budget, and location constraints. Never invent inventory.',
         'merchant_campaign' => 'Help an authorized merchant compare campaign options or improve draft language. Never publish or change merchant data.',
         default => 'Help the user synthesize the focused context supplied for this agent.',
     };
     return "You are Microgifter's {$name}. {$mission}\n\nRules:\n"
         ."- Keep this agent's context separate from every other agent.\n"
         ."- Never reveal secrets, payment data, claim codes, direct contact details, or hidden profile data.\n"
-        ."- Use only supplied permission-safe context and sanitized agent memory.\n"
+        ."- Use only supplied permission-safe context, sanitized agent memory, and the current published-product shortlist.\n"
         ."- Clearly disclose missing information and do not infer private facts.\n"
-        ."- Do not purchase, publish, message, schedule, charge, claim, redeem, transfer, or save data.\n"
+        ."- Do not purchase, publish, message, schedule, charge, claim, redeem, transfer, shortlist, or save data.\n"
         ."- All write actions are handled by deterministic server controls after user approval.\n"
         ."- Keep the answer compact and specific.\n"
-        ."- Return JSON only: {\"reply\":\"helpful response\",\"cards\":[{\"type\":\"recommendation|question|warning\",\"title\":\"short title\",\"body\":\"specific content\",\"action\":\"none|seed_prompt\",\"prompt\":\"optional follow-up\"}]}.";
+        ."- Return JSON only: {\"reply\":\"helpful response\",\"cards\":[{\"type\":\"recommendation|question|warning\",\"title\":\"short title\",\"body\":\"specific content\",\"action\":\"none|seed_prompt\",\"prompt\":\"optional follow-up\"}]}";
 }
 
 function mg_multi_agent_runtime_thread(PDO $pdo, array $agent, int $userId, string $publicId = ''): array
@@ -106,15 +107,20 @@ function mg_multi_agent_runtime_onboarding(PDO $pdo, int $userId, int $agentId):
 
 function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, array $template): array
 {
-    $memory = mg_task_agent_memory_list($pdo,$userId,(int)$agent['id'],50);
+    $agentId = (int)$agent['id'];
+    $memory = mg_task_agent_memory_list($pdo,$userId,$agentId,50);
+    $shortlist = mg_task_agent_shortlist_list($pdo,$userId,$agentId,20);
     $context = [
         'agent' => ['id'=>(string)$agent['public_id'],'name'=>(string)$agent['name'],'template_key'=>(string)($template['key']??'')],
         'memory' => $memory,
         'memory_for_model' => mg_task_agent_memory_for_model($memory),
-        'onboarding' => mg_multi_agent_runtime_onboarding($pdo,$userId,(int)$agent['id']),
+        'shortlist' => $shortlist,
+        'shortlist_for_model' => mg_task_agent_shortlist_for_model($shortlist),
+        'onboarding' => mg_multi_agent_runtime_onboarding($pdo,$userId,$agentId),
     ];
     if (($template['key'] ?? '') === 'birthday_occasion') {
         $snapshot = mg_task_agent_context_snapshot($pdo,$userId,90);
+        $snapshot['summary']['shortlisted_products'] = count($shortlist);
         $context['system_snapshot'] = $snapshot;
         $context['upcoming_dates'] = $snapshot['upcoming'];
         $context['active_plans'] = $snapshot['plans'];
@@ -133,14 +139,14 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
     if (($template['key'] ?? '') === 'birthday_occasion') {
         $dates = $context['upcoming_dates'] ?? [];
         $next = $dates[0] ?? null;
-        $reply = 'I can answer saved-data questions, prepare a reviewable plan or reminder, show recipient context, save a safe preference, or open local discovery without using AI.';
+        $reply = 'I can answer saved-data questions, search current local gifts, manage a shortlist, prepare a reviewable plan or reminder, or save a safe preference without using AI.';
         if (is_array($next)) $reply .= ' Your next saved occasion is '.(string)($next['label']??'an occasion').' on '.(string)($next['event_date']??'the saved date').'.';
         return ['reply'=>$reply,'cards'=>[[
             'type'=>'question',
             'title'=>'Choose a deterministic action',
-            'body'=>'Name a saved recipient and ask for context, a plan, a reminder, saved memory, or local gift discovery. Ask to compare options or write a personal message only when synthesis is needed.',
+            'body'=>'Name a saved recipient and ask to find local gifts, show the shortlist, review context, prepare a plan, create a reminder, or recall saved memory.',
             'action'=>'seed_prompt',
-            'prompt'=>'Show the gifting context for ',
+            'prompt'=>'Find local gifts for ',
             'review_payload'=>[],
         ]]];
     }
@@ -166,9 +172,17 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
     $result = is_array($route['result'] ?? null) ? $route['result'] : null;
     $responseSource = (string)($route['response_source'] ?? 'safe_fallback');
     $aiReason = (string)($route['ai_reason'] ?? '');
+    $tool = (string)($route['tool'] ?? '');
+    $toolInput = is_array($route['tool_input'] ?? null) ? $route['tool_input'] : [];
     $modelKey = '';
     $creditAfter = null;
     $tokens = ['input'=>0,'output'=>0,'total'=>0];
+
+    if (!$result && $tool === 'discover_products') {
+        $result = mg_task_agent_discover_products($pdo,$userId,(int)$agent['id'],$toolInput);
+        $responseSource = 'system_query';
+        $aiReason = '';
+    }
 
     if (!$result && $aiReason !== '') {
         $packageContext = mg_ai_credit_package_context($pdo,$userId);
@@ -225,6 +239,7 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
         'response_source'=>$responseSource,
         'model_key'=>$modelKey ?: $responseSource,
         'ai_reason'=>$aiReason,
+        'tool'=>$tool,
         'used_ai'=>$modelKey !== '',
         'ai_tokens_total'=>$tokens['total'],
     ],$userId);
