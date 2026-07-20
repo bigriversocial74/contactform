@@ -31,28 +31,16 @@
     growthStage.innerHTML = `
       <div class="hero-product-showcase" aria-label="Microgifter product workspace previews">
         <figure class="hero-product-shot hero-product-shot--agent">
-          <img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async">
-          <figcaption>
-            <span>01 · Agent chat</span>
-            <strong>Turn customer intent into the next thoughtful action.</strong>
-            <small>Keep conversations, gifting context, service history, and recommendations connected through one active relationship agent.</small>
-          </figcaption>
+          <div class="hero-product-media"><img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async"></div>
+          <figcaption><span>01 · Agent chat</span><strong>Turn customer intent into the next thoughtful action.</strong><small>Keep conversations, gifting context, service history, and recommendations connected through one active relationship agent.</small></figcaption>
         </figure>
         <figure class="hero-product-shot hero-product-shot--crm">
-          <img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async">
-          <figcaption>
-            <span>02 · Merchant CRM</span>
-            <strong>See the complete relationship behind every customer.</strong>
-            <small>Connect purchases, claims, visits, rewards, referrals, messages, and campaign activity in one usable merchant record.</small>
-          </figcaption>
+          <div class="hero-product-media"><img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async"></div>
+          <figcaption><span>02 · Merchant CRM</span><strong>See the complete relationship behind every customer.</strong><small>Connect purchases, claims, visits, rewards, referrals, messages, and campaign activity in one usable merchant record.</small></figcaption>
         </figure>
         <figure class="hero-product-shot hero-product-shot--inbox">
-          <img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async">
-          <figcaption>
-            <span>03 · Gift inbox</span>
-            <strong>Follow every Microgift from purchase through redemption.</strong>
-            <small>Manage received, sent, claimed, redeemed, refunded, and regifted activity without losing ownership or customer context.</small>
-          </figcaption>
+          <div class="hero-product-media"><img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async"></div>
+          <figcaption><span>03 · Gift inbox</span><strong>Follow every Microgift from purchase through redemption.</strong><small>Manage received, sent, claimed, redeemed, refunded, and regifted activity without losing ownership or customer context.</small></figcaption>
         </figure>
       </div>`;
   }
@@ -72,10 +60,10 @@
   const renderHeroShowcase = () => {
     if (!hero || !growthStage || !showcaseCards.length) return;
     if (reduced.matches) {
-      showcaseCards.forEach(card => {
-        card.style.removeProperty('opacity');
-        card.style.removeProperty('transform');
-        card.style.removeProperty('filter');
+      showcaseCards.forEach((card, index) => {
+        card.style.opacity = index === 0 ? '1' : '0';
+        card.style.transform = 'none';
+        card.style.filter = 'none';
       });
       return;
     }
@@ -83,18 +71,28 @@
     const rect = hero.getBoundingClientRect();
     const distance = Math.max(1, hero.offsetHeight - window.innerHeight);
     const progress = clamp(-rect.top / distance);
-    const stageProgress = range(progress, .72, .91);
+
+    const beats = [
+      { enterStart: .705, enterEnd: .735, holdEnd: .790, exitEnd: .815 },
+      { enterStart: .810, enterEnd: .840, holdEnd: .895, exitEnd: .920 },
+      { enterStart: .915, enterEnd: .945, holdEnd: .982, exitEnd: 1.000 }
+    ];
 
     showcaseCards.forEach((card, index) => {
-      const delay = index * .16;
-      const local = smooth(clamp((stageProgress - delay) / Math.max(.01, 1 - delay)));
-      const direction = index === 0 ? -1 : (index === 2 ? 1 : 0);
-      const x = direction * (1 - local) * 90;
-      const y = (1 - local) * (index === 1 ? 62 : 38);
-      const rotation = direction * (1 - local) * 6;
-      card.style.opacity = local.toFixed(3);
-      card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${(.9 + local * .1).toFixed(4)}) rotate(${rotation.toFixed(2)}deg)`;
-      card.style.filter = `blur(${((1 - local) * 9).toFixed(2)}px)`;
+      const beat = beats[index];
+      const enter = range(progress, beat.enterStart, beat.enterEnd);
+      const exit = range(progress, beat.holdEnd, beat.exitEnd);
+      const visible = enter * (1 - exit);
+      const direction = index % 2 === 0 ? 1 : -1;
+      const x = (1 - enter) * direction * 90 - exit * direction * 70;
+      const y = (1 - enter) * 46 - exit * 34;
+      const scale = .94 + enter * .06 - exit * .035;
+
+      card.style.opacity = visible.toFixed(3);
+      card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
+      card.style.filter = `blur(${(((1 - enter) + exit) * 8).toFixed(2)}px)`;
+      card.style.pointerEvents = visible > .8 ? 'auto' : 'none';
+      card.setAttribute('aria-hidden', visible > .1 ? 'false' : 'true');
     });
   };
 
@@ -115,13 +113,11 @@
     const rect = section.getBoundingClientRect();
     const distance = Math.max(1, section.offsetHeight - window.innerHeight);
     const progress = clamp(-rect.top / distance);
-
     const drop = range(progress, .01, .24);
     const hold = range(progress, .24, .37);
     const launch = range(progress, .39, .68);
     const dissolve = range(progress, .62, .73);
     const pricingIn = range(progress, .70, .82);
-
     const dropY = -26 + drop * 74;
     const settle = Math.sin(hold * Math.PI * 2) * (1 - hold) * 1.8;
     const launchY = launch * 19;
@@ -131,7 +127,6 @@
     orb.style.setProperty('transform', `translate3d(-50%, ${(dropY + settle + launchY).toFixed(2)}vh, 0) scale(${scale.toFixed(4)})`, 'important');
     orb.style.setProperty('opacity', opacity.toFixed(3), 'important');
     orb.style.setProperty('filter', `drop-shadow(0 ${Math.round(18 + launch * 40)}px ${Math.round(24 + launch * 56)}px rgba(255,181,147,${(.14 + launch * .18).toFixed(3)}))`, 'important');
-
     pricing.style.setProperty('opacity', pricingIn.toFixed(3), 'important');
     pricing.style.setProperty('transform', `translate3d(0, ${((1 - pricingIn) * 54).toFixed(1)}px, 0) scale(${(.975 + pricingIn * .025).toFixed(4)})`, 'important');
     pricing.style.pointerEvents = pricingIn > .72 ? 'auto' : 'none';
