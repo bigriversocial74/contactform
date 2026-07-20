@@ -36,8 +36,24 @@ jobs:
           php -l agent.php
       - name: JavaScript syntax
         run: node --check assets/js/task-agent-recurring-programs-runtime.js
-      - name: Phase 4.1 contract
-        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Canonical recurring reuse
+        run: vendor/bin/phpunit --filter testPhaseFourExtendsExistingRecurringAuthorityInsteadOfDuplicatingIt tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Owner and agent isolation
+        run: vendor/bin/phpunit --filter testProgramsAreScopedToAuthenticatedOwnerAndSelectedAgent tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Draft-only commerce safety
+        run: vendor/bin/phpunit --filter testRecurringCyclesRemainDraftOnlyApprovalFirstAndNonFinancial tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Cycle concurrency protection
+        run: vendor/bin/phpunit --filter testGenerateAndSkipUseFreshStateAndConcurrencyProtection tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Deterministic zero-AI routing
+        run: vendor/bin/phpunit --filter testRecurringChatIsInterceptedBeforeGeneralRuntimeAndUsesZeroAi tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Reviewable API actions
+        run: vendor/bin/phpunit --filter testApiExposesOnlyReviewableRecurringActions tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Compact model projection
+        run: vendor/bin/phpunit --filter testModelProjectionIsCompactAndExcludesSensitiveProgramContent tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Recurring canvas contract
+        run: vendor/bin/phpunit --filter testCanvasUsesCanonicalRuntimeActionsAndLoadsVersionedAssets tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Personal Agent recurring integration
+        run: vendor/bin/phpunit --filter testPersonalAgentAlsoUsesTheCanonicalSkipAuthority tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
       - name: Phase 3 production regression
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php tests/phpunit/TaskAgentPhase36SafetyBoundaryV1ContractTest.php
       - name: Phase 2 production regression
