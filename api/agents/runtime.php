@@ -1,37 +1,222 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__.'/_agent.php';
 require_once dirname(__DIR__,2).'/includes/multi-agent-workspace-data.php';
 require_once dirname(__DIR__,2).'/includes/multi-agent-runtime.php';
 require_once dirname(__DIR__,2).'/includes/task-agent-plan-selection-guard.php';
-$user=mg_require_api_user();$pdo=mg_db();$method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
-try{
- mg_multi_agent_runtime_require_schema($pdo);
- if($method==='GET'){
-  $agentId=mg_agent_request_id([]);$agent=mg_agent_require_owned((int)$user['id'],$agentId);$threadPublicId=trim((string)($_GET['thread_id']??''));$thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id'],$threadPublicId);$template=mg_multi_agent_runtime_template($agent);$context=mg_multi_agent_runtime_context($pdo,(int)$user['id'],$agent,$template);
-  $threadsStmt=$pdo->prepare("SELECT public_id,title,last_message_at,created_at,updated_at FROM multi_agent_threads WHERE owner_user_id=? AND agent_id=? AND status='active' ORDER BY COALESCE(last_message_at,updated_at,created_at) DESC,id DESC LIMIT 100");$threadsStmt->execute([(int)$user['id'],(int)$agent['id']]);
-  mg_ok(['agent'=>mg_agent_row_to_public($agent),'template'=>$template,'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],'threads'=>$threadsStmt->fetchAll(PDO::FETCH_ASSOC),'messages'=>mg_multi_agent_runtime_messages($pdo,(int)$user['id'],(int)$agent['id'],(int)$thread['id'],80),'memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50),'shortlist'=>$context['shortlist']??[],'plan_selections'=>$context['plan_selections']??[],'delivery_preparations'=>$context['delivery_preparations']??[],'delivery_schema_ready'=>$context['delivery_schema_ready']??false,'order_tracking'=>$context['order_tracking']??[],'order_tracking_schema_ready'=>$context['order_tracking_schema_ready']??false,'lifecycle_tracking'=>$context['lifecycle_tracking']??[],'lifecycle_schema_ready'=>$context['lifecycle_schema_ready']??false,'shortlist_schema_ready'=>mg_task_agent_shortlist_schema_ready($pdo),'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),'context_snapshot'=>$context['system_snapshot']??null,'context_source'=>isset($context['system_snapshot'])?'system':'agent','used_ai_for_context'=>false]);
- }
- if($method==='POST'){
-  $input=mg_input();mg_require_csrf_for_write($input);$agentId=mg_agent_request_id($input);$agent=mg_agent_require_owned((int)$user['id'],$agentId);$action=trim((string)($input['action']??'chat'));
-  if($action==='chat')mg_ok(mg_multi_agent_runtime_chat($pdo,(int)$user['id'],$agent,$input));
-  if($action==='discover_products'){$result=mg_task_agent_discover_products($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['reply'=>$result['reply'],'cards'=>$result['cards'],'filters'=>$result['filters'],'used_ai'=>false,'response_source'=>'system_query'],'Published products loaded.');}
-  if($action==='add_shortlist'){$item=mg_task_agent_shortlist_add_without_overwriting_selection($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['shortlist_item'=>$item,'shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product added to this agent’s shortlist.',201);}
-  if($action==='remove_shortlist'){$shortlistId=trim((string)($input['shortlist_id']??''));mg_task_agent_shortlist_remove_if_unselected($pdo,(int)$user['id'],(int)$agent['id'],$shortlistId);mg_ok(['shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from this agent’s shortlist.');}
-  if($action==='select_plan_product'){$selection=mg_task_agent_select_shortlist_for_plan($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['shortlist_id']??'')),trim((string)($input['plan_id']??'')));mg_ok(['selection'=>$selection,'card'=>mg_task_agent_plan_selection_card($selection),'plan_selections'=>mg_task_agent_plan_selections($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product added to the gift plan.',201);}
-  if($action==='remove_plan_product'){mg_task_agent_remove_plan_selection($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['shortlist_id']??'')),trim((string)($input['plan_id']??'')));mg_ok(['plan_selections'=>mg_task_agent_plan_selections($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from the gift plan.');}
-  if($action==='create_delivery_schedule'){$schedule=mg_task_agent_delivery_create_schedule($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['schedule'=>$schedule,'delivery_preparations'=>mg_task_agent_delivery_preparations($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Send-later preparation created. No gift was sent or purchased.',201);}
-  if($action==='update_delivery_schedule'){$schedule=mg_task_agent_delivery_update_schedule($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['schedule_id']??'')),trim((string)($input['schedule_action']??'')));mg_ok(['schedule'=>$schedule,'delivery_preparations'=>mg_task_agent_delivery_preparations($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Delivery preparation updated. No commerce was executed.');}
-  if($action==='create_recipient_request'){$request=mg_task_agent_delivery_create_recipient_request($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['request'=>$request,'delivery_preparations'=>mg_task_agent_delivery_preparations($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Recipient permission request created.',201);}
-  if($action==='new_thread'){$thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id']);mg_ok(['thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']]],'Agent conversation created.',201);}
-  if($action==='create_gift_plan'){$template=mg_multi_agent_runtime_template($agent);if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot create occasion gift plans.');$planInput=is_array($input['plan']??null)?$input['plan']:[];$planInput['source']='important_date';$plan=mg_personal_agent_create_plan($pdo,(int)$user['id'],$planInput);mg_audit('multi_agent.gift_plan_draft_created','agent',['agent_id'=>(string)$agent['public_id'],'plan_id'=>(string)$plan['id'],'used_ai'=>false],(int)$user['id']);mg_ok(['plan'=>$plan,'used_ai'=>false,'response_source'=>'system_action'],'Gift-plan draft saved for review.',201);}
-  if($action==='create_reminder'){$template=mg_multi_agent_runtime_template($agent);if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot create occasion reminders.');$reminderInput=is_array($input['reminder']??null)?$input['reminder']:[];$reminder=mg_personal_agent_create_reminder($pdo,(int)$user['id'],$reminderInput);mg_audit('multi_agent.reminder_created','agent',['agent_id'=>(string)$agent['public_id'],'reminder_id'=>(string)$reminder['id'],'used_ai'=>false],(int)$user['id']);mg_ok(['reminder'=>$reminder,'used_ai'=>false,'response_source'=>'system_action'],'In-app reminder created.',201);}
-  if($action==='update_reminder_status'){$status=trim((string)($input['status']??''));$reminderId=trim((string)($input['reminder_id']??''));$reminder=mg_personal_agent_update_reminder_status($pdo,(int)$user['id'],$reminderId,$status);mg_audit('multi_agent.reminder_status_updated','agent',['agent_id'=>(string)$agent['public_id'],'reminder_id'=>$reminderId,'status'=>$status,'used_ai'=>false],(int)$user['id']);mg_ok(['reminder'=>$reminder,'used_ai'=>false,'response_source'=>'system_action'],'Reminder updated.');}
-  if($action==='onboarding'){$answers=is_array($input['answers']??null)?$input['answers']:[];$status=in_array((string)($input['status']??'in_progress'),['not_started','in_progress','completed'],true)?(string)$input['status']:'in_progress';$step=mb_substr(trim((string)($input['current_step']??'')),0,64);$pdo->prepare("INSERT INTO multi_agent_onboarding(agent_id,owner_user_id,status,current_step,answers_json,completed_at,created_at,updated_at) VALUES (?,?,?,?,?,IF(?='completed',NOW(),NULL),NOW(),NOW()) ON DUPLICATE KEY UPDATE status=VALUES(status),current_step=VALUES(current_step),answers_json=VALUES(answers_json),completed_at=IF(VALUES(status)='completed',COALESCE(completed_at,NOW()),NULL),updated_at=NOW()")->execute([(int)$agent['id'],(int)$user['id'],$status,$step?:null,json_encode($answers,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),$status]);foreach($answers as $key=>$value){mg_task_agent_memory_save($pdo,(int)$user['id'],(int)$agent['id'],['memory_key'=>'onboarding.'.preg_replace('/[^a-z0-9_.-]+/i','_',mb_substr((string)$key,0,120)),'category'=>'onboarding','title'=>ucwords(str_replace(['_','.'],' ',(string)$key)),'value'=>$value]);}mg_ok(['onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),'memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50)],'Agent onboarding saved.');}
-  if($action==='save_memory'){$memory=mg_task_agent_memory_save($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['memory_item'=>$memory,'memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50),'used_ai'=>false,'response_source'=>'system_action'],'Agent memory saved.');}
-  if($action==='archive_memory'){$memoryId=trim((string)($input['memory_id']??''));mg_task_agent_memory_archive($pdo,(int)$user['id'],(int)$agent['id'],$memoryId);mg_ok(['memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50),'used_ai'=>false,'response_source'=>'system_action'],'Agent memory archived.');}
-  if($action==='save_draft'){$title=mb_substr(trim((string)($input['title']??'Agent draft')),0,190)?:'Agent draft';$type=mb_substr(trim((string)($input['draft_type']??'plan')),0,64)?:'plan';$payload=is_array($input['payload']??null)?$input['payload']:[];$canonical=is_array($payload['canonical_plan']??null)?$payload['canonical_plan']:null;if($canonical){$template=mg_multi_agent_runtime_template($agent);if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot save occasion gift plans.');$canonical['source']='important_date';$plan=mg_personal_agent_create_plan($pdo,(int)$user['id'],$canonical);mg_audit('multi_agent.gift_plan_draft_created','agent',['agent_id'=>(string)$agent['public_id'],'plan_id'=>(string)$plan['id'],'used_ai'=>false],(int)$user['id']);mg_ok(['draft'=>$plan,'plan'=>$plan,'used_ai'=>false,'response_source'=>'system_action'],'Gift-plan draft saved for review.',201);}$threadId=null;$threadPublicId=trim((string)($input['thread_id']??''));if($threadPublicId!==''){$stmt=$pdo->prepare('SELECT id FROM multi_agent_threads WHERE public_id=? AND agent_id=? AND owner_user_id=? LIMIT 1');$stmt->execute([$threadPublicId,(int)$agent['id'],(int)$user['id']]);$threadId=$stmt->fetchColumn()?:null;}$publicId=mg_public_uuid();$pdo->prepare("INSERT INTO multi_agent_drafts(public_id,agent_id,owner_user_id,thread_id,draft_type,title,payload_json,status,approval_required,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'draft',1,NOW(),NOW())")->execute([$publicId,(int)$agent['id'],(int)$user['id'],$threadId,$type,$title,json_encode($payload,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)]);mg_ok(['draft'=>['id'=>$publicId,'title'=>$title,'draft_type'=>$type,'status'=>'draft','approval_required'=>true]],'Reviewable draft saved.',201);}
-  mg_fail('Unsupported agent runtime action.',422);
- }
- mg_fail('Method not allowed.',405);
-}catch(MgAiCreditException $e){mg_fail($e->getMessage(),$e->httpStatus(),$e->details());}catch(InvalidArgumentException $e){mg_fail($e->getMessage(),422);}catch(RuntimeException $e){$status=str_contains(strtolower($e->getMessage()),'not found')?404:(str_contains(strtolower($e->getMessage()),'migration')?503:409);mg_fail($e->getMessage(),$status);}catch(Throwable $e){mg_security_log('error','multi_agent.runtime_api_failed','Specialized agent runtime request failed.',['exception_type'=>$e::class],(int)$user['id']);mg_fail('Unable to complete the specialized agent request.',500);}
+require_once dirname(__DIR__,2).'/includes/task-agent-recurring-programs.php';
+require_once dirname(__DIR__,2).'/includes/task-agent-recurring-programs-router.php';
+
+$user=mg_require_api_user();
+$pdo=mg_db();
+$method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
+
+try {
+    mg_multi_agent_runtime_require_schema($pdo);
+
+    if($method==='GET'){
+        $agentId=mg_agent_request_id([]);
+        $agent=mg_agent_require_owned((int)$user['id'],$agentId);
+        $threadPublicId=trim((string)($_GET['thread_id']??''));
+        $thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id'],$threadPublicId);
+        $template=mg_multi_agent_runtime_template($agent);
+        $context=mg_multi_agent_runtime_context($pdo,(int)$user['id'],$agent,$template);
+        $context=mg_task_agent_recurring_append_context($pdo,(int)$user['id'],$agent,$context);
+        $threadsStmt=$pdo->prepare("SELECT public_id,title,last_message_at,created_at,updated_at FROM multi_agent_threads WHERE owner_user_id=? AND agent_id=? AND status='active' ORDER BY COALESCE(last_message_at,updated_at,created_at) DESC,id DESC LIMIT 100");
+        $threadsStmt->execute([(int)$user['id'],(int)$agent['id']]);
+        mg_ok([
+            'agent'=>mg_agent_row_to_public($agent),
+            'template'=>$template,
+            'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],
+            'threads'=>$threadsStmt->fetchAll(PDO::FETCH_ASSOC),
+            'messages'=>mg_multi_agent_runtime_messages($pdo,(int)$user['id'],(int)$agent['id'],(int)$thread['id'],80),
+            'memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50),
+            'shortlist'=>$context['shortlist']??[],
+            'plan_selections'=>$context['plan_selections']??[],
+            'delivery_preparations'=>$context['delivery_preparations']??[],
+            'delivery_schema_ready'=>$context['delivery_schema_ready']??false,
+            'order_tracking'=>$context['order_tracking']??[],
+            'order_tracking_schema_ready'=>$context['order_tracking_schema_ready']??false,
+            'lifecycle_tracking'=>$context['lifecycle_tracking']??[],
+            'lifecycle_schema_ready'=>$context['lifecycle_schema_ready']??false,
+            'recurring_programs'=>$context['recurring_programs']??[],
+            'recurring_schema_ready'=>$context['recurring_schema_ready']??false,
+            'shortlist_schema_ready'=>mg_task_agent_shortlist_schema_ready($pdo),
+            'onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),
+            'context_snapshot'=>$context['system_snapshot']??null,
+            'context_source'=>isset($context['system_snapshot'])?'system':'agent',
+            'used_ai_for_context'=>false,
+        ]);
+    }
+
+    if($method==='POST'){
+        $input=mg_input();
+        mg_require_csrf_for_write($input);
+        $agentId=mg_agent_request_id($input);
+        $agent=mg_agent_require_owned((int)$user['id'],$agentId);
+        $action=trim((string)($input['action']??'chat'));
+
+        if($action==='chat'){
+            $recurring=mg_task_agent_recurring_chat($pdo,(int)$user['id'],$agent,$input);
+            if($recurring!==null)mg_ok($recurring);
+            mg_ok(mg_multi_agent_runtime_chat($pdo,(int)$user['id'],$agent,$input));
+        }
+
+        if($action==='create_recurring_program'){
+            $template=mg_multi_agent_runtime_template($agent);
+            if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot create recurring gift programs.');
+            $program=mg_task_agent_recurring_create($pdo,(int)$user['id'],(int)$agent['id'],$input);
+            mg_ok(['program'=>$program,'card'=>mg_task_agent_recurring_card($program),'used_ai'=>false,'response_source'=>'system_action'],'Recurring draft program created. No commerce was executed.',201);
+        }
+        if($action==='update_recurring_program'){
+            $program=mg_task_agent_recurring_update(
+                $pdo,(int)$user['id'],(int)$agent['id'],
+                trim((string)($input['program_id']??'')),
+                trim((string)($input['program_action']??'')),
+                trim((string)($input['expected_status']??''))
+            );
+            mg_ok(['program'=>$program,'card'=>mg_task_agent_recurring_card($program),'used_ai'=>false,'response_source'=>'system_action'],'Recurring program updated. No commerce was executed.');
+        }
+        if($action==='generate_recurring_draft'){
+            $result=mg_task_agent_recurring_generate(
+                $pdo,(int)$user['id'],(int)$agent['id'],
+                trim((string)($input['program_id']??'')),
+                trim((string)($input['expected_next_run_at']??''))
+            );
+            mg_ok($result+['used_ai'=>false,'response_source'=>'system_action'],'Recurring draft plan prepared for review.',201);
+        }
+        if($action==='skip_recurring_run'){
+            $result=mg_task_agent_recurring_skip(
+                $pdo,(int)$user['id'],(int)$agent['id'],
+                trim((string)($input['program_id']??'')),
+                trim((string)($input['expected_next_run_at']??''))
+            );
+            mg_ok($result+['used_ai'=>false,'response_source'=>'system_action'],'Recurring cycle skipped. No plan or commerce was created.');
+        }
+
+        if($action==='discover_products'){
+            $result=mg_task_agent_discover_products($pdo,(int)$user['id'],(int)$agent['id'],$input);
+            mg_ok(['reply'=>$result['reply'],'cards'=>$result['cards'],'filters'=>$result['filters'],'used_ai'=>false,'response_source'=>'system_query'],'Published products loaded.');
+        }
+        if($action==='add_shortlist'){
+            $item=mg_task_agent_shortlist_add_without_overwriting_selection($pdo,(int)$user['id'],(int)$agent['id'],$input);
+            mg_ok(['shortlist_item'=>$item,'shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product added to this agent’s shortlist.',201);
+        }
+        if($action==='remove_shortlist'){
+            $shortlistId=trim((string)($input['shortlist_id']??''));
+            mg_task_agent_shortlist_remove_if_unselected($pdo,(int)$user['id'],(int)$agent['id'],$shortlistId);
+            mg_ok(['shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from this agent’s shortlist.');
+        }
+        if($action==='select_plan_product'){
+            $selection=mg_task_agent_select_shortlist_for_plan($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['shortlist_id']??'')),trim((string)($input['plan_id']??'')));
+            mg_ok(['selection'=>$selection,'card'=>mg_task_agent_plan_selection_card($selection),'plan_selections'=>mg_task_agent_plan_selections($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product added to the gift plan.',201);
+        }
+        if($action==='remove_plan_product'){
+            mg_task_agent_remove_plan_selection($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['shortlist_id']??'')),trim((string)($input['plan_id']??'')));
+            mg_ok(['plan_selections'=>mg_task_agent_plan_selections($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from the gift plan.');
+        }
+        if($action==='create_delivery_schedule'){
+            $schedule=mg_task_agent_delivery_create_schedule($pdo,(int)$user['id'],(int)$agent['id'],$input);
+            mg_ok(['schedule'=>$schedule,'delivery_preparations'=>mg_task_agent_delivery_preparations($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Send-later preparation created. No gift was sent or purchased.',201);
+        }
+        if($action==='update_delivery_schedule'){
+            $schedule=mg_task_agent_delivery_update_schedule($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['schedule_id']??'')),trim((string)($input['schedule_action']??'')));
+            mg_ok(['schedule'=>$schedule,'delivery_preparations'=>mg_task_agent_delivery_preparations($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Delivery preparation updated. No commerce was executed.');
+        }
+        if($action==='create_recipient_request'){
+            $request=mg_task_agent_delivery_create_recipient_request($pdo,(int)$user['id'],(int)$agent['id'],$input);
+            mg_ok(['request'=>$request,'delivery_preparations'=>mg_task_agent_delivery_preparations($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Recipient permission request created.',201);
+        }
+        if($action==='new_thread'){
+            $thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id']);
+            mg_ok(['thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']]],'Agent conversation created.',201);
+        }
+        if($action==='create_gift_plan'){
+            $template=mg_multi_agent_runtime_template($agent);
+            if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot create occasion gift plans.');
+            $planInput=is_array($input['plan']??null)?$input['plan']:[];
+            $planInput['source']='important_date';
+            $plan=mg_personal_agent_create_plan($pdo,(int)$user['id'],$planInput);
+            mg_audit('multi_agent.gift_plan_draft_created','agent',['agent_id'=>(string)$agent['public_id'],'plan_id'=>(string)$plan['id'],'used_ai'=>false],(int)$user['id']);
+            mg_ok(['plan'=>$plan,'used_ai'=>false,'response_source'=>'system_action'],'Gift-plan draft saved for review.',201);
+        }
+        if($action==='create_reminder'){
+            $template=mg_multi_agent_runtime_template($agent);
+            if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot create occasion reminders.');
+            $reminderInput=is_array($input['reminder']??null)?$input['reminder']:[];
+            $reminder=mg_personal_agent_create_reminder($pdo,(int)$user['id'],$reminderInput);
+            mg_audit('multi_agent.reminder_created','agent',['agent_id'=>(string)$agent['public_id'],'reminder_id'=>(string)$reminder['id'],'used_ai'=>false],(int)$user['id']);
+            mg_ok(['reminder'=>$reminder,'used_ai'=>false,'response_source'=>'system_action'],'In-app reminder created.',201);
+        }
+        if($action==='update_reminder_status'){
+            $status=trim((string)($input['status']??''));
+            $reminderId=trim((string)($input['reminder_id']??''));
+            $reminder=mg_personal_agent_update_reminder_status($pdo,(int)$user['id'],$reminderId,$status);
+            mg_audit('multi_agent.reminder_status_updated','agent',['agent_id'=>(string)$agent['public_id'],'reminder_id'=>$reminderId,'status'=>$status,'used_ai'=>false],(int)$user['id']);
+            mg_ok(['reminder'=>$reminder,'used_ai'=>false,'response_source'=>'system_action'],'Reminder updated.');
+        }
+        if($action==='onboarding'){
+            $answers=is_array($input['answers']??null)?$input['answers']:[];
+            $status=in_array((string)($input['status']??'in_progress'),['not_started','in_progress','completed'],true)?(string)$input['status']:'in_progress';
+            $step=mb_substr(trim((string)($input['current_step']??'')),0,64);
+            $pdo->prepare("INSERT INTO multi_agent_onboarding(agent_id,owner_user_id,status,current_step,answers_json,completed_at,created_at,updated_at) VALUES (?,?,?,?,?,IF(?='completed',NOW(),NULL),NOW(),NOW()) ON DUPLICATE KEY UPDATE status=VALUES(status),current_step=VALUES(current_step),answers_json=VALUES(answers_json),completed_at=IF(VALUES(status)='completed',COALESCE(completed_at,NOW()),NULL),updated_at=NOW()")
+                ->execute([(int)$agent['id'],(int)$user['id'],$status,$step?:null,json_encode($answers,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),$status]);
+            foreach($answers as $key=>$value){
+                mg_task_agent_memory_save($pdo,(int)$user['id'],(int)$agent['id'],[
+                    'memory_key'=>'onboarding.'.preg_replace('/[^a-z0-9_.-]+/i','_',mb_substr((string)$key,0,120)),
+                    'category'=>'onboarding','title'=>ucwords(str_replace(['_','.'],' ',(string)$key)),'value'=>$value,
+                ]);
+            }
+            mg_ok(['onboarding'=>mg_multi_agent_runtime_onboarding($pdo,(int)$user['id'],(int)$agent['id']),'memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50)],'Agent onboarding saved.');
+        }
+        if($action==='save_memory'){
+            $memory=mg_task_agent_memory_save($pdo,(int)$user['id'],(int)$agent['id'],$input);
+            mg_ok(['memory_item'=>$memory,'memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50),'used_ai'=>false,'response_source'=>'system_action'],'Agent memory saved.');
+        }
+        if($action==='archive_memory'){
+            $memoryId=trim((string)($input['memory_id']??''));
+            mg_task_agent_memory_archive($pdo,(int)$user['id'],(int)$agent['id'],$memoryId);
+            mg_ok(['memory'=>mg_task_agent_memory_list($pdo,(int)$user['id'],(int)$agent['id'],50),'used_ai'=>false,'response_source'=>'system_action'],'Agent memory archived.');
+        }
+        if($action==='save_draft'){
+            $title=mb_substr(trim((string)($input['title']??'Agent draft')),0,190)?:'Agent draft';
+            $type=mb_substr(trim((string)($input['draft_type']??'plan')),0,64)?:'plan';
+            $payload=is_array($input['payload']??null)?$input['payload']:[];
+            $canonical=is_array($payload['canonical_plan']??null)?$payload['canonical_plan']:null;
+            if($canonical){
+                $template=mg_multi_agent_runtime_template($agent);
+                if(($template['key']??'')!=='birthday_occasion')throw new InvalidArgumentException('This agent cannot save occasion gift plans.');
+                $canonical['source']='important_date';
+                $plan=mg_personal_agent_create_plan($pdo,(int)$user['id'],$canonical);
+                mg_audit('multi_agent.gift_plan_draft_created','agent',['agent_id'=>(string)$agent['public_id'],'plan_id'=>(string)$plan['id'],'used_ai'=>false],(int)$user['id']);
+                mg_ok(['draft'=>$plan,'plan'=>$plan,'used_ai'=>false,'response_source'=>'system_action'],'Gift-plan draft saved for review.',201);
+            }
+            $threadId=null;
+            $threadPublicId=trim((string)($input['thread_id']??''));
+            if($threadPublicId!==''){
+                $stmt=$pdo->prepare('SELECT id FROM multi_agent_threads WHERE public_id=? AND agent_id=? AND owner_user_id=? LIMIT 1');
+                $stmt->execute([$threadPublicId,(int)$agent['id'],(int)$user['id']]);
+                $threadId=$stmt->fetchColumn()?:null;
+            }
+            $publicId=mg_public_uuid();
+            $pdo->prepare("INSERT INTO multi_agent_drafts(public_id,agent_id,owner_user_id,thread_id,draft_type,title,payload_json,status,approval_required,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'draft',1,NOW(),NOW())")
+                ->execute([$publicId,(int)$agent['id'],(int)$user['id'],$threadId,$type,$title,json_encode($payload,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)]);
+            mg_ok(['draft'=>['id'=>$publicId,'title'=>$title,'draft_type'=>$type,'status'=>'draft','approval_required'=>true]],'Reviewable draft saved.',201);
+        }
+
+        mg_fail('Unsupported agent runtime action.',422);
+    }
+
+    mg_fail('Method not allowed.',405);
+} catch(MgAiCreditException $e) {
+    mg_fail($e->getMessage(),$e->httpStatus(),$e->details());
+} catch(InvalidArgumentException $e) {
+    mg_fail($e->getMessage(),422);
+} catch(RuntimeException $e) {
+    $status=str_contains(strtolower($e->getMessage()),'not found')?404:(str_contains(strtolower($e->getMessage()),'migration')?503:409);
+    mg_fail($e->getMessage(),$status);
+} catch(Throwable $e) {
+    mg_security_log('error','multi_agent.runtime_api_failed','Specialized agent runtime request failed.',['exception_type'=>$e::class],(int)$user['id']);
+    mg_fail('Unable to complete the specialized agent request.',500);
+}
