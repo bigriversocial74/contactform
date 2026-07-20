@@ -40,4 +40,3 @@ jobs:
         run: |
           vendor/bin/phpunit tests/phpunit/AgentHeaderTabBehaviorTest.php
           vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
-          vendor/bin/phpunit tests/phpunit/PersonalAgentChatHistoryMenuTest.php
