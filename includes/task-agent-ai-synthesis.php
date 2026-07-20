@@ -31,7 +31,8 @@ function mg_task_agent_ai_synthesis(
     array $history,
     string $message,
     string $aiReason,
-    string $requestedModelId
+    string $requestedModelId,
+    string $threadPublicId
 ): ?array {
     $packageContext = mg_ai_credit_package_context($pdo, $userId);
     if (!mg_personal_agent_ai_package_eligible($packageContext)) return null;
@@ -87,6 +88,7 @@ function mg_task_agent_ai_synthesis(
         (string)($raw['id'] ?? ''),
         [
             'agent_id' => (string)$agent['public_id'],
+            'thread_id' => $threadPublicId,
             'ai_reason' => $aiReason,
         ]
     );
