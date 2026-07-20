@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/_agent.php';
 require_once dirname(__DIR__,2).'/includes/multi-agent-workspace-data.php';
 require_once dirname(__DIR__,2).'/includes/multi-agent-runtime.php';
+require_once dirname(__DIR__,2).'/includes/task-agent-plan-selection-guard.php';
 $user=mg_require_api_user();$pdo=mg_db();$method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
 try{
  mg_multi_agent_runtime_require_schema($pdo);
@@ -16,7 +17,7 @@ try{
   if($action==='chat')mg_ok(mg_multi_agent_runtime_chat($pdo,(int)$user['id'],$agent,$input));
   if($action==='discover_products'){$result=mg_task_agent_discover_products($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['reply'=>$result['reply'],'cards'=>$result['cards'],'filters'=>$result['filters'],'used_ai'=>false,'response_source'=>'system_query'],'Published products loaded.');}
   if($action==='add_shortlist'){$item=mg_task_agent_shortlist_add($pdo,(int)$user['id'],(int)$agent['id'],$input);mg_ok(['shortlist_item'=>$item,'shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product added to this agent’s shortlist.',201);}
-  if($action==='remove_shortlist'){$shortlistId=trim((string)($input['shortlist_id']??''));mg_task_agent_shortlist_remove($pdo,(int)$user['id'],(int)$agent['id'],$shortlistId);mg_ok(['shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from this agent’s shortlist.');}
+  if($action==='remove_shortlist'){$shortlistId=trim((string)($input['shortlist_id']??''));mg_task_agent_shortlist_remove_if_unselected($pdo,(int)$user['id'],(int)$agent['id'],$shortlistId);mg_ok(['shortlist'=>mg_task_agent_shortlist_list($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from this agent’s shortlist.');}
   if($action==='select_plan_product'){$selection=mg_task_agent_select_shortlist_for_plan($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['shortlist_id']??'')),trim((string)($input['plan_id']??'')));mg_ok(['selection'=>$selection,'card'=>mg_task_agent_plan_selection_card($selection),'plan_selections'=>mg_task_agent_plan_selections($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product added to the gift plan.',201);}
   if($action==='remove_plan_product'){mg_task_agent_remove_plan_selection($pdo,(int)$user['id'],(int)$agent['id'],trim((string)($input['shortlist_id']??'')),trim((string)($input['plan_id']??'')));mg_ok(['plan_selections'=>mg_task_agent_plan_selections($pdo,(int)$user['id'],(int)$agent['id'],20),'used_ai'=>false,'response_source'=>'system_action'],'Product removed from the gift plan.');}
   if($action==='new_thread'){$thread=mg_multi_agent_runtime_thread($pdo,$agent,(int)$user['id']);mg_ok(['thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']]],'Agent conversation created.',201);}
