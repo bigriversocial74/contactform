@@ -1,0 +1,42 @@
+name: Gift Center Tabs and Unified Agent Sidebar
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'includes/header-components/app-header.php'
+      - 'includes/personal-agent-sidebar.php'
+      - 'inbox.php'
+      - 'sent.php'
+      - 'claimed.php'
+      - 'tests/phpunit/GiftCenterTabsUnifiedAgentSidebarTest.php'
+      - '.github/workflows/gift-center-tabs-unified-agent-sidebar.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l includes/header-components/app-header.php
+          php -l includes/personal-agent-sidebar.php
+          php -l tests/phpunit/GiftCenterTabsUnifiedAgentSidebarTest.php
+      - name: Unified navigation contract
+        run: vendor/bin/phpunit tests/phpunit/GiftCenterTabsUnifiedAgentSidebarTest.php
+      - name: Existing agent regressions
+        run: |
+          vendor/bin/phpunit tests/phpunit/AgentHeaderTabBehaviorTest.php
+          vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
