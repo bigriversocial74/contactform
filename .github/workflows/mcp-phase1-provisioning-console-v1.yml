@@ -11,6 +11,7 @@ on:
       - 'api/admin/mcp-connection-action.php'
       - 'api/admin/mcp-runtime-credentials.php'
       - 'assets/js/admin-mcp-connections.js'
+      - 'assets/js/admin-mcp-credential-guards.js'
       - 'assets/css/admin-mcp-connections.css'
       - 'includes/admin-permission-matrix.php'
       - 'includes/admin-sidebar.php'
@@ -46,7 +47,9 @@ jobs:
         working-directory: services/mcp
         run: npm run check
       - name: Browser JavaScript syntax
-        run: node --check assets/js/admin-mcp-connections.js
+        run: |
+          node --check assets/js/admin-mcp-connections.js
+          node --check assets/js/admin-mcp-credential-guards.js
 
   php-and-migration:
     runs-on: ubuntu-latest
