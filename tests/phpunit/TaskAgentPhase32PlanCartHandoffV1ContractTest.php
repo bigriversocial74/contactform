@@ -42,7 +42,7 @@ final class TaskAgentPhase32PlanCartHandoffV1ContractTest extends TestCase
     {
         $api=file_get_contents(dirname(__DIR__,2).'/api/agents/runtime.php');
         self::assertIsString($api);
-        foreach(['mg_agent_require_owned','mg_require_csrf_for_write',"$action==='select_plan_product'","$action==='remove_plan_product'",'mg_task_agent_select_shortlist_for_plan','mg_task_agent_remove_plan_selection',"'used_ai'=>false","'response_source'=>'system_action'"] as $marker)self::assertStringContainsString($marker,$api);
+        foreach(['mg_agent_require_owned','mg_require_csrf_for_write','if($action===\'select_plan_product\')','if($action===\'remove_plan_product\')','mg_task_agent_select_shortlist_for_plan','mg_task_agent_remove_plan_selection',"'used_ai'=>false","'response_source'=>'system_action'"] as $marker)self::assertStringContainsString($marker,$api);
         foreach(['cart-items.php','order-checkout-session.php','mg_cart','stripe','action-center-send.php','microgift-claim.php'] as $forbidden)self::assertStringNotContainsString($forbidden,$api);
     }
 
