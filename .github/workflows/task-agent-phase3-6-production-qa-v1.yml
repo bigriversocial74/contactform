@@ -48,8 +48,16 @@ jobs:
           node --check assets/js/task-agent-delivery-runtime.js
           node --check assets/js/task-agent-order-tracking-runtime.js
           node --check assets/js/task-agent-lifecycle-runtime.js
-      - name: Phase 3 integrated contract
-        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php
+      - name: Release migration order
+        run: vendor/bin/phpunit --filter testReleaseManifestAndMigrationOrder tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php
+      - name: Deterministic route chain
+        run: vendor/bin/phpunit --filter testCompleteDeterministicRouteChain tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php
+      - name: Phase file inventory
+        run: vendor/bin/phpunit --filter testAllPhaseAuthoritiesAssetsAndContractsExist tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php
+      - name: Release asset loading
+        run: vendor/bin/phpunit --filter testReleaseAssetsAreLoaded tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php
+      - name: Compact model projections
+        run: vendor/bin/phpunit --filter testPhaseModelProjectionsRemainCompact tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php
       - name: Phase 3 safety contract
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase36SafetyBoundaryV1ContractTest.php
       - name: Phase 3.5 lifecycle regression
