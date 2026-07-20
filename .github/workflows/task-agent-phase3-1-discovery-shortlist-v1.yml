@@ -6,6 +6,7 @@ on:
     paths:
       - 'agent.php'
       - 'api/agents/runtime.php'
+      - 'config/migrations.php'
       - 'includes/multi-agent-runtime.php'
       - 'includes/task-agent-ai-synthesis.php'
       - 'includes/task-agent-shortlist.php'
@@ -47,6 +48,7 @@ jobs:
         run: |
           php -l agent.php
           php -l api/agents/runtime.php
+          php -l config/migrations.php
           php -l includes/multi-agent-runtime.php
           php -l includes/task-agent-ai-synthesis.php
           php -l includes/task-agent-shortlist.php
@@ -61,6 +63,8 @@ jobs:
         run: |
           node --check assets/js/multi-agent-runtime.js
           node --check assets/js/task-agent-shortlist-runtime.js
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
       - name: Phase 3.1 contract
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase31DiscoveryShortlistV1ContractTest.php
       - name: Existing agent regressions
