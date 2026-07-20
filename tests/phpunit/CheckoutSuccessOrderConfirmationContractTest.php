@@ -56,7 +56,7 @@ final class CheckoutSuccessOrderConfirmationContractTest extends TestCase
             'Fulfillment ',
             'mg-order-confirmation-grid',
             'mg-order-followup',
-            'Open Inbox',
+            'Open Action Center',
             'Status history',
             "document.title='Order '",
         ] as $needle){
