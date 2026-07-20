@@ -1,0 +1,48 @@
+/* Homepage production cleanup v1: authoritative desktop final chapter, focus, and rendering boundaries. */
+body.mg-homepage-exact-v2 .homepage-exact-v2{overflow:clip}
+body.mg-homepage-exact-v2 .pppm-presentation,
+body.mg-homepage-exact-v2 .final-cta{contain:layout paint style}
+body.mg-homepage-exact-v2 .pppm-card a:focus-visible,
+body.mg-homepage-exact-v2 .primary-button:focus-visible,
+body.mg-homepage-exact-v2 .mg-price-plan-action:focus-visible{outline:3px solid #6f9bc6;outline-offset:4px}
+
+/* Retire the old, unused local pricing component rules. The homepage uses shared mg-price cards. */
+body.mg-homepage-exact-v2 .pricing-reveal .pricing-grid,
+body.mg-homepage-exact-v2 .pricing-reveal .pricing-card{display:none!important}
+
+@media(min-width:821px){
+  body.mg-homepage-exact-v2 .final-cta{min-height:500vh}
+  body.mg-homepage-exact-v2 .final-cta__stage{overflow:hidden;isolation:isolate}
+  body.mg-homepage-exact-v2 .final-cta__orb{
+    top:0!important;
+    left:50%!important;
+    width:clamp(92px,10vw,158px)!important;
+    transform-origin:center!important;
+    will-change:transform,opacity,filter!important;
+  }
+  body.mg-homepage-exact-v2 .pricing-reveal{
+    width:min(1480px,calc(100vw - 3rem));
+    max-width:none;
+    pointer-events:auto!important;
+    will-change:transform,opacity;
+  }
+  body.mg-homepage-exact-v2 .homepage-public-pricing-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:clamp(.75rem,1vw,1rem);
+    width:100%;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  body.mg-homepage-exact-v2 .homepage-public-pricing-grid .mg-price-card{
+    min-height:clamp(300px,36vh,350px);
+  }
+}
+
+@media(max-width:1120px) and (min-width:821px){
+  body.mg-homepage-exact-v2 .homepage-public-pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(prefers-reduced-motion:reduce){
+  body.mg-homepage-exact-v2 .final-cta__orb,
+  body.mg-homepage-exact-v2 .pricing-reveal{opacity:1!important;transform:none!important}
+}
