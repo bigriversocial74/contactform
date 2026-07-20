@@ -1,4 +1,5 @@
 import type { ConnectionContext } from "./contracts.js";
+import type { CanonicalBridgeConfig } from "./bridge/canonicalBridge.js";
 
 export interface InternalProtocolConfig {
   readonly platformEnabled: boolean;
@@ -11,6 +12,7 @@ export interface InternalProtocolConfig {
   readonly rateLimitRequests: number;
   readonly rateLimitWindowMs: number;
   readonly connection: ConnectionContext;
+  readonly bridge: CanonicalBridgeConfig;
 }
 
 function csv(value: string | undefined): readonly string[] {
@@ -55,10 +57,26 @@ export function loadInternalProtocolConfig(
       maximumOperationClass: "read",
       tokenVersion: 1,
     },
+    bridge: {
+      enabled: enabled(environment.MICROGIFTER_MCP_BRIDGE_ENABLED),
+      url: environment.MICROGIFTER_MCP_BRIDGE_URL?.trim() ?? "",
+      secret: environment.MICROGIFTER_MCP_BRIDGE_SECRET?.trim() ?? "",
+      timeoutMs: integer(environment.MICROGIFTER_MCP_BRIDGE_TIMEOUT_MS, 8_000),
+    },
   };
 
   validateInternalProtocolConfig(config);
   return config;
+}
+
+function validBridgeUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol === "https:") return true;
+    return url.protocol === "http:" && ["127.0.0.1", "localhost", "::1"].includes(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 export function validateInternalProtocolConfig(config: InternalProtocolConfig): void {
@@ -68,10 +86,24 @@ export function validateInternalProtocolConfig(config: InternalProtocolConfig): 
   if (config.internalHttpEnabled && !/^[a-f0-9]{64}$/.test(config.tokenSha256)) {
     throw new Error("Internal MCP HTTP requires a SHA-256 bearer token hash.");
   }
-  if (config.internalHttpEnabled && config.connection.scopes.length === 0) {
-    throw new Error("Internal MCP HTTP requires at least one explicit scope.");
+  if (config.internalHttpEnabled && !config.bridge.enabled && config.connection.scopes.length === 0) {
+    throw new Error("Internal MCP HTTP requires at least one explicit scope when the canonical bridge is disabled.");
   }
   if (config.connection.maximumOperationClass !== "read") {
     throw new Error("The Phase 1 internal protocol is read-only.");
+  }
+  if (config.bridge.enabled) {
+    if (!config.internalHttpEnabled) {
+      throw new Error("The canonical bridge cannot be enabled while internal MCP HTTP is disabled.");
+    }
+    if (!validBridgeUrl(config.bridge.url)) {
+      throw new Error("The canonical bridge requires HTTPS, except for localhost development.");
+    }
+    if (config.bridge.secret.length < 32) {
+      throw new Error("The canonical bridge requires a secret of at least 32 characters.");
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(config.connection.connectionId)) {
+      throw new Error("The canonical bridge requires a persisted MCP connection UUID.");
+    }
   }
 }

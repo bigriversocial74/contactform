@@ -29,13 +29,19 @@ function config(overrides = {}) {
       maximumOperationClass: "read",
       tokenVersion: 1,
     },
+    bridge: {
+      enabled: false,
+      url: "",
+      secret: "",
+      timeoutMs: 8_000,
+    },
     ...overrides,
   };
 }
 
-async function withServer(configuration, callback) {
+async function withServer(configuration, callback, bridge) {
   const receipts = new InMemoryInvocationReceiptSink();
-  const app = createInternalMcpApp(configuration, receipts);
+  const app = createInternalMcpApp(configuration, receipts, bridge);
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -163,10 +169,11 @@ test("account context tool returns minimized data and records a receipt", async 
     assert.equal(result.result.structuredContent.data.password, undefined);
     assert.equal(receipts.all().length, 1);
     assert.equal(receipts.all()[0].resultStatus, "success");
+    assert.match(receipts.all()[0].inputFingerprint, /^[a-f0-9]{64}$/);
   });
 });
 
-test("catalog tools remain listed but fail closed until the canonical bridge lands", async () => {
+test("catalog tools remain listed but fail closed without a canonical bridge", async () => {
   await withServer(config(), async ({ baseUrl }) => {
     const response = await rpc(baseUrl, {
       jsonrpc: "2.0",

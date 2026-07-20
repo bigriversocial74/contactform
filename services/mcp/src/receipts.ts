@@ -6,8 +6,13 @@ export interface InvocationReceipt {
   readonly toolName: string;
   readonly operationClass: OperationClass;
   readonly requiredScope: string;
-  readonly resultStatus: "success" | "denied" | "failed";
+  readonly inputFingerprint: string;
+  readonly resultStatus: "success" | "denied" | "validation_error" | "rate_limited" | "failed";
+  readonly httpStatus: number;
+  readonly durationMs: number;
+  readonly recordCount: number;
   readonly errorCode?: string;
+  readonly denialReason?: string;
   readonly startedAt: string;
   readonly completedAt: string;
 }
