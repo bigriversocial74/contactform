@@ -61,15 +61,15 @@ $check(str_contains($credentials, 'mg_require_csrf_for_write($input)'), 'credent
 $check(str_contains($read, "mg_rate_limit('admin.mcp_connections.read'"), 'read_rate_limit');
 $check(str_contains($create, "mg_rate_limit('admin.mcp_connection.create'"), 'create_rate_limit');
 $check(str_contains($credentials, "mg_rate_limit('admin.mcp_runtime_credentials.generate'"), 'credential_rate_limit');
-$check(str_contains($helper, "maximum_operation_class,metadata_json"), 'client_read_only_insert');
+$check(str_contains($helper, 'maximum_operation_class,metadata_json'), 'client_read_only_insert');
 $check(str_contains($helper, "'active','read',1,NOW()"), 'connection_read_only_insert');
 $check(str_contains($helper, "active=1 AND grantable=1 AND operation_class='read'"), 'scope_catalog_enforced');
 $check(str_contains($helper, 'merchant_team_members'), 'workspace_membership_verified');
-$check(str_contains($helper, "mg_admin_mcp_text($input['reason']"), 'action_reason_required');
+$check(str_contains($helper, 'mg_admin_mcp_text($input[\'reason\']'), 'action_reason_required');
 $check(str_contains($helper, "mg_audit('admin_mcp_connection_provision'"), 'provision_audited');
 $check(str_contains($helper, "mg_security_log('medium', 'admin.mcp_runtime_credentials.generated'"), 'credential_security_event');
 $check(str_contains($helper, 'random_bytes(32)'), 'bearer_cryptographic_randomness');
-$check(str_contains($helper, "hash('sha256', $bearerToken)"), 'bearer_hash_generated');
+$check(str_contains($helper, 'hash(\'sha256\', $bearerToken)'), 'bearer_hash_generated');
 $check(str_contains($helper, 'random_bytes(48)'), 'bridge_secret_cryptographic_randomness');
 $check(str_contains($helper, "'secrets_persisted' => false"), 'secret_non_persistence_declared');
 $check(!preg_match('/(?:INSERT|UPDATE)[^;]{0,400}(?:bearer_token|bridge_secret)/is', $helper), 'secrets_not_persisted');
