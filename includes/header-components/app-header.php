@@ -8,7 +8,9 @@ $is_authenticated_user = mg_current_user() !== null;
 $can_create_list = (bool) ($can_create_list ?? $is_authenticated_user);
 $can_agent_workspace = $is_authenticated_user || $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
 $workspace_agent_tabs = ['agent'];
+$gift_center_tabs = ['inbox', 'sent', 'claimed'];
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
+$is_gift_center_header = $header_mode === 'agent' && in_array((string) $agent_tab, $gift_center_tabs, true);
 $show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
 $show_header_cart = true;
@@ -43,6 +45,14 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
               <button class="mg-agent-tab-add" type="button" data-agent-add-tab aria-label="Add an agent" title="Add an agent">+</button>
             </div>
           </div>
+        <?php elseif ($is_gift_center_header): ?>
+          <div class="mg-header-agent-tools mg-header-gift-tools">
+            <div class="mg-header-agent-tabs mg-header-gift-tabs" data-gift-center-tabs aria-label="Gift center folders">
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="inbox"><a class="<?= $agent_tab === 'inbox' ? 'is-active' : '' ?>" href="/inbox.php"><span>Inbox</span></a></span>
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="sent"><a class="<?= $agent_tab === 'sent' ? 'is-active' : '' ?>" href="/sent.php"><span>Sent</span></a></span>
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="claimed"><a class="<?= $agent_tab === 'claimed' ? 'is-active' : '' ?>" href="/claimed.php"><span>Claimed</span></a></span>
+            </div>
+          </div>
         <?php elseif ($header_mode === 'builder'): ?>
           <div class="mg-builder-header-toggle" aria-label="Preview size">
             <div class="mg-builder-device-toggle">
@@ -58,6 +68,7 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
 </header>
 <style>
 html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
+html body.mg-app-page.mg-section-agent .mg-header-gift-tabs [data-system-tab]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
 </style>
 
 <?php
