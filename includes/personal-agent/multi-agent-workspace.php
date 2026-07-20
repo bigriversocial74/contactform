@@ -7,7 +7,7 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 <section class="mg-multi-agent-layer" data-multi-agent-layer hidden>
   <div class="mg-multi-agent-selector" data-multi-agent-selector>
     <header class="mg-multi-agent-selector-head">
-      <div><span>Multi-agent workspace</span><h2>Choose a specialized agent</h2><p>Create a focused workspace with its own goal, conversations, memory, tools, and permissions.</p></div>
+      <div><span>Multi-agent workspace</span><h2>Choose an agent</h2><p>Create a chat agent or a focused task agent with its own conversations, memory, tools, and permissions.</p></div>
       <button type="button" data-multi-agent-selector-close aria-label="Close agent selector">×</button>
     </header>
     <div class="mg-multi-agent-filter-row">
@@ -28,12 +28,31 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 </section>
 
 <section class="mg-agent-instance-canvas" data-agent-instance-canvas hidden>
-  <header class="mg-agent-instance-head">
-    <div><span data-agent-instance-eyebrow>Specialized agent</span><h2 data-agent-instance-name>Agent</h2><p data-agent-instance-description></p></div>
-    <div class="mg-agent-instance-head-actions"><button type="button" data-agent-new-thread>New conversation</button><button type="button" data-agent-manage-open>Manage</button></div>
-  </header>
   <div class="mg-agent-runtime-layout">
-    <aside class="mg-agent-runtime-rail">
+    <main class="mg-agent-runtime-main">
+      <div class="mg-agent-instance-welcome mg-agent-chat-landing">
+        <div class="mg-agent-instance-avatar" data-agent-instance-icon>✦</div>
+        <div class="mg-agent-chat-landing-copy">
+          <span data-agent-instance-eyebrow>Agent</span>
+          <strong data-agent-instance-name>Agent</strong>
+          <p data-agent-instance-description></p>
+          <p data-agent-instance-welcome></p>
+        </div>
+        <div class="mg-agent-chat-landing-actions" aria-label="Agent options">
+          <button type="button" data-agent-new-thread>New conversation</button>
+          <button type="button" data-agent-manage-open>Manage agent</button>
+        </div>
+      </div>
+      <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
+      <div class="mg-agent-runtime-messages" data-agent-runtime-messages aria-live="polite"></div>
+      <form class="mg-agent-runtime-composer" data-agent-runtime-composer>
+        <textarea name="message" rows="2" maxlength="3000" placeholder="Message this agent…" required></textarea>
+        <button type="submit">Send</button>
+        <small data-agent-runtime-status></small>
+      </form>
+    </main>
+
+    <aside class="mg-agent-runtime-rail" aria-label="Agent setup and history">
       <section data-agent-onboarding-panel>
         <span>Agent setup</span><h3>Personalize this agent</h3><p data-agent-onboarding-copy>Answer a few questions so this agent can work with the right context.</p>
         <form data-agent-onboarding-form>
@@ -46,16 +65,6 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
       <section class="mg-agent-memory-panel"><span>Agent memory</span><div data-agent-memory-list><p>No saved memory yet.</p></div></section>
       <section class="mg-agent-thread-panel"><div><span>Conversations</span><button type="button" data-agent-new-thread aria-label="New agent conversation">+</button></div><nav data-agent-thread-list></nav></section>
     </aside>
-    <main class="mg-agent-runtime-main">
-      <div class="mg-agent-instance-welcome"><div class="mg-agent-instance-avatar" data-agent-instance-icon>✦</div><div><strong data-agent-instance-welcome></strong><p>This agent keeps its own conversations, memory, setup, and drafts while sharing protected Microgifter services.</p></div></div>
-      <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
-      <div class="mg-agent-runtime-messages" data-agent-runtime-messages aria-live="polite"></div>
-      <form class="mg-agent-runtime-composer" data-agent-runtime-composer>
-        <textarea name="message" rows="2" maxlength="3000" placeholder="Message this agent…" required></textarea>
-        <button type="submit">Send</button>
-        <small data-agent-runtime-status></small>
-      </form>
-    </main>
   </div>
 </section>
 
