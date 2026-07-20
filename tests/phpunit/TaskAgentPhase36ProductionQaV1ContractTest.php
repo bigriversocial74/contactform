@@ -85,17 +85,17 @@ final class TaskAgentPhase36ProductionQaV1ContractTest extends TestCase
     {
         $root=dirname(__DIR__,2);
         foreach([
-            'includes/task-agent-shortlist.php'=>'function mg_task_agent_shortlist_for_model',
-            'includes/task-agent-plan-selection.php'=>'function mg_task_agent_plan_selection_for_model',
-            'includes/task-agent-delivery-preparation.php'=>'function mg_task_agent_delivery_for_model',
-            'includes/task-agent-order-tracking.php'=>'function mg_task_agent_order_tracking_for_model',
-            'includes/task-agent-lifecycle-tracking.php'=>'function mg_task_agent_lifecycle_for_model',
-        ] as $file=>$function){
+            'includes/task-agent-shortlist.php'=>['function mg_task_agent_shortlist_for_model','array_slice($items,0,8)'],
+            'includes/task-agent-plan-selection.php'=>['function mg_task_agent_plan_selection_for_model','array_slice($selections,0,8)'],
+            'includes/task-agent-delivery-preparation.php'=>['function mg_task_agent_delivery_for_model','array_slice($items,0,8)'],
+            'includes/task-agent-order-tracking.php'=>['function mg_task_agent_order_tracking_for_model','array_slice($items,0,8)'],
+            'includes/task-agent-lifecycle-tracking.php'=>['function mg_task_agent_lifecycle_for_model','array_slice($items,0,8)'],
+        ] as $file=>$contract){
             $source=file_get_contents($root.'/'.$file);
             self::assertIsString($source);
-            $start=strpos($source,$function);
+            $start=strpos($source,$contract[0]);
             self::assertNotFalse($start);
-            self::assertStringContainsString('array_slice($items,0,8)',substr($source,$start));
+            self::assertStringContainsString($contract[1],substr($source,$start));
         }
     }
 }
