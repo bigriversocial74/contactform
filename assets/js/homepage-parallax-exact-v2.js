@@ -49,6 +49,7 @@
 
   if (reducedMotion) {
     orb.style.opacity = '.8';
+    orb.style.zIndex = '5';
     if (arrived) {
       arrived.style.opacity = '1';
       arrived.style.transform = 'none';
@@ -91,28 +92,36 @@
     mountains.style.transform = `translate3d(0, calc(100px - ${(p * 8).toFixed(2)}vh), 0) scale(${(1.14 + p * .055).toFixed(4)})`;
     foreground.style.transform = `translate3d(0, ${(p * 18).toFixed(2)}vh, 0) scale(${(1 + p * .16).toFixed(4)})`;
 
-    const rise = range(p, .008, .105);
-    const shakeWindow = clamp((p - .102) / .042);
-    const shakeEnvelope = Math.sin(shakeWindow * Math.PI);
-    const shoot = range(p, .138, .245);
-    const entrance = easeOutExpo(clamp(p / .245));
+    // Rise from behind the foreground while moving away toward the mountains.
+    const rise = range(p, .008, .115);
+    const apexHold = clamp((p - .112) / .105);
+    const shakeEnvelope = Math.sin(apexHold * Math.PI);
+    const shoot = range(p, .217, .315);
+    const entrance = easeOutExpo(clamp(p / .315));
 
     let left = 66;
-    let top = mix(112, 43, rise);
-    let scale = mix(.24, .66, rise);
-    let rotation = mix(-8, -3, rise);
+    let top = mix(114, 39, rise);
+    let scale = mix(.42, .30, rise);
+    let rotation = mix(-8, -2, rise);
 
-    top += Math.sin(rise * Math.PI) * -8;
-    left += Math.sin(shakeWindow * Math.PI * 8) * 1.15 * shakeEnvelope;
-    top += Math.cos(shakeWindow * Math.PI * 10) * .75 * shakeEnvelope;
-    rotation += Math.sin(shakeWindow * Math.PI * 10) * 3.4 * shakeEnvelope;
+    // Slight arc gives the rise a natural lift while the shrinking scale creates depth.
+    top += Math.sin(rise * Math.PI) * -5;
 
+    // Keep the orb behind the foreground until it clears the ridge line.
+    orb.style.zIndex = p < .082 ? '2' : '5';
+
+    // Prolonged stall and shake at the top of the rise.
+    left += Math.sin(apexHold * Math.PI * 14) * 1.25 * shakeEnvelope;
+    top += Math.cos(apexHold * Math.PI * 16) * .8 * shakeEnvelope;
+    rotation += Math.sin(apexHold * Math.PI * 18) * 3.8 * shakeEnvelope;
+
+    // Reverse the depth motion and drive the orb toward the viewer.
     top = mix(top, 46, shoot);
     left = mix(left, 66, shoot);
-    scale = mix(scale, 1.03, shoot);
+    scale = mix(scale, .82, shoot);
     rotation = mix(rotation, -5, shoot);
 
-    const chapterTwo = easeInOutCubic(clamp((p - .22) / .52));
+    const chapterTwo = easeInOutCubic(clamp((p - .29) / .45));
     const waveX = Math.sin(chapterTwo * Math.PI * 1.65) * 8;
     const waveY = Math.sin(chapterTwo * Math.PI * 2.2) * 5;
     left = mix(left, 34, chapterTwo) + waveX;
@@ -138,14 +147,14 @@
     orb.style.transform = `translate(-50%, -50%) scale(${(scale * pulse).toFixed(4)}) rotate(${rotation.toFixed(2)}deg)`;
     orb.style.filter = `drop-shadow(0 ${28 + entrance * 22}px ${30 + entrance * 30}px rgba(255,181,147,${.12 + entrance * .22}))`;
 
-    const arrivedIn = range(p, .205, .265);
+    const arrivedIn = range(p, .278, .335);
     if (arrived) {
       arrived.style.opacity = String(arrivedIn);
       arrived.style.transform = `translateY(${((1 - arrivedIn) * 24).toFixed(1)}px) scale(${(.96 + arrivedIn * .04).toFixed(4)})`;
       arrived.style.filter = `blur(${((1 - arrivedIn) * 7).toFixed(2)}px)`;
     }
 
-    const supportingIn = range(p, .245, .305);
+    const supportingIn = range(p, .315, .365);
     [intro, action].forEach(node => {
       if (!node) return;
       node.style.opacity = String(supportingIn);
@@ -153,12 +162,12 @@
       node.style.pointerEvents = supportingIn > .8 ? 'auto' : 'none';
     });
 
-    const firstExit = smoothstep(clamp((p - .32) / .14));
+    const firstExit = smoothstep(clamp((p - .38) / .11));
     firstCopy.style.opacity = String(1 - firstExit);
     firstCopy.style.transform = `translateY(calc(-50% - ${firstExit * 46}px))`;
     firstCopy.style.pointerEvents = firstExit > .7 ? 'none' : 'auto';
 
-    const secondEnter = smoothstep(clamp((p - .40) / .14));
+    const secondEnter = smoothstep(clamp((p - .45) / .11));
     const secondExit = smoothstep(clamp((p - .68) / .12));
     const secondOpacity = secondEnter * (1 - secondExit);
     secondCopy.style.opacity = String(secondOpacity);
@@ -183,7 +192,7 @@
     });
     if (chartArea) chartArea.style.opacity = String(chartDraw * .78);
 
-    const activePhase = p >= .72 ? 2 : (p >= .40 ? 1 : 0);
+    const activePhase = p >= .72 ? 2 : (p >= .45 ? 1 : 0);
     dots.forEach((dot, index) => dot.classList.toggle('is-active', index === activePhase));
 
     if (Math.abs(target - current) > .0005) {
