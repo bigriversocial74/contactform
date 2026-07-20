@@ -150,8 +150,8 @@ final class McpPhase0ArchitectureContractV1Test extends TestCase
             'read-only first; automation-capable by design',
             'Microgifter remains the system of record',
             'There is no administrator bypass',
-            'There is no unbounded autonomous mode',
-            'The TypeScript service receives no production database credentials',
+            'or unbounded autonomous mode',
+            'The Node service never receives database credentials',
             'No unattended execution is valid without an active grant',
             'The existing Approval Center remains canonical',
         ] as $boundary) {
