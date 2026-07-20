@@ -1,29 +1,40 @@
-/* Public auth pages v3: light-blue public shell with footer-matched navy actions. */
+/* Public auth pages v4: homepage typography with shared parallax landscape artwork. */
 .mg-auth-page .mg-main{
   min-height:calc(100svh - 72px);
   display:flex;
   align-items:center;
   justify-content:center;
   padding:clamp(44px,6vw,86px) clamp(18px,4vw,54px);
-  background:
-    radial-gradient(circle at 10% 8%,rgba(96,165,250,.16),transparent 31%),
-    radial-gradient(circle at 88% 18%,rgba(16,45,76,.09),transparent 29%),
-    linear-gradient(180deg,#fff 0%,#f2f7fd 62%,#fff 100%)!important;
+  background:#edf0f4 url('/assets/images/mountains.png?v=2.0.0') center 38%/cover no-repeat!important;
   color:#102d4c;
   overflow:hidden;
   position:relative;
+  isolation:isolate;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
 }
 .mg-auth-page .mg-main:before{
   content:"";
   position:absolute;
   inset:0;
+  z-index:0;
   pointer-events:none;
-  background-image:
-    linear-gradient(rgba(16,45,76,.035) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(16,45,76,.03) 1px,transparent 1px);
-  background-size:70px 70px;
-  mask-image:radial-gradient(circle at 48% 26%,#000,transparent 74%);
-  opacity:.55;
+  background:url('/assets/images/foreground.png?v=2.0.0') center bottom/cover no-repeat;
+  opacity:.9;
+}
+.mg-auth-page .mg-main:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:rgba(255,255,255,.18);
+}
+.mg-auth-page .mg-main button,
+.mg-auth-page .mg-main input,
+.mg-auth-page .mg-main select,
+.mg-auth-page .mg-main textarea{
+  font:inherit;
 }
 .mg-auth-page .mg-auth-shell{
   width:min(1180px,100%);
@@ -34,7 +45,7 @@
   gap:clamp(28px,5vw,76px);
   align-items:center;
   position:relative;
-  z-index:1;
+  z-index:2;
 }
 .mg-auth-page .mg-auth-aside{position:static;display:grid;gap:22px;max-width:630px}
 .mg-auth-page .mg-auth-aside .mg-badge,
@@ -125,7 +136,8 @@
   padding:clamp(26px,4vw,42px);
   border:1px solid #d7e4f1;
   border-radius:26px;
-  background:#fff;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(12px);
   box-shadow:0 34px 90px rgba(16,45,76,.13),inset 0 1px 0 rgba(255,255,255,.95);
   display:grid;
   gap:17px;
@@ -194,7 +206,7 @@
 .mg-auth-page .mg-alert{padding:13px 14px;border-radius:11px;font-size:13px;line-height:1.45}
 
 @media(max-width:920px){
-  .mg-auth-page .mg-main{align-items:flex-start;padding-top:42px}
+  .mg-auth-page .mg-main{align-items:flex-start;padding-top:42px;background-position:center top!important}
   .mg-auth-page .mg-auth-shell{grid-template-columns:1fr;gap:34px}
   .mg-auth-page .mg-auth-aside{max-width:760px}
 }
