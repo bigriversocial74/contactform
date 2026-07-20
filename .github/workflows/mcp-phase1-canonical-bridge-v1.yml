@@ -37,7 +37,17 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high
       - name: Build and test canonical bridge
-        run: npm run check
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee /tmp/mcp-canonical-bridge-typescript.log
+      - name: Upload TypeScript log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-canonical-bridge-typescript-log
+          path: /tmp/mcp-canonical-bridge-typescript.log
+          if-no-files-found: error
 
   php-contracts:
     runs-on: ubuntu-latest
