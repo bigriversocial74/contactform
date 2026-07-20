@@ -112,6 +112,20 @@ function mg_task_agent_recurring_internal_id(PDO $pdo, int $userId, int $agentId
     return $id;
 }
 
+function mg_task_agent_recurring_lock(PDO $pdo, int $userId, int $agentId, string $programPublicId): string
+{
+    $name='mg_recurring_'.substr(hash('sha256',$userId.'|'.$agentId.'|'.$programPublicId),0,40);
+    $stmt=$pdo->prepare('SELECT GET_LOCK(?,5)');
+    $stmt->execute([$name]);
+    if((int)$stmt->fetchColumn()!==1) throw new RuntimeException('Recurring program is busy. Refresh and try again.');
+    return $name;
+}
+
+function mg_task_agent_recurring_unlock(PDO $pdo, string $name): void
+{
+    try {$stmt=$pdo->prepare('SELECT RELEASE_LOCK(?)');$stmt->execute([$name]);} catch(Throwable) {}
+}
+
 function mg_task_agent_recurring_create(PDO $pdo, int $userId, int $agentId, array $input): array
 {
     mg_task_agent_recurring_require_schema($pdo);
@@ -147,7 +161,11 @@ function mg_task_agent_recurring_create(PDO $pdo, int $userId, int $agentId, arr
 function mg_task_agent_recurring_update(PDO $pdo, int $userId, int $agentId, string $programPublicId, string $action, string $expectedStatus = ''): array
 {
     mg_task_agent_recurring_internal_id($pdo,$userId,$agentId,$programPublicId);
-    $program=mg_personal_workflows_update_recurring_program($pdo,$userId,$programPublicId,$action,$expectedStatus !== '' ? $expectedStatus : null);
+    $current=mg_task_agent_recurring_program($pdo,$userId,$agentId,$programPublicId);
+    if($expectedStatus!=='' && !hash_equals((string)$current['status'],$expectedStatus)) {
+        throw new RuntimeException('The recurring program changed. Refresh it before updating its status.');
+    }
+    $program=mg_personal_workflows_update_recurring_program($pdo,$userId,$programPublicId,$action);
     mg_audit('multi_agent.recurring_program_updated','agent',['agent_id'=>$agentId,'program_id'=>$programPublicId,'action'=>$action,'used_ai'=>false,'commerce_executed'=>false],$userId);
     return mg_task_agent_recurring_program($pdo,$userId,$agentId,(string)$program['id']);
 }
@@ -156,7 +174,16 @@ function mg_task_agent_recurring_generate(PDO $pdo, int $userId, int $agentId, s
 {
     mg_task_agent_recurring_internal_id($pdo,$userId,$agentId,$programPublicId);
     if($expectedNextRunAt==='') throw new InvalidArgumentException('Refresh the recurring program before generating its next draft.');
-    $result=mg_personal_workflows_generate_recurring_draft($pdo,$userId,$programPublicId,$expectedNextRunAt);
+    $lock=mg_task_agent_recurring_lock($pdo,$userId,$agentId,$programPublicId);
+    try {
+        $current=mg_task_agent_recurring_program($pdo,$userId,$agentId,$programPublicId);
+        if(!hash_equals((string)$current['next_run_at'],$expectedNextRunAt)) {
+            throw new RuntimeException('The recurring program changed. Refresh it before generating the next draft.');
+        }
+        $result=mg_personal_workflows_generate_recurring_draft($pdo,$userId,$programPublicId);
+    } finally {
+        mg_task_agent_recurring_unlock($pdo,$lock);
+    }
     mg_audit('multi_agent.recurring_program_draft_generated','agent',['agent_id'=>$agentId,'program_id'=>$programPublicId,'used_ai'=>false,'commerce_executed'=>false],$userId);
     return ['generation'=>$result,'program'=>mg_task_agent_recurring_program($pdo,$userId,$agentId,$programPublicId)];
 }
@@ -165,7 +192,12 @@ function mg_task_agent_recurring_skip(PDO $pdo, int $userId, int $agentId, strin
 {
     mg_task_agent_recurring_internal_id($pdo,$userId,$agentId,$programPublicId);
     if($expectedNextRunAt==='') throw new InvalidArgumentException('Refresh the recurring program before skipping its next cycle.');
-    $result=mg_personal_workflows_skip_recurring_run($pdo,$userId,$programPublicId,$expectedNextRunAt);
+    $lock=mg_task_agent_recurring_lock($pdo,$userId,$agentId,$programPublicId);
+    try {
+        $result=mg_personal_workflows_skip_recurring_run($pdo,$userId,$programPublicId,$expectedNextRunAt);
+    } finally {
+        mg_task_agent_recurring_unlock($pdo,$lock);
+    }
     mg_audit('multi_agent.recurring_program_cycle_skipped','agent',['agent_id'=>$agentId,'program_id'=>$programPublicId,'used_ai'=>false,'commerce_executed'=>false],$userId);
     return ['skip'=>$result,'program'=>mg_task_agent_recurring_program($pdo,$userId,$agentId,$programPublicId)];
 }
