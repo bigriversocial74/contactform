@@ -7,9 +7,11 @@ on:
       - 'agent.php'
       - 'api/agents/runtime.php'
       - 'includes/multi-agent-runtime.php'
+      - 'includes/task-agent-ai-synthesis.php'
       - 'includes/task-agent-shortlist.php'
       - 'includes/task-agent-shortlist-router.php'
       - 'assets/js/multi-agent-runtime.js'
+      - 'assets/js/task-agent-shortlist-runtime.js'
       - 'assets/css/task-agent-shortlist-v1.css'
       - 'database/20260720_task_agent_phase3_shortlist_v1.sql'
       - 'tests/phpunit/TaskAgentPhase31DiscoveryShortlistV1ContractTest.php'
@@ -46,6 +48,7 @@ jobs:
           php -l agent.php
           php -l api/agents/runtime.php
           php -l includes/multi-agent-runtime.php
+          php -l includes/task-agent-ai-synthesis.php
           php -l includes/task-agent-shortlist.php
           php -l includes/task-agent-shortlist-router.php
           php -l tests/phpunit/TaskAgentPhase31DiscoveryShortlistV1ContractTest.php
@@ -55,7 +58,9 @@ jobs:
           php -l tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
           php -l tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
       - name: JavaScript syntax
-        run: node --check assets/js/multi-agent-runtime.js
+        run: |
+          node --check assets/js/multi-agent-runtime.js
+          node --check assets/js/task-agent-shortlist-runtime.js
       - name: Phase 3.1 contract
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase31DiscoveryShortlistV1ContractTest.php
       - name: Existing agent regressions
