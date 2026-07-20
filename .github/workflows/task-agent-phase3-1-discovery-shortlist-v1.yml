@@ -73,7 +73,13 @@ jobs:
         run: vendor/bin/phpunit tests/phpunit/TaskAgentContextUpcomingEventsV1ContractTest.php
       - name: Permission-safe memory regression
         run: vendor/bin/phpunit tests/phpunit/TaskAgentMemoryPermissionSafeRetrievalV1ContractTest.php
-      - name: Contextual chat regression
-        run: vendor/bin/phpunit tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+      - name: Contextual router boundary
+        run: vendor/bin/phpunit --filter testDeterministicRouterOwnsContextAndReviewableActions tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+      - name: Contextual runtime and AI boundary
+        run: vendor/bin/phpunit --filter testDeterministicRuntimePrecedesExplicitAiSynthesis tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+      - name: Contextual canvas boundary
+        run: vendor/bin/phpunit --filter testCanvasKeepsWritesUserControlledAndLinksInternal tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+      - name: Contextual API boundary
+        run: vendor/bin/phpunit --filter testCanonicalApiRemainsOwnerScopedCsrfProtectedAndApprovalFirst tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
       - name: Phase 2 production regression
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
