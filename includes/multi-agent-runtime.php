@@ -8,11 +8,13 @@ require_once __DIR__ . '/task-agent-shortlist.php';
 require_once __DIR__ . '/task-agent-plan-selection.php';
 require_once __DIR__ . '/task-agent-delivery-preparation.php';
 require_once __DIR__ . '/task-agent-order-tracking.php';
+require_once __DIR__ . '/task-agent-lifecycle-tracking.php';
 require_once __DIR__ . '/task-agent-intent-router.php';
 require_once __DIR__ . '/task-agent-shortlist-router.php';
 require_once __DIR__ . '/task-agent-plan-selection-router.php';
 require_once __DIR__ . '/task-agent-delivery-router.php';
 require_once __DIR__ . '/task-agent-order-tracking-router.php';
+require_once __DIR__ . '/task-agent-lifecycle-router.php';
 require_once __DIR__ . '/task-agent-ai-synthesis.php';
 require_once dirname(__DIR__) . '/api/agents/_agent.php';
 
@@ -141,6 +143,7 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
     $selections = mg_task_agent_plan_selections($pdo, $userId, $agentId, 20);
     $delivery = mg_task_agent_delivery_preparations($pdo, $userId, $agentId, 20);
     $orders = mg_task_agent_order_tracking_items($pdo, $userId, $agentId, 20);
+    $lifecycle = mg_task_agent_lifecycle_items($pdo, $userId, $agentId, 30);
 
     $context = [
         'agent' => [
@@ -160,6 +163,9 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
         'order_tracking' => $orders,
         'order_tracking_for_model' => mg_task_agent_order_tracking_for_model($orders),
         'order_tracking_schema_ready' => mg_task_agent_order_tracking_schema_ready($pdo),
+        'lifecycle_tracking' => $lifecycle,
+        'lifecycle_tracking_for_model' => mg_task_agent_lifecycle_for_model($lifecycle),
+        'lifecycle_schema_ready' => mg_task_agent_lifecycle_schema_ready($pdo),
         'onboarding' => mg_multi_agent_runtime_onboarding($pdo, $userId, $agentId),
     ];
 
@@ -169,6 +175,7 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
         $snapshot['summary']['selected_plan_products'] = count($selections);
         $snapshot['summary']['delivery_preparations'] = count($delivery);
         $snapshot['summary']['tracked_purchases'] = count($orders);
+        $snapshot['summary']['tracked_lifecycle_items'] = count($lifecycle);
         $context['system_snapshot'] = $snapshot;
         $context['upcoming_dates'] = $snapshot['upcoming'];
         $context['active_plans'] = $snapshot['plans'];
@@ -185,7 +192,8 @@ function mg_multi_agent_runtime_model_context(array $context, string $message = 
         mg_task_agent_shortlist_model_context($context),
         mg_task_agent_plan_selection_model_context($context),
         mg_task_agent_delivery_model_context($context),
-        mg_task_agent_order_tracking_model_context($context)
+        mg_task_agent_order_tracking_model_context($context),
+        mg_task_agent_lifecycle_model_context($context)
     );
 }
 
@@ -193,7 +201,7 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
 {
     if (($template['key'] ?? '') === 'birthday_occasion') {
         $next = ($context['upcoming_dates'] ?? [])[0] ?? null;
-        $reply = 'I can search local gifts, manage a shortlist, attach a reviewed product to a gift plan, prepare a cart handoff, create recipient permission requests, manage prepare-only send-later checkpoints, and track matching purchases and PPPM issuance without using AI.';
+        $reply = 'I can search local gifts, manage plans and prepare-only delivery, track purchase and PPPM issuance, and explain Action Center lifecycle capabilities without using AI. Lifecycle mutations always require an explicit Action Center handoff.';
         if (is_array($next)) {
             $reply .= ' Your next saved occasion is ' . (string)($next['label'] ?? 'an occasion')
                 . ' on ' . (string)($next['event_date'] ?? 'the saved date') . '.';
@@ -203,9 +211,9 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
             'cards' => [[
                 'type' => 'question',
                 'title' => 'Choose a deterministic action',
-                'body' => 'Name a recipient, selected plan, send-later preparation, order, receipt, or PPPM issuance state.',
+                'body' => 'Ask about a gift lifecycle, Inbox, Sent, Claimed, send, regift, claim, redemption, follow-up, or message capability.',
                 'action' => 'seed_prompt',
-                'prompt' => 'Show purchase and PPPM status for my selected gift plan.',
+                'prompt' => 'Show lifecycle status for my selected gifts.',
                 'review_payload' => [],
             ]],
         ];
@@ -246,7 +254,8 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
     );
     $history = mg_multi_agent_runtime_messages($pdo, $userId, (int)$agent['id'], (int)$thread['id'], 8);
 
-    $route = mg_task_agent_order_tracking_route($message, $context, $template)
+    $route = mg_task_agent_lifecycle_route($message, $context, $template)
+        ?? mg_task_agent_order_tracking_route($message, $context, $template)
         ?? mg_task_agent_delivery_route($message, $context, $template)
         ?? mg_task_agent_plan_selection_route($message, $context, $template)
         ?? mg_task_agent_shortlist_route($message, $context, $template)

@@ -46,7 +46,7 @@ final class TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest exten
         $runtime=file_get_contents($root.'/includes/multi-agent-runtime.php');
         $router=file_get_contents($root.'/includes/task-agent-order-tracking-router.php');
         foreach([$runtime,$router] as $value)self::assertIsString($value);
-        $order=strpos($runtime,'$route = mg_task_agent_order_tracking_route');
+        $order=strpos($runtime,'?? mg_task_agent_order_tracking_route');
         $delivery=strpos($runtime,'?? mg_task_agent_delivery_route');
         $plan=strpos($runtime,'?? mg_task_agent_plan_selection_route');
         $ai=strpos($runtime,'$synthesis = mg_task_agent_ai_synthesis');
