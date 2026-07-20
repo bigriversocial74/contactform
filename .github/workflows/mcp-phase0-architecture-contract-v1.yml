@@ -1,0 +1,53 @@
+name: MCP Phase 0 Architecture Contract v1
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'docs/MICROGIFTER_MCP_AUTOMATION_PLATFORM_SPEC.md'
+      - 'docs/MICROGIFTER_MCP_PHASE0_ARCHITECTURE_CONTRACT_LOCK.md'
+      - 'config/mcp_phase0_release.php'
+      - 'scripts/validate_mcp_phase0_contract.php'
+      - 'tests/phpunit/McpPhase0ArchitectureContractV1Test.php'
+      - 'composer.json'
+      - '.github/workflows/mcp-phase0-architecture-contract-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: validate (${{ matrix.php }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l config/mcp_phase0_release.php
+          php -l scripts/validate_mcp_phase0_contract.php
+          php -l tests/phpunit/McpPhase0ArchitectureContractV1Test.php
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: MCP Phase 0 executable contract
+        run: php scripts/validate_mcp_phase0_contract.php
+      - name: MCP Phase 0 PHPUnit contract
+        run: vendor/bin/phpunit tests/phpunit/McpPhase0ArchitectureContractV1Test.php
+      - name: Task Agent Phase 4 release regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase46ProductionQaV1ContractTest.php tests/phpunit/TaskAgentPhase46SafetyBoundaryV1ContractTest.php
+      - name: Approval Center regression
+        run: vendor/bin/phpunit tests/phpunit/ProductionAgentPlanReviewApprovalCenterSection2Test.php
+      - name: Repository production-quality audit
+        run: composer audit-repository-quality
