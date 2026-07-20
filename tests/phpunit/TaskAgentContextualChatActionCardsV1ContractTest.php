@@ -41,9 +41,9 @@ final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
         $router = file_get_contents($root . '/includes/task-agent-intent-router.php');
         foreach ([$runtime, $ai, $router] as $value) self::assertIsString($value);
 
-        $shortlistRoute = strpos($runtime, 'mg_task_agent_shortlist_route');
-        $generalRoute = strpos($runtime, 'mg_task_agent_route');
-        $synthesis = strpos($runtime, 'mg_task_agent_ai_synthesis');
+        $shortlistRoute = strpos($runtime, '$route = mg_task_agent_shortlist_route');
+        $generalRoute = strpos($runtime, '?? mg_task_agent_route');
+        $synthesis = strpos($runtime, '$synthesis = mg_task_agent_ai_synthesis');
         self::assertNotFalse($shortlistRoute);
         self::assertNotFalse($generalRoute);
         self::assertNotFalse($synthesis);
@@ -51,7 +51,7 @@ final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
         self::assertLessThan($synthesis, $generalRoute);
 
         foreach ([
-            'mg_task_agent_model_context',
+            'mg_multi_agent_runtime_model_context',
             'mg_task_agent_sanitize_model_cards',
             'mg_ai_credit_preflight',
             'mg_ai_credit_consume',
