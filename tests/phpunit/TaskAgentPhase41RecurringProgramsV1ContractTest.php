@@ -17,7 +17,8 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
         $migration=file_get_contents($this->root.'/database/20260720_task_agent_phase4_v1.sql');
         $canonicalSchema=file_get_contents($this->root.'/database/20260714_personal_gifting_workflows_phase3.sql');
         $service=file_get_contents($this->root.'/includes/task-agent-recurring-programs.php');
-        foreach([$migration,$canonicalSchema,$service] as $source)self::assertIsString($source);
+        $links=file_get_contents($this->root.'/includes/task-agent-recurring-program-links.php');
+        foreach([$migration,$canonicalSchema,$service,$links] as $source)self::assertIsString($source);
 
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS user_recurring_gift_programs',$canonicalSchema);
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS user_recurring_gift_runs',$canonicalSchema);
@@ -30,22 +31,27 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
             'mg_personal_workflows_generate_recurring_draft',
             'mg_personal_workflows_skip_recurring_run',
         ] as $authority)self::assertStringContainsString($authority,$service);
+        foreach(['mg_personal_workflows_recurring_programs','mg_task_agent_recurring_link_existing','No program data will be copied','canonical_reuse'] as $marker){
+            self::assertStringContainsString($marker,$links);
+        }
     }
 
     public function testProgramsAreScopedToAuthenticatedOwnerAndSelectedAgent(): void
     {
         $service=file_get_contents($this->root.'/includes/task-agent-recurring-programs.php');
+        $links=file_get_contents($this->root.'/includes/task-agent-recurring-program-links.php');
         $migration=file_get_contents($this->root.'/database/20260720_task_agent_phase4_v1.sql');
-        foreach([$service,$migration] as $source)self::assertIsString($source);
+        foreach([$service,$links,$migration] as $source)self::assertIsString($source);
         foreach([
             'WHERE link.owner_user_id=? AND link.agent_id=?',
             'rp.owner_user_id=link.owner_user_id',
             'link.owner_user_id=? AND link.agent_id=? AND rp.public_id=?',
+            'WHERE owner_user_id=? AND public_id=?',
             'agent_id,owner_user_id,program_id',
             'fk_multi_agent_recurring_link_agent',
             'fk_multi_agent_recurring_link_owner',
             'fk_multi_agent_recurring_link_program',
-        ] as $marker)self::assertStringContainsString($marker,$service.$migration);
+        ] as $marker)self::assertStringContainsString($marker,$service.$links.$migration);
     }
 
     public function testRecurringCyclesRemainDraftOnlyApprovalFirstAndNonFinancial(): void
@@ -60,7 +66,7 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
             "'generation_mode'=>'draft_plan_only'",
             "'approval_required'=>true",
             "'commerce_executed'=>false",
-            "status='skipped'",
+            "NULL,'skipped'",
         ] as $marker)self::assertStringContainsString($marker,$schema.$service.$router.$skip);
         foreach([
             'commerce_checkout','payment_method','stripe','capture_payment','send_gift','claim_code','redemption_code',
@@ -77,6 +83,7 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
         foreach([$service,$skip] as $source)self::assertIsString($source);
         foreach([
             'GET_LOCK','RELEASE_LOCK','expectedNextRunAt','expectedStatus','hash_equals',
+            'Refresh the recurring program before skipping its next cycle.',
             'SELECT * FROM user_recurring_gift_programs WHERE owner_user_id=? AND public_id=? LIMIT 1 FOR UPDATE',
             'idempotency_key','run_sequence','mg_personal_workflows_next_run',
         ] as $marker)self::assertStringContainsString($marker,$service.$skip);
@@ -110,8 +117,10 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
         self::assertIsString($api);
         foreach([
             "'recurring_programs'=>\$context['recurring_programs']??[]",
+            "'available_recurring_programs'=>\$context['available_recurring_programs']??[]",
             "'recurring_schema_ready'=>\$context['recurring_schema_ready']??false",
             "action==='create_recurring_program'",
+            "action==='link_recurring_program'",
             "action==='update_recurring_program'",
             "action==='generate_recurring_draft'",
             "action==='skip_recurring_run'",
@@ -143,9 +152,9 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
         $page=file_get_contents($this->root.'/agent.php');
         foreach([$script,$page] as $source)self::assertIsString($source);
         foreach([
-            'recurring_program_builder','recurring_gift_program','create_recurring_program','update_recurring_program',
+            'recurring_program_builder','recurring_program_link','recurring_gift_program','create_recurring_program','link_recurring_program','update_recurring_program',
             'generate_recurring_draft','skip_recurring_run','expected_status','expected_next_run_at',
-            'Draft plans only','Zero AI credits','No automatic checkout',
+            'Draft plans only','Zero AI credits','No automatic checkout','No copied data',
         ] as $marker)self::assertStringContainsString($marker,$script);
         self::assertStringContainsString('/assets/js/task-agent-recurring-programs-runtime.js?v=1.0.0',$page);
         self::assertStringContainsString('/assets/css/task-agent-recurring-programs-v1.css?v=1.0.0',$page);
