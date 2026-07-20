@@ -22,6 +22,7 @@ $page_styles = [
     '/assets/css/personal-agent-full-canvas.css?v=1.0.0',
     '/assets/css/personal-agent-inline-intro.css?v=1.0.0',
     '/assets/css/personal-agent-chat-history.css?v=1.4.0',
+    '/assets/css/unified-agent-sidebar-v2.css?v=1.0.0',
     '/assets/css/agent-mode-switch.css?v=1.0.0',
     '/assets/css/personal-agent-marketplace-cards.css?v=1.1.0',
     '/assets/css/personal-agent-opportunity-actions.css?v=1.0.0',
@@ -36,7 +37,7 @@ $page_styles = [
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
     '/assets/css/multi-agent-workspace.css?v=1.0.0',
     '/assets/css/multi-agent-workspace-state.css?v=1.0.0',
-    '/assets/css/multi-agent-runtime.css?v=1.0.0',
+    '/assets/css/multi-agent-runtime.css?v=1.1.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
