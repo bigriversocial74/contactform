@@ -134,3 +134,56 @@ function mg_task_agent_recurring_model_context(array $context): array
         is_array($context['recurring_programs']??null)?$context['recurring_programs']:[]
     )];
 }
+
+function mg_task_agent_recurring_append_context(PDO $pdo,int $userId,array $agent,array $context): array
+{
+    $programs=mg_task_agent_recurring_programs($pdo,$userId,(int)$agent['id'],40);
+    $context['recurring_programs']=$programs;
+    $context['recurring_programs_for_model']=mg_task_agent_recurring_for_model($programs);
+    $context['recurring_schema_ready']=mg_task_agent_recurring_schema_ready($pdo);
+    if(is_array($context['system_snapshot']['summary']??null)){
+        $context['system_snapshot']['summary']['recurring_programs']=count($programs);
+        $context['system_snapshot']['summary']['recurring_programs_due']=count(array_filter($programs,static fn(array $program):bool=>!empty($program['due'])));
+    }
+    return $context;
+}
+
+function mg_task_agent_recurring_chat(PDO $pdo,int $userId,array $agent,array $input): ?array
+{
+    $message=mg_personal_agent_text($input['message']??'',3000);
+    if($message===''||mg_task_agent_recurring_intent($message)==='')return null;
+    $template=mg_multi_agent_runtime_template($agent);
+    if(($template['key']??'')!=='birthday_occasion')return null;
+    mg_multi_agent_runtime_require_schema($pdo);
+    if(($agent['lifecycle_status']??'')!=='active')throw new RuntimeException('Agent is not active.');
+    if(($agent['runtime_status']??'')==='paused')throw new RuntimeException('Agent is paused. Resume it before chatting.');
+
+    $thread=mg_multi_agent_runtime_thread($pdo,$agent,$userId,mg_personal_agent_text($input['thread_id']??'',80));
+    $context=mg_task_agent_recurring_append_context($pdo,$userId,$agent,mg_multi_agent_runtime_context($pdo,$userId,$agent,$template));
+    $userMessage=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'user',$message,[],$context);
+    $route=mg_task_agent_recurring_route($message,$context,$template);
+    if(!$route||!is_array($route['result']??null))return null;
+    $result=$route['result'];
+    $assistant=mg_multi_agent_runtime_store($pdo,$userId,(int)$agent['id'],(int)$thread['id'],'assistant',(string)$result['reply'],is_array($result['cards']??null)?$result['cards']:[],$context);
+    mg_audit('multi_agent.chat_completed','agent',[
+        'agent_id'=>(string)$agent['public_id'],
+        'thread_id'=>(string)$thread['public_id'],
+        'response_source'=>'system_query',
+        'model_key'=>'system_query',
+        'ai_reason'=>'',
+        'tool'=>'recurring_programs',
+        'used_ai'=>false,
+        'ai_tokens_total'=>0,
+    ],$userId);
+    return [
+        'thread'=>['id'=>(string)$thread['public_id'],'title'=>(string)$thread['title']],
+        'user_message'=>$userMessage,
+        'assistant_message'=>$assistant,
+        'used_ai'=>false,
+        'response_source'=>'system_query',
+        'ai_reason'=>'',
+        'model_key'=>'',
+        'ai_tokens_used'=>['input'=>0,'output'=>0,'total'=>0],
+        'ai_credits'=>mg_ai_credit_snapshot($pdo,$userId,'anthropic'),
+    ];
+}
