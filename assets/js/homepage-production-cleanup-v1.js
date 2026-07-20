@@ -24,12 +24,32 @@
     link.innerHTML = `${route[1]} <span>→</span>`;
   });
 
+  const hero = document.querySelector('.hero-scroll');
+  const growthStage = document.getElementById('growthStage');
+  if (growthStage) {
+    growthStage.classList.add('hero-product-stage');
+    growthStage.innerHTML = `
+      <div class="hero-product-showcase" aria-label="Microgifter product workspace previews">
+        <figure class="hero-product-shot hero-product-shot--agent">
+          <img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async">
+          <figcaption>Agent chat</figcaption>
+        </figure>
+        <figure class="hero-product-shot hero-product-shot--inbox">
+          <img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async">
+          <figcaption>Gift inbox</figcaption>
+        </figure>
+        <figure class="hero-product-shot hero-product-shot--crm">
+          <img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async">
+          <figcaption>Merchant CRM</figcaption>
+        </figure>
+      </div>`;
+  }
+
+  const showcaseCards = growthStage ? [...growthStage.querySelectorAll('.hero-product-shot')] : [];
   const section = document.querySelector('.final-cta');
   const stage = section?.querySelector('.final-cta__stage');
   const orb = section?.querySelector('.final-cta__orb');
   const pricing = section?.querySelector('.pricing-reveal');
-  if (!section || !stage || !orb || !pricing) return;
-
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const desktop = window.matchMedia('(min-width: 821px)');
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -37,8 +57,40 @@
   const range = (value, start, end) => smooth(clamp((value - start) / (end - start)));
   let frame = 0;
 
+  const renderHeroShowcase = () => {
+    if (!hero || !growthStage || !showcaseCards.length) return;
+    if (reduced.matches) {
+      showcaseCards.forEach(card => {
+        card.style.removeProperty('opacity');
+        card.style.removeProperty('transform');
+        card.style.removeProperty('filter');
+      });
+      return;
+    }
+
+    const rect = hero.getBoundingClientRect();
+    const distance = Math.max(1, hero.offsetHeight - window.innerHeight);
+    const progress = clamp(-rect.top / distance);
+    const stageProgress = range(progress, .72, .91);
+
+    showcaseCards.forEach((card, index) => {
+      const delay = index * .16;
+      const local = smooth(clamp((stageProgress - delay) / Math.max(.01, 1 - delay)));
+      const direction = index === 0 ? -1 : (index === 2 ? 1 : 0);
+      const x = direction * (1 - local) * 90;
+      const y = (1 - local) * (index === 1 ? 62 : 38);
+      const rotation = direction * (1 - local) * 6;
+      card.style.opacity = local.toFixed(3);
+      card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${(.9 + local * .1).toFixed(4)}) rotate(${rotation.toFixed(2)}deg)`;
+      card.style.filter = `blur(${((1 - local) * 9).toFixed(2)}px)`;
+    });
+  };
+
   const render = () => {
     frame = 0;
+    renderHeroShowcase();
+
+    if (!section || !stage || !orb || !pricing) return;
     if (!desktop.matches || reduced.matches) {
       orb.style.removeProperty('transform');
       orb.style.removeProperty('opacity');
