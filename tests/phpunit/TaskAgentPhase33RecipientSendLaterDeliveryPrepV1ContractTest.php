@@ -58,7 +58,7 @@ final class TaskAgentPhase33RecipientSendLaterDeliveryPrepV1ContractTest extends
         $runtime=file_get_contents($root.'/includes/multi-agent-runtime.php');
         $router=file_get_contents($root.'/includes/task-agent-delivery-router.php');
         foreach([$runtime,$router] as $value)self::assertIsString($value);
-        $delivery=strpos($runtime,'$route = mg_task_agent_delivery_route');
+        $delivery=strpos($runtime,'?? mg_task_agent_delivery_route');
         $plan=strpos($runtime,'?? mg_task_agent_plan_selection_route');
         $shortlist=strpos($runtime,'?? mg_task_agent_shortlist_route');
         $ai=strpos($runtime,'$synthesis = mg_task_agent_ai_synthesis');
