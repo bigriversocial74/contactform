@@ -58,8 +58,15 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
         <button class="<?= mg_e($sidebarLinkClass('merchant-agent')) ?>" type="button" data-merchant-agent-new-chat><span aria-hidden="true">+</span><strong>New Merchant Chat</strong></button>
       <?php elseif ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
-        <!-- Compatibility marker retained for existing chat-history contracts: data-personal-agent-new-chat -->
-        <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-open-agent-selector><span aria-hidden="true">+</span><strong>New Chat</strong></button>
+        <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-personal-agent-new-chat><span aria-hidden="true">+</span><strong>New Chat</strong></button>
+        <?php foreach ($sidebarAgents as $sidebarAgent): ?>
+          <?php $config = is_array($sidebarAgent['config'] ?? null) ? $sidebarAgent['config'] : []; $template = $sidebarTemplates[(string) ($config['template_key'] ?? '')] ?? []; ?>
+          <div class="mg-personal-chat-row<?= $selectedSidebarAgentId === (string) $sidebarAgent['id'] ? ' is-active' : '' ?><?= ($sidebarAgent['runtime_status'] ?? '') === 'paused' ? ' is-paused' : '' ?>" data-sidebar-agent-row="<?= mg_e((string) $sidebarAgent['id']) ?>">
+            <a class="mg-personal-chat-open" href="/agent.php?agent_id=<?= rawurlencode((string) $sidebarAgent['id']) ?>" data-sidebar-agent-id="<?= mg_e((string) $sidebarAgent['id']) ?>"><strong><?= mg_e((string) ($template['icon'] ?? '✦')) ?> <?= mg_e((string) $sidebarAgent['name']) ?></strong><span><?= ($sidebarAgent['runtime_status'] ?? '') === 'paused' ? 'Paused agent' : 'Specialized agent' ?></span></a>
+            <button class="mg-personal-chat-delete" type="button" data-sidebar-agent-manage="<?= mg_e((string) $sidebarAgent['id']) ?>" aria-label="Manage <?= mg_e((string) $sidebarAgent['name']) ?>">•••</button>
+          </div>
+        <?php endforeach; ?>
+        <button class="mg-personal-chat-action" type="button" data-open-agent-selector><span aria-hidden="true">✦</span><strong>Add Agent</strong></button>
       <?php else: ?>
         <a class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" href="<?= mg_e($personalAgentHref) ?>"><span aria-hidden="true">+</span><strong>New Chat</strong></a>
       <?php endif; ?>
@@ -68,22 +75,6 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
     </nav>
 
     <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
-
-    <?php if ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
-      <section class="mg-sidebar-agent-list" aria-label="My agents">
-        <div class="mg-sidebar-agent-list-head"><span>My agents</span><button type="button" data-open-agent-selector aria-label="Add an agent">+</button></div>
-        <article class="mg-sidebar-agent-row<?= $selectedSidebarAgentId === '' ? ' is-active' : '' ?>">
-          <a class="mg-sidebar-agent-open" href="/agent.php"><span aria-hidden="true">✦</span><div><strong>Agent</strong><small>Default workspace</small></div></a>
-        </article>
-        <?php foreach ($sidebarAgents as $sidebarAgent): ?>
-          <?php $config = is_array($sidebarAgent['config'] ?? null) ? $sidebarAgent['config'] : []; $template = $sidebarTemplates[(string) ($config['template_key'] ?? '')] ?? []; ?>
-          <article class="mg-sidebar-agent-row<?= $selectedSidebarAgentId === (string) $sidebarAgent['id'] ? ' is-active' : '' ?><?= ($sidebarAgent['runtime_status'] ?? '') === 'paused' ? ' is-paused' : '' ?>">
-            <a class="mg-sidebar-agent-open" href="/agent.php?agent_id=<?= rawurlencode((string) $sidebarAgent['id']) ?>" data-sidebar-agent-id="<?= mg_e((string) $sidebarAgent['id']) ?>"><span aria-hidden="true"><?= mg_e((string) ($template['icon'] ?? '✦')) ?></span><div><strong><?= mg_e((string) $sidebarAgent['name']) ?></strong><small><?= ($sidebarAgent['runtime_status'] ?? '') === 'paused' ? 'Paused' : 'Agent workspace' ?></small></div></a>
-            <button class="mg-sidebar-agent-manage" type="button" data-sidebar-agent-manage="<?= mg_e((string) $sidebarAgent['id']) ?>" aria-label="Manage <?= mg_e((string) $sidebarAgent['name']) ?>">•••</button>
-          </article>
-        <?php endforeach; ?>
-      </section>
-    <?php endif; ?>
 
     <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
       <div class="mg-personal-chat-history" data-merchant-agent-thread-groups aria-live="polite"><div class="mg-personal-chat-loading">Loading merchant chats…</div></div>
