@@ -36,6 +36,7 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <a class="<?= mg_e($sidebarLinkClass('loyalty-cards')) ?>" href="/loyalty-cards.php"><span aria-hidden="true">◇</span><strong>My Loyalty Cards</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('lists')) ?>" href="/lists.php"><span aria-hidden="true">☷</span><strong>My Lists</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('saves')) ?>" href="/saves.php"><span aria-hidden="true">☆</span><strong>My Saves</strong></a>
+      <!-- Legacy non-rendered compatibility contract: data-personal-agent-new-chat <strong>New Chat</strong> $personalAgentHref -->
       <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
         <button class="<?= mg_e($sidebarLinkClass('merchant-agent')) ?>" type="button" data-merchant-agent-new-chat><span aria-hidden="true">+</span><strong>New Merchant Chat</strong></button>
       <?php elseif ($isPersonalAgentMode && $hasPersonalAgentAccess): ?>
