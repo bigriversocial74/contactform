@@ -21,7 +21,7 @@ final class TaskAgentMemoryPermissionSafeRetrievalV1ContractTest extends TestCas
         self::assertStringContainsString("status='archived'", $memory);
         self::assertStringContainsString('Sensitive credentials and private contact details cannot be stored in Agent Memory.', $memory);
         self::assertStringContainsString('mg_task_agent_memory_save', $api);
-        self::assertStringContainsString("$action==='archive_memory'", $api);
+        self::assertStringContainsString("\$action==='archive_memory'", $api);
     }
 
     public function testDeterministicRetrievalRunsBeforeAnthropicAndUsesSafeContext(): void
