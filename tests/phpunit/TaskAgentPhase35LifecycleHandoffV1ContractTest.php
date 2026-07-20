@@ -63,10 +63,10 @@ final class TaskAgentPhase35LifecycleHandoffV1ContractTest extends TestCase
         $runtime=file_get_contents($root.'/includes/multi-agent-runtime.php');
         $router=file_get_contents($root.'/includes/task-agent-lifecycle-router.php');
         foreach([$runtime,$router] as $value)self::assertIsString($value);
-        $lifecycle=strpos($runtime,'$route=mg_task_agent_lifecycle_route');
-        $order=strpos($runtime,'??mg_task_agent_order_tracking_route');
-        $delivery=strpos($runtime,'??mg_task_agent_delivery_route');
-        $ai=strpos($runtime,'$synthesis=mg_task_agent_ai_synthesis');
+        $lifecycle=strpos($runtime,'$route = mg_task_agent_lifecycle_route');
+        $order=strpos($runtime,'?? mg_task_agent_order_tracking_route');
+        $delivery=strpos($runtime,'?? mg_task_agent_delivery_route');
+        $ai=strpos($runtime,'$synthesis = mg_task_agent_ai_synthesis');
         self::assertNotFalse($lifecycle);self::assertNotFalse($order);self::assertNotFalse($delivery);self::assertNotFalse($ai);
         self::assertLessThan($order,$lifecycle);
         self::assertLessThan($delivery,$order);
