@@ -67,10 +67,13 @@ jobs:
         run: php scripts/validate_migration_manifest.php
       - name: Phase 3.1 contract
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase31DiscoveryShortlistV1ContractTest.php
-      - name: Existing agent regressions
-        run: |
-          vendor/bin/phpunit tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
-          vendor/bin/phpunit tests/phpunit/TaskAgentContextUpcomingEventsV1ContractTest.php
-          vendor/bin/phpunit tests/phpunit/TaskAgentMemoryPermissionSafeRetrievalV1ContractTest.php
-          vendor/bin/phpunit tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
-          vendor/bin/phpunit tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
+      - name: Runtime memory regression
+        run: vendor/bin/phpunit tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
+      - name: Upcoming context regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentContextUpcomingEventsV1ContractTest.php
+      - name: Permission-safe memory regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentMemoryPermissionSafeRetrievalV1ContractTest.php
+      - name: Contextual chat regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+      - name: Phase 2 production regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
