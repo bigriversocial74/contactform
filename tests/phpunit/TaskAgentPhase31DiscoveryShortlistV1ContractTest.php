@@ -42,10 +42,10 @@ final class TaskAgentPhase31DiscoveryShortlistV1ContractTest extends TestCase
         foreach([$api,$core,$extension,$page] as $value)self::assertIsString($value);
         foreach(['mg_agent_require_owned','mg_require_csrf_for_write','if($action===\'discover_products\')','if($action===\'add_shortlist\')','if($action===\'remove_shortlist\')',"'used_ai'=>false"] as $marker)self::assertStringContainsString($marker,$api);
         self::assertStringContainsString('MicrogifterTaskAgentShortlist',$core);
-        foreach(['data-shortlist-product','data-shortlist-remove',"action: 'add_shortlist'","action: 'remove_shortlist'",'Review product','Shortlisted'] as $marker)self::assertStringContainsString($marker,$extension);
+        foreach(['data-shortlist-product','data-shortlist-remove',"action:'add_shortlist'","action:'remove_shortlist'",'Review product','Shortlisted'] as $marker)self::assertStringContainsString(str_replace(' ', '', $marker),str_replace(' ', '', $extension));
         self::assertStringContainsString('/assets/js/multi-agent-runtime.js?v=1.7.0',$page);
-        self::assertStringContainsString('/assets/js/task-agent-shortlist-runtime.js?v=1.0.0',$page);
-        self::assertStringContainsString('/assets/css/task-agent-shortlist-v1.css?v=1.0.0',$page);
+        self::assertStringContainsString('/assets/js/task-agent-shortlist-runtime.js?v=1.1.0',$page);
+        self::assertStringContainsString('/assets/css/task-agent-shortlist-v1.css?v=1.1.0',$page);
         foreach(['order-checkout-session','action-center-send.php','microgift-claim.php'] as $forbidden) {
             self::assertStringNotContainsString($forbidden,$api);
             self::assertStringNotContainsString($forbidden,$extension);

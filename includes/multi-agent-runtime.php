@@ -5,8 +5,10 @@ require_once __DIR__ . '/personal-gifting-agent.php';
 require_once __DIR__ . '/task-agent-context.php';
 require_once __DIR__ . '/task-agent-memory.php';
 require_once __DIR__ . '/task-agent-shortlist.php';
+require_once __DIR__ . '/task-agent-plan-selection.php';
 require_once __DIR__ . '/task-agent-intent-router.php';
 require_once __DIR__ . '/task-agent-shortlist-router.php';
+require_once __DIR__ . '/task-agent-plan-selection-router.php';
 require_once __DIR__ . '/task-agent-ai-synthesis.php';
 require_once dirname(__DIR__) . '/api/agents/_agent.php';
 
@@ -96,6 +98,7 @@ function mg_multi_agent_runtime_store(
         $context ? json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null,
         $model ?: null,
     ]);
+
     $pdo->prepare('UPDATE multi_agent_threads SET last_message_at=NOW(),updated_at=NOW() WHERE id=? AND owner_user_id=?')
         ->execute([$threadId, $userId]);
 
@@ -131,6 +134,8 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
     $agentId = (int)$agent['id'];
     $memory = mg_task_agent_memory_list($pdo, $userId, $agentId, 50);
     $shortlist = mg_task_agent_shortlist_list($pdo, $userId, $agentId, 20);
+    $selections = mg_task_agent_plan_selections($pdo, $userId, $agentId, 20);
+
     $context = [
         'agent' => [
             'id' => (string)$agent['public_id'],
@@ -141,17 +146,21 @@ function mg_multi_agent_runtime_context(PDO $pdo, int $userId, array $agent, arr
         'memory_for_model' => mg_task_agent_memory_for_model($memory),
         'shortlist' => $shortlist,
         'shortlist_for_model' => mg_task_agent_shortlist_for_model($shortlist),
+        'plan_selections' => $selections,
+        'plan_selections_for_model' => mg_task_agent_plan_selection_for_model($selections),
         'onboarding' => mg_multi_agent_runtime_onboarding($pdo, $userId, $agentId),
     ];
 
     if (($template['key'] ?? '') === 'birthday_occasion') {
         $snapshot = mg_task_agent_context_snapshot($pdo, $userId, 90);
         $snapshot['summary']['shortlisted_products'] = count($shortlist);
+        $snapshot['summary']['selected_plan_products'] = count($selections);
         $context['system_snapshot'] = $snapshot;
         $context['upcoming_dates'] = $snapshot['upcoming'];
         $context['active_plans'] = $snapshot['plans'];
         $context['scheduled_reminders'] = $snapshot['reminders'];
     }
+
     return $context;
 }
 
@@ -159,7 +168,8 @@ function mg_multi_agent_runtime_model_context(array $context, string $message = 
 {
     return array_merge(
         mg_task_agent_model_context($message, $context),
-        mg_task_agent_shortlist_model_context($context)
+        mg_task_agent_shortlist_model_context($context),
+        mg_task_agent_plan_selection_model_context($context)
     );
 }
 
@@ -167,7 +177,7 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
 {
     if (($template['key'] ?? '') === 'birthday_occasion') {
         $next = ($context['upcoming_dates'] ?? [])[0] ?? null;
-        $reply = 'I can answer saved-data questions, search current local gifts, manage a shortlist, prepare a reviewable plan or reminder, or save a safe preference without using AI.';
+        $reply = 'I can search local gifts, manage a shortlist, attach a reviewed product to a gift plan, prepare a cart handoff, create reminders, and answer saved-data questions without using AI.';
         if (is_array($next)) {
             $reply .= ' Your next saved occasion is ' . (string)($next['label'] ?? 'an occasion')
                 . ' on ' . (string)($next['event_date'] ?? 'the saved date') . '.';
@@ -177,14 +187,18 @@ function mg_multi_agent_runtime_fallback(array $agent, array $template, string $
             'cards' => [[
                 'type' => 'question',
                 'title' => 'Choose a deterministic action',
-                'body' => 'Name a saved recipient and ask to find local gifts, show the shortlist, review context, prepare a plan, create a reminder, or recall saved memory.',
+                'body' => 'Name a recipient, shortlisted product, or editable gift plan.',
                 'action' => 'seed_prompt',
-                'prompt' => 'Find local gifts for ',
+                'prompt' => 'Show my selected plan product.',
                 'review_payload' => [],
             ]],
         ];
     }
-    return ['reply'=>'Add the recipient, goal, budget, timing, or merchant context needed for a reviewable plan.','cards'=>[]];
+
+    return [
+        'reply' => 'Add the recipient, goal, budget, timing, or merchant context needed for a reviewable plan.',
+        'cards' => [],
+    ];
 }
 
 function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array $input): array
@@ -196,14 +210,30 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
     $message = mg_personal_agent_text($input['message'] ?? '', 3000);
     if ($message === '') throw new InvalidArgumentException('Enter a message for this agent.');
 
-    $thread = mg_multi_agent_runtime_thread($pdo, $agent, $userId, mg_personal_agent_text($input['thread_id'] ?? '', 80));
+    $thread = mg_multi_agent_runtime_thread(
+        $pdo,
+        $agent,
+        $userId,
+        mg_personal_agent_text($input['thread_id'] ?? '', 80)
+    );
     $template = mg_multi_agent_runtime_template($agent);
     $context = mg_multi_agent_runtime_context($pdo, $userId, $agent, $template);
-    $userMessage = mg_multi_agent_runtime_store($pdo, $userId, (int)$agent['id'], (int)$thread['id'], 'user', $message, [], $context);
+    $userMessage = mg_multi_agent_runtime_store(
+        $pdo,
+        $userId,
+        (int)$agent['id'],
+        (int)$thread['id'],
+        'user',
+        $message,
+        [],
+        $context
+    );
     $history = mg_multi_agent_runtime_messages($pdo, $userId, (int)$agent['id'], (int)$thread['id'], 8);
 
-    $route = mg_task_agent_shortlist_route($message, $context, $template)
+    $route = mg_task_agent_plan_selection_route($message, $context, $template)
+        ?? mg_task_agent_shortlist_route($message, $context, $template)
         ?? mg_task_agent_route($message, $context, $template);
+
     $result = is_array($route['result'] ?? null) ? $route['result'] : null;
     $responseSource = (string)($route['response_source'] ?? 'safe_fallback');
     $aiReason = (string)($route['ai_reason'] ?? '');
@@ -230,7 +260,8 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
                 $history,
                 $message,
                 $aiReason,
-                mg_personal_agent_text($input['model_id'] ?? '', 80)
+                mg_personal_agent_text($input['model_id'] ?? '', 80),
+                (string)$thread['public_id']
             );
             if ($synthesis) {
                 $result = $synthesis['result'];
@@ -248,7 +279,10 @@ function mg_multi_agent_runtime_chat(PDO $pdo, int $userId, array $agent, array 
         }
     }
 
-    if (!$result) $result = mg_multi_agent_runtime_fallback($agent, $template, $message, $context);
+    if (!$result) {
+        $result = mg_multi_agent_runtime_fallback($agent, $template, $message, $context);
+    }
+
     $assistant = mg_multi_agent_runtime_store(
         $pdo,
         $userId,
