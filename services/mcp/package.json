@@ -1,0 +1,19 @@
+{
+  "name": "@microgifter/mcp-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Microgifter MCP automation gateway and control-plane service.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm run clean && npm run test"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}

@@ -152,6 +152,7 @@ return [
         '20260719_multi_agent_runtime_memory_v1.sql',
         '20260720_task_agent_phase3_shortlist_v1.sql',
         '20260720_task_agent_phase4_v1.sql',
+        '20260720_microgifter_mcp_automation_foundation_v1.sql',
         '20260715_ai_user_credit_packages.sql',
         '20260718_ai_credit_reconciliation_incidents.sql',
         '20260718_merchant_agent_automatic_snapshots_v1.sql',
