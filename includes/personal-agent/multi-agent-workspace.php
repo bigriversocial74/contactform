@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/multi-agent-workspace-data.php';
 $multiAgentTemplates = mg_multi_agent_templates();
 $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
+$openAgentSettings = $selectedAgentId !== '' && (string) ($_GET['settings'] ?? '') === '1';
 ?>
 <section class="mg-multi-agent-layer" data-multi-agent-layer hidden>
   <div class="mg-multi-agent-selector" data-multi-agent-selector>
@@ -27,7 +28,7 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
   </div>
 </section>
 
-<section class="mg-agent-instance-canvas" data-agent-instance-canvas hidden>
+<section class="mg-agent-instance-canvas" data-agent-instance-canvas data-open-agent-settings="<?= $openAgentSettings ? 'true' : 'false' ?>" hidden>
   <div class="mg-agent-runtime-layout">
     <main class="mg-agent-runtime-main">
       <div class="mg-agent-instance-welcome mg-agent-chat-landing">
@@ -40,10 +41,15 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
         </div>
         <div class="mg-agent-chat-landing-actions" aria-label="Agent options">
           <button type="button" data-agent-new-thread>New conversation</button>
-          <button type="button" data-agent-manage-open>Manage agent</button>
+          <button type="button" data-agent-settings-open>Settings</button>
+          <button type="button" data-agent-manage-open>Manage</button>
         </div>
       </div>
       <div class="mg-agent-instance-prompts" data-agent-instance-prompts></div>
+      <section class="mg-agent-chat-history" aria-label="Agent conversation history">
+        <div class="mg-agent-chat-history-head"><span>Conversation history</span><button type="button" data-agent-new-thread>New conversation</button></div>
+        <nav data-agent-thread-list></nav>
+      </section>
       <div class="mg-agent-runtime-messages" data-agent-runtime-messages aria-live="polite"></div>
       <form class="mg-agent-runtime-composer" data-agent-runtime-composer>
         <textarea name="message" rows="2" maxlength="3000" placeholder="Message this agent…" required></textarea>
@@ -52,19 +58,26 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
       </form>
     </main>
 
-    <aside class="mg-agent-runtime-rail" aria-label="Agent setup and history">
-      <section data-agent-onboarding-panel>
-        <span>Agent setup</span><h3>Personalize this agent</h3><p data-agent-onboarding-copy>Answer a few questions so this agent can work with the right context.</p>
-        <form data-agent-onboarding-form>
-          <label>Primary goal<input name="primary_goal" maxlength="220" placeholder="What should this agent help you accomplish?"></label>
-          <label>Default budget or limits<input name="budget_guidance" maxlength="160" placeholder="Example: $25–$75 per occasion"></label>
-          <label>Important preferences<textarea name="preferences" rows="3" maxlength="1000" placeholder="Interests, restrictions, location, tone, or campaign rules"></textarea></label>
-          <button type="submit">Save agent setup</button><small data-agent-onboarding-status></small>
-        </form>
-      </section>
+    <aside class="mg-agent-runtime-rail" aria-label="Agent memory">
       <section class="mg-agent-memory-panel"><span>Agent memory</span><div data-agent-memory-list><p>No saved memory yet.</p></div></section>
-      <section class="mg-agent-thread-panel"><div><span>Conversations</span><button type="button" data-agent-new-thread aria-label="New agent conversation">+</button></div><nav data-agent-thread-list></nav></section>
     </aside>
+  </div>
+
+  <div class="mg-agent-settings-modal" data-agent-settings-modal aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="mg-agent-settings-title">
+    <div class="mg-agent-settings-backdrop" data-agent-settings-close></div>
+    <section class="mg-agent-settings-dialog" role="document">
+      <header><div><span>Agent settings</span><h2 id="mg-agent-settings-title">Edit agent defaults</h2><p data-agent-onboarding-copy>Update the saved defaults used by this agent.</p></div><button type="button" data-agent-settings-close aria-label="Close agent settings">×</button></header>
+      <form data-agent-onboarding-form>
+        <label>Primary goal<input name="primary_goal" maxlength="220" placeholder="What should this agent help you accomplish?"></label>
+        <label>Default budget or limits<input name="budget_guidance" maxlength="160" placeholder="Example: $25–$75 per occasion"></label>
+        <label>Important preferences<textarea name="preferences" rows="4" maxlength="1000" placeholder="Interests, restrictions, location, tone, or campaign rules"></textarea></label>
+        <div class="mg-agent-settings-actions">
+          <button type="submit" name="settings_action" value="save">Save</button>
+          <button type="submit" name="settings_action" value="apply">Save and apply</button>
+        </div>
+        <small data-agent-onboarding-status></small>
+      </form>
+    </section>
   </div>
 </section>
 
