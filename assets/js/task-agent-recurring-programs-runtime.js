@@ -12,7 +12,9 @@
 
   function localInput(value) {
     if (!value) return '';
-    var date = new Date(String(value).replace(' ', 'T') + (String(value).indexOf('Z') === -1 ? 'Z' : ''));
+    var raw = String(value).replace(' ', 'T');
+    var hasZone = /(?:Z|[+-]\d\d:\d\d)$/i.test(raw);
+    var date = new Date(raw + (hasZone ? '' : 'Z'));
     if (Number.isNaN(date.getTime())) return String(value).slice(0, 16).replace(' ', 'T');
     var local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 16);
@@ -59,6 +61,24 @@
     return '<button type="button" data-recurring-program-action="' + esc(action) + '" data-recurring-payload="' + esc(JSON.stringify(payload)) + '"' + (primary ? ' class="is-primary"' : '') + '>' + esc(label) + '</button>';
   }
 
+  function renderLink(card) {
+    if (!card || card.type !== 'recurring_program_link') return '';
+    var program = card.program || {};
+    return '<article class="is-recurring_program_link mg-recurring-card">'
+      + '<span>Existing Personal Agent program</span>'
+      + '<h4>' + esc(card.title || 'Existing recurring program') + '</h4>'
+      + '<p>' + esc(card.body || '') + '</p>'
+      + '<dl class="mg-recurring-facts">'
+      + '<div><dt>Status</dt><dd>' + esc(program.status || 'draft') + '</dd></div>'
+      + '<div><dt>Cadence</dt><dd>Every ' + esc(program.interval_count || 1) + ' ' + esc(program.cadence || '') + '</dd></div>'
+      + '<div><dt>Next review</dt><dd>' + esc(program.next_run_at || '') + '</dd></div>'
+      + '<div><dt>Recipient / list</dt><dd>' + esc(program.context_name || 'General program') + '</dd></div>'
+      + '</dl>'
+      + '<div class="mg-recurring-actions">' + actionButton(card.action_label || 'Use with this agent', 'link_existing', card.review_payload || {}, true) + '</div>'
+      + '<small class="mg-recurring-safety">Reuses the canonical program · No copied data · No AI credits</small>'
+      + '</article>';
+  }
+
   function renderProgram(card) {
     if (!card || card.type !== 'recurring_gift_program') return '';
     var program = card.program || {};
@@ -95,7 +115,7 @@
 
   window.MicrogifterTaskAgentShortlist = {
     renderCard: function (card, helpers) {
-      return renderBuilder(card) || renderProgram(card) || priorRender(card, helpers);
+      return renderBuilder(card) || renderLink(card) || renderProgram(card) || priorRender(card, helpers);
     }
   };
 
@@ -167,16 +187,19 @@
       button.disabled = true;
       var programAction = button.getAttribute('data-recurring-program-action') || '';
       var payload = parse(button.getAttribute('data-recurring-payload'));
-      if (programAction === 'generate_draft') payload.action = 'generate_recurring_draft';
+      if (programAction === 'link_existing') payload.action = 'link_recurring_program';
+      else if (programAction === 'generate_draft') payload.action = 'generate_recurring_draft';
       else if (programAction === 'skip_next') payload.action = 'skip_recurring_run';
       else {
         payload.action = 'update_recurring_program';
         payload.program_action = programAction;
       }
       request(payload).then(function () {
-        var message = programAction === 'generate_draft'
-          ? 'Recurring draft plan prepared for review.'
-          : (programAction === 'skip_next' ? 'Next recurring cycle skipped.' : 'Recurring program updated.');
+        var message = programAction === 'link_existing'
+          ? 'Existing recurring program connected to this agent.'
+          : (programAction === 'generate_draft'
+            ? 'Recurring draft plan prepared for review.'
+            : (programAction === 'skip_next' ? 'Next recurring cycle skipped.' : 'Recurring program updated.'));
         finish(message + ' No commerce or AI was used.');
       }).catch(function (error) {
         button.disabled = false;
