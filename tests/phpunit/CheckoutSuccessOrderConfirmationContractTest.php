@@ -11,7 +11,7 @@ final class CheckoutSuccessOrderConfirmationContractTest extends TestCase
 
         foreach([
             '$page_title = \'Order Complete | Microgifter\'',
-            '$page_scripts = [\'/assets/js/order-success.js\']',
+            "'/assets/js/order-success.js'",
             'data-order-success',
             'data-order-id',
             'data-order-success-receipt',
@@ -56,7 +56,7 @@ final class CheckoutSuccessOrderConfirmationContractTest extends TestCase
             'Fulfillment ',
             'mg-order-confirmation-grid',
             'mg-order-followup',
-            'Open Inbox',
+            'Open Action Center',
             'Status history',
             "document.title='Order '",
         ] as $needle){

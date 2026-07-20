@@ -1,0 +1,70 @@
+name: Task Agent Phase 3.4 Purchase Confirmation PPPM Tracking v1
+
+on:
+  pull_request:
+    paths:
+      - 'agent.php'
+      - 'api/agents/runtime.php'
+      - 'includes/multi-agent-runtime.php'
+      - 'includes/task-agent-order-tracking.php'
+      - 'includes/task-agent-order-tracking-router.php'
+      - 'assets/js/task-agent-order-tracking-runtime.js'
+      - 'assets/css/task-agent-order-tracking-v1.css'
+      - 'tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php'
+      - '.github/workflows/task-agent-phase3-4-purchase-confirmation-pppm-tracking-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    name: validate (${{ matrix.php }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l includes/task-agent-order-tracking.php
+          php -l includes/task-agent-order-tracking-router.php
+          php -l includes/multi-agent-runtime.php
+          php -l api/agents/runtime.php
+          php -l agent.php
+      - name: JavaScript syntax
+        run: node --check assets/js/task-agent-order-tracking-runtime.js
+      - name: Exact-version ownership contract
+        run: vendor/bin/phpunit --filter testTrackingAuthorityUsesBuyerOwnedExactProductVersionMatches tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Canonical projection contract
+        run: vendor/bin/phpunit --filter testTrackingProjectionContainsCanonicalPaymentReceiptAndIssuanceState tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Read-only zero-AI contract
+        run: vendor/bin/phpunit --filter testAuthorityAndRouterAreReadOnlyAndZeroAi tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Route-order contract
+        run: vendor/bin/phpunit --filter testOrderTrackingRoutePrecedesDeliveryPlanningAndAi tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Compact model-context contract
+        run: vendor/bin/phpunit --filter testModelContextIsCompactAndContainsNoInternalIdentifiers tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Read-only canvas contract
+        run: vendor/bin/phpunit --filter testCanvasUsesSafeInternalLinksAndNoMutationRequests tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Agent API read-context contract
+        run: vendor/bin/phpunit --filter testAgentApiExposesTrackingOnlyThroughReadContext tests/phpunit/TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest.php
+      - name: Purchase issuance authority regression
+        run: vendor/bin/phpunit tests/phpunit/PostCheckoutMicrogiftIssuanceContractTest.php
+      - name: Order confirmation regression
+        run: vendor/bin/phpunit tests/phpunit/CheckoutSuccessOrderConfirmationContractTest.php
+      - name: Phase 3.3 regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase33RecipientSendLaterDeliveryPrepV1ContractTest.php
+      - name: Phase 3.2 regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase32PlanCartHandoffV1ContractTest.php
+      - name: Phase 3.1 regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase31DiscoveryShortlistV1ContractTest.php
+      - name: Phase 2 production regression
+        run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
