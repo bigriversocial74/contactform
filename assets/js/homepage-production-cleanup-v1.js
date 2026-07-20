@@ -32,15 +32,27 @@
       <div class="hero-product-showcase" aria-label="Microgifter product workspace previews">
         <figure class="hero-product-shot hero-product-shot--agent">
           <img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async">
-          <figcaption>Agent chat</figcaption>
-        </figure>
-        <figure class="hero-product-shot hero-product-shot--inbox">
-          <img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async">
-          <figcaption>Gift inbox</figcaption>
+          <figcaption>
+            <span>01 · Agent chat</span>
+            <strong>Turn customer intent into the next thoughtful action.</strong>
+            <small>Keep conversations, gifting context, service history, and recommendations connected through one active relationship agent.</small>
+          </figcaption>
         </figure>
         <figure class="hero-product-shot hero-product-shot--crm">
           <img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async">
-          <figcaption>Merchant CRM</figcaption>
+          <figcaption>
+            <span>02 · Merchant CRM</span>
+            <strong>See the complete relationship behind every customer.</strong>
+            <small>Connect purchases, claims, visits, rewards, referrals, messages, and campaign activity in one usable merchant record.</small>
+          </figcaption>
+        </figure>
+        <figure class="hero-product-shot hero-product-shot--inbox">
+          <img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async">
+          <figcaption>
+            <span>03 · Gift inbox</span>
+            <strong>Follow every Microgift from purchase through redemption.</strong>
+            <small>Manage received, sent, claimed, redeemed, refunded, and regifted activity without losing ownership or customer context.</small>
+          </figcaption>
         </figure>
       </div>`;
   }
