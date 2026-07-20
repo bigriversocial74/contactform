@@ -39,18 +39,20 @@ final class TaskAgentContextualChatActionCardsV1ContractTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $runtime = file_get_contents($root . '/includes/multi-agent-runtime.php');
+        $router = file_get_contents($root . '/includes/task-agent-intent-router.php');
         self::assertIsString($runtime);
+        self::assertIsString($router);
 
         self::assertStringContainsString("require_once __DIR__.'/task-agent-intent-router.php'", $runtime);
         self::assertStringContainsString('mg_task_agent_route($message,$context,$template)', $runtime);
-        self::assertStringContainsString("if (!$result && $aiReason !== '')", $runtime);
+        self::assertStringContainsString('if (!$result && $aiReason !== \'\')', $runtime);
         self::assertStringContainsString('mg_task_agent_model_context($message,$context)', $runtime);
         self::assertStringContainsString('mg_task_agent_sanitize_model_cards', $runtime);
-        self::assertStringContainsString("'ai_reason'=>$aiReason", $runtime);
-        self::assertStringContainsString("'used_ai'=>$modelKey !== ''", $runtime);
-        self::assertStringContainsString("'ai_tokens_total'=>$tokens['total']", $runtime);
+        self::assertStringContainsString('\'ai_reason\'=>$aiReason', $runtime);
+        self::assertStringContainsString('\'used_ai\'=>$modelKey !== \'\'', $runtime);
+        self::assertStringContainsString('\'ai_tokens_total\'=>$tokens[\'total\']', $runtime);
         self::assertStringContainsString('max(350,min(900', $runtime);
-        self::assertStringContainsString('array_slice($context[\'memory_for_model\'] ?? [], 0, 12)', file_get_contents($root . '/includes/task-agent-intent-router.php'));
+        self::assertStringContainsString('array_slice($context[\'memory_for_model\'] ?? [], 0, 12)', $router);
     }
 
     public function testCanvasSupportsSafeWriteCardsAndInternalDiscoveryLinks(): void
