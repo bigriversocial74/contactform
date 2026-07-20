@@ -44,6 +44,7 @@ function mg_admin_mcp_scopes(PDO $pdo): array
          WHERE operation_class='read'
          ORDER BY scope_key"
     );
+
     return array_map(static fn(array $row): array => [
         'key' => (string)$row['scope_key'],
         'display_name' => (string)$row['display_name'],
@@ -81,7 +82,31 @@ function mg_admin_mcp_scope_keys(PDO $pdo, mixed $value): array
     if ($allowed !== $expected) {
         throw new MgAdminMcpProvisioningException('One or more selected scopes are not currently grantable.');
     }
+
     return $allowed;
+}
+
+function mg_admin_mcp_scope_for_action(PDO $pdo, mixed $value, bool $grant): string
+{
+    $scope = strtolower(trim((string)$value));
+    if ($scope === '' || preg_match('/^[a-z][a-z0-9._-]{0,79}:[a-z][a-z0-9._-]{0,79}$/', $scope) !== 1) {
+        throw new MgAdminMcpProvisioningException('Invalid scope.');
+    }
+
+    $sql = "SELECT scope_key FROM mcp_scope_catalog WHERE scope_key=? AND operation_class='read'";
+    if ($grant) {
+        $sql .= ' AND active=1 AND grantable=1';
+    }
+    $sql .= ' LIMIT 1';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$scope]);
+    if (!$stmt->fetchColumn()) {
+        throw new MgAdminMcpProvisioningException(
+            $grant ? 'The selected scope is not currently grantable.' : 'The selected scope is not recognized.'
+        );
+    }
+
+    return $scope;
 }
 
 function mg_admin_mcp_user(PDO $pdo, mixed $reference): array
@@ -90,6 +115,7 @@ function mg_admin_mcp_user(PDO $pdo, mixed $reference): array
     if ($value === '') {
         throw new MgAdminMcpProvisioningException('Enter an active user ID or email address.');
     }
+
     if (preg_match('/^[1-9][0-9]{0,18}$/', $value) === 1) {
         $stmt = $pdo->prepare('SELECT id,email,full_name,display_name,status FROM users WHERE id=? LIMIT 1');
         $stmt->execute([(int)$value]);
@@ -101,10 +127,12 @@ function mg_admin_mcp_user(PDO $pdo, mixed $reference): array
         $stmt = $pdo->prepare('SELECT id,email,full_name,display_name,status FROM users WHERE email=? LIMIT 1');
         $stmt->execute([$email]);
     }
+
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user || (string)$user['status'] !== 'active') {
         throw new MgAdminMcpProvisioningException('The selected user is unavailable or inactive.', 409);
     }
+
     return $user;
 }
 
@@ -114,9 +142,10 @@ function mg_admin_mcp_workspace(PDO $pdo, int $userId, mixed $publicId): ?array
     if ($value === '') {
         return null;
     }
-    if (preg_match('/^[0-9a-f-]{36}$/i', $value) !== 1) {
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) !== 1) {
         throw new MgAdminMcpProvisioningException('Invalid merchant workspace UUID.');
     }
+
     $stmt = $pdo->prepare(
         "SELECT mw.id,mw.public_id,mw.status
          FROM merchant_workspaces mw
@@ -129,6 +158,7 @@ function mg_admin_mcp_workspace(PDO $pdo, int $userId, mixed $publicId): ?array
     if (!$workspace || in_array((string)$workspace['status'], ['suspended', 'archived'], true)) {
         throw new MgAdminMcpProvisioningException('The selected user does not have an active relationship with that workspace.', 409);
     }
+
     return $workspace;
 }
 
@@ -177,9 +207,9 @@ function mg_admin_mcp_client(PDO $pdo, array $input, int $actorId): array
         json_encode(['provisioned_by' => 'admin_mcp_console'], JSON_THROW_ON_ERROR),
         $actorId,
     ]);
-    $id = (int)$pdo->lastInsertId();
+
     return [
-        'id' => $id,
+        'id' => (int)$pdo->lastInsertId(),
         'public_id' => $publicId,
         'client_key' => $clientKey,
         'display_name' => $displayName,
@@ -192,6 +222,7 @@ function mg_admin_mcp_client(PDO $pdo, array $input, int $actorId): array
 function mg_admin_mcp_connection_projection(array $row): array
 {
     $scopes = array_values(array_filter(array_map('trim', explode(',', (string)($row['scope_keys'] ?? '')))));
+
     return [
         'id' => (string)$row['public_id'],
         'display_name' => (string)$row['display_name'],
@@ -214,6 +245,7 @@ function mg_admin_mcp_connection_projection(array $row): array
             'display_name' => (string)$row['client_display_name'],
             'type' => (string)$row['client_type'],
             'status' => (string)$row['client_status'],
+            'maximum_operation_class' => (string)$row['client_maximum_operation_class'],
         ],
         'workspace' => $row['workspace_type'] !== null ? [
             'type' => (string)$row['workspace_type'],
@@ -225,28 +257,86 @@ function mg_admin_mcp_connection_projection(array $row): array
     ];
 }
 
-function mg_admin_mcp_connection_detail(PDO $pdo, string $publicId, bool $lock = false): array
+function mg_admin_mcp_connection_select_sql(string $whereClause = ''): string
 {
-    $suffix = $lock ? ' FOR UPDATE' : '';
-    $stmt = $pdo->prepare(
-        "SELECT c.*,u.email AS user_email,u.full_name AS user_full_name,u.display_name AS user_display_name,u.status AS user_status,
-                cl.public_id AS client_public_id,cl.client_key,cl.display_name AS client_display_name,cl.client_type,cl.status AS client_status,
-                mw.public_id AS workspace_public_id,mw.status AS workspace_status,
-                GROUP_CONCAT(CASE WHEN cs.revoked_at IS NULL THEN cs.scope_key END ORDER BY cs.scope_key SEPARATOR ',') AS scope_keys
-         FROM mcp_connections c
-         INNER JOIN users u ON u.id=c.user_id
-         INNER JOIN mcp_clients cl ON cl.id=c.client_id
-         LEFT JOIN merchant_workspaces mw ON c.workspace_type IN ('merchant','merchant_workspace') AND mw.id=c.workspace_id
-         LEFT JOIN mcp_connection_scopes cs ON cs.connection_id=c.id
-         WHERE c.public_id=?
-         GROUP BY c.id,u.id,cl.id,mw.id" . $suffix
-    );
+    return "SELECT c.*,u.email AS user_email,u.full_name AS user_full_name,u.display_name AS user_display_name,u.status AS user_status,
+                   cl.public_id AS client_public_id,cl.client_key,cl.display_name AS client_display_name,cl.client_type,
+                   cl.status AS client_status,cl.maximum_operation_class AS client_maximum_operation_class,
+                   mw.public_id AS workspace_public_id,mw.status AS workspace_status,
+                   GROUP_CONCAT(CASE WHEN cs.revoked_at IS NULL THEN cs.scope_key END ORDER BY cs.scope_key SEPARATOR ',') AS scope_keys
+            FROM mcp_connections c
+            INNER JOIN users u ON u.id=c.user_id
+            INNER JOIN mcp_clients cl ON cl.id=c.client_id
+            LEFT JOIN merchant_workspaces mw ON c.workspace_type IN ('merchant','merchant_workspace') AND mw.id=c.workspace_id
+            LEFT JOIN mcp_connection_scopes cs ON cs.connection_id=c.id
+            " . $whereClause . "
+            GROUP BY c.id,u.id,cl.id,mw.id";
+}
+
+function mg_admin_mcp_connection_detail(PDO $pdo, string $publicId): array
+{
+    $stmt = $pdo->prepare(mg_admin_mcp_connection_select_sql('WHERE c.public_id=?'));
     $stmt->execute([$publicId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
         throw new MgAdminMcpProvisioningException('MCP connection not found.', 404);
     }
     return $row;
+}
+
+function mg_admin_mcp_lock_connection(PDO $pdo, string $publicId): int
+{
+    $stmt = $pdo->prepare('SELECT id FROM mcp_connections WHERE public_id=? LIMIT 1 FOR UPDATE');
+    $stmt->execute([$publicId]);
+    $id = $stmt->fetchColumn();
+    if ($id === false) {
+        throw new MgAdminMcpProvisioningException('MCP connection not found.', 404);
+    }
+    return (int)$id;
+}
+
+function mg_admin_mcp_connection_issues(PDO $pdo, array $connection, bool $verifyWorkspaceMembership): array
+{
+    $issues = [];
+    if ((string)$connection['status'] !== 'active') {
+        $issues[] = 'connection_not_active';
+    }
+    if ((string)$connection['user_status'] !== 'active') {
+        $issues[] = 'user_not_active';
+    }
+    if (!in_array((string)$connection['client_status'], ['development', 'active'], true)) {
+        $issues[] = 'client_not_active';
+    }
+    if ((string)$connection['maximum_operation_class'] !== 'read'
+        || (string)$connection['client_maximum_operation_class'] !== 'read') {
+        $issues[] = 'operation_class_not_read_only';
+    }
+    if (!empty($connection['expires_at']) && strtotime((string)$connection['expires_at']) <= time()) {
+        $issues[] = 'connection_expired';
+    }
+
+    $scopes = array_values(array_filter(array_map('trim', explode(',', (string)($connection['scope_keys'] ?? '')))));
+    foreach (['profile:read', 'catalog:read'] as $requiredScope) {
+        if (!in_array($requiredScope, $scopes, true)) {
+            $issues[] = 'missing_' . str_replace(':', '_', $requiredScope);
+        }
+    }
+
+    $workspaceType = trim((string)($connection['workspace_type'] ?? ''));
+    $workspacePublicId = trim((string)($connection['workspace_public_id'] ?? ''));
+    if ($workspaceType !== '') {
+        if ($workspacePublicId === '' || in_array((string)($connection['workspace_status'] ?? ''), ['suspended', 'archived'], true)) {
+            $issues[] = 'workspace_unavailable';
+        } elseif ($verifyWorkspaceMembership && in_array($workspaceType, ['merchant', 'merchant_workspace'], true)) {
+            try {
+                mg_admin_mcp_workspace($pdo, (int)$connection['user_id'], $workspacePublicId);
+            } catch (MgAdminMcpProvisioningException) {
+                $issues[] = 'workspace_membership_unavailable';
+            }
+        }
+    }
+
+    return array_values(array_unique($issues));
 }
 
 function mg_admin_mcp_read(PDO $pdo): array
@@ -266,34 +356,25 @@ function mg_admin_mcp_read(PDO $pdo): array
         'updated_at' => (string)$row['updated_at'],
     ], $clientsStmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $connectionsStmt = $pdo->query(
-        "SELECT c.*,u.email AS user_email,u.full_name AS user_full_name,u.display_name AS user_display_name,u.status AS user_status,
-                cl.public_id AS client_public_id,cl.client_key,cl.display_name AS client_display_name,cl.client_type,cl.status AS client_status,
-                mw.public_id AS workspace_public_id,mw.status AS workspace_status,
-                GROUP_CONCAT(CASE WHEN cs.revoked_at IS NULL THEN cs.scope_key END ORDER BY cs.scope_key SEPARATOR ',') AS scope_keys
-         FROM mcp_connections c
-         INNER JOIN users u ON u.id=c.user_id
-         INNER JOIN mcp_clients cl ON cl.id=c.client_id
-         LEFT JOIN merchant_workspaces mw ON c.workspace_type IN ('merchant','merchant_workspace') AND mw.id=c.workspace_id
-         LEFT JOIN mcp_connection_scopes cs ON cs.connection_id=c.id
-         GROUP BY c.id,u.id,cl.id,mw.id
-         ORDER BY c.id DESC LIMIT 200"
-    );
-    $connections = array_map('mg_admin_mcp_connection_projection', $connectionsStmt->fetchAll(PDO::FETCH_ASSOC));
+    $connectionsStmt = $pdo->query(mg_admin_mcp_connection_select_sql() . ' ORDER BY c.id DESC LIMIT 200');
+    $connectionRows = $connectionsStmt->fetchAll(PDO::FETCH_ASSOC);
+    $connections = [];
+    $activeReady = 0;
+    foreach ($connectionRows as $row) {
+        $projection = mg_admin_mcp_connection_projection($row);
+        $issues = mg_admin_mcp_connection_issues($pdo, $row, false);
+        $projection['deployment_ready'] = $issues === [];
+        $projection['deployment_issues'] = $issues;
+        if ($issues === []) {
+            $activeReady++;
+        }
+        $connections[] = $projection;
+    }
 
     $migrationStmt = $pdo->prepare('SELECT 1 FROM schema_migrations WHERE migration_key=? LIMIT 1');
     $migrationStmt->execute(['20260720_microgifter_mcp_automation_foundation_v1']);
     $migrationImported = (bool)$migrationStmt->fetchColumn();
     $bridgeSecretLength = strlen(trim((string)(getenv('MG_MCP_BRIDGE_SECRET') ?: '')));
-    $activeReady = 0;
-    foreach ($connections as $connection) {
-        if ($connection['status'] === 'active'
-            && $connection['client']['status'] === 'active'
-            && in_array('profile:read', $connection['scopes'], true)
-            && in_array('catalog:read', $connection['scopes'], true)) {
-            $activeReady++;
-        }
-    }
 
     return [
         'clients' => $clients,
@@ -394,23 +475,34 @@ function mg_admin_mcp_action(PDO $pdo, array $actor, array $input): array
 
     $pdo->beginTransaction();
     try {
-        $connection = mg_admin_mcp_connection_detail($pdo, $connectionPublicId, true);
-        $connectionDbId = (int)$connection['id'];
+        $connectionDbId = mg_admin_mcp_lock_connection($pdo, $connectionPublicId);
+        $connection = mg_admin_mcp_connection_detail($pdo, $connectionPublicId);
         $metadata = ['connection_public_id' => $connectionPublicId, 'action' => $action, 'reason' => $reason];
 
         if ($action === 'pause') {
             if ((string)$connection['status'] !== 'active') {
                 throw new MgAdminMcpProvisioningException('Only active connections can be paused.', 409);
             }
-            $pdo->prepare("UPDATE mcp_connections SET status='paused',paused_at=NOW(),updated_at=NOW() WHERE id=?")->execute([$connectionDbId]);
+            $pdo->prepare("UPDATE mcp_connections SET status='paused',paused_at=NOW(),updated_at=NOW() WHERE id=?")
+                ->execute([$connectionDbId]);
         } elseif ($action === 'resume') {
             if (!in_array((string)$connection['status'], ['paused', 'pending'], true)) {
                 throw new MgAdminMcpProvisioningException('Only paused or pending connections can be resumed.', 409);
             }
-            if ((string)$connection['user_status'] !== 'active' || !in_array((string)$connection['client_status'], ['development', 'active'], true)) {
+            if ((string)$connection['user_status'] !== 'active'
+                || !in_array((string)$connection['client_status'], ['development', 'active'], true)
+                || (string)$connection['maximum_operation_class'] !== 'read'
+                || (string)$connection['client_maximum_operation_class'] !== 'read') {
                 throw new MgAdminMcpProvisioningException('The account or client is not eligible for activation.', 409);
             }
-            $pdo->prepare("UPDATE mcp_connections SET status='active',paused_at=NULL,consented_at=COALESCE(consented_at,NOW()),updated_at=NOW() WHERE id=?")->execute([$connectionDbId]);
+            if (!empty($connection['expires_at']) && strtotime((string)$connection['expires_at']) <= time()) {
+                throw new MgAdminMcpProvisioningException('Expired connections cannot be resumed. Provision a replacement connection.', 409);
+            }
+            if (!empty($connection['workspace_type'])) {
+                mg_admin_mcp_workspace($pdo, (int)$connection['user_id'], (string)$connection['workspace_public_id']);
+            }
+            $pdo->prepare("UPDATE mcp_connections SET status='active',paused_at=NULL,consented_at=COALESCE(consented_at,NOW()),updated_at=NOW() WHERE id=?")
+                ->execute([$connectionDbId]);
         } elseif ($action === 'revoke') {
             if ((string)$connection['status'] === 'revoked') {
                 throw new MgAdminMcpProvisioningException('Connection is already revoked.', 409);
@@ -421,13 +513,10 @@ function mg_admin_mcp_action(PDO $pdo, array $actor, array $input): array
             if ((string)$connection['status'] === 'revoked') {
                 throw new MgAdminMcpProvisioningException('Revoked connections cannot rotate token version.', 409);
             }
-            $pdo->prepare('UPDATE mcp_connections SET token_version=token_version+1,updated_at=NOW() WHERE id=?')->execute([$connectionDbId]);
+            $pdo->prepare('UPDATE mcp_connections SET token_version=token_version+1,updated_at=NOW() WHERE id=?')
+                ->execute([$connectionDbId]);
         } else {
-            $scope = strtolower(trim((string)($input['scope_key'] ?? '')));
-            $validScopes = mg_admin_mcp_scope_keys($pdo, [$scope, 'profile:read']);
-            if (!in_array($scope, $validScopes, true)) {
-                throw new MgAdminMcpProvisioningException('Invalid scope.');
-            }
+            $scope = mg_admin_mcp_scope_for_action($pdo, $input['scope_key'] ?? '', $action === 'grant_scope');
             $metadata['scope_key'] = $scope;
             if ($action === 'grant_scope') {
                 $pdo->prepare(
@@ -435,8 +524,13 @@ function mg_admin_mcp_action(PDO $pdo, array $actor, array $input): array
                      ON DUPLICATE KEY UPDATE granted_at=NOW(),revoked_at=NULL'
                 )->execute([$connectionDbId, $scope]);
             } else {
-                $pdo->prepare('UPDATE mcp_connection_scopes SET revoked_at=NOW() WHERE connection_id=? AND scope_key=? AND revoked_at IS NULL')
-                    ->execute([$connectionDbId, $scope]);
+                $stmt = $pdo->prepare(
+                    'UPDATE mcp_connection_scopes SET revoked_at=NOW() WHERE connection_id=? AND scope_key=? AND revoked_at IS NULL'
+                );
+                $stmt->execute([$connectionDbId, $scope]);
+                if ($stmt->rowCount() !== 1) {
+                    throw new MgAdminMcpProvisioningException('The selected scope is not currently granted.', 409);
+                }
             }
         }
 
@@ -465,13 +559,27 @@ function mg_admin_mcp_runtime_credentials(PDO $pdo, array $actor, array $input):
     $connectionPublicId = mg_admin_mcp_text($input['connection_public_id'] ?? '', 36, 36, 'Connection UUID');
     $reason = mg_admin_mcp_text($input['reason'] ?? '', 8, 240, 'Action reason');
     $bridgeUrl = trim((string)($input['bridge_url'] ?? 'https://microgifter.com/api/internal/mcp-bridge.php'));
-    $parts = parse_url($bridgeUrl);
-    if (!is_array($parts) || strtolower((string)($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
-        throw new MgAdminMcpProvisioningException('Bridge URL must use HTTPS.');
+    if (strlen($bridgeUrl) > 500 || preg_match('/[\x00-\x20\x7f]/', $bridgeUrl) === 1 || filter_var($bridgeUrl, FILTER_VALIDATE_URL) === false) {
+        throw new MgAdminMcpProvisioningException('Bridge URL must be a valid HTTPS URL.');
     }
+    $parts = parse_url($bridgeUrl);
+    if (!is_array($parts)
+        || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+        || empty($parts['host'])
+        || isset($parts['user'], $parts['pass'], $parts['fragment'])) {
+        throw new MgAdminMcpProvisioningException('Bridge URL must use HTTPS without embedded credentials or fragments.');
+    }
+
     $connection = mg_admin_mcp_connection_detail($pdo, $connectionPublicId);
-    if ((string)$connection['status'] !== 'active') {
-        throw new MgAdminMcpProvisioningException('Deployment credentials require an active connection.', 409);
+    $issues = mg_admin_mcp_connection_issues($pdo, $connection, true);
+    if ($issues !== []) {
+        throw new MgAdminMcpProvisioningException(
+            'Connection is not deployment-ready: ' . implode(', ', array_map(
+                static fn(string $issue): string => str_replace('_', ' ', $issue),
+                $issues
+            )) . '.',
+            409
+        );
     }
 
     $bearerToken = mg_admin_mcp_base64url(random_bytes(32));
@@ -508,7 +616,7 @@ function mg_admin_mcp_runtime_credentials(PDO $pdo, array $actor, array $input):
     ];
     mg_audit('admin_mcp_runtime_credentials_generate', 'mcp_connection', $metadata, $actorId);
     mg_event('admin.mcp.runtime_credentials.generated', $metadata + ['admin_user_id' => $actorId], $actorId);
-    mg_security_log('medium', 'admin.mcp_runtime_credentials.generated', 'Admin generated one-time MCP deployment credentials.', $metadata, $actorId);
+    mg_security_log('warning', 'admin.mcp_runtime_credentials.generated', 'Admin generated one-time MCP deployment credentials.', $metadata, $actorId);
 
     return [
         'connection_public_id' => $connectionPublicId,
