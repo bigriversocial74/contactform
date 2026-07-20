@@ -52,9 +52,9 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
         <?php elseif ($is_gift_center_header): ?>
           <div class="mg-header-agent-tools mg-header-gift-tools">
             <div class="mg-header-agent-tabs mg-header-gift-tabs" data-gift-center-tabs aria-label="Gift center folders">
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="inbox"><a class="<?= $agent_tab === 'inbox' ? 'is-active' : '' ?>" href="/inbox.php"><span>Inbox</span></a></span>
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="sent"><a class="<?= $agent_tab === 'sent' ? 'is-active' : '' ?>" href="/sent.php"><span>Sent</span></a></span>
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="claimed"><a class="<?= $agent_tab === 'claimed' ? 'is-active' : '' ?>" href="/claimed.php"><span>Claimed</span></a></span>
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="inbox"><a class="<?= $agent_tab === 'inbox' ? 'is-active' : '' ?>" href="/inbox.php"><span>Inbox</span><span class="mg-agent-tab-badge" data-gift-nav-count="inbox">0</span></a></span>
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="sent"><a class="<?= $agent_tab === 'sent' ? 'is-active' : '' ?>" href="/sent.php"><span>Sent</span><span class="mg-agent-tab-badge" data-gift-nav-count="sent">0</span></a></span>
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="claimed"><a class="<?= $agent_tab === 'claimed' ? 'is-active' : '' ?>" href="/claimed.php"><span>Claimed</span><span class="mg-agent-tab-badge" data-gift-nav-count="claimed">0</span></a></span>
             </div>
           </div>
         <?php elseif ($header_mode === 'builder'): ?>
@@ -74,6 +74,8 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
 html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
 html body.mg-app-page.mg-section-agent .mg-header-gift-tabs [data-system-tab]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
 .mg-agent-tab-item{position:relative;padding-right:30px!important}.mg-agent-tab-settings{position:absolute!important;top:50%;right:6px;transform:translateY(-50%);width:22px!important;height:22px!important;display:grid!important;place-items:center!important;padding:0!important;border-radius:7px!important;color:#64748b!important;font-size:12px!important;text-decoration:none!important}.mg-agent-tab-settings:hover,.mg-agent-tab-settings:focus-visible{background:#eaf2ff!important;color:#1757d7!important}
+.mg-header-gift-tabs .mg-agent-tab-item{padding-right:0!important}.mg-header-gift-tabs .mg-agent-tab-item>a{display:flex!important;align-items:center!important;gap:6px!important}
+@media(max-width:640px){.mg-app-page .mg-header-create{display:grid!important;width:36px!important;height:36px!important;place-items:center!important;flex:0 0 36px!important;border-radius:10px!important}.mg-header-gift-tabs .mg-agent-tab-badge{min-width:17px!important;height:17px!important;padding:0 5px!important;font-size:8px!important}}
 </style>
 
 <?php
