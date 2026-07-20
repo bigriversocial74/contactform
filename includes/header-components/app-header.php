@@ -35,11 +35,15 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
         <?php elseif ($is_agent_workspace_header): ?>
           <div class="mg-header-agent-tools">
             <div class="mg-header-agent-tabs" data-agent-tabs aria-label="Agent workspace tabs">
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="agent"><a class="<?= $multiAgentSelectedId === '' ? 'is-active' : '' ?>" href="/agent.php"><span>Agent</span></a></span>
+              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="agent">
+                <a class="<?= $multiAgentSelectedId === '' ? 'is-active' : '' ?>" href="/agent.php"><span>Agent</span></a>
+                <a class="mg-agent-tab-settings" href="/agent.php?view=settings" aria-label="Open Agent settings" title="Agent settings">⚙</a>
+              </span>
               <?php foreach ($multiAgentHeaderAgents as $workspaceAgent): ?>
                 <?php $isSelected = $multiAgentSelectedId === (string) $workspaceAgent['id']; ?>
                 <span class="mg-agent-tab-item mg-agent-tab-item-agent<?= ($workspaceAgent['runtime_status'] ?? '') === 'paused' ? ' is-paused' : '' ?>" data-agent-tab-id="<?= mg_e((string) $workspaceAgent['id']) ?>">
                   <a class="<?= $isSelected ? 'is-active' : '' ?>" href="/agent.php?agent_id=<?= rawurlencode((string) $workspaceAgent['id']) ?>"><i class="mg-agent-tab-status" aria-hidden="true"></i><span><?= mg_e((string) $workspaceAgent['name']) ?></span></a>
+                  <a class="mg-agent-tab-settings" href="/agent.php?agent_id=<?= rawurlencode((string) $workspaceAgent['id']) ?>&amp;settings=1" data-agent-tab-settings="<?= mg_e((string) $workspaceAgent['id']) ?>" aria-label="Open <?= mg_e((string) $workspaceAgent['name']) ?> settings" title="Agent settings">⚙</a>
                 </span>
               <?php endforeach; ?>
               <button class="mg-agent-tab-add" type="button" data-agent-add-tab aria-label="Add an agent" title="Add an agent">+</button>
@@ -69,6 +73,7 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
 <style>
 html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
 html body.mg-app-page.mg-section-agent .mg-header-gift-tabs [data-system-tab]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
+.mg-agent-tab-item{position:relative;padding-right:30px!important}.mg-agent-tab-settings{position:absolute!important;top:50%;right:6px;transform:translateY(-50%);width:22px!important;height:22px!important;display:grid!important;place-items:center!important;padding:0!important;border-radius:7px!important;color:#64748b!important;font-size:12px!important;text-decoration:none!important}.mg-agent-tab-settings:hover,.mg-agent-tab-settings:focus-visible{background:#eaf2ff!important;color:#1757d7!important}
 </style>
 
 <?php
