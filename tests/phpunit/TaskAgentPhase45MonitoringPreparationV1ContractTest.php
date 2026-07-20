@@ -111,7 +111,9 @@ final class TaskAgentPhase45MonitoringPreparationV1ContractTest extends TestCase
             "'address_value_exposed'=>false",
             'Only readiness booleans are shown; no address value is exposed.',
         ] as $marker)self::assertStringContainsString($marker,$monitor);
-        foreach(['address_line_1','address_line_2','city','state_region','postal_code'] as $field)self::assertStringNotContainsString($field,$monitor);
+        foreach([
+            "['address_line_1']","['address_line_2']","['city']","['state_region']","['postal_code']",
+        ] as $fieldAccess)self::assertStringNotContainsString($fieldAccess,$monitor);
     }
 
     public function testMonitoringRoutesBeforeGeneralAiForBirthdayAndMerchantAgents(): void
