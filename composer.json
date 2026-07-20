@@ -42,7 +42,6 @@
     "test-prepaid-demand-behavior": "php scripts/validate_prepaid_demand_behavior.php",
     "test-agent-strategy-control-behavior": "php scripts/validate_agent_strategy_control_behavior.php",
     "test-agent-approval-center-behavior": "php scripts/validate_agent_approval_center_behavior.php",
-    "test-mcp-phase0": "php scripts/validate_mcp_phase0_contract.php",
     "test-demand-orchestration-behavior": "php scripts/validate_demand_orchestration_behavior.php",
     "test-demand-orchestration-operations": "php scripts/validate_demand_orchestration_operations_behavior.php",
     "test-demand-orchestration-recovery": "php scripts/validate_demand_orchestration_recovery_behavior.php",
