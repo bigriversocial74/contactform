@@ -1,0 +1,89 @@
+import type { Server } from "node:http";
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { InternalProtocolConfig } from "../protocolConfig.js";
+import { authenticateInternalBearer } from "../auth/internalToken.js";
+import { isOriginAllowed } from "./origin.js";
+import { FixedWindowRateLimiter } from "../rateLimit.js";
+import type { InvocationReceiptSink } from "../receipts.js";
+import { createInternalMcpServer } from "../tools/registry.js";
+
+function jsonError(code: number, message: string) {
+  return { jsonrpc: "2.0", id: null, error: { code, message } };
+}
+
+export function createInternalMcpApp(config: InternalProtocolConfig, receipts: InvocationReceiptSink) {
+  const app = createMcpExpressApp(
+    config.allowedHosts.length > 0
+      ? { host: config.host, allowedHosts: [...config.allowedHosts] }
+      : { host: config.host },
+  );
+  const limiter = new FixedWindowRateLimiter(config.rateLimitRequests, config.rateLimitWindowMs);
+
+  app.post("/mcp", async (request, response) => {
+    if (!config.platformEnabled || !config.internalHttpEnabled) {
+      response.status(404).json(jsonError(-32004, "Not found."));
+      return;
+    }
+
+    const origin = typeof request.headers.origin === "string" ? request.headers.origin : undefined;
+    if (!isOriginAllowed(origin, config.allowedOrigins)) {
+      response.status(403).json(jsonError(-32003, "Origin is not allowed."));
+      return;
+    }
+
+    const principal = authenticateInternalBearer(request.headers, config.tokenSha256, config.connection);
+    if (!principal) {
+      response.setHeader("WWW-Authenticate", 'Bearer realm="microgifter-mcp-internal"');
+      response.status(401).json(jsonError(-32001, "Authentication required."));
+      return;
+    }
+
+    const rate = limiter.consume(principal.connection.connectionId);
+    response.setHeader("X-RateLimit-Remaining", String(rate.remaining));
+    if (!rate.allowed) {
+      response.setHeader("Retry-After", String(rate.retryAfterSeconds));
+      response.status(429).json(jsonError(-32029, "Rate limit exceeded."));
+      return;
+    }
+
+    const server = createInternalMcpServer({ connection: principal.connection, receipts });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(request, response, request.body);
+    } catch {
+      if (!response.headersSent) {
+        response.status(500).json(jsonError(-32603, "Internal server error."));
+      }
+    } finally {
+      await transport.close().catch(() => undefined);
+      await server.close().catch(() => undefined);
+    }
+  });
+
+  app.get("/mcp", (_request, response) => {
+    response.status(405).json(jsonError(-32000, "Method not allowed."));
+  });
+
+  app.delete("/mcp", (_request, response) => {
+    response.status(405).json(jsonError(-32000, "Method not allowed."));
+  });
+
+  return app;
+}
+
+export function listenInternalMcp(
+  config: InternalProtocolConfig,
+  receipts: InvocationReceiptSink,
+): Promise<Server> {
+  const app = createInternalMcpApp(config, receipts);
+  return new Promise((resolve, reject) => {
+    const server = app.listen(config.port, config.host, () => resolve(server));
+    server.once("error", reject);
+  });
+}

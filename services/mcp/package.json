@@ -11,9 +11,16 @@
     "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "check": "npm run clean && npm run test"
+    "check": "npm run clean && npm run test",
+    "start": "node dist/server.js"
   },
   "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "20.19.43",
     "typescript": "5.8.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "4.4.3"
   }
 }

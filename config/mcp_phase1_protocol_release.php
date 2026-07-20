@@ -1,0 +1,86 @@
+<?php
+declare(strict_types=1);
+
+return [
+    'release_key' => 'microgifter_mcp_phase1_protocol_v1',
+    'program' => 'microgifter_platform_phase5',
+    'phase' => 'mcp_phase1_protocol_registry',
+    'depends_on' => [
+        'microgifter_mcp_phase1_foundation_v1',
+        'microgifter_mcp_phase0_contract_v1',
+    ],
+    'required_migrations' => [],
+    'protocol' => [
+        'revision' => '2025-11-25',
+        'transport' => 'streamable_http',
+        'mode' => 'stateless',
+        'endpoint' => '/mcp',
+        'sdk_package' => '@modelcontextprotocol/sdk',
+        'sdk_version' => '1.29.0',
+        'methods' => [
+            'initialize',
+            'notifications/initialized',
+            'ping',
+            'tools/list',
+            'tools/call',
+        ],
+    ],
+    'runtime' => [
+        'enabled_by_default' => false,
+        'internal_http_enabled_by_default' => false,
+        'external_http_enabled' => false,
+        'oauth_enabled' => false,
+        'stateful_sessions_enabled' => false,
+        'scheduler_enabled' => false,
+        'worker_enabled' => false,
+        'write_tools_enabled' => false,
+    ],
+    'internal_authentication' => [
+        'scheme' => 'bearer',
+        'stored_form' => 'sha256_hash_only',
+        'constant_time_comparison' => true,
+        'explicit_scopes_required' => true,
+        'maximum_operation_class' => 'read',
+    ],
+    'initial_tools' => [
+        'microgifter.account.get_connection_context' => [
+            'scope' => 'profile:read',
+            'status' => 'internal_active',
+            'operation_class' => 'read',
+        ],
+        'microgifter.catalog.search' => [
+            'scope' => 'catalog:read',
+            'status' => 'listed_bridge_disabled',
+            'operation_class' => 'read',
+        ],
+        'microgifter.catalog.get_item' => [
+            'scope' => 'catalog:read',
+            'status' => 'listed_bridge_disabled',
+            'operation_class' => 'read',
+        ],
+    ],
+    'controls' => [
+        'host_header_validation',
+        'origin_allowlist_when_present',
+        'maximum_request_body_from_sdk_app',
+        'sha256_bearer_verification',
+        'constant_time_token_comparison',
+        'per_connection_fixed_window_rate_limit',
+        'deterministic_scope_filtered_tool_list',
+        'read_only_tool_annotations',
+        'safe_json_rpc_errors',
+        'invocation_receipts',
+        'catalog_tools_fail_closed_without_bridge',
+        'get_and_delete_not_enabled',
+    ],
+    'boundaries' => [
+        'internal_development_only',
+        'disabled_by_default',
+        'no_public_dns_or_external_oauth',
+        'no_database_credentials',
+        'no_catalog_sql_or_duplicate_domain_logic',
+        'no_scheduler_worker_or_write_actions',
+        'no_mcp_tasks_dependency_for_durable_automation',
+        'no_unbounded_autonomous_mode',
+    ],
+];
