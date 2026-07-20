@@ -1,0 +1,82 @@
+name: Task Agent Phase 2 Production QA v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'api/agents/runtime.php'
+      - 'includes/multi-agent-runtime.php'
+      - 'includes/task-agent-context.php'
+      - 'includes/task-agent-memory.php'
+      - 'includes/task-agent-intent-router.php'
+      - 'includes/personal-agent/multi-agent-workspace.php'
+      - 'assets/js/multi-agent-runtime.js'
+      - 'assets/css/task-agent-single-chat-v1.css'
+      - 'assets/css/task-agent-context-v1.css'
+      - 'tests/phpunit/TaskAgentContextUpcomingEventsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentGiftPlanningDraftsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentRemindersV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentMemoryPermissionSafeRetrievalV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php'
+      - 'tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php'
+      - 'tests/phpunit/UnifiedAgentChatCanvasV2ContractTest.php'
+      - 'docs/TASK_AGENT_PHASE2_PRODUCTION_QA.md'
+      - '.github/workflows/task-agent-phase2-production-qa-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l api/agents/runtime.php
+          php -l includes/multi-agent-runtime.php
+          php -l includes/task-agent-context.php
+          php -l includes/task-agent-memory.php
+          php -l includes/task-agent-intent-router.php
+          php -l includes/personal-agent/multi-agent-workspace.php
+          php -l tests/phpunit/TaskAgentContextUpcomingEventsV1ContractTest.php
+          php -l tests/phpunit/TaskAgentGiftPlanningDraftsV1ContractTest.php
+          php -l tests/phpunit/TaskAgentRemindersV1ContractTest.php
+          php -l tests/phpunit/TaskAgentMemoryPermissionSafeRetrievalV1ContractTest.php
+          php -l tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+          php -l tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
+          php -l tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
+          php -l tests/phpunit/UnifiedAgentChatCanvasV2ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/multi-agent-runtime.js
+      - name: Phase 2 feature contracts
+        run: |
+          vendor/bin/phpunit tests/phpunit/TaskAgentContextUpcomingEventsV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/TaskAgentGiftPlanningDraftsV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/TaskAgentRemindersV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/TaskAgentMemoryPermissionSafeRetrievalV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/TaskAgentContextualChatActionCardsV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php
+      - name: Shared runtime regressions
+        run: |
+          vendor/bin/phpunit tests/phpunit/MultiAgentRuntimeMemoryV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/UnifiedAgentChatCanvasV2ContractTest.php
+          vendor/bin/phpunit tests/phpunit/TrueMultiAgentWorkspaceV1ContractTest.php
