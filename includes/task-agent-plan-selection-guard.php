@@ -1,6 +1,34 @@
 <?php
 declare(strict_types=1);
 
+function mg_task_agent_shortlist_add_without_overwriting_selection(
+    PDO $pdo,
+    int $userId,
+    int $agentId,
+    array $input
+): array {
+    mg_task_agent_shortlist_require_schema($pdo);
+    $productPublicId = mg_task_agent_shortlist_text($input['product_id'] ?? '', 80);
+    if ($productPublicId === '') throw new InvalidArgumentException('A published product is required.');
+
+    $stmt = $pdo->prepare(
+        "SELECT s.public_id FROM multi_agent_shortlist_items s "
+        . "INNER JOIN catalog_products cp ON cp.id=s.product_id "
+        . "WHERE cp.public_id=? AND s.owner_user_id=? AND s.agent_id=? "
+        . "AND s.status='selected' AND s.plan_id IS NOT NULL LIMIT 1"
+    );
+    $stmt->execute([$productPublicId, $userId, $agentId]);
+    $selectedId = (string)($stmt->fetchColumn() ?: '');
+    if ($selectedId !== '') {
+        foreach (mg_task_agent_shortlist_list($pdo, $userId, $agentId, 50) as $item) {
+            if ((string)($item['id'] ?? '') === $selectedId) return $item;
+        }
+        throw new RuntimeException('This product is already selected for a gift plan.');
+    }
+
+    return mg_task_agent_shortlist_add($pdo, $userId, $agentId, $input);
+}
+
 function mg_task_agent_shortlist_remove_if_unselected(
     PDO $pdo,
     int $userId,
