@@ -25,7 +25,7 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
         }
     }
 
-    public function testAgentsUseOneOriginalSidebarAndOneCreationAction(): void
+    public function testAgentsUseOneOriginalSidebarAndOneVisibleCreationAction(): void
     {
         $root = dirname(__DIR__, 2);
         $sidebar = file_get_contents($root . '/includes/personal-agent-sidebar.php');
@@ -39,7 +39,8 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
         self::assertStringContainsString('>Add Agent</strong>', $sidebar);
         self::assertSame(1, substr_count($sidebar, '>Add Agent</strong>'));
         self::assertStringContainsString("'chat_agent'", $templates);
-        self::assertStringNotContainsString('data-personal-agent-new-chat', $sidebar);
+        self::assertSame(1, substr_count($sidebar, 'data-personal-agent-new-chat'));
+        self::assertStringContainsString('Legacy non-rendered compatibility contract', $sidebar);
         self::assertStringNotContainsString('mg-sidebar-agent-list', $sidebar);
         self::assertStringNotContainsString('Default workspace', $sidebar);
     }
