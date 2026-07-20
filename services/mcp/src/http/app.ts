@@ -9,15 +9,36 @@ import { isOriginAllowed } from "./origin.js";
 import { FixedWindowRateLimiter } from "../rateLimit.js";
 import type { InvocationReceiptSink } from "../receipts.js";
 import { createInternalMcpServer } from "../tools/registry.js";
+import {
+  ServiceRuntimeState,
+  createRuntimeLogger,
+  resolveRuntimeConfig,
+  safeRequestId,
+  type RuntimeLogger,
+} from "../runtime.js";
 
 function jsonError(code: number, message: string) {
   return { jsonrpc: "2.0", id: null, error: { code, message } };
+}
+
+function servicePayload(config: InternalProtocolConfig, runtime: ServiceRuntimeState) {
+  const runtimeConfig = resolveRuntimeConfig(config.runtime);
+  const snapshot = runtime.snapshot();
+  return {
+    service: "microgifter-mcp",
+    release: runtimeConfig.release,
+    environment: runtimeConfig.environment,
+    status: snapshot.status,
+    uptime_seconds: snapshot.uptimeSeconds,
+  };
 }
 
 export function createInternalMcpApp(
   config: InternalProtocolConfig,
   receipts: InvocationReceiptSink,
   bridge?: CanonicalBridge,
+  runtime = new ServiceRuntimeState(),
+  logger: RuntimeLogger = createRuntimeLogger(resolveRuntimeConfig(config.runtime).logLevel),
 ) {
   const app = createMcpExpressApp(
     config.allowedHosts.length > 0
@@ -25,6 +46,70 @@ export function createInternalMcpApp(
       : { host: config.host },
   );
   const limiter = new FixedWindowRateLimiter(config.rateLimitRequests, config.rateLimitWindowMs);
+  app.disable("x-powered-by");
+
+  app.use((request, response, next) => {
+    const requestId = safeRequestId(request.headers["x-request-id"]);
+    response.setHeader("X-Request-ID", requestId);
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Cache-Control", "no-store");
+
+    if (request.path !== "/mcp") {
+      next();
+      return;
+    }
+    if (runtime.draining) {
+      response.status(503).json(jsonError(-32053, "Service is draining."));
+      return;
+    }
+
+    const startedAt = Date.now();
+    const finishRequest = runtime.beginRequest();
+    let logged = false;
+    const finish = () => {
+      if (logged) return;
+      logged = true;
+      finishRequest();
+      logger.info("http.request.completed", {
+        requestId,
+        method: request.method,
+        path: request.path,
+        status: response.statusCode,
+        durationMs: Date.now() - startedAt,
+      });
+    };
+    response.once("finish", finish);
+    response.once("close", finish);
+    next();
+  });
+
+  app.get("/health", (_request, response) => {
+    response.status(200).json({ ...servicePayload(config, runtime), liveness: "ok" });
+  });
+
+  app.get("/ready", async (_request, response) => {
+    if (runtime.draining || !config.platformEnabled || !config.internalHttpEnabled) {
+      response.status(503).json({ ...servicePayload(config, runtime), readiness: "not_ready" });
+      return;
+    }
+    if (config.bridge.enabled) {
+      if (!bridge) {
+        response.status(503).json({ ...servicePayload(config, runtime), readiness: "not_ready" });
+        return;
+      }
+      try {
+        await bridge.resolveConnection(config.connection.connectionId);
+      } catch (error) {
+        logger.warn("service.readiness.bridge_failed", {
+          error,
+          connectionId: config.connection.connectionId,
+        });
+        response.status(503).json({ ...servicePayload(config, runtime), readiness: "not_ready" });
+        return;
+      }
+    }
+    response.status(200).json({ ...servicePayload(config, runtime), readiness: "ready" });
+  });
 
   app.post("/mcp", async (request, response) => {
     if (!config.platformEnabled || !config.internalHttpEnabled) {
@@ -78,7 +163,11 @@ export function createInternalMcpApp(
     try {
       await server.connect(transport);
       await transport.handleRequest(request, response, request.body);
-    } catch {
+    } catch (error) {
+      logger.error("mcp.request.failed", {
+        requestId: response.getHeader("X-Request-ID"),
+        error,
+      });
       if (!response.headersSent) {
         response.status(500).json(jsonError(-32603, "Internal server error."));
       }
@@ -103,8 +192,10 @@ export function listenInternalMcp(
   config: InternalProtocolConfig,
   receipts: InvocationReceiptSink,
   bridge?: CanonicalBridge,
+  runtime = new ServiceRuntimeState(),
+  logger: RuntimeLogger = createRuntimeLogger(resolveRuntimeConfig(config.runtime).logLevel),
 ): Promise<Server> {
-  const app = createInternalMcpApp(config, receipts, bridge);
+  const app = createInternalMcpApp(config, receipts, bridge, runtime, logger);
   return new Promise((resolve, reject) => {
     const server = app.listen(config.port, config.host, () => resolve(server));
     server.once("error", reject);
