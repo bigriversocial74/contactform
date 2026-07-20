@@ -22,11 +22,84 @@ function mg_migration_database_dir(): string
     return dirname(__DIR__) . '/database';
 }
 
+/**
+ * Split a MySQL migration into executable statements while honoring mysql-client
+ * DELIMITER directives. The delimiter directive itself is not sent to PDO.
+ *
+ * Migrations without DELIMITER directives continue to use the existing single
+ * PDO::exec path through mg_migration_execute_sql().
+ *
+ * @return list<string>
+ */
+function mg_migration_sql_statements(string $sql): array
+{
+    $lines = preg_split('/\R/u', $sql);
+    if (!is_array($lines)) {
+        throw new RuntimeException('Could not read migration SQL lines.');
+    }
+
+    $delimiter = ';';
+    $buffer = '';
+    $statements = [];
+
+    foreach ($lines as $lineNumber => $line) {
+        $trimmedLine = trim($line);
+        if (trim($buffer) === '' && preg_match('/^DELIMITER\s+(\S+)\s*$/i', $trimmedLine, $matches) === 1) {
+            $delimiter = (string) ($matches[1] ?? '');
+            if ($delimiter === '') {
+                throw new RuntimeException('Empty DELIMITER directive at migration line ' . ($lineNumber + 1) . '.');
+            }
+            $buffer = '';
+            continue;
+        }
+
+        $buffer .= $line . "\n";
+        $candidate = rtrim($buffer);
+        if ($candidate === '' || !str_ends_with($candidate, $delimiter)) {
+            continue;
+        }
+
+        $statement = trim(substr($candidate, 0, -strlen($delimiter)));
+        if ($statement !== '') {
+            $statements[] = $statement;
+        }
+        $buffer = '';
+    }
+
+    if (trim($buffer) !== '') {
+        throw new RuntimeException('Unterminated migration SQL statement for delimiter ' . $delimiter . '.');
+    }
+
+    return $statements;
+}
+
+/**
+ * Execute one canonical migration. DELIMITER-aware files are executed one
+ * parsed statement at a time because DELIMITER is a mysql-client command, not
+ * server SQL and cannot be passed directly to PDO.
+ */
+function mg_migration_execute_sql(PDO $pdo, string $sql): void
+{
+    if (preg_match('/^\s*DELIMITER\s+/mi', $sql) !== 1) {
+        $pdo->exec($sql);
+        return;
+    }
+
+    $statements = mg_migration_sql_statements($sql);
+    if ($statements === []) {
+        throw new RuntimeException('Migration contains DELIMITER directives but no executable SQL statements.');
+    }
+
+    foreach ($statements as $statement) {
+        $pdo->exec($statement);
+    }
+}
+
 function mg_migration_keys_from_sql(string $sql, string $file): array
 {
     $keys = [];
     preg_match_all(
-        "/INSERT\\s+(?:IGNORE\\s+)?INTO\\s+`?schema_migrations`?\\s*\\([^;]*?\\)\\s*VALUES\\s*\\(\\s*'([^']+)'/is",
+        "/INSERT\s+(?:IGNORE\s+)?INTO\s+`?schema_migrations`?\s*\([^;]*?\)\s*VALUES\s*\(\s*'([^']+)'/is",
         $sql,
         $matches
     );
