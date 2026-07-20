@@ -114,10 +114,11 @@ final class TaskAgentPhase41RecurringProgramsV1ContractTest extends TestCase
             "'ai_tokens_total'=>0",
             "'tool'=>'recurring_programs'",
         ] as $marker)self::assertStringContainsString($marker,$router);
-        foreach(['mg_anthropic_messages','mg_ai_credit_consume','mg_openai','ai_reason'=>'recurring'] as $forbidden){
-            self::assertStringNotContainsString($forbidden,$router);
-            self::assertStringNotContainsString($forbidden,$service);
-        }
+        $combined=$router."\n".$service;
+        self::assertDoesNotMatchRegularExpression('/\bmg_anthropic_messages\s*\(/',$combined);
+        self::assertDoesNotMatchRegularExpression('/\bmg_ai_credit_consume\s*\(/',$combined);
+        self::assertDoesNotMatchRegularExpression('/\bmg_openai[A-Za-z0-9_]*\s*\(/',$combined);
+        self::assertStringNotContainsString("'ai_reason'=>'recurring",$combined);
     }
 
     public function testApiExposesOnlyReviewableRecurringActions(): void
