@@ -44,8 +44,10 @@ jobs:
         run: vendor/bin/phpunit --filter testRecurringCyclesRemainDraftOnlyApprovalFirstAndNonFinancial tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
       - name: Cycle concurrency protection
         run: vendor/bin/phpunit --filter testGenerateAndSkipUseFreshStateAndConcurrencyProtection tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
-      - name: Deterministic zero-AI routing
-        run: vendor/bin/phpunit --filter testRecurringChatIsInterceptedBeforeGeneralRuntimeAndUsesZeroAi tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Recurring route ordering
+        run: vendor/bin/phpunit --filter testRecurringChatInterceptPrecedesGeneralRuntime tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
+      - name: Recurring zero-AI boundary
+        run: vendor/bin/phpunit --filter testRecurringRouterUsesZeroAiProviderBoundary tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
       - name: Reviewable API actions
         run: vendor/bin/phpunit --filter testApiExposesOnlyReviewableRecurringActions tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php
       - name: Compact model projection
