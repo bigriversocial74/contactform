@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var threadList=root.querySelector('[data-agent-thread-list]');
   var memoryList=root.querySelector('[data-agent-memory-list]');
   var onboardingForm=root.querySelector('[data-agent-onboarding-form]');
+  var settingsModal=root.querySelector('[data-agent-settings-modal]');
   var currentThread='';
 
   function csrf(){var node=document.querySelector('meta[name="csrf-token"]');return node?node.content:'';}
@@ -22,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if(!response.ok||!json.ok)throw new Error(json.message||'Unable to complete the agent request.');
     return json.data||json;
   }
+  function openSettings(){if(!settingsModal)return;settingsModal.setAttribute('aria-hidden','false');document.body.classList.add('mg-agent-settings-open');var first=onboardingForm&&onboardingForm.querySelector('input,textarea');if(first)window.setTimeout(function(){first.focus();},40);}
+  function closeSettings(){if(!settingsModal)return;settingsModal.setAttribute('aria-hidden','true');document.body.classList.remove('mg-agent-settings-open');var url=new URL(window.location.href);url.searchParams.delete('settings');window.history.replaceState({},'',url.pathname+url.search+url.hash);}
   function renderCards(cards){if(!Array.isArray(cards)||!cards.length)return'';return '<div class="mg-agent-runtime-cards">'+cards.map(function(card){return '<article><span>'+esc(card.type||'Agent draft')+'</span><h4>'+esc(card.title||'Next step')+'</h4><p>'+esc(card.body||'')+'</p>'+(card.action==='save_draft'?'<button type="button" data-save-agent-draft data-draft-title="'+esc(card.title||'Agent draft')+'" data-draft-payload="'+esc(JSON.stringify(card.review_payload||{}))+'">Save reviewable draft</button>':'')+'</article>';}).join('')+'</div>';}
   function renderMessages(items){messages.innerHTML=(items||[]).map(function(item){return '<article class="mg-agent-runtime-message is-'+esc(item.role)+'"><div><strong>'+esc(item.role==='assistant'?'Agent':'You')+'</strong><time>'+esc(item.created_at||'')+'</time></div><p>'+esc(item.body||'')+'</p>'+renderCards(item.cards||[])+'</article>';}).join('');messages.scrollTop=messages.scrollHeight;}
   function renderThreads(items){threadList.innerHTML=(items||[]).map(function(item){return '<a href="#" data-runtime-thread="'+esc(item.public_id)+'" class="'+(item.public_id===currentThread?'is-active':'')+'"><strong>'+esc(item.title||'Conversation')+'</strong><small>'+esc(item.last_message_at||item.updated_at||'')+'</small></a>';}).join('');}
@@ -40,10 +43,12 @@ document.addEventListener('DOMContentLoaded', function () {
   composer.addEventListener('submit',function(event){event.preventDefault();var field=composer.elements.message;var value=field.value.trim();if(!value)return;field.value='';send(value);});
   document.addEventListener('click',function(event){
     var prompt=event.target.closest('[data-agent-seed-prompt]');if(prompt){event.preventDefault();event.stopImmediatePropagation();composer.elements.message.value=prompt.getAttribute('data-agent-seed-prompt')||'';composer.elements.message.focus();return;}
+    var settingsOpen=event.target.closest('[data-agent-settings-open]');if(settingsOpen){event.preventDefault();openSettings();return;}
+    var settingsClose=event.target.closest('[data-agent-settings-close]');if(settingsClose){event.preventDefault();closeSettings();return;}
     var thread=event.target.closest('[data-runtime-thread]');if(thread){event.preventDefault();event.stopImmediatePropagation();load(thread.getAttribute('data-runtime-thread'));return;}
     var fresh=event.target.closest('[data-agent-new-thread]');if(fresh){event.preventDefault();event.stopImmediatePropagation();request('POST','/api/agents/runtime.php',{id:agentId,action:'new_thread'}).then(function(data){load(data.thread.id);}).catch(function(error){status.textContent=error.message;});return;}
     var draft=event.target.closest('[data-save-agent-draft]');if(draft){event.preventDefault();event.stopImmediatePropagation();var payload={};try{payload=JSON.parse(draft.getAttribute('data-draft-payload')||'{}');}catch(e){}request('POST','/api/agents/runtime.php',{id:agentId,action:'save_draft',thread_id:currentThread,title:draft.getAttribute('data-draft-title')||'Agent draft',draft_type:'plan',payload:payload}).then(function(){status.textContent='Reviewable draft saved.';}).catch(function(error){status.textContent=error.message;});}
   },true);
-  if(onboardingForm)onboardingForm.addEventListener('submit',function(event){event.preventDefault();var form=new FormData(onboardingForm);var answers={};form.forEach(function(value,key){answers[key]=String(value).trim();});var note=onboardingForm.querySelector('[data-agent-onboarding-status]');note.textContent='Saving…';request('POST','/api/agents/runtime.php',{id:agentId,action:'onboarding',status:'completed',current_step:'complete',answers:answers}).then(function(data){renderMemory(data.memory);note.textContent='Agent setup saved.';}).catch(function(error){note.textContent=error.message;});});
-  load('');
+  if(onboardingForm)onboardingForm.addEventListener('submit',function(event){event.preventDefault();var form=new FormData(onboardingForm);var answers={};form.forEach(function(value,key){if(key!=='settings_action')answers[key]=String(value).trim();});var action=(event.submitter&&event.submitter.value)||'save';var note=onboardingForm.querySelector('[data-agent-onboarding-status]');note.textContent=action==='apply'?'Saving and applying…':'Saving…';request('POST','/api/agents/runtime.php',{id:agentId,action:'onboarding',status:'completed',current_step:'complete',answers:answers}).then(function(data){renderMemory(data.memory);note.textContent=action==='apply'?'Settings saved and applied.':'Settings saved.';if(action==='apply'){closeSettings();load(currentThread);}}).catch(function(error){note.textContent=error.message;});});
+  load('').then(function(){if(root.getAttribute('data-open-agent-settings')==='true')openSettings();});
 });
