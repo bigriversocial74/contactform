@@ -155,6 +155,7 @@ return [
         '20260720_microgifter_mcp_automation_foundation_v1.sql',
         '20260720_mcp_external_agent_authorization_phase2a_v1.sql',
         '20260720_mcp_approval_gated_drafts_phase3a_v1.sql',
+        '20260720_mcp_approved_draft_conversion_phase3b_v1.sql',
         '20260715_ai_user_credit_packages.sql',
         '20260718_ai_credit_reconciliation_incidents.sql',
         '20260718_merchant_agent_automatic_snapshots_v1.sql',
