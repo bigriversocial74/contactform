@@ -70,26 +70,28 @@ body.mg-homepage-exact-v2 .pppm-event__sticky{
 }
 body.mg-homepage-exact-v2 .pppm-event__sticky{
   padding-left:clamp(1rem,3vw,3rem)!important;
-  padding-right:clamp(1rem,3vw,3rem)!important;
+  padding-right:0!important;
 }
 
-/* Real product screenshots inside the first three timeline chapters. */
+/* Oversized real screenshots: show roughly three quarters and let the final quarter run off-screen. */
 body.mg-homepage-exact-v2 .pppm-visual.pppm-visual--real-image{
   display:flex;
   align-items:center;
-  justify-content:center;
-  overflow:visible;
+  justify-content:flex-start;
+  overflow:hidden;
+  min-width:0;
 }
 body.mg-homepage-exact-v2 .pppm-visual.pppm-visual--real-image img{
   display:block;
-  width:100%;
+  width:133.333%;
   max-width:none;
   height:auto;
-  max-height:74vh;
+  max-height:82vh;
+  flex:0 0 133.333%;
   object-fit:contain;
-  object-position:center;
+  object-position:left center;
   border:1px solid rgba(62,71,82,.14);
-  border-radius:clamp(18px,2vw,30px);
+  border-radius:0;
   background:#fff;
   box-shadow:0 34px 100px rgba(50,60,72,.18),inset 0 1px 0 rgba(255,255,255,.95);
 }
@@ -133,8 +135,8 @@ body.mg-homepage-exact-v2 .pricing-reveal .pricing-card{display:none!important}
   body.mg-homepage-exact-v2 .growth-stage.hero-third-message{padding:1.5rem}
   body.mg-homepage-exact-v2 .hero-third-message__inner h2{font-size:clamp(2.6rem,10vw,4.6rem)}
   body.mg-homepage-exact-v2 .pppm-intro{width:calc(100% - 2rem)}
-  body.mg-homepage-exact-v2 .pppm-event__sticky{padding-left:1rem!important;padding-right:1rem!important}
-  body.mg-homepage-exact-v2 .pppm-visual.pppm-visual--real-image img{max-height:none;border-radius:16px}
+  body.mg-homepage-exact-v2 .pppm-event__sticky{padding-left:1rem!important;padding-right:0!important}
+  body.mg-homepage-exact-v2 .pppm-visual.pppm-visual--real-image img{width:133.333%;flex-basis:133.333%;max-height:none;border-radius:0}
 }
 
 @media(prefers-reduced-motion:reduce){
