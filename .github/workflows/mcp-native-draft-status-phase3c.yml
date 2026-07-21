@@ -1,0 +1,63 @@
+name: MCP Native Draft Status Phase 3C
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phase3c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: test
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: phase3c-ci-pepper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Syntax and contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          find includes/mcp-drafts/native-status scripts/mcp-phase3c -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l api/internal/mcp-bridge.php
+          php -l account-agent-handoffs.php
+          php -l scripts/test_mcp_native_draft_status_phase3c.php
+          vendor/bin/phpunit tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
+      - name: Clean database lifecycle
+        run: |
+          php scripts/run_migrations.php
+          php scripts/test_mcp_native_draft_status_phase3c.php
+      - run: composer audit-repository-quality
