@@ -1,0 +1,68 @@
+name: MCP Automation Definitions Phase 4B
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phase4b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: test
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: phase4b-ci-pepper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Syntax and Phase 4B contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l account-agent-automation-definitions.php
+          find includes/mcp-automations -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l config/mcp_automation_definitions_phase4b_release.php
+          php -l scripts/validate_mcp_automation_definitions_phase4b.php
+          php -l tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
+          php scripts/validate_mcp_automation_definitions_phase4b.php
+          vendor/bin/phpunit tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
+      - name: Existing MCP schema and regressions
+        run: |
+          php scripts/run_migrations.php
+          vendor/bin/phpunit tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php
+          vendor/bin/phpunit tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
+      - run: composer audit-repository-quality
