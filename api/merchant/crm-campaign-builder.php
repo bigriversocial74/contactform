@@ -53,11 +53,17 @@ function mg_crm_builder_state(PDO $pdo, int $merchantId): array
             if ($key !== '' && !isset($drafts[$key])) $drafts[$key] = $ctx;
             continue;
         }
-        if ($row['event_type'] === 'crm.campaign_builder.launched') {
-            $launches[] = $ctx;
-        }
+        if ($row['event_type'] === 'crm.campaign_builder.launched') $launches[] = $ctx;
     }
     return ['segments' => array_values($segments), 'drafts' => array_values($drafts), 'launches' => array_slice($launches, 0, 20), 'schema_ready' => true];
+}
+
+function mg_crm_builder_source_draft(PDO $pdo, int $merchantId, string $draftId): array
+{
+    if ($draftId === '') return [];
+    $stmt = $pdo->prepare("SELECT event_context_json FROM campaign_events WHERE merchant_user_id=? AND event_type='crm.campaign_builder.draft' AND JSON_UNQUOTE(JSON_EXTRACT(event_context_json,'$.draft_id'))=? ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$merchantId, $draftId]);
+    return mg_crm_builder_json($stmt->fetchColumn() ?: null);
 }
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
@@ -68,9 +74,7 @@ $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
 
 try {
-    if ($method === 'GET') {
-        mg_ok(mg_crm_builder_state($pdo, $merchantId));
-    }
+    if ($method === 'GET') mg_ok(mg_crm_builder_state($pdo, $merchantId));
 
     $input = mg_input();
     mg_require_csrf_for_write($input);
@@ -107,14 +111,19 @@ try {
             'follow_up_due_at' => trim((string)($input['follow_up_due_at'] ?? '')),
             'follow_up_note' => substr(trim((string)($input['follow_up_note'] ?? '')), 0, 1000),
             'status' => 'draft',
+            'mcp_source_draft_id' => trim((string)($input['mcp_source_draft_id'] ?? '')),
         ]);
         mg_ok(['draft' => $event['context'], 'state' => mg_crm_builder_state($pdo, $merchantId)], 'Saved CRM campaign draft.');
     }
 
     if ($action === 'launch_record') {
         $name = trim((string)($input['campaign_name'] ?? 'Campaign launch')) ?: 'Campaign launch';
+        $draftId = mg_crm_builder_slug((string)($input['draft_id'] ?? ''), '');
+        $sourceDraft = mg_crm_builder_source_draft($pdo, $merchantId, $draftId);
         $event = mg_crm_builder_event($pdo, $merchantId, 'crm.campaign_builder.launched', [
             'launch_id' => 'launch_' . substr(hash('sha256', $name . microtime(true)), 0, 14),
+            'draft_id' => $draftId,
+            'mcp_source_draft_id' => trim((string)($input['mcp_source_draft_id'] ?? $sourceDraft['mcp_source_draft_id'] ?? '')),
             'campaign_name' => substr($name, 0, 180),
             'segment_id' => trim((string)($input['segment_id'] ?? '')),
             'segment_key' => mg_crm_builder_slug((string)($input['segment_key'] ?? 'all'), 'all'),
