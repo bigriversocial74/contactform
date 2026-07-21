@@ -1,14 +1,14 @@
 START TRANSACTION;
 
 ALTER TABLE gift_bundle_settlement_adjustments
-  ADD COLUMN IF NOT EXISTS dispatch_attempt_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER response_snapshot_json,
-  ADD COLUMN IF NOT EXISTS next_dispatch_at DATETIME NULL AFTER dispatch_attempt_count,
-  ADD COLUMN IF NOT EXISTS dispatch_locked_at DATETIME NULL AFTER next_dispatch_at,
-  ADD COLUMN IF NOT EXISTS dispatch_lock_token CHAR(36) NULL AFTER dispatch_locked_at,
-  ADD COLUMN IF NOT EXISTS last_reconciled_at DATETIME NULL AFTER dispatch_lock_token,
-  ADD COLUMN IF NOT EXISTS failure_code VARCHAR(100) NULL AFTER last_reconciled_at,
-  ADD COLUMN IF NOT EXISTS failure_message VARCHAR(500) NULL AFTER failure_code,
-  ADD KEY IF NOT EXISTS idx_bundle_adjustment_dispatch (adjustment_status,next_dispatch_at,dispatch_locked_at);
+  ADD COLUMN dispatch_attempt_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER response_snapshot_json,
+  ADD COLUMN next_dispatch_at DATETIME NULL AFTER dispatch_attempt_count,
+  ADD COLUMN dispatch_locked_at DATETIME NULL AFTER next_dispatch_at,
+  ADD COLUMN dispatch_lock_token CHAR(36) NULL AFTER dispatch_locked_at,
+  ADD COLUMN last_reconciled_at DATETIME NULL AFTER dispatch_lock_token,
+  ADD COLUMN failure_code VARCHAR(100) NULL AFTER last_reconciled_at,
+  ADD COLUMN failure_message VARCHAR(500) NULL AFTER failure_code,
+  ADD KEY idx_bundle_adjustment_dispatch (adjustment_status,next_dispatch_at,dispatch_locked_at);
 
 CREATE TABLE IF NOT EXISTS gift_bundle_provider_dead_letters (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
