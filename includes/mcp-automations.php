@@ -13,3 +13,4 @@ require_once __DIR__ . '/mcp-automations/definition-lifecycle.php';
 require_once __DIR__ . '/mcp-automations/schedules.php';
 require_once __DIR__ . '/mcp-automations/simulations.php';
 require_once __DIR__ . '/mcp-automations/definitions-repository.php';
+require_once __DIR__ . '/mcp-automations/operations.php';
