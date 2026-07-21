@@ -4,14 +4,14 @@ This is the primary reference for installing, validating, and activating the Mic
 
 ## Current state
 
-The PHP OAuth authority, external-agent review workspace, owner conversion workflow, native handoff-status authority, and Phase 4A automation-grant controls can be deployed before a Node.js VPS is available. Keep the public MCP endpoint, runtime security keys, external OAuth switches, schedulers, queues, workers, and execution switches disabled until DNS, TLS, Nginx, Node.js, and the later execution phases are ready.
+The PHP OAuth authority, external-agent review workspace, owner conversion workflow, native handoff-status authority, Phase 4A automation-grant controls, and Phase 4B automation definitions/manual simulations can be deployed before a Node.js VPS is available. Keep the public MCP endpoint, runtime security keys, external OAuth switches, schedulers, queues, workers, and execution switches disabled until DNS, TLS, Nginx, Node.js, and the later execution phases are ready.
 
 Current boundary:
 
 ```text
 external agent: read + reviewable draft creation + read-only handoff status
-owner: review + separate inactive native-draft conversion + bounded grant configuration
-runtime: no schedules, queues, workers, or external-effect execution
+owner: review + inactive native-draft conversion + bounded grants + simulation-only definitions
+runtime: manual policy simulations only; no schedules, queues, workers, commands, receipts, or external effects
 ```
 
 No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, fulfill, charge, or enqueue execution.
@@ -25,6 +25,7 @@ No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, ful
 5. `docs/MICROGIFTER_MCP_INSTALLATION_PHASE3B_SUPPLEMENT.md`
 6. `docs/MICROGIFTER_MCP_NATIVE_DRAFT_STATUS_PHASE3C.md`
 7. `docs/MICROGIFTER_MCP_AUTOMATION_GRANTS_PHASE4A.md`
+8. `docs/MICROGIFTER_MCP_AUTOMATION_DEFINITIONS_PHASE4B.md`
 
 ## Required migrations
 
@@ -35,7 +36,7 @@ No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, ful
 20260720_mcp_approved_draft_conversion_phase3b_v1
 ```
 
-Phases 3C and 4A require **no new SQL**. Phase 3C uses the existing Microgifter event ledger for state-change evidence. Phase 4A uses the existing `mcp_automation_grants`, automation, run, receipt, and security-event tables from the foundation migration.
+Phases 3C, 4A, and 4B require **no new SQL**. Phase 3C uses the existing Microgifter event ledger. Phases 4A and 4B use the existing automation grant, definition, trigger, run, action, receipt, and security-event tables from the foundation migration.
 
 ## Current PHP-hosting deployment
 
@@ -46,10 +47,11 @@ On the current non-Node.js hosting environment:
 3. Confirm `/account-agent-drafts.php` loads.
 4. Confirm `/account-agent-handoffs.php` loads.
 5. Confirm `/account-agent-automations.php` loads and displays the build-only runtime boundary.
-6. Do not generate or activate production bearer tokens, bridge HMAC secrets, public OAuth clients, or runtime security keys.
-7. Do not configure `mcp.microgifter.com`, Nginx, systemd, the Node service, schedulers, queues, or workers on this server.
+6. Confirm `/account-agent-automation-definitions.php` loads and displays the simulation-only runtime boundary.
+7. Do not generate or activate production bearer tokens, bridge HMAC secrets, public OAuth clients, or runtime security keys.
+8. Do not configure `mcp.microgifter.com`, Nginx, systemd, the Node service, schedulers, queues, or workers on this server.
 
-The deployed PHP code remains dormant and fail-closed until the VPS activation steps are intentionally completed.
+The deployed PHP code remains dormant and fail-closed. Phase 4B may create owner definitions and manual policy-simulation evidence, but it cannot call a canonical command or create an action receipt.
 
 ## Future VPS activation order
 
@@ -60,8 +62,8 @@ The deployed PHP code remains dormant and fail-closed until the VPS activation s
 5. Validate `/health`, `/ready`, and OAuth discovery.
 6. Pre-register a client with the minimum required scopes.
 7. Enable external OAuth and run a real client connection.
-8. Verify review, inactive conversion, read-only handoff status, and grant controls while both execution queues remain unchanged.
-9. Do not activate schedules, workers, or external-effect actions until their later phases are separately built, reviewed, and approved.
+8. Verify review, inactive conversion, read-only handoff status, grant controls, automation definitions, and manual simulation history while execution queues remain unchanged.
+9. Do not activate schedules, workers, canonical commands, approval-gated external effects, or bounded-auto actions until their later phases are separately built, reviewed, and approved.
 
 ## Pre-deployment validation
 
@@ -77,11 +79,13 @@ node scripts/external-agent-readiness.mjs
 ```bash
 vendor/bin/phpunit tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
 vendor/bin/phpunit tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php
+vendor/bin/phpunit tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
 php scripts/run_migrations.php
 php scripts/test_mcp_approval_gated_drafts_phase3a.php
 php scripts/test_mcp_approved_draft_conversion_phase3b.php
 php scripts/test_mcp_native_draft_status_phase3c.php
 php scripts/validate_mcp_automation_grants_phase4a.php
+php scripts/validate_mcp_automation_definitions_phase4b.php
 ```
 
 ## VPS readiness
@@ -121,7 +125,10 @@ Verify all of the following on the future VPS:
 - `/account-agent-handoffs.php` reads canonical native state;
 - `microgifter.drafts.get` and `microgifter.drafts.list` include `handoff`;
 - `/account-agent-automations.php` creates only bounded authority records;
+- `/account-agent-automation-definitions.php` creates only grant-bound definitions and manual simulations;
 - activating a grant creates no automation definition, trigger, run, action, or receipt;
-- no review, conversion, status, or grant-control operation changes `agent_workflow_actions` or executes `mcp_automation_actions`.
+- activating a definition starts no scheduler or worker;
+- a Phase 4B simulation creates proposed actions but zero action receipts;
+- no review, conversion, status, grant-control, definition, or simulation operation executes `agent_workflow_actions` or a canonical command.
 
-Phase 3C reports what happened after a human-created native draft handoff. Phase 4A records bounded owner authority for future automation phases. Neither phase performs the native action or enables runtime execution.
+Phase 3C reports native handoff status. Phase 4A records bounded owner authority. Phase 4B creates simulation-only definitions and durable policy evidence. None of these phases performs an external-effect action or enables runtime execution.
