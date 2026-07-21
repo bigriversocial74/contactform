@@ -6,7 +6,7 @@ declare(strict_types=1);
   <main class="mg-app-workspace mg-automation-workspace">
     <header class="mg-automation-hero">
       <div><span class="mg-automation-eyebrow">MCP Phase 4B · simulation control</span><h1>Automation definitions</h1><p>Create owner-controlled definitions under an active grant, activate them separately, and run manual policy simulations that record proposed actions without executing Microgifter commands.</p></div>
-      <nav class="mg-automation-hero-actions"><a href="/account-agent-automations.php">Automation grants</a><a href="/account-agent-automation-schedules.php">Schedules</a><a href="/account-agent-drafts.php">Agent drafts</a><a href="/account-agent-handoffs.php">Handoff status</a></nav>
+      <nav class="mg-automation-hero-actions"><a href="/account-agent-automations.php">Automation grants</a><a href="/account-agent-automation-schedules.php">Schedules</a><a href="/account-agent-automation-operations.php">Operations</a><a href="/account-agent-drafts.php">Agent drafts</a><a href="/account-agent-handoffs.php">Handoff status</a></nav>
     </header>
     <aside class="mg-automation-runtime-boundary"><strong>Simulation-only deployment state</strong><p>Node.js, security keys, queues, workers, canonical command execution, action receipts, and external effects remain disabled. Phase 4C may store schedule due records, but only an owner-operated evaluator can fire a simulation.</p></aside>
     <?php if ($notice !== ''): ?><div class="mg-automation-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
