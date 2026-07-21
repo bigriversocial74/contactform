@@ -40,12 +40,36 @@ function mg_mcp_oauth_enabled(): bool
 
 function mg_mcp_oauth_issuer(): string
 {
-    return rtrim(trim((string)(getenv('MG_MCP_OAUTH_ISSUER') ?: 'https://microgifter.com')), '/');
+    $value = rtrim(trim((string)(getenv('MG_MCP_OAUTH_ISSUER') ?: 'https://microgifter.com')), '/');
+    $parts = parse_url($value);
+    if (!is_array($parts)
+        || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+        || empty($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['query'])
+        || isset($parts['fragment'])
+        || !in_array((string)($parts['path'] ?? ''), ['', '/'], true)) {
+        throw new MgMcpOAuthException('The OAuth issuer configuration is invalid.', 'server_error', 500);
+    }
+    return $value;
 }
 
 function mg_mcp_oauth_resource_uri(): string
 {
-    return rtrim(trim((string)(getenv('MG_MCP_OAUTH_RESOURCE_URI') ?: 'https://mcp.microgifter.com/mcp')), '/');
+    $value = rtrim(trim((string)(getenv('MG_MCP_OAUTH_RESOURCE_URI') ?: 'https://mcp.microgifter.com/mcp')), '/');
+    $parts = parse_url($value);
+    if (!is_array($parts)
+        || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+        || empty($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['query'])
+        || isset($parts['fragment'])
+        || !str_ends_with((string)($parts['path'] ?? ''), '/mcp')) {
+        throw new MgMcpOAuthException('The OAuth resource configuration is invalid.', 'server_error', 500);
+    }
+    return $value;
 }
 
 function mg_mcp_oauth_access_ttl(): int
@@ -120,10 +144,12 @@ function mg_mcp_oauth_https_url(string $value, string $label, bool $allowPath = 
     if (!is_array($parts)
         || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
         || empty($parts['host'])
-        || isset($parts['user'], $parts['pass'], $parts['fragment'])) {
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['fragment'])) {
         throw new MgMcpOAuthException($label . ' must be an HTTPS URL without embedded credentials or a fragment.', 'invalid_request', 422);
     }
-    if (!$allowPath && !in_array((string)($parts['path'] ?? ''), ['', '/'], true)) {
+    if (!$allowPath && (!in_array((string)($parts['path'] ?? ''), ['', '/'], true) || isset($parts['query']))) {
         throw new MgMcpOAuthException($label . ' must be an HTTPS origin.', 'invalid_request', 422);
     }
     return $value;
@@ -136,8 +162,12 @@ function mg_mcp_oauth_redirect_uri(string $value): string
         throw new MgMcpOAuthException('Invalid redirect URI.', 'invalid_redirect_uri', 422);
     }
     $parts = parse_url($value);
-    if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])
-        || isset($parts['user'], $parts['pass'], $parts['fragment'])) {
+    if (!is_array($parts)
+        || empty($parts['scheme'])
+        || empty($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['fragment'])) {
         throw new MgMcpOAuthException('Invalid redirect URI.', 'invalid_redirect_uri', 422);
     }
     $scheme = strtolower((string)$parts['scheme']);
