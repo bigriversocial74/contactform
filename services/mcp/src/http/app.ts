@@ -25,6 +25,15 @@ import {
 import type { ConnectionContext } from "../contracts.js";
 import type { OAuthTokenResolver } from "../bridge/oauthBridge.js";
 
+const supportedOAuthScopes = [
+  "profile:read",
+  "catalog:read",
+  "gift:draft",
+  "campaign:draft",
+  "reward:draft",
+  "message:draft",
+] as const;
+
 function jsonError(code: number, message: string) {
   return { jsonrpc: "2.0", id: null, error: { code, message } };
 }
@@ -134,7 +143,7 @@ export function createInternalMcpApp(
     }
     response.setHeader("Access-Control-Allow-Origin", "*");
     response.setHeader("Cache-Control", "public, max-age=300");
-    response.status(200).json(protectedResourceMetadata(externalOAuth, ["profile:read", "catalog:read"]));
+    response.status(200).json(protectedResourceMetadata(externalOAuth, supportedOAuthScopes));
   };
   app.get("/.well-known/oauth-protected-resource", metadataHandler);
   app.get("/.well-known/oauth-protected-resource/mcp", metadataHandler);
