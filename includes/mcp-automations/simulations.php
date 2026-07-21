@@ -1,11 +1,31 @@
 <?php
 declare(strict_types=1);
 
-function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automationPublicId): array
+function mg_mcp_automation_next_recurring_due(string $dueAt, int $intervalSeconds): string
 {
+    $intervalSeconds = max(3600, $intervalSeconds);
+    $next = new DateTimeImmutable($dueAt, new DateTimeZone('UTC'));
+    $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+    do {
+        $next = $next->modify('+' . $intervalSeconds . ' seconds');
+    } while ($next <= $now);
+    return $next->format('Y-m-d H:i:s');
+}
+
+function mg_mcp_automation_run_simulation_with_trigger(
+    PDO $pdo,
+    array $user,
+    string $automationPublicId,
+    string $requestedTriggerType,
+    ?string $triggerPublicId = null
+): array {
     $userId = (int)($user['id'] ?? 0);
     if ($userId < 1) {
         throw new MgMcpAutomationGrantException('Sign in to run an automation simulation.', 401, 'MCP_AUTOMATION_AUTH_REQUIRED');
+    }
+    $scheduled = in_array($requestedTriggerType, ['fixed_schedule', 'recurring_schedule'], true);
+    if (!$scheduled && $requestedTriggerType !== 'manual') {
+        throw new MgMcpAutomationGrantException('Unsupported simulation trigger.', 422, 'MCP_AUTOMATION_TRIGGER_TYPE_INVALID');
     }
 
     $pdo->beginTransaction();
@@ -23,7 +43,7 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
         $playbook = mg_mcp_automation_definition_playbook($grant, (string)$automation['playbook_key']);
         $configuration = mg_mcp_automation_json_object($automation['configuration_json']);
         if (($configuration['simulation_only'] ?? null) !== true || ($configuration['execution_requested'] ?? true) !== false) {
-            throw new MgMcpAutomationGrantException('The automation definition is outside the Phase 4B simulation-only boundary.', 409, 'MCP_AUTOMATION_SIMULATION_BOUNDARY');
+            throw new MgMcpAutomationGrantException('The automation definition is outside the simulation-only boundary.', 409, 'MCP_AUTOMATION_SIMULATION_BOUNDARY');
         }
 
         $riskLevel = (string)($configuration['risk_level'] ?? 'low');
@@ -44,31 +64,56 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
                 $targetContext
             );
             if (($authorization['execution_enabled'] ?? true) !== false) {
-                throw new MgMcpAutomationGrantException('Phase 4B requires the grant evaluator to remain execution-disabled.', 409, 'MCP_AUTOMATION_EXECUTION_BOUNDARY');
+                throw new MgMcpAutomationGrantException('Simulation requires the grant evaluator to remain execution-disabled.', 409, 'MCP_AUTOMATION_EXECUTION_BOUNDARY');
             }
             $authorizedTools[] = (string)$toolName;
         }
 
-        $triggerStmt = $pdo->prepare("SELECT id,public_id,status FROM mcp_automation_triggers WHERE automation_id=? AND trigger_type='manual' LIMIT 1 FOR UPDATE");
-        $triggerStmt->execute([(int)$automation['id']]);
+        if ($scheduled) {
+            $triggerStmt = $pdo->prepare(
+                "SELECT id,public_id,status,trigger_type,configuration_json,next_due_at
+                 FROM mcp_automation_triggers
+                 WHERE automation_id=? AND public_id=? AND trigger_type=? LIMIT 1 FOR UPDATE"
+            );
+            $triggerStmt->execute([(int)$automation['id'], (string)$triggerPublicId, $requestedTriggerType]);
+        } else {
+            $triggerStmt = $pdo->prepare(
+                "SELECT id,public_id,status,trigger_type,configuration_json,next_due_at
+                 FROM mcp_automation_triggers WHERE automation_id=? AND trigger_type='manual' LIMIT 1 FOR UPDATE"
+            );
+            $triggerStmt->execute([(int)$automation['id']]);
+        }
         $trigger = $triggerStmt->fetch(PDO::FETCH_ASSOC);
         if (!$trigger || (string)$trigger['status'] !== 'active') {
-            throw new MgMcpAutomationGrantException('The manual simulation trigger is not active.', 409, 'MCP_AUTOMATION_TRIGGER_INACTIVE');
+            throw new MgMcpAutomationGrantException('The simulation trigger is not active.', 409, 'MCP_AUTOMATION_TRIGGER_INACTIVE');
+        }
+        $triggerConfiguration = mg_mcp_automation_json_object($trigger['configuration_json']);
+        if ($scheduled && !in_array((string)$trigger['trigger_type'], mg_mcp_automation_json_list($automation['grant_allowed_trigger_types_json'] ?? []), true)) {
+            throw new MgMcpAutomationGrantException('The parent grant no longer authorizes this schedule type.', 403, 'MCP_AUTOMATION_TRIGGER_DENIED');
+        }
+        $dueAt = $scheduled ? (string)($trigger['next_due_at'] ?? '') : gmdate('Y-m-d H:i:s');
+        if ($scheduled && ($dueAt === '' || strtotime($dueAt . ' UTC') > time())) {
+            throw new MgMcpAutomationGrantException('The scheduled simulation is not due.', 409, 'MCP_AUTOMATION_TRIGGER_NOT_DUE');
         }
 
         $runPublicId = mg_public_uuid();
-        $runKey = 'phase4b-sim:' . $runPublicId;
+        $mode = $scheduled ? 'scheduled_simulation_only' : 'manual_simulation_only';
+        $runKey = $scheduled
+            ? 'phase4c-sim:' . hash('sha256', (string)$trigger['public_id'] . '|' . $dueAt)
+            : 'phase4b-sim:' . $runPublicId;
         $inputFingerprint = hash('sha256', json_encode([
             'automation' => $automationPublicId,
             'version' => (int)$automation['current_version'],
             'grant_revocation_version' => (int)$automation['revocation_version'],
             'configuration' => $configuration,
+            'trigger_type' => (string)$trigger['trigger_type'],
+            'scheduled_at' => $dueAt,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
         $now = gmdate('Y-m-d H:i:s');
         $pdo->prepare(
             "INSERT INTO mcp_automation_runs
              (public_id,automation_id,grant_id,trigger_id,status,idempotency_key,input_fingerprint,scheduled_at,queued_at,started_at,completed_at,attempt,maximum_attempts,output_summary_json,created_at,updated_at)
-             VALUES (?,?,?,?,'succeeded',?,?,?, ?,?,?,1,1,?,NOW(),NOW())"
+             VALUES (?,?,?,?,'succeeded',?,?,?,?,?,?,1,1,?,NOW(),NOW())"
         )->execute([
             $runPublicId,
             (int)$automation['id'],
@@ -76,13 +121,17 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
             (int)$trigger['id'],
             $runKey,
             $inputFingerprint,
-            $now,
+            $dueAt,
             $now,
             $now,
             $now,
             json_encode([
-                'mode' => 'manual_simulation_only',
+                'mode' => $mode,
                 'policy_result' => 'authorized_for_simulation',
+                'trigger_type' => (string)$trigger['trigger_type'],
+                'trigger_public_id' => (string)$trigger['public_id'],
+                'scheduler_enabled' => false,
+                'owner_manual_due_evaluation' => $scheduled,
                 'execution_attempted' => false,
                 'external_effect' => false,
                 'action_receipts_created' => 0,
@@ -115,6 +164,7 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
                 'target_context' => $targetContext,
                 'proposed_amount_cents' => $proposedAmount,
                 'proposed_quantity' => $proposedQuantity,
+                'trigger_type' => (string)$trigger['trigger_type'],
                 'execution_requested' => false,
             ];
             $pdo->prepare(
@@ -137,10 +187,28 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
             ]);
         }
 
-        $pdo->prepare('UPDATE mcp_automations SET last_run_at=NOW(),next_run_at=NULL,updated_at=NOW() WHERE id=?')
-            ->execute([(int)$automation['id']]);
-        $pdo->prepare('UPDATE mcp_automation_triggers SET last_fired_at=NOW(),fire_count=fire_count+1,updated_at=NOW() WHERE id=?')
-            ->execute([(int)$trigger['id']]);
+        $nextDueAt = null;
+        $nextTriggerStatus = 'active';
+        if ($scheduled && (string)$trigger['trigger_type'] === 'recurring_schedule') {
+            $intervalSeconds = (int)($triggerConfiguration['interval_seconds'] ?? 0);
+            if (!in_array($intervalSeconds, MG_MCP_AUTOMATION_SCHEDULE_INTERVALS, true)) {
+                throw new MgMcpAutomationGrantException('The recurring schedule interval is invalid.', 409, 'MCP_AUTOMATION_INTERVAL_INVALID');
+            }
+            $nextDueAt = mg_mcp_automation_next_recurring_due($dueAt, $intervalSeconds);
+        } elseif ($scheduled) {
+            $nextTriggerStatus = 'expired';
+        }
+
+        $pdo->prepare(
+            'UPDATE mcp_automation_triggers SET status=?,next_due_at=?,last_fired_at=NOW(),fire_count=fire_count+1,updated_at=NOW() WHERE id=?'
+        )->execute([$nextTriggerStatus, $nextDueAt, (int)$trigger['id']]);
+        if ($scheduled) {
+            $pdo->prepare('UPDATE mcp_automations SET last_run_at=NOW(),next_run_at=?,updated_at=NOW() WHERE id=?')
+                ->execute([$nextDueAt, (int)$automation['id']]);
+        } else {
+            $pdo->prepare('UPDATE mcp_automations SET last_run_at=NOW(),updated_at=NOW() WHERE id=?')
+                ->execute([(int)$automation['id']]);
+        }
 
         $connection = [
             'id' => (int)$automation['connection_id'],
@@ -151,8 +219,11 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
         mg_mcp_automation_insert_security_event($pdo, $connection, $userId, 'mcp.automation_simulation.completed', 'Owner completed an MCP automation policy simulation.', [
             'automation_public_id' => $automationPublicId,
             'run_public_id' => $runPublicId,
+            'trigger_type' => (string)$trigger['trigger_type'],
             'playbook_key' => (string)$automation['playbook_key'],
             'authorized_tools' => $authorizedTools,
+            'next_due_at' => $nextDueAt,
+            'scheduler_enabled' => false,
             'execution_attempted' => false,
             'action_receipts_created' => 0,
         ]);
@@ -161,8 +232,11 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
         $metadata = [
             'automation_public_id' => $automationPublicId,
             'run_public_id' => $runPublicId,
+            'trigger_type' => (string)$trigger['trigger_type'],
             'playbook_key' => (string)$automation['playbook_key'],
             'authorized_tools' => $authorizedTools,
+            'next_due_at' => $nextDueAt,
+            'scheduler_enabled' => false,
             'execution_attempted' => false,
             'external_effect' => false,
             'action_receipts_created' => 0,
@@ -177,4 +251,20 @@ function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automat
         }
         throw $error;
     }
+}
+
+function mg_mcp_automation_run_simulation(PDO $pdo, array $user, string $automationPublicId): array
+{
+    return mg_mcp_automation_run_simulation_with_trigger($pdo, $user, $automationPublicId, 'manual');
+}
+
+function mg_mcp_automation_run_scheduled_simulation(PDO $pdo, array $user, string $automationPublicId, string $triggerPublicId): array
+{
+    $stmt = $pdo->prepare('SELECT trigger_type FROM mcp_automation_triggers WHERE public_id=? LIMIT 1');
+    $stmt->execute([$triggerPublicId]);
+    $triggerType = (string)($stmt->fetchColumn() ?: '');
+    if (!in_array($triggerType, MG_MCP_AUTOMATION_SCHEDULE_TRIGGER_TYPES, true)) {
+        throw new MgMcpAutomationGrantException('Scheduled simulation trigger not found.', 404, 'MCP_AUTOMATION_TRIGGER_NOT_FOUND');
+    }
+    return mg_mcp_automation_run_simulation_with_trigger($pdo, $user, $automationPublicId, $triggerType, $triggerPublicId);
 }
