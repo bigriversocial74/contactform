@@ -10,3 +10,11 @@ require_once __DIR__ . '/builder-service.php';
 require_once __DIR__ . '/status-service.php';
 require_once __DIR__ . '/eligibility-service.php';
 require_once __DIR__ . '/campaign-service.php';
+
+require_once __DIR__ . '/participation-definitions.php';
+require_once __DIR__ . '/participation-context.php';
+require_once __DIR__ . '/participation-repository.php';
+require_once __DIR__ . '/participant-service.php';
+require_once __DIR__ . '/application-service.php';
+require_once __DIR__ . '/invitation-service.php';
+require_once __DIR__ . '/participation-query.php';
