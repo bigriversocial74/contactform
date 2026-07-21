@@ -6,17 +6,36 @@ function mg_creator_campaign_assert_publish_ready(PDO $pdo, array $campaign, str
     if (!in_array($toStatus, ['scheduled', 'active'], true)) {
         return;
     }
+    if (function_exists('mg_creator_campaign_builder_validation')) {
+        $builderValidation = mg_creator_campaign_builder_validation($pdo, $campaign);
+        if (empty($builderValidation['phase2_ready'])) {
+            foreach ((array) ($builderValidation['checks'] ?? []) as $check) {
+                if (($check['status'] ?? '') === 'fail') {
+                    throw new DomainException((string) ($check['message'] ?? 'Complete the campaign builder before publication.'));
+                }
+            }
+            throw new DomainException('Complete the campaign details, products, and creator eligibility before publication.');
+        }
+        if (!mg_creator_campaign_builder_table_exists($pdo, 'creator_campaign_agreement_versions')) {
+            throw new DomainException('Campaign publication will unlock when the Agreement phase is installed. The Phase 2 builder may be saved, validated, previewed, and duplicated now.');
+        }
+    }
     if (trim((string) ($campaign['title'] ?? '')) === '') {
         throw new DomainException('A campaign title is required before publication.');
     }
 
-    $products = $pdo->prepare(
-        "SELECT COUNT(*) FROM creator_campaign_products
-         WHERE campaign_id=? AND relationship_type<>'excluded'"
-    );
-    $products->execute([(int) $campaign['id']]);
-    if ((int) $products->fetchColumn() < 1) {
-        throw new DomainException('At least one non-excluded product is required before publication.');
+    $focus = (string) ($campaign['campaign_focus'] ?? 'general_brand_campaign');
+    $productRequired = in_array($focus, ['single_product', 'multiple_products', 'product_collection', 'microgift_offer', 'reward'], true);
+    if ($productRequired) {
+        $products = $pdo->prepare(
+            "SELECT COUNT(*) FROM creator_campaign_products
+             WHERE campaign_id=? AND relationship_type<>'excluded'"
+        );
+        $products->execute([(int) $campaign['id']]);
+        $hasReward = !empty($campaign['featured_reward_template_id']);
+        if ((int) $products->fetchColumn() < 1 && !$hasReward) {
+            throw new DomainException('This campaign focus requires at least one non-excluded product or reward offer before publication.');
+        }
     }
 
     $now = gmdate('Y-m-d H:i:s');

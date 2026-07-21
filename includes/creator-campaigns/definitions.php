@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Canonical Creator Campaign domain definitions.
  *
  * This domain is intentionally separate from the legacy CRM/reward `campaigns`
- * tables. Keep status, access, relationship, and rule values centralized here.
+ * tables. Keep status, access, relationship, builder, and rule values here.
  */
 
 function mg_creator_campaign_public_id(string $prefix = 'cc'): string
@@ -20,7 +20,46 @@ function mg_creator_campaign_statuses(): array
 
 function mg_creator_campaign_access_modes(): array
 {
-    return ['open', 'invite_only', 'hybrid'];
+    return ['open', 'invite_only', 'approved_creators', 'selected_creators', 'hybrid'];
+}
+
+function mg_creator_campaign_focuses(): array
+{
+    return [
+        'merchant_profile', 'single_product', 'multiple_products', 'product_collection',
+        'microgift_offer', 'reward', 'event', 'service', 'experience', 'general_brand_campaign',
+    ];
+}
+
+function mg_creator_campaign_product_access_modes(): array
+{
+    return ['none', 'purchase_required', 'reimbursed', 'provided', 'loaned', 'digital_access'];
+}
+
+function mg_creator_campaign_existing_creator_preferences(): array
+{
+    return ['none', 'preferred', 'required'];
+}
+
+function mg_creator_campaign_application_question_types(): array
+{
+    return ['short_text', 'long_text', 'single_choice', 'multiple_choice', 'boolean', 'number', 'url', 'portfolio_link'];
+}
+
+function mg_creator_campaign_builder_steps(): array
+{
+    return [
+        1 => 'Campaign Details',
+        2 => 'Products',
+        3 => 'Creator Eligibility',
+        4 => 'Deliverables',
+        5 => 'Compensation',
+        6 => 'Attribution',
+        7 => 'Budget',
+        8 => 'Content Rights',
+        9 => 'Terms',
+        10 => 'Review',
+    ];
 }
 
 function mg_creator_campaign_product_relationship_types(): array
