@@ -10,5 +10,6 @@ require_once __DIR__ . '/mcp-automations/owner-repository.php';
 require_once __DIR__ . '/mcp-automations/authorize-action.php';
 require_once __DIR__ . '/mcp-automations/definitions.php';
 require_once __DIR__ . '/mcp-automations/definition-lifecycle.php';
+require_once __DIR__ . '/mcp-automations/schedules.php';
 require_once __DIR__ . '/mcp-automations/simulations.php';
 require_once __DIR__ . '/mcp-automations/definitions-repository.php';
