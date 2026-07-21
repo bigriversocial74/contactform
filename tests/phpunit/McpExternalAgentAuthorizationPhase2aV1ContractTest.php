@@ -54,7 +54,11 @@ final class McpExternalAgentAuthorizationPhase2aV1ContractTest extends TestCase
         self::assertStringContainsString('HttpOAuthTokenResolver', (string)$server);
         self::assertStringContainsString('operation: "oauth.token.resolve"', (string)file_get_contents($this->root . '/services/mcp/src/bridge/oauthBridge.ts'));
         self::assertStringContainsString('array_intersect', (string)$bridge);
-        self::assertStringContainsString('mg_mcp_bridge_connection', (string)$bridge);
+        self::assertTrue(
+            str_contains((string)$bridge, 'mg_mcp_bridge_connection')
+            || str_contains((string)$bridge, 'mg_mcp_draft_bridge_connection'),
+            'OAuth access tokens must resolve through a canonical live connection authority.'
+        );
     }
 
     public function testUserConsentAndRevocationStayProtected(): void
