@@ -39,36 +39,12 @@
   document.getElementById('product-workspace-showcase')?.remove();
 
   const timelineImages = [
-    {
-      index: 0,
-      src: '/assets/images/hero_inbox.png?v=1.0.0',
-      alt: 'Microgifter gifting inbox workspace'
-    },
-    {
-      index: 1,
-      src: '/assets/images/hero_merchant_CRM.png?v=1.0.0',
-      alt: 'Microgifter merchant CRM workspace'
-    },
-    {
-      index: 2,
-      src: '/assets/images/hero_agent_chat.png?v=1.0.0',
-      alt: 'Microgifter agentic commerce workspace'
-    },
-    {
-      index: 3,
-      src: '/assets/images/hero_messages.png?v=1.0.0',
-      alt: 'Microgifter customer messaging workspace'
-    },
-    {
-      index: 4,
-      src: '/assets/images/hero_design_studio.png?v=1.0.0',
-      alt: 'Microgifter Design Studio workspace'
-    },
-    {
-      index: 5,
-      src: '/assets/images/hero_social_feed.png?v=1.0.0',
-      alt: 'Microgifter social feed workspace'
-    }
+    { index: 0, src: '/assets/images/hero_inbox.png?v=1.0.0', alt: 'Microgifter gifting inbox workspace' },
+    { index: 1, src: '/assets/images/hero_merchant_CRM.png?v=1.0.0', alt: 'Microgifter merchant CRM workspace' },
+    { index: 2, src: '/assets/images/hero_agent_chat.png?v=1.0.0', alt: 'Microgifter agentic commerce workspace' },
+    { index: 3, src: '/assets/images/hero_messages.png?v=1.0.0', alt: 'Microgifter customer messaging workspace' },
+    { index: 4, src: '/assets/images/hero_design_studio.png?v=1.0.0', alt: 'Microgifter Design Studio workspace' },
+    { index: 5, src: '/assets/images/hero_social_feed.png?v=1.0.0', alt: 'Microgifter social feed workspace' }
   ];
 
   const timelineCopy = [
@@ -110,7 +86,15 @@
     const visual = timelineEvents[image.index]?.querySelector('.pppm-visual');
     if (!visual) return;
     visual.classList.add('pppm-visual--real-image');
-    visual.innerHTML = `<img src="${image.src}" alt="${image.alt}" decoding="async">`;
+    visual.innerHTML = `
+      <div class="pppm-desktop-shell" role="img" aria-label="${image.alt}">
+        <div class="pppm-desktop-shell__bar" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="pppm-desktop-shell__screen">
+          <img src="${image.src}" alt="${image.alt}" decoding="async">
+        </div>
+      </div>`;
   });
 
   timelineCopy.forEach((copy, index) => {
