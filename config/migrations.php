@@ -174,6 +174,7 @@ return [
         '20260719_product_bundle_stripe_transfers_v9.sql',
         '20260719_product_bundle_refunds_reversals_v10.sql',
         '20260720_product_bundle_provider_dispatch_reconciliation_v11.sql',
+        '20260720_product_bundle_production_hardening_v12.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
