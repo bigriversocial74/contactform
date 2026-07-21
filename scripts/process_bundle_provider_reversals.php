@@ -4,10 +4,12 @@ declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 require_once dirname(__DIR__) . '/api/bootstrap.php';
 require_once dirname(__DIR__) . '/api/bundles/_provider_reversal.php';
+require_once dirname(__DIR__) . '/api/bundles/_release_readiness.php';
 
 $pdo=mg_db();
 $limit=max(1,min(25,(int)($argv[1]??10)));
 mg_bundle_reversal_assert_execution_allowed();
+mg_bundle_release_assert_runtime_allowed($pdo, 'reversal');
 $processed=$succeeded=$failed=0;
 while($processed<$limit){
     $adjustment=null;$transfer=null;
