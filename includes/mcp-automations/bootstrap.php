@@ -100,7 +100,17 @@ function mg_mcp_automation_playbook_catalog(): array
 
 function mg_mcp_automation_schema_ready(PDO $pdo): bool
 {
-    foreach (['mcp_connections', 'mcp_connection_scopes', 'mcp_automation_grants', 'mcp_automations', 'mcp_automation_runs', 'mcp_action_receipts', 'mcp_security_events'] as $table) {
+    foreach ([
+        'mcp_connections',
+        'mcp_connection_scopes',
+        'mcp_automation_grants',
+        'mcp_automations',
+        'mcp_automation_triggers',
+        'mcp_automation_runs',
+        'mcp_automation_actions',
+        'mcp_action_receipts',
+        'mcp_security_events',
+    ] as $table) {
         $stmt = $pdo->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=? LIMIT 1');
         $stmt->execute([$table]);
         if (!$stmt->fetchColumn()) {
