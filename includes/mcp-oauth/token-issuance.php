@@ -109,6 +109,8 @@ function mg_mcp_oauth_exchange_authorization_code(PDO $pdo, array $input): array
         $scopes = mg_mcp_oauth_json_decode($authorizationCode['scope_json']);
         $pdo->prepare('UPDATE mcp_oauth_authorization_codes SET consumed_at=NOW() WHERE id=?')
             ->execute([(int)$authorizationCode['id']]);
+        $pdo->prepare("UPDATE mcp_oauth_authorization_requests SET status='consumed',updated_at=NOW() WHERE id=? AND status='approved'")
+            ->execute([(int)$authorizationCode['authorization_request_id']]);
         $tokens = mg_mcp_oauth_issue_tokens(
             $pdo,
             (int)$client['id'],
