@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_mcp_bridge.php';
+require_once __DIR__ . '/_mcp_oauth_bridge.php';
 
 mg_require_method('POST');
 header('Cache-Control: no-store');
@@ -13,26 +14,32 @@ $rawBody = is_string($rawBody) ? $rawBody : '';
 try {
     $payload = mg_mcp_bridge_json_decode($rawBody);
     $pdo = mg_db();
-    $context = mg_mcp_bridge_authenticate($pdo, $rawBody, $payload);
     $operation = mg_mcp_bridge_text($payload['operation'] ?? '', 120, 'operation');
     $arguments = isset($payload['arguments']) && is_array($payload['arguments']) ? $payload['arguments'] : [];
 
-    $data = match ($operation) {
-        'connection.resolve' => (function () use ($context): array {
-            mg_mcp_bridge_require_scope($context, 'profile:read');
-            return mg_mcp_bridge_connection_projection($context);
-        })(),
-        'catalog.search' => (function () use ($pdo, $context, $arguments): array {
-            mg_mcp_bridge_require_scope($context, 'catalog:read');
-            return mg_mcp_bridge_catalog_search($pdo, $arguments, (int)$context['user_id']);
-        })(),
-        'catalog.get_item' => (function () use ($pdo, $context, $arguments): array {
-            mg_mcp_bridge_require_scope($context, 'catalog:read');
-            return mg_mcp_bridge_catalog_item($pdo, $arguments);
-        })(),
-        'receipt.record' => mg_mcp_bridge_record_receipt($pdo, $context, $arguments),
-        default => throw new MgMcpBridgeException('Bridge operation is not allowed.', 404, 'MCP_BRIDGE_OPERATION_UNKNOWN'),
-    };
+    if ($operation === 'oauth.token.resolve') {
+        $oauth = mg_mcp_oauth_bridge_authenticate($pdo, $rawBody, $payload);
+        $context = $oauth['context'];
+        $data = $oauth['data'];
+    } else {
+        $context = mg_mcp_bridge_authenticate($pdo, $rawBody, $payload);
+        $data = match ($operation) {
+            'connection.resolve' => (function () use ($context): array {
+                mg_mcp_bridge_require_scope($context, 'profile:read');
+                return mg_mcp_bridge_connection_projection($context);
+            })(),
+            'catalog.search' => (function () use ($pdo, $context, $arguments): array {
+                mg_mcp_bridge_require_scope($context, 'catalog:read');
+                return mg_mcp_bridge_catalog_search($pdo, $arguments, (int)$context['user_id']);
+            })(),
+            'catalog.get_item' => (function () use ($pdo, $context, $arguments): array {
+                mg_mcp_bridge_require_scope($context, 'catalog:read');
+                return mg_mcp_bridge_catalog_item($pdo, $arguments);
+            })(),
+            'receipt.record' => mg_mcp_bridge_record_receipt($pdo, $context, $arguments),
+            default => throw new MgMcpBridgeException('Bridge operation is not allowed.', 404, 'MCP_BRIDGE_OPERATION_UNKNOWN'),
+        };
+    }
 
     $touch = $pdo->prepare('UPDATE mcp_connections SET last_activity_at=NOW(),updated_at=updated_at WHERE id=?');
     $touch->execute([(int)$context['connection_db_id']]);

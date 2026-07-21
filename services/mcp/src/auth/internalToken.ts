@@ -7,7 +7,7 @@ export interface InternalPrincipal {
   readonly authenticationType: "internal_bearer_sha256";
 }
 
-function bearerToken(headers: IncomingHttpHeaders): string | null {
+export function extractBearerToken(headers: IncomingHttpHeaders): string | null {
   const raw = headers.authorization;
   if (typeof raw !== "string") return null;
   const match = /^Bearer\s+([^\s]+)$/i.exec(raw.trim());
@@ -23,7 +23,7 @@ export function authenticateInternalBearer(
   expectedSha256: string,
   connection: ConnectionContext,
 ): InternalPrincipal | null {
-  const token = bearerToken(headers);
+  const token = extractBearerToken(headers);
   if (!token || !/^[a-f0-9]{64}$/.test(expectedSha256)) return null;
 
   const actual = Buffer.from(hashBearerToken(token), "hex");

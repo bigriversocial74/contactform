@@ -1,5 +1,6 @@
 import type { ConnectionContext } from "./contracts.js";
 import type { CanonicalBridgeConfig } from "./bridge/canonicalBridge.js";
+import type { ExternalOAuthConfig } from "./auth/externalOAuth.js";
 import type { RuntimeConfig, RuntimeEnvironment, RuntimeLogLevel } from "./runtime.js";
 
 export interface InternalProtocolConfig {
@@ -14,14 +15,12 @@ export interface InternalProtocolConfig {
   readonly rateLimitWindowMs: number;
   readonly connection: ConnectionContext;
   readonly bridge: CanonicalBridgeConfig;
+  readonly externalOAuth?: ExternalOAuthConfig;
   readonly runtime?: RuntimeConfig;
 }
 
 function csv(value: string | undefined): readonly string[] {
-  return (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
+  return (value ?? "").split(",").map((item) => item.trim()).filter((item) => item !== "");
 }
 
 function enabled(value: string | undefined): boolean {
@@ -49,6 +48,10 @@ function runtimeLogLevel(value: string | undefined, environment: RuntimeEnvironm
   throw new Error("MICROGIFTER_MCP_LOG_LEVEL must be debug, info, warn, error, or silent.");
 }
 
+function origin(value: string | undefined, fallback: string): string {
+  return (value?.trim() || fallback).replace(/\/+$/, "");
+}
+
 export function loadInternalProtocolConfig(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): InternalProtocolConfig {
@@ -56,6 +59,22 @@ export function loadInternalProtocolConfig(
   const workspaceType = environment.MICROGIFTER_MCP_INTERNAL_WORKSPACE_TYPE?.trim();
   const workspaceId = environment.MICROGIFTER_MCP_INTERNAL_WORKSPACE_ID?.trim();
   const deploymentEnvironment = runtimeEnvironment(environment.MICROGIFTER_MCP_ENV);
+  const publicBaseUrl = origin(environment.MICROGIFTER_MCP_PUBLIC_BASE_URL, "");
+  const externalEnabled = enabled(environment.MICROGIFTER_MCP_EXTERNAL_OAUTH_ENABLED);
+  const resourceUri = origin(
+    environment.MICROGIFTER_MCP_RESOURCE_URI,
+    publicBaseUrl !== "" ? `${publicBaseUrl}/mcp` : "https://mcp.microgifter.com/mcp",
+  );
+  const authorizationServer = origin(
+    environment.MICROGIFTER_MCP_AUTHORIZATION_SERVER,
+    "https://microgifter.com",
+  );
+  const protectedResourceMetadataUrl = origin(
+    environment.MICROGIFTER_MCP_PROTECTED_RESOURCE_METADATA_URL,
+    publicBaseUrl !== ""
+      ? `${publicBaseUrl}/.well-known/oauth-protected-resource`
+      : "https://mcp.microgifter.com/.well-known/oauth-protected-resource",
+  );
 
   const config: InternalProtocolConfig = {
     platformEnabled: enabled(environment.MICROGIFTER_MCP_ENABLED),
@@ -82,10 +101,17 @@ export function loadInternalProtocolConfig(
       secret: environment.MICROGIFTER_MCP_BRIDGE_SECRET?.trim() ?? "",
       timeoutMs: integer(environment.MICROGIFTER_MCP_BRIDGE_TIMEOUT_MS, 8_000),
     },
+    externalOAuth: {
+      enabled: externalEnabled,
+      resourceUri,
+      authorizationServer,
+      protectedResourceMetadataUrl,
+      allowInternalBearer: enabled(environment.MICROGIFTER_MCP_ALLOW_INTERNAL_BEARER),
+    },
     runtime: {
       environment: deploymentEnvironment,
       release: environment.MICROGIFTER_MCP_RELEASE?.trim() || "development",
-      publicBaseUrl: environment.MICROGIFTER_MCP_PUBLIC_BASE_URL?.trim() || "",
+      publicBaseUrl,
       shutdownGraceMs: integer(environment.MICROGIFTER_MCP_SHUTDOWN_GRACE_MS, 30_000),
       logLevel: runtimeLogLevel(environment.MICROGIFTER_MCP_LOG_LEVEL, deploymentEnvironment),
       allowNonLoopbackBind: enabled(environment.MICROGIFTER_MCP_ALLOW_NON_LOOPBACK_BIND),
@@ -121,22 +147,47 @@ function validPublicBaseUrl(value: string): boolean {
   }
 }
 
+function validHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && !url.username
+      && !url.password
+      && !url.hash
+      && !url.search;
+  } catch {
+    return false;
+  }
+}
+
 function isLoopbackHost(host: string): boolean {
   return ["127.0.0.1", "localhost", "::1"].includes(host.toLowerCase());
 }
 
+export function resolveExternalOAuthConfig(config: ExternalOAuthConfig | undefined): ExternalOAuthConfig {
+  return config ?? {
+    enabled: false,
+    resourceUri: "https://mcp.microgifter.com/mcp",
+    authorizationServer: "https://microgifter.com",
+    protectedResourceMetadataUrl: "https://mcp.microgifter.com/.well-known/oauth-protected-resource",
+    allowInternalBearer: true,
+  };
+}
+
 export function validateInternalProtocolConfig(config: InternalProtocolConfig): void {
+  const externalOAuth = resolveExternalOAuthConfig(config.externalOAuth);
   if (!config.platformEnabled && config.internalHttpEnabled) {
     throw new Error("Internal MCP HTTP cannot be enabled while the platform is disabled.");
   }
-  if (config.internalHttpEnabled && !/^[a-f0-9]{64}$/.test(config.tokenSha256)) {
-    throw new Error("Internal MCP HTTP requires a SHA-256 bearer token hash.");
+  const internalBearerRequired = !externalOAuth.enabled || externalOAuth.allowInternalBearer;
+  if (config.internalHttpEnabled && internalBearerRequired && !/^[a-f0-9]{64}$/.test(config.tokenSha256)) {
+    throw new Error("Internal MCP HTTP requires a SHA-256 bearer token hash when internal bearer authentication is enabled.");
   }
   if (config.internalHttpEnabled && !config.bridge.enabled && config.connection.scopes.length === 0) {
     throw new Error("Internal MCP HTTP requires at least one explicit scope when the canonical bridge is disabled.");
   }
   if (config.connection.maximumOperationClass !== "read") {
-    throw new Error("The Phase 1 internal protocol is read-only.");
+    throw new Error("The Phase 2A protocol remains read-only.");
   }
   if (config.bridge.enabled) {
     if (!config.internalHttpEnabled) {
@@ -149,7 +200,20 @@ export function validateInternalProtocolConfig(config: InternalProtocolConfig): 
       throw new Error("The canonical bridge requires a secret of at least 32 characters.");
     }
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(config.connection.connectionId)) {
-      throw new Error("The canonical bridge requires a persisted MCP connection UUID.");
+      throw new Error("The canonical bridge requires a persisted MCP connection UUID for readiness and internal operations.");
+    }
+  }
+  if (externalOAuth.enabled) {
+    if (!config.bridge.enabled) {
+      throw new Error("External OAuth requires the canonical PHP bridge.");
+    }
+    if (!validHttpsUrl(externalOAuth.resourceUri)
+      || !validHttpsUrl(externalOAuth.authorizationServer)
+      || !validHttpsUrl(externalOAuth.protectedResourceMetadataUrl)) {
+      throw new Error("External OAuth resource, authorization server, and protected-resource metadata URLs must use HTTPS.");
+    }
+    if (!externalOAuth.resourceUri.endsWith("/mcp")) {
+      throw new Error("MICROGIFTER_MCP_RESOURCE_URI must identify the /mcp endpoint.");
     }
   }
 
@@ -176,6 +240,9 @@ export function validateInternalProtocolConfig(config: InternalProtocolConfig): 
     }
     if (!isLoopbackHost(config.host) && !runtime.allowNonLoopbackBind) {
       throw new Error("Production MCP may bind outside loopback only with MICROGIFTER_MCP_ALLOW_NON_LOOPBACK_BIND=true.");
+    }
+    if (externalOAuth.enabled && externalOAuth.resourceUri !== `${runtime.publicBaseUrl}/mcp`) {
+      throw new Error("Production OAuth resource URI must match MICROGIFTER_MCP_PUBLIC_BASE_URL plus /mcp.");
     }
   }
 }
