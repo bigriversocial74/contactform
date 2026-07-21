@@ -34,11 +34,11 @@ if ((string)($page_manifest['id'] ?? '') === 'home') {
     $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
 }
 if ((string)($page_manifest['id'] ?? '') === 'index') {
-    $page_scripts[] = '/assets/js/homepage-production-cleanup-v1.js?v=1.2.0';
+    $page_scripts[] = '/assets/js/homepage-production-cleanup-v1.js?v=1.6.0';
     $late_styles[] = '/assets/css/homepage-parallax-exact-v2.css?v=2.2.0';
     $late_styles[] = '/assets/css/pricing-local-business-v1.css?v=1.3.0';
     $late_styles[] = '/assets/css/homepage-mobile-stability-v1.css?v=1.1.0';
-    $late_styles[] = '/assets/css/homepage-production-cleanup-v1.css?v=1.2.0';
+    $late_styles[] = '/assets/css/homepage-production-cleanup-v1.css?v=1.6.0';
 }
 if ((string)($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
@@ -94,21 +94,19 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
     <nav class="mg-footer-link-grid" aria-label="Footer navigation">
       <div class="mg-footer-column">
         <h2>Platform</h2>
-        <a href="/discover.php">Explore</a>
         <a href="/featured-case-studies.php">Case Studies</a>
         <a href="/pricing.php">Pricing</a>
         <a href="https://microgifter.com/resume.html">About Team</a>
-        <a href="https://microgifter.com/one-page.html">Pitch</a>
         <a href="/investors.php">Investors</a>
-        <a href="/developer-docs.php">Developer Docs</a>
+        <a href="/mcp-server.php">MCP Server</a>
         <a href="/learn-more.php">Book A Demo</a>
       </div>
       <div class="mg-footer-column">
-        <h2>Developers</h2>
-        <a href="/developer-docs.php#overview">Overview</a>
-        <a href="/developer-docs.php#quickstart">Quickstart</a>
-        <a href="/developer-docs.php#authentication">Authentication</a>
-        <a href="/developer-docs.php#webhooks">Webhooks</a>
+        <h2>MCP Server</h2>
+        <a href="/mcp-server.php">Overview</a>
+        <a href="/mcp-server.php#how-it-works">How It Works</a>
+        <a href="/mcp-server.php#governance">Governance</a>
+        <a href="/learn-more.php">Request Access</a>
       </div>
       <div class="mg-footer-column">
         <h2>Account</h2>
@@ -143,7 +141,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <a href="/index.php">Home</a>
         <a href="/pricing.php">Pricing</a>
         <a href="/investors.php">Investors</a>
-        <a href="/developer-docs.php">Docs</a>
+        <a href="/mcp-server.php">MCP Server</a>
         <a href="/signin.php">Sign In</a>
       </div>
     </div>
