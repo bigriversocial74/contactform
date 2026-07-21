@@ -26,7 +26,7 @@ if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
             'response_types' => ['code'],
             'token_endpoint_auth_method' => 'none',
         ], (int)$user['id'], 'preregistered');
-        $notice = 'OAuth client registered. Copy the registration access token now; only its hash is stored.';
+        $notice = 'OAuth client registered with exact callback URLs. Copy the client ID for the external AI configuration.';
     } catch (MgMcpOAuthException $error) {
         $errorMessage = $error->getMessage();
     } catch (Throwable $error) {
@@ -52,7 +52,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-mcp-oauth-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/mcp-oauth.css?v=20260720-phase2a'];
-$adminActive = 'mcp-oauth-clients';
+$adminActive = 'mcp-connections';
 require dirname(__DIR__) . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-admin-app">
@@ -66,7 +66,7 @@ require dirname(__DIR__) . '/includes/header.php';
       <?php if ($notice !== ''): ?><div class="mg-ai-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
       <?php if ($errorMessage !== ''): ?><div class="mg-ai-alert is-error"><?= mg_e($errorMessage) ?></div><?php endif; ?>
       <?php if (is_array($created)): ?>
-        <section class="mg-ai-secret"><strong>One-time registration bundle</strong><label>Client ID<input readonly value="<?= mg_e((string)$created['client_id']) ?>"></label><label>Registration access token<input readonly value="<?= mg_e((string)$created['registration_access_token']) ?>"></label><p>Do not store this token in GitHub, JavaScript, or the database.</p></section>
+        <section class="mg-ai-secret"><strong>Registered OAuth client</strong><label>Client ID<input readonly value="<?= mg_e((string)$created['client_id']) ?>"></label><p>Use this client ID with one of the exact callback URLs below. No client secret is issued because Phase 2A uses public clients with PKCE S256.</p></section>
       <?php endif; ?>
       <div class="mg-admin-oauth-grid">
         <section class="mg-ai-panel">
