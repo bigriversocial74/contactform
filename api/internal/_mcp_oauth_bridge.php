@@ -43,7 +43,7 @@ function mg_mcp_oauth_bridge_authenticate(PDO $pdo, string $rawBody, array $payl
         );
     }
 
-    $context = mg_mcp_bridge_connection($pdo, (string)$resolved['connection_public_id']);
+    $context = mg_mcp_draft_bridge_connection($pdo, (string)$resolved['connection_public_id']);
     $tokenScopes = array_values(array_map('strval', (array)$resolved['token_scopes']));
     $context['scopes'] = array_values(array_intersect((array)$context['scopes'], $tokenScopes));
     if (!in_array('profile:read', $context['scopes'], true)) {
@@ -54,7 +54,7 @@ function mg_mcp_oauth_bridge_authenticate(PDO $pdo, string $rawBody, array $payl
     return [
         'context' => $context,
         'data' => [
-            'connection' => mg_mcp_bridge_connection_projection($context),
+            'connection' => mg_mcp_draft_bridge_projection($context),
             'oauthClientId' => (string)$resolved['oauth_client_id'],
             'tokenFamilyId' => (string)$resolved['token_family_id'],
         ],

@@ -13,6 +13,14 @@ const RESOURCE_URI = "https://mcp.microgifter.com/mcp";
 const AUTHORIZATION_SERVER = "https://microgifter.com";
 const ORIGIN = "http://127.0.0.1";
 const SCOPES = ["profile:read", "catalog:read"];
+const ADVERTISED_SCOPES = [
+  "campaign:draft",
+  "catalog:read",
+  "gift:draft",
+  "message:draft",
+  "profile:read",
+  "reward:draft",
+];
 const PROFILES = [
   { key: "chatgpt", name: "ChatGPT", redirectUri: "http://127.0.0.1/callback/chatgpt" },
   { key: "claude", name: "Claude", redirectUri: "http://127.0.0.1/callback/claude" },
@@ -233,7 +241,7 @@ async function runProfile(profile) {
     const metadata = await metadataResponse.json();
     assert.equal(metadata.resource, RESOURCE_URI);
     assert.deepEqual(metadata.authorization_servers, [AUTHORIZATION_SERVER]);
-    assert.deepEqual(metadata.scopes_supported, ["catalog:read", "profile:read"]);
+    assert.deepEqual(metadata.scopes_supported, ADVERTISED_SCOPES);
 
     const initialize = {
       jsonrpc: "2.0",

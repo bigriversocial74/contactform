@@ -65,15 +65,9 @@ function resolver() {
 }
 
 const bridge = {
-  async resolveConnection() {
-    return connection;
-  },
-  async searchCatalog() {
-    return { items: [], limit: 10, next_cursor: null };
-  },
-  async getCatalogItem() {
-    return {};
-  },
+  async resolveConnection() { return connection; },
+  async searchCatalog() { return { items: [], limit: 10, next_cursor: null }; },
+  async getCatalogItem() { return {}; },
   async recordReceipt() {},
 };
 
@@ -125,7 +119,14 @@ test("protected resource metadata is discoverable when OAuth is enabled", async 
     const metadata = await response.json();
     assert.equal(metadata.resource, "https://mcp.microgifter.example/mcp");
     assert.deepEqual(metadata.authorization_servers, ["https://microgifter.example"]);
-    assert.deepEqual(metadata.scopes_supported, ["catalog:read", "profile:read"]);
+    assert.deepEqual(metadata.scopes_supported, [
+      "campaign:draft",
+      "catalog:read",
+      "gift:draft",
+      "message:draft",
+      "profile:read",
+      "reward:draft",
+    ]);
   });
 });
 

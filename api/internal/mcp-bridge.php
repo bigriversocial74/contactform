@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_mcp_bridge.php';
+require_once __DIR__ . '/_mcp_draft_bridge.php';
 require_once __DIR__ . '/_mcp_oauth_bridge.php';
 
 mg_require_method('POST');
@@ -21,6 +22,9 @@ try {
         $oauth = mg_mcp_oauth_bridge_authenticate($pdo, $rawBody, $payload);
         $context = $oauth['context'];
         $data = $oauth['data'];
+    } elseif (str_starts_with($operation, 'draft.')) {
+        $context = mg_mcp_draft_bridge_authenticate($pdo, $rawBody, $payload);
+        $data = mg_mcp_draft_bridge_dispatch($pdo, $context, $operation, $arguments);
     } else {
         $context = mg_mcp_bridge_authenticate($pdo, $rawBody, $payload);
         $data = match ($operation) {

@@ -23,6 +23,24 @@ export interface CatalogSearchResult {
   readonly next_cursor: string | null;
 }
 
+export interface DraftCreateArguments {
+  readonly type: "gift" | "campaign" | "reward" | "message";
+  readonly title: string;
+  readonly summary: string;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly idempotency_key: string;
+  readonly source_request_id: string;
+  readonly risk_level?: "low" | "medium" | "high" | "critical" | undefined;
+  readonly requested_reason?: string | undefined;
+}
+
+export interface DraftListArguments {
+  readonly type?: "gift" | "campaign" | "reward" | "message" | undefined;
+  readonly status?: "pending_review" | "approved" | "rejected" | "canceled" | "expired" | undefined;
+  readonly limit?: number | undefined;
+  readonly cursor?: string | undefined;
+}
+
 export interface CanonicalBridge {
   resolveConnection(connectionId: string): Promise<ConnectionContext>;
   searchCatalog(connectionId: string, arguments_: CatalogSearchArguments): Promise<CatalogSearchResult>;
@@ -30,6 +48,10 @@ export interface CanonicalBridge {
     connectionId: string,
     arguments_: Readonly<{ product_id: string; slug?: string | undefined }>,
   ): Promise<Readonly<Record<string, unknown>>>;
+  createDraft(connectionId: string, arguments_: DraftCreateArguments): Promise<Readonly<Record<string, unknown>>>;
+  listDrafts(connectionId: string, arguments_: DraftListArguments): Promise<Readonly<Record<string, unknown>>>;
+  getDraft(connectionId: string, draftId: string): Promise<Readonly<Record<string, unknown>>>;
+  cancelDraft(connectionId: string, draftId: string, reason?: string): Promise<Readonly<Record<string, unknown>>>;
   recordReceipt(receipt: InvocationReceipt): Promise<void>;
 }
 
@@ -98,13 +120,16 @@ export class HttpCanonicalBridge implements CanonicalBridge {
     const tokenVersion = typeof data.tokenVersion === "number" && Number.isSafeInteger(data.tokenVersion)
       ? data.tokenVersion
       : 1;
+    const maximumOperationClass = typeof data.maximumOperationClass === "string"
+      ? data.maximumOperationClass as ConnectionContext["maximumOperationClass"]
+      : "read";
     return {
       connectionId: text(data.connectionId, "connection id"),
       clientKey: text(data.clientKey, "client key"),
       userId: text(data.userId, "user id"),
       ...(workspace ? { workspace } : {}),
       scopes: stringArray(data.scopes, "scopes"),
-      maximumOperationClass: "read",
+      maximumOperationClass,
       tokenVersion,
       ...(expiresAt ? { expiresAt } : {}),
     };
@@ -130,6 +155,25 @@ export class HttpCanonicalBridge implements CanonicalBridge {
     arguments_: Readonly<{ product_id: string; slug?: string | undefined }>,
   ): Promise<Readonly<Record<string, unknown>>> {
     return object(await this.request("catalog.get_item", connectionId, arguments_), "catalog item");
+  }
+
+  public async createDraft(connectionId: string, arguments_: DraftCreateArguments): Promise<Readonly<Record<string, unknown>>> {
+    return object(await this.request("draft.create", connectionId, arguments_), "draft");
+  }
+
+  public async listDrafts(connectionId: string, arguments_: DraftListArguments): Promise<Readonly<Record<string, unknown>>> {
+    return object(await this.request("draft.list", connectionId, arguments_), "draft list");
+  }
+
+  public async getDraft(connectionId: string, draftId: string): Promise<Readonly<Record<string, unknown>>> {
+    return object(await this.request("draft.get", connectionId, { draft_id: draftId }), "draft");
+  }
+
+  public async cancelDraft(connectionId: string, draftId: string, reason?: string): Promise<Readonly<Record<string, unknown>>> {
+    return object(await this.request("draft.cancel", connectionId, {
+      draft_id: draftId,
+      ...(reason ? { reason } : {}),
+    }), "draft");
   }
 
   public async recordReceipt(receipt: InvocationReceipt): Promise<void> {

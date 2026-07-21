@@ -71,6 +71,13 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'lists',
     ],
+    'agent-drafts' => [
+        'label' => 'Agent Drafts',
+        'detail' => 'Review external AI proposals',
+        'href' => '/account-agent-drafts.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'agent-drafts',
+    ],
     'design-studio' => [
         'label' => 'Design Studio',
         'detail' => 'Merchant QR print templates',

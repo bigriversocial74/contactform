@@ -1,0 +1,60 @@
+<?php
+declare(strict_types=1);
+
+return [
+    'release_key' => 'microgifter_mcp_approval_gated_drafts_phase3a_v1',
+    'program' => 'microgifter_platform_phase5',
+    'phase' => 'mcp_approval_gated_drafts_phase3a',
+    'depends_on' => [
+        'microgifter_mcp_phase1_foundation_v1',
+        'microgifter_mcp_phase1_canonical_bridge_v1',
+        'microgifter_mcp_external_agent_authorization_phase2a_v1',
+    ],
+    'required_migrations' => [
+        '20260720_mcp_approval_gated_drafts_phase3a_v1',
+    ],
+    'operation_ceiling' => 'draft',
+    'draft_types' => ['gift', 'campaign', 'reward', 'message'],
+    'tools' => [
+        'microgifter.gift.create_draft',
+        'microgifter.campaign.create_draft',
+        'microgifter.reward.create_draft',
+        'microgifter.message.create_draft',
+        'microgifter.drafts.list',
+        'microgifter.drafts.get',
+        'microgifter.drafts.cancel',
+    ],
+    'capabilities' => [
+        'strict_typed_draft_payloads',
+        'connection_scoped_idempotency',
+        'owner_review_workspace',
+        'owner_approve_or_reject',
+        'originating_connection_cancel',
+        'seven_day_review_expiry',
+        'durable_draft_events',
+        'scope_revocation_enforced',
+        'read_only_dynamic_registration',
+        'admin_preregistered_draft_clients',
+    ],
+    'security' => [
+        'no_arbitrary_json_payloads',
+        'no_direct_database_access_from_node',
+        'canonical_php_draft_authority',
+        'oauth_pkce_and_rotating_tokens',
+        'human_owner_decision_required',
+        'csrf_protected_owner_decisions',
+        'draft_scope_and_workspace_enforcement',
+        'execution_enabled_false_in_all_projections',
+    ],
+    'boundaries' => [
+        'no_publish_tools',
+        'no_send_tools',
+        'no_purchase_or_payment_tools',
+        'no_gift_issuance_or_delivery',
+        'no_reward_activation_or_fulfillment',
+        'no_campaign_or_message_scheduling',
+        'no_task_agent_execution_queue_link',
+        'no_mcp_automation_worker_queue_link',
+        'approved_drafts_require_future_manual_conversion',
+    ],
+];

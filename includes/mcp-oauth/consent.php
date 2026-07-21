@@ -4,18 +4,18 @@ declare(strict_types=1);
 function mg_mcp_oauth_user_workspaces(PDO $pdo, int $userId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT DISTINCT mw.id,mw.public_id,mw.business_name,mw.status
+        "SELECT DISTINCT mw.id,mw.public_id,mw.display_name,mw.status
          FROM merchant_workspaces mw
          LEFT JOIN merchant_team_members mt ON mt.workspace_id=mw.id AND mt.user_id=? AND mt.status='active'
          WHERE (mw.merchant_user_id=? OR mt.id IS NOT NULL)
            AND mw.status NOT IN ('suspended','archived')
-         ORDER BY mw.business_name,mw.id"
+         ORDER BY mw.display_name,mw.id"
     );
     $stmt->execute([$userId, $userId]);
     return array_map(static fn(array $row): array => [
         'id' => (int)$row['id'],
         'public_id' => (string)$row['public_id'],
-        'name' => (string)($row['business_name'] ?: 'Merchant workspace'),
+        'name' => (string)($row['display_name'] ?: 'Merchant workspace'),
         'status' => (string)$row['status'],
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
@@ -38,6 +38,11 @@ function mg_mcp_oauth_workspace_key(?array $workspace): string
 function mg_mcp_oauth_connection_for_consent(PDO $pdo, array $request, int $userId, ?array $workspace, array $scopes): array
 {
     $workspaceKey = mg_mcp_oauth_workspace_key($workspace);
+    $maximumOperationClass = mg_mcp_oauth_operation_class_for_scopes($pdo, $scopes);
+    $clientMaximum = mg_mcp_oauth_maximum_operation_class($request['maximum_operation_class'] ?? 'read');
+    if (mg_mcp_oauth_operation_rank($maximumOperationClass) > mg_mcp_oauth_operation_rank($clientMaximum)) {
+        throw new MgMcpOAuthException('The requested scopes exceed the registered client authority.', 'invalid_scope', 422);
+    }
     $stmt = $pdo->prepare(
         "SELECT oc.*,c.public_id AS connection_public_id FROM mcp_oauth_consents oc
          INNER JOIN mcp_connections c ON c.id=oc.connection_id
@@ -48,10 +53,10 @@ function mg_mcp_oauth_connection_for_consent(PDO $pdo, array $request, int $user
     if ($consent) {
         $connectionId = (int)$consent['connection_id'];
         $pdo->prepare(
-            "UPDATE mcp_connections SET status='active',maximum_operation_class='read',consented_at=NOW(),
+            "UPDATE mcp_connections SET status='active',maximum_operation_class=?,consented_at=NOW(),
              expires_at=DATE_ADD(NOW(),INTERVAL 365 DAY),paused_at=NULL,revoked_at=NULL,revoked_by_user_id=NULL,
              revocation_reason=NULL,updated_at=NOW() WHERE id=?"
-        )->execute([$connectionId]);
+        )->execute([$maximumOperationClass, $connectionId]);
     } else {
         $connectionPublicId = mg_public_uuid();
         $displayName = mb_substr((string)$request['client_name'] . ($workspace ? ' · ' . $workspace['name'] : ' · Account'), 0, 180);
@@ -59,10 +64,18 @@ function mg_mcp_oauth_connection_for_consent(PDO $pdo, array $request, int $user
             "INSERT INTO mcp_connections
              (public_id,client_id,user_id,workspace_type,workspace_id,display_name,status,maximum_operation_class,
               token_version,consented_at,expires_at,created_at,updated_at)
-             SELECT ?,r.mcp_client_id,?,?,?,?,'active','read',1,NOW(),DATE_ADD(NOW(),INTERVAL 365 DAY),NOW(),NOW()
+             SELECT ?,r.mcp_client_id,?,?,?,?,'active',?,1,NOW(),DATE_ADD(NOW(),INTERVAL 365 DAY),NOW(),NOW()
              FROM mcp_oauth_client_registrations r WHERE r.id=?"
         );
-        $connectionStmt->execute([$connectionPublicId,$userId,$workspace ? 'merchant' : null,$workspace ? (int)$workspace['id'] : null,$displayName,(int)$request['client_registration_id']]);
+        $connectionStmt->execute([
+            $connectionPublicId,
+            $userId,
+            $workspace ? 'merchant' : null,
+            $workspace ? (int)$workspace['id'] : null,
+            $displayName,
+            $maximumOperationClass,
+            (int)$request['client_registration_id'],
+        ]);
         $connectionId = (int)$pdo->lastInsertId();
         $consent = ['public_id' => mg_public_uuid()];
     }
@@ -126,7 +139,14 @@ function mg_mcp_oauth_authorization_decision(PDO $pdo, array $user, string $requ
         $pdo->prepare('UPDATE mcp_oauth_client_registrations SET last_used_at=NOW(),updated_at=NOW() WHERE id=?')
             ->execute([(int)$request['client_registration_id']]);
         $pdo->commit();
-        $metadata = ['oauth_client_id'=>(string)$request['client_id'],'connection_public_id'=>(string)$connection['public_id'],'workspace_key'=>mg_mcp_oauth_workspace_key($workspace),'scopes'=>$scopes];
+        $metadata = [
+            'oauth_client_id' => (string)$request['client_id'],
+            'connection_public_id' => (string)$connection['public_id'],
+            'workspace_key' => mg_mcp_oauth_workspace_key($workspace),
+            'scopes' => $scopes,
+            'maximum_operation_class' => (string)$connection['maximum_operation_class'],
+            'execution_enabled' => false,
+        ];
         mg_audit('mcp_oauth_consent_approved', 'mcp_connection', $metadata, $userId);
         mg_event('mcp.oauth.consent.approved', $metadata, $userId);
         mg_security_log('info', 'mcp.oauth_consent.approved', 'User approved an MCP OAuth connection.', $metadata, $userId);
@@ -156,9 +176,13 @@ function mg_mcp_oauth_connection_row(PDO $pdo, int $connectionId, bool $lock = f
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$connectionId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $connectionClass = (string)($row['maximum_operation_class'] ?? '');
+    $clientClass = (string)($row['client_maximum_operation_class'] ?? '');
     if (!$row || (string)$row['status'] !== 'active' || (string)$row['user_status'] !== 'active'
         || !in_array((string)$row['client_status'], ['development','active'], true)
-        || (string)$row['maximum_operation_class'] !== 'read' || (string)$row['client_maximum_operation_class'] !== 'read'
+        || !in_array($connectionClass, ['read', 'draft'], true)
+        || !in_array($clientClass, ['read', 'draft'], true)
+        || mg_mcp_oauth_operation_rank($connectionClass) > mg_mcp_oauth_operation_rank($clientClass)
         || (!empty($row['expires_at']) && strtotime((string)$row['expires_at']) <= time())) {
         throw new MgMcpOAuthException('The MCP connection is unavailable.', 'invalid_grant', 400);
     }
