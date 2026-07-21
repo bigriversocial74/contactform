@@ -8,9 +8,10 @@ declare(strict_types=1);
       <div>
         <span class="mg-automation-eyebrow">MCP Phase 4A · owner authority</span>
         <h1>Agent automation grants</h1>
-        <p>Define the exact connection, playbooks, scopes, targets, limits, risk ceiling, and expiration an external agent may use. Grants do not create automations, schedules, runs, or external effects in this phase.</p>
+        <p>Define the exact connection, playbooks, scopes, targets, limits, risk ceiling, and expiration an external agent may use. Grants do not create schedules, workers, or external effects.</p>
       </div>
       <nav class="mg-automation-hero-actions" aria-label="Agent MCP workspaces">
+        <a href="/account-agent-automation-definitions.php">Automation definitions</a>
         <a href="/account-agent-drafts.php">Agent drafts</a>
         <a href="/account-agent-handoffs.php">Handoff status</a>
         <a href="/account-ai-connections.php">AI connections</a>
@@ -163,7 +164,7 @@ declare(strict_types=1);
 
     <aside class="mg-automation-safety">
       <strong>No scheduler or execution path exists in Phase 4A</strong>
-      <p>Grant activation records owner authority only. It cannot create an automation, trigger a run, publish a campaign, send a message, purchase or issue a gift, activate a reward, charge a payment method, or enqueue work.</p>
+      <p>Grant activation records owner authority only. Phase 4B may create a definition and manual simulation under an active grant, but neither phase can publish a campaign, send a message, purchase or issue a gift, activate a reward, charge a payment method, or enqueue work.</p>
     </aside>
   </main>
 </section>
