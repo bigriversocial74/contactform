@@ -2,7 +2,7 @@
 
 This directory is the separately deployable TypeScript control plane for Microgifter Platform Phase 5.
 
-Current Phase 2A posture:
+Current Phase 2A/2B posture:
 
 - disabled by default;
 - stateless Streamable HTTP at `/mcp`;
@@ -13,6 +13,8 @@ Current Phase 2A posture:
 - deterministic, database-scope-filtered tool discovery;
 - fixed-window per-connection rate limits;
 - durable safe invocation receipts through the canonical PHP bridge;
+- loopback-only external-agent compatibility simulator;
+- non-secret deployment-readiness report;
 - no scheduler or worker;
 - no write-capable tools;
 - no production database credentials in Node;
@@ -32,6 +34,30 @@ Catalog, connection, consent, client, user, workspace, token version, and scope 
 npm ci
 npm audit --audit-level=high
 npm run check
+```
+
+## Phase 2B external-agent simulator
+
+The simulator runs the actual compiled MCP HTTP application on an ephemeral `127.0.0.1` listener with generated sample authorization and catalog data. It performs no external network calls and refuses production mode.
+
+```bash
+npm run build
+node scripts/simulate-external-agent.mjs
+node scripts/external-agent-readiness.mjs
+```
+
+The simulator validates discovery, OAuth challenge, PKCE, MCP initialization, tool discovery, a catalog read call, refresh rotation, replay-family revocation, and explicit revocation. It does not prove public DNS, TLS, Nginx, or live-client compatibility.
+
+Primary installation and activation reference:
+
+```text
+docs/MICROGIFTER_MCP_INSTALLATION_AND_ACTIVATION.md
+```
+
+Phase 2B reference:
+
+```text
+docs/MICROGIFTER_MCP_EXTERNAL_AGENT_SIMULATOR_PHASE2B.md
 ```
 
 ## Runtime endpoints

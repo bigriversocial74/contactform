@@ -1,0 +1,135 @@
+name: MCP External Agent Simulator Phase 2B
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'services/mcp/scripts/simulate-external-agent.mjs'
+      - 'services/mcp/scripts/external-agent-readiness.mjs'
+      - 'services/mcp/src/**'
+      - 'services/mcp/tests/**'
+      - 'services/mcp/package.json'
+      - 'services/mcp/package-lock.json'
+      - 'scripts/test_mcp_external_agent_authorization_phase2a.php'
+      - 'docs/MICROGIFTER_MCP_INSTALLATION_AND_ACTIVATION.md'
+      - 'docs/MICROGIFTER_MCP_EXTERNAL_AGENT_SIMULATOR_PHASE2B.md'
+      - 'docs/MICROGIFTER_MCP_EXTERNAL_AGENT_AUTHORIZATION_PHASE2A.md'
+      - 'docs/MICROGIFTER_MCP_PRODUCTION_VPS_DEPLOYMENT_V1.md'
+      - 'tests/phpunit/McpExternalAgentSimulatorPhase2bContractTest.php'
+      - '.github/workflows/mcp-external-agent-simulator-phase2b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-simulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: services/mcp/package-lock.json
+      - name: Install locked dependencies
+        working-directory: services/mcp
+        run: npm ci --ignore-scripts
+      - name: Audit dependencies
+        working-directory: services/mcp
+        run: npm audit --audit-level=high
+      - name: Build and test MCP service
+        working-directory: services/mcp
+        run: npm run check
+      - name: Run external-agent simulator
+        working-directory: services/mcp
+        run: node scripts/simulate-external-agent.mjs
+      - name: Run non-secret readiness report
+        working-directory: services/mcp
+        run: node scripts/external-agent-readiness.mjs
+      - name: Prove simulator refuses production mode
+        working-directory: services/mcp
+        env:
+          MICROGIFTER_MCP_ENV: production
+        run: |
+          set -euo pipefail
+          if node scripts/simulate-external-agent.mjs >/tmp/phase2b-production.out 2>/tmp/phase2b-production.err; then
+            echo 'Simulator unexpectedly ran in production mode.' >&2
+            exit 1
+          fi
+          grep -F 'refuses to run in production mode' /tmp/phase2b-production.err
+
+  php-authority-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: php-authority-contract (${{ matrix.php }})
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: test
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: ci-phase2b-pepper
+      MG_MCP_BRIDGE_ENABLED: 'true'
+      MG_MCP_BRIDGE_SECRET: ci-phase2b-bridge-secret-0123456789abcdef
+      MG_MCP_OAUTH_ENABLED: 'true'
+      MG_MCP_OAUTH_ISSUER: https://microgifter.test
+      MG_MCP_OAUTH_RESOURCE_URI: https://mcp.microgifter.test/mcp
+      MG_MCP_OAUTH_DYNAMIC_REGISTRATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: php -l tests/phpunit/McpExternalAgentSimulatorPhase2bContractTest.php
+      - name: Phase 2B and Phase 2A contracts
+        run: |
+          vendor/bin/phpunit \
+            tests/phpunit/McpExternalAgentSimulatorPhase2bContractTest.php \
+            tests/phpunit/McpExternalAgentAuthorizationPhase2aV1ContractTest.php \
+            tests/phpunit/McpProductionVpsDeploymentV1ContractTest.php
+      - name: Build clean MySQL database
+        shell: bash
+        run: |
+          set -o pipefail
+          php scripts/run_migrations.php 2>&1 | tee /tmp/mcp-phase2b-migrations.log
+      - name: Execute database-backed OAuth lifecycle
+        run: php scripts/test_mcp_external_agent_authorization_phase2a.php
+      - name: Repository production-quality audit
+        run: composer audit-repository-quality
+      - name: Upload migration log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-phase2b-migration-log-php-${{ matrix.php }}
+          path: /tmp/mcp-phase2b-migrations.log
+          if-no-files-found: ignore
