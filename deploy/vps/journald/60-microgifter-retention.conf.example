@@ -1,0 +1,7 @@
+# Optional global journald retention policy for a small VPS.
+# Install as /etc/systemd/journald.conf.d/60-microgifter-retention.conf only after
+# confirming these global limits are appropriate for every systemd service.
+[Journal]
+SystemMaxUse=1G
+MaxRetentionSec=14day
+Compress=yes

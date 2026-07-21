@@ -2,6 +2,7 @@ export * from "./config.js";
 export * from "./contracts.js";
 export * from "./stateMachines.js";
 export * from "./protocolConfig.js";
+export * from "./runtime.js";
 export * from "./auth/internalToken.js";
 export {
   CanonicalBridgeError,

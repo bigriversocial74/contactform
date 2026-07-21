@@ -1,0 +1,210 @@
+name: MCP Production VPS Deployment v1
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'services/mcp/**'
+      - 'deploy/vps/**'
+      - 'config/mcp_production_vps_deployment_release.php'
+      - 'docs/MICROGIFTER_MCP_PRODUCTION_VPS_DEPLOYMENT_V1.md'
+      - 'scripts/validate_mcp_production_vps_deployment.php'
+      - 'tests/phpunit/McpProductionVpsDeploymentV1ContractTest.php'
+      - '.github/workflows/mcp-production-vps-deployment-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: services/mcp/package-lock.json
+      - name: Install locked dependencies
+        working-directory: services/mcp
+        run: npm ci --ignore-scripts
+      - name: Audit dependencies
+        working-directory: services/mcp
+        run: npm audit --audit-level=high
+      - name: Build and test MCP runtime
+        working-directory: services/mcp
+        run: npm run check
+      - name: Validate production environment contract
+        working-directory: services/mcp
+        env:
+          MICROGIFTER_MCP_ENV: production
+          MICROGIFTER_MCP_RELEASE: ci-production-vps-v1
+          MICROGIFTER_MCP_ENABLED: 'true'
+          MICROGIFTER_MCP_INTERNAL_HTTP_ENABLED: 'true'
+          MICROGIFTER_MCP_INTERNAL_HOST: 127.0.0.1
+          MICROGIFTER_MCP_INTERNAL_PORT: '8787'
+          MICROGIFTER_MCP_PUBLIC_BASE_URL: https://mcp.microgifter.test
+          MICROGIFTER_MCP_ALLOWED_HOSTS: mcp.microgifter.test
+          MICROGIFTER_MCP_INTERNAL_TOKEN_SHA256: 0c9e56f32df85f6c5f606d0a57b6f4baeea649f3cc5c72a945f1fb2f874b62b5
+          MICROGIFTER_MCP_INTERNAL_CONNECTION_ID: 9eb6e4b1-5c50-4e7a-9b5e-d68828b62822
+          MICROGIFTER_MCP_INTERNAL_CLIENT_KEY: ci-vps-client
+          MICROGIFTER_MCP_INTERNAL_USER_ID: '42'
+          MICROGIFTER_MCP_BRIDGE_ENABLED: 'true'
+          MICROGIFTER_MCP_BRIDGE_URL: https://microgifter.test/api/internal/mcp-bridge.php
+          MICROGIFTER_MCP_BRIDGE_SECRET: ci-production-bridge-secret-0123456789abcdef
+          MICROGIFTER_MCP_LOG_LEVEL: silent
+        run: npm run validate:env
+      - name: Start local runtime and run authenticated smoke test
+        working-directory: services/mcp
+        shell: bash
+        run: |
+          set -euo pipefail
+          token='ci-vps-smoke-token'
+          token_hash="$(printf '%s' "$token" | sha256sum | awk '{print $1}')"
+          export MICROGIFTER_MCP_ENV=test
+          export MICROGIFTER_MCP_RELEASE=ci-smoke
+          export MICROGIFTER_MCP_ENABLED=true
+          export MICROGIFTER_MCP_INTERNAL_HTTP_ENABLED=true
+          export MICROGIFTER_MCP_INTERNAL_HOST=127.0.0.1
+          export MICROGIFTER_MCP_INTERNAL_PORT=8787
+          export MICROGIFTER_MCP_INTERNAL_TOKEN_SHA256="$token_hash"
+          export MICROGIFTER_MCP_INTERNAL_CONNECTION_ID=ci-smoke-connection
+          export MICROGIFTER_MCP_INTERNAL_CLIENT_KEY=ci-smoke-client
+          export MICROGIFTER_MCP_INTERNAL_USER_ID=ci-smoke-user
+          export MICROGIFTER_MCP_INTERNAL_SCOPES=profile:read,catalog:read
+          export MICROGIFTER_MCP_BRIDGE_ENABLED=false
+          export MICROGIFTER_MCP_LOG_LEVEL=silent
+          node dist/server.js >/tmp/microgifter-mcp-smoke.log 2>&1 &
+          pid=$!
+          trap 'kill -TERM "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8787/health >/dev/null && break
+            [[ "$attempt" -eq 30 ]] && { cat /tmp/microgifter-mcp-smoke.log; exit 1; }
+            sleep 1
+          done
+          MCP_SMOKE_BASE_URL=http://127.0.0.1:8787 \
+          MCP_SMOKE_BEARER_TOKEN="$token" \
+          npm run smoke
+          kill -TERM "$pid"
+          wait "$pid"
+          trap - EXIT
+
+  docker-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build production image
+        run: docker build --pull -t microgifter-mcp:ci services/mcp
+      - name: Run hardened container smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          token='ci-docker-smoke-token'
+          token_hash="$(printf '%s' "$token" | sha256sum | awk '{print $1}')"
+          docker run -d --name microgifter-mcp-ci \
+            -p 127.0.0.1:18787:8787 \
+            -e MICROGIFTER_MCP_ENV=test \
+            -e MICROGIFTER_MCP_RELEASE=ci-docker \
+            -e MICROGIFTER_MCP_ENABLED=true \
+            -e MICROGIFTER_MCP_INTERNAL_HTTP_ENABLED=true \
+            -e MICROGIFTER_MCP_INTERNAL_TOKEN_SHA256="$token_hash" \
+            -e MICROGIFTER_MCP_INTERNAL_CONNECTION_ID=ci-docker-connection \
+            -e MICROGIFTER_MCP_INTERNAL_CLIENT_KEY=ci-docker-client \
+            -e MICROGIFTER_MCP_INTERNAL_USER_ID=ci-docker-user \
+            -e MICROGIFTER_MCP_INTERNAL_SCOPES=profile:read,catalog:read \
+            -e MICROGIFTER_MCP_BRIDGE_ENABLED=false \
+            -e MICROGIFTER_MCP_LOG_LEVEL=silent \
+            microgifter-mcp:ci
+          trap 'docker logs microgifter-mcp-ci || true; docker rm -f microgifter-mcp-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:18787/health >/dev/null && break
+            [[ "$attempt" -eq 30 ]] && exit 1
+            sleep 1
+          done
+          cd services/mcp
+          MCP_SMOKE_BASE_URL=http://127.0.0.1:18787 \
+          MCP_SMOKE_BEARER_TOKEN="$token" \
+          npm run smoke
+          cd ../..
+          docker stop --time 35 microgifter-mcp-ci
+          docker inspect --format='{{.State.ExitCode}}' microgifter-mcp-ci | grep '^0$'
+          docker rm microgifter-mcp-ci
+          trap - EXIT
+
+  deployment-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: deployment-contracts (${{ matrix.php }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring
+          coverage: none
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax and executable contract
+        run: |
+          php -l config/mcp_production_vps_deployment_release.php
+          php -l scripts/validate_mcp_production_vps_deployment.php
+          php -l tests/phpunit/McpProductionVpsDeploymentV1ContractTest.php
+          php scripts/validate_mcp_production_vps_deployment.php
+      - name: VPS deployment and Phase 1 PHPUnit contracts
+        run: |
+          vendor/bin/phpunit \
+            tests/phpunit/McpProductionVpsDeploymentV1ContractTest.php \
+            tests/phpunit/McpPhase1ProvisioningConsoleV1ContractTest.php \
+            tests/phpunit/McpPhase1CanonicalBridgeV1ContractTest.php \
+            tests/phpunit/McpPhase1ProtocolV1ContractTest.php \
+            tests/phpunit/McpPhase1FoundationV1ContractTest.php
+      - name: Shell syntax
+        run: |
+          bash -n deploy/vps/scripts/install-systemd.sh
+          bash -n deploy/vps/scripts/activate-systemd.sh
+          node --check services/mcp/scripts/smoke-test.mjs
+      - name: Install deployment validators
+        run: sudo apt-get update && sudo apt-get install -y shellcheck nginx-light openssl
+      - name: Shell quality
+        run: shellcheck deploy/vps/scripts/install-systemd.sh deploy/vps/scripts/activate-systemd.sh
+      - name: Docker Compose contract
+        env:
+          MICROGIFTER_MCP_ENV_FILE: ${{ github.workspace }}/deploy/vps/mcp.env.example
+        run: docker compose -f deploy/vps/docker-compose.mcp.yml config >/tmp/mcp-compose.yml
+      - name: Nginx TLS proxy syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          domain=mcp.microgifter.test
+          sudo mkdir -p "/etc/letsencrypt/live/$domain"
+          sudo openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -subj '/CN=mcp.microgifter.test' \
+            -keyout "/etc/letsencrypt/live/$domain/privkey.pem" \
+            -out "/etc/letsencrypt/live/$domain/fullchain.pem" >/dev/null 2>&1
+          sed "s/__MCP_DOMAIN__/$domain/g" deploy/vps/nginx/mcp.microgifter.com.conf.template > /tmp/mcp-site.conf
+          cat >/tmp/mcp-nginx.conf <<NGINX
+          events {}
+          http {
+            include /etc/nginx/mime.types;
+            include /tmp/mcp-site.conf;
+          }
+          NGINX
+          sudo nginx -t -c /tmp/mcp-nginx.conf
+      - name: Task Agent Phase 4 and Approval Center regressions
+        run: |
+          vendor/bin/phpunit \
+            tests/phpunit/TaskAgentPhase46ProductionQaV1ContractTest.php \
+            tests/phpunit/TaskAgentPhase46SafetyBoundaryV1ContractTest.php \
+            tests/phpunit/ProductionAgentPlanReviewApprovalCenterSection2Test.php
+      - name: Repository production-quality audit
+        run: composer audit-repository-quality

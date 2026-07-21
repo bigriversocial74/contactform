@@ -1,0 +1,48 @@
+[Unit]
+Description=Microgifter MCP Streamable HTTP Service
+Documentation=https://microgifter.com
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=120s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=microgifter-mcp
+Group=microgifter-mcp
+WorkingDirectory=/opt/microgifter-mcp/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/microgifter/mcp.env
+ExecStartPre=/usr/bin/test -r /opt/microgifter-mcp/current/dist/server.js
+ExecStart=/usr/bin/node /opt/microgifter-mcp/current/dist/server.js
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+TimeoutStopSec=40s
+KillSignal=SIGTERM
+SuccessExitStatus=0 143
+UMask=0077
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=microgifter-mcp
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
