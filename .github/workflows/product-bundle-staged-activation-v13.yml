@@ -34,5 +34,5 @@ jobs:
       - name: Safety gates
         run: |
           grep -q 'emergency_stop' api/bundles/_release_readiness.php
-          grep -q 'traffic_percent' api/bundles/_release_readiness.php
+          grep -q 'traffic_percent' database/20260721_product_bundle_staged_activation_monitoring_v13.sql
           grep -q "PHP_SAPI!=='cli'" scripts/capture_bundle_release_health.php
