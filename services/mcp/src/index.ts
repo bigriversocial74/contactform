@@ -4,6 +4,7 @@ export * from "./stateMachines.js";
 export * from "./protocolConfig.js";
 export * from "./runtime.js";
 export * from "./auth/internalToken.js";
+export * from "./auth/externalOAuth.js";
 export {
   CanonicalBridgeError,
   HttpCanonicalBridge,
@@ -15,6 +16,7 @@ export type {
   CatalogSearchArguments,
   CatalogSearchResult,
 } from "./bridge/canonicalBridge.js";
+export * from "./bridge/oauthBridge.js";
 export * from "./http/origin.js";
 export * from "./http/app.js";
 export * from "./rateLimit.js";
