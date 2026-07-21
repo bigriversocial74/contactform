@@ -6,7 +6,7 @@ function mg_mcp_oauth_user_connections(PDO $pdo, int $userId): array
     $stmt = $pdo->prepare(
         "SELECT oc.public_id AS consent_public_id,oc.status AS consent_status,oc.scope_json,oc.workspace_key,
                 oc.consented_at,oc.revoked_at,c.public_id AS connection_public_id,c.display_name,c.status AS connection_status,
-                c.last_activity_at,c.expires_at,r.client_id,r.client_name,r.client_uri,r.logo_uri,
+                c.maximum_operation_class,c.last_activity_at,c.expires_at,r.client_id,r.client_name,r.client_uri,r.logo_uri,
                 COALESCE(active_tokens.active_count,0) AS active_token_count
          FROM mcp_oauth_consents oc
          INNER JOIN mcp_connections c ON c.id=oc.connection_id
@@ -26,6 +26,7 @@ function mg_mcp_oauth_user_connections(PDO $pdo, int $userId): array
         'connection_id' => (string)$row['connection_public_id'],
         'display_name' => (string)$row['display_name'],
         'status' => (string)$row['consent_status'] === 'active' ? (string)$row['connection_status'] : 'revoked',
+        'maximum_operation_class' => (string)$row['maximum_operation_class'],
         'client' => [
             'id' => (string)$row['client_id'],
             'name' => (string)$row['client_name'],
@@ -54,9 +55,7 @@ function mg_mcp_oauth_revoke_user_connection(PDO $pdo, int $userId, string $cons
         );
         $stmt->execute([$consentPublicId, $userId]);
         $consent = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$consent) {
-            throw new MgMcpOAuthException('AI connection not found.', 'invalid_request', 404);
-        }
+        if (!$consent) throw new MgMcpOAuthException('AI connection not found.', 'invalid_request', 404);
         $pdo->prepare(
             "UPDATE mcp_oauth_consents
              SET status='revoked',revoked_at=NOW(),revocation_reason=?,updated_at=NOW() WHERE id=?"
@@ -82,9 +81,7 @@ function mg_mcp_oauth_revoke_user_connection(PDO $pdo, int $userId, string $cons
         mg_event('mcp.oauth.connection.revoked', $metadata, $userId);
         mg_security_log('warning', 'mcp.oauth_connection.revoked', 'User revoked an external MCP connection.', $metadata, $userId);
     } catch (Throwable $error) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
+        if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
 }
@@ -102,7 +99,7 @@ function mg_mcp_oauth_authorization_server_metadata(PDO $pdo): array
         'grant_types_supported' => ['authorization_code', 'refresh_token'],
         'token_endpoint_auth_methods_supported' => ['none'],
         'code_challenge_methods_supported' => ['S256'],
-        'scopes_supported' => mg_mcp_oauth_scopes_supported($pdo),
+        'scopes_supported' => mg_mcp_oauth_scopes_supported_for_class($pdo, 'draft'),
         'resource_indicators_supported' => true,
         'client_id_metadata_document_supported' => false,
     ];
