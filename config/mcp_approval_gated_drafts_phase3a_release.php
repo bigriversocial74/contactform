@@ -9,7 +9,6 @@ return [
         'microgifter_mcp_phase1_foundation_v1',
         'microgifter_mcp_phase1_canonical_bridge_v1',
         'microgifter_mcp_external_agent_authorization_phase2a_v1',
-        'microgifter_mcp_external_agent_simulator_phase2b_v1',
     ],
     'required_migrations' => [
         '20260720_mcp_approval_gated_drafts_phase3a_v1',
