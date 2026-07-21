@@ -34,11 +34,11 @@ if ((string)($page_manifest['id'] ?? '') === 'home') {
     $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
 }
 if ((string)($page_manifest['id'] ?? '') === 'index') {
-    $page_scripts[] = '/assets/js/homepage-production-cleanup-v1.js?v=1.4.0';
+    $page_scripts[] = '/assets/js/homepage-production-cleanup-v1.js?v=1.5.0';
     $late_styles[] = '/assets/css/homepage-parallax-exact-v2.css?v=2.2.0';
     $late_styles[] = '/assets/css/pricing-local-business-v1.css?v=1.3.0';
     $late_styles[] = '/assets/css/homepage-mobile-stability-v1.css?v=1.1.0';
-    $late_styles[] = '/assets/css/homepage-production-cleanup-v1.css?v=1.4.0';
+    $late_styles[] = '/assets/css/homepage-production-cleanup-v1.css?v=1.5.0';
 }
 if ((string)($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
@@ -139,7 +139,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
 
     <div class="mg-footer-bottom">
       <p>&copy; <?= date('Y') ?> Microgifter. All rights reserved.</p>
-      <div class="mg-footer-bottom-links" aria-label="Footer utility navigation">
+      <div class="mg-footer-bottom-links" aria-label="Footer utility links">
         <a href="/index.php">Home</a>
         <a href="/pricing.php">Pricing</a>
         <a href="/investors.php">Investors</a>
