@@ -9,16 +9,14 @@ function mg_mcp_oauth_client_registration(PDO $pdo, string $clientId, bool $lock
             FROM mcp_oauth_client_registrations r
             INNER JOIN mcp_clients c ON c.id=r.mcp_client_id
             WHERE r.client_id=? LIMIT 1";
-    if ($lock) {
-        $sql .= ' FOR UPDATE';
-    }
+    if ($lock) $sql .= ' FOR UPDATE';
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$clientId]);
     $registration = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$registration
         || (string)$registration['status'] !== 'active'
         || !in_array((string)$registration['mcp_client_status'], ['development', 'active'], true)
-        || (string)$registration['maximum_operation_class'] !== 'read') {
+        || !in_array((string)$registration['maximum_operation_class'], ['read', 'draft'], true)) {
         throw new MgMcpOAuthException('OAuth client is unavailable.', 'invalid_client', 401);
     }
     $registration['redirect_uris'] = mg_mcp_oauth_json_decode($registration['redirect_uris_json']);
@@ -30,20 +28,14 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
     if (!in_array($registrationType, ['dynamic', 'preregistered'], true)) {
         throw new MgMcpOAuthException('Invalid registration type.', 'invalid_request', 422);
     }
-    if ($registrationType === 'dynamic') {
-        mg_mcp_oauth_require_enabled();
-    }
+    if ($registrationType === 'dynamic') mg_mcp_oauth_require_enabled();
 
     $name = mg_mcp_oauth_text($input['client_name'] ?? '', 3, 180, 'client_name');
     $redirectUris = mg_mcp_oauth_redirect_uris($input['redirect_uris'] ?? []);
     $clientUri = trim((string)($input['client_uri'] ?? ''));
     $logoUri = trim((string)($input['logo_uri'] ?? ''));
-    if ($clientUri !== '') {
-        $clientUri = mg_mcp_oauth_https_url($clientUri, 'client_uri');
-    }
-    if ($logoUri !== '') {
-        $logoUri = mg_mcp_oauth_https_url($logoUri, 'logo_uri');
-    }
+    if ($clientUri !== '') $clientUri = mg_mcp_oauth_https_url($clientUri, 'client_uri');
+    if ($logoUri !== '') $logoUri = mg_mcp_oauth_https_url($logoUri, 'logo_uri');
     $grantTypes = is_array($input['grant_types'] ?? null) ? $input['grant_types'] : ['authorization_code', 'refresh_token'];
     $grantTypes = array_values(array_unique(array_map('strval', $grantTypes)));
     sort($grantTypes);
@@ -53,17 +45,16 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
     }
     $responseTypes = is_array($input['response_types'] ?? null) ? $input['response_types'] : ['code'];
     $responseTypes = array_values(array_unique(array_map('strval', $responseTypes)));
-    if ($responseTypes !== ['code']) {
-        throw new MgMcpOAuthException('Only the code response type is supported.', 'invalid_client_metadata', 422);
-    }
+    if ($responseTypes !== ['code']) throw new MgMcpOAuthException('Only the code response type is supported.', 'invalid_client_metadata', 422);
     $authMethod = strtolower(trim((string)($input['token_endpoint_auth_method'] ?? 'none')));
     if ($authMethod !== 'none') {
-        throw new MgMcpOAuthException('Phase 2A supports public clients using token_endpoint_auth_method=none.', 'invalid_client_metadata', 422);
+        throw new MgMcpOAuthException('Phase 3A supports public clients using token_endpoint_auth_method=none.', 'invalid_client_metadata', 422);
     }
     $clientType = strtolower(trim((string)($input['client_type'] ?? 'custom')));
-    if (!in_array($clientType, ['first_party', 'chatgpt', 'claude', 'custom', 'enterprise'], true)) {
-        $clientType = 'custom';
-    }
+    if (!in_array($clientType, ['first_party', 'chatgpt', 'claude', 'custom', 'enterprise'], true)) $clientType = 'custom';
+    $maximumOperationClass = $registrationType === 'dynamic'
+        ? 'read'
+        : mg_mcp_oauth_maximum_operation_class($input['maximum_operation_class'] ?? 'read');
 
     $pdo->beginTransaction();
     try {
@@ -72,7 +63,7 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
         $clientStmt = $pdo->prepare(
             "INSERT INTO mcp_clients
              (public_id,client_key,display_name,status,client_type,redirect_uris_json,maximum_operation_class,metadata_json,created_by_user_id,created_at,updated_at)
-             VALUES (?,?,?,'active',?,?,'read',?,?,NOW(),NOW())"
+             VALUES (?,?,?,'active',?,?,?,?,?,NOW(),NOW())"
         );
         $clientStmt->execute([
             $clientPublicId,
@@ -80,7 +71,13 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             $name,
             $clientType,
             json_encode($redirectUris, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
-            json_encode(['oauth_phase' => '2A', 'registration_type' => $registrationType], JSON_THROW_ON_ERROR),
+            $maximumOperationClass,
+            json_encode([
+                'oauth_phase' => '3A',
+                'registration_type' => $registrationType,
+                'review_only_drafts' => $maximumOperationClass === 'draft',
+                'execution_enabled' => false,
+            ], JSON_THROW_ON_ERROR),
             $actorId,
         ]);
         $mcpClientId = (int)$pdo->lastInsertId();
@@ -114,6 +111,8 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             'client_name' => $name,
             'registration_type' => $registrationType,
             'redirect_uri_count' => count($redirectUris),
+            'maximum_operation_class' => $maximumOperationClass,
+            'execution_enabled' => false,
         ];
         mg_audit('mcp_oauth_client_registered', 'mcp_oauth_client', $metadata, $actorId);
         mg_event('mcp.oauth.client.registered', $metadata, $actorId);
@@ -128,11 +127,10 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             'grant_types' => $grantTypes,
             'response_types' => $responseTypes,
             'token_endpoint_auth_method' => 'none',
+            'maximum_operation_class' => $maximumOperationClass,
         ];
     } catch (Throwable $error) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
+        if ($pdo->inTransaction()) $pdo->rollBack();
         if ($error instanceof PDOException && (string)$error->getCode() === '23000') {
             throw new MgMcpOAuthException('OAuth client registration conflicts with an existing client.', 'invalid_client_metadata', 409);
         }
@@ -161,7 +159,11 @@ function mg_mcp_oauth_validate_authorization_input(PDO $pdo, array $input): arra
         || strtoupper(trim((string)($input['code_challenge_method'] ?? ''))) !== 'S256') {
         throw new MgMcpOAuthException('PKCE with code_challenge_method=S256 is required.', 'invalid_request', 400);
     }
-    $scopes = mg_mcp_oauth_scope_keys($pdo, $input['scope'] ?? '');
+    $scopes = mg_mcp_oauth_scope_keys_for_class(
+        $pdo,
+        $input['scope'] ?? '',
+        (string)$client['maximum_operation_class']
+    );
     return [
         'client' => $client,
         'redirect_uri' => $redirectUri,
@@ -199,14 +201,12 @@ function mg_mcp_oauth_authorization_request(PDO $pdo, string $publicId, bool $lo
         throw new MgMcpOAuthException('Invalid authorization request.', 'invalid_request', 400);
     }
     $sql = "SELECT ar.*,r.client_id,r.client_name,r.client_uri,r.logo_uri,r.redirect_uris_json,
-                   c.client_type,c.status AS mcp_client_status
+                   c.client_type,c.status AS mcp_client_status,c.maximum_operation_class
             FROM mcp_oauth_authorization_requests ar
             INNER JOIN mcp_oauth_client_registrations r ON r.id=ar.client_registration_id
             INNER JOIN mcp_clients c ON c.id=r.mcp_client_id
             WHERE ar.public_id=? LIMIT 1";
-    if ($lock) {
-        $sql .= ' FOR UPDATE';
-    }
+    if ($lock) $sql .= ' FOR UPDATE';
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$publicId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
