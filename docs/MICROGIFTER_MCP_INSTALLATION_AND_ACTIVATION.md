@@ -4,17 +4,19 @@ This is the primary reference for installing, validating, and activating the Mic
 
 ## Current state
 
-The PHP OAuth authority, external-agent review workspace, owner conversion workflow, native handoff-status authority, Phase 4A automation-grant controls, and Phase 4B automation definitions/manual simulations can be deployed before a Node.js VPS is available. Keep the public MCP endpoint, runtime security keys, external OAuth switches, schedulers, queues, workers, and execution switches disabled until DNS, TLS, Nginx, Node.js, and the later execution phases are ready.
+The PHP OAuth authority, external-agent review workspace, owner conversion workflow, native handoff-status authority, Phase 4A automation grants, Phase 4B automation definitions/manual simulations, and Phase 4C fixed/recurring scheduled-simulation controls can be deployed before a Node.js VPS is available.
+
+Keep the public MCP endpoint, runtime security keys, external OAuth switches, cron jobs, background schedulers, queues, workers, and execution switches disabled until DNS, TLS, Nginx, Node.js, and the later execution phases are ready.
 
 Current boundary:
 
 ```text
 external agent: read + reviewable draft creation + read-only handoff status
-owner: review + inactive native-draft conversion + bounded grants + simulation-only definitions
-runtime: manual policy simulations only; no schedules, queues, workers, commands, receipts, or external effects
+owner: review + inactive native-draft conversion + bounded grants + simulation definitions + schedule records
+runtime: owner-operated manual and due simulations only; no background scheduler, queue, worker, command, receipt, or external effect
 ```
 
-No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, fulfill, charge, or enqueue execution.
+No MCP tool can publish, send, schedule a native campaign, purchase, issue, deliver, activate, fulfill, charge, or enqueue execution.
 
 ## Reference documents
 
@@ -26,6 +28,7 @@ No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, ful
 6. `docs/MICROGIFTER_MCP_NATIVE_DRAFT_STATUS_PHASE3C.md`
 7. `docs/MICROGIFTER_MCP_AUTOMATION_GRANTS_PHASE4A.md`
 8. `docs/MICROGIFTER_MCP_AUTOMATION_DEFINITIONS_PHASE4B.md`
+9. `docs/MICROGIFTER_MCP_AUTOMATION_SCHEDULES_PHASE4C.md`
 
 ## Required migrations
 
@@ -36,7 +39,7 @@ No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, ful
 20260720_mcp_approved_draft_conversion_phase3b_v1
 ```
 
-Phases 3C, 4A, and 4B require **no new SQL**. Phase 3C uses the existing Microgifter event ledger. Phases 4A and 4B use the existing automation grant, definition, trigger, run, action, receipt, and security-event tables from the foundation migration.
+Phases 3C, 4A, 4B, and 4C require **no new SQL**. Phase 3C uses the existing Microgifter event ledger. Phases 4A–4C use the automation grant, definition, trigger, run, action, receipt, and security-event tables from the foundation migration.
 
 ## Current PHP-hosting deployment
 
@@ -48,10 +51,11 @@ On the current non-Node.js hosting environment:
 4. Confirm `/account-agent-handoffs.php` loads.
 5. Confirm `/account-agent-automations.php` loads and displays the build-only runtime boundary.
 6. Confirm `/account-agent-automation-definitions.php` loads and displays the simulation-only runtime boundary.
-7. Do not generate or activate production bearer tokens, bridge HMAC secrets, public OAuth clients, or runtime security keys.
-8. Do not configure `mcp.microgifter.com`, Nginx, systemd, the Node service, schedulers, queues, or workers on this server.
+7. Confirm `/account-agent-automation-schedules.php` loads and displays the manual due-evaluation boundary.
+8. Do not generate or activate production bearer tokens, bridge HMAC secrets, public OAuth clients, or runtime security keys.
+9. Do not configure `mcp.microgifter.com`, Nginx, systemd, Node.js, cron, a background scheduler, queues, or workers on this server.
 
-The deployed PHP code remains dormant and fail-closed. Phase 4B may create owner definitions and manual policy-simulation evidence, but it cannot call a canonical command or create an action receipt.
+Phase 4C may store fixed and recurring due records. Those records do nothing until the signed-in owner presses **Evaluate due simulations**. The evaluator creates proposed simulation actions only, creates zero action receipts, and calls no canonical command.
 
 ## Future VPS activation order
 
@@ -62,8 +66,8 @@ The deployed PHP code remains dormant and fail-closed. Phase 4B may create owner
 5. Validate `/health`, `/ready`, and OAuth discovery.
 6. Pre-register a client with the minimum required scopes.
 7. Enable external OAuth and run a real client connection.
-8. Verify review, inactive conversion, read-only handoff status, grant controls, automation definitions, and manual simulation history while execution queues remain unchanged.
-9. Do not activate schedules, workers, canonical commands, approval-gated external effects, or bounded-auto actions until their later phases are separately built, reviewed, and approved.
+8. Verify review, inactive conversion, read-only handoff status, grant controls, definitions, manual simulations, schedule records, and owner due evaluation while execution queues remain unchanged.
+9. Do not activate a background scheduler, workers, canonical commands, approval-gated external effects, or bounded-auto actions until their later phases are separately built, reviewed, and approved.
 
 ## Pre-deployment validation
 
@@ -80,12 +84,16 @@ node scripts/external-agent-readiness.mjs
 vendor/bin/phpunit tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
 vendor/bin/phpunit tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php
 vendor/bin/phpunit tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
+vendor/bin/phpunit tests/phpunit/McpAutomationSchedulesPhase4cV1ContractTest.php
 php scripts/run_migrations.php
 php scripts/test_mcp_approval_gated_drafts_phase3a.php
 php scripts/test_mcp_approved_draft_conversion_phase3b.php
 php scripts/test_mcp_native_draft_status_phase3c.php
 php scripts/validate_mcp_automation_grants_phase4a.php
 php scripts/validate_mcp_automation_definitions_phase4b.php
+php scripts/validate_mcp_automation_schedules_phase4c.php
+php scripts/test_mcp_automation_definitions_phase4b.php
+php scripts/test_mcp_automation_schedules_phase4c.php
 ```
 
 ## VPS readiness
@@ -125,10 +133,12 @@ Verify all of the following on the future VPS:
 - `/account-agent-handoffs.php` reads canonical native state;
 - `microgifter.drafts.get` and `microgifter.drafts.list` include `handoff`;
 - `/account-agent-automations.php` creates only bounded authority records;
-- `/account-agent-automation-definitions.php` creates only grant-bound definitions and manual simulations;
+- `/account-agent-automation-definitions.php` creates grant-bound simulation definitions;
+- `/account-agent-automation-schedules.php` creates due records and owner-evaluated simulations only;
 - activating a grant creates no automation definition, trigger, run, action, or receipt;
-- activating a definition starts no scheduler or worker;
-- a Phase 4B simulation creates proposed actions but zero action receipts;
-- no review, conversion, status, grant-control, definition, or simulation operation executes `agent_workflow_actions` or a canonical command.
+- activating a definition starts no background scheduler or worker;
+- fixed and recurring due records never fire without the explicit owner evaluator in Phase 4C;
+- Phase 4B and 4C simulations create proposed actions but zero action receipts;
+- no review, conversion, status, grant, definition, schedule, or simulation operation executes `agent_workflow_actions` or a canonical command.
 
-Phase 3C reports native handoff status. Phase 4A records bounded owner authority. Phase 4B creates simulation-only definitions and durable policy evidence. None of these phases performs an external-effect action or enables runtime execution.
+Phase 3C reports native handoff status. Phase 4A records bounded owner authority. Phase 4B creates simulation-only definitions. Phase 4C adds fixed and recurring due records with owner-operated evaluation. None performs an external-effect action or enables runtime execution.
