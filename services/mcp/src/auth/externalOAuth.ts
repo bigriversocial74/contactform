@@ -1,5 +1,5 @@
 import type { IncomingHttpHeaders } from "node:http";
-import type { CanonicalBridge, ResolvedAccessToken } from "../bridge/canonicalBridge.js";
+import type { OAuthTokenResolver, ResolvedAccessToken } from "../bridge/oauthBridge.js";
 import { extractBearerToken, hashBearerToken } from "./internalToken.js";
 
 export interface ExternalOAuthConfig {
@@ -37,14 +37,11 @@ export function oauthChallenge(config: ExternalOAuthConfig, scopes: readonly str
 
 export async function authenticateExternalOAuth(
   headers: IncomingHttpHeaders,
-  bridge: CanonicalBridge,
+  resolver: OAuthTokenResolver,
   config: ExternalOAuthConfig,
 ): Promise<ExternalOAuthPrincipal | null> {
   const token = extractBearerToken(headers);
   if (!token || token.length < 16 || token.length > 2048) return null;
-  const resolved = await bridge.resolveAccessToken(hashBearerToken(token), config.resourceUri);
-  return {
-    ...resolved,
-    authenticationType: "oauth_access_token",
-  };
+  const resolved = await resolver.resolveAccessToken(hashBearerToken(token), config.resourceUri);
+  return { ...resolved, authenticationType: "oauth_access_token" };
 }
