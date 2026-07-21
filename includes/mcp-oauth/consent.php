@@ -4,18 +4,18 @@ declare(strict_types=1);
 function mg_mcp_oauth_user_workspaces(PDO $pdo, int $userId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT DISTINCT mw.id,mw.public_id,mw.business_name,mw.status
+        "SELECT DISTINCT mw.id,mw.public_id,mw.display_name,mw.status
          FROM merchant_workspaces mw
          LEFT JOIN merchant_team_members mt ON mt.workspace_id=mw.id AND mt.user_id=? AND mt.status='active'
          WHERE (mw.merchant_user_id=? OR mt.id IS NOT NULL)
            AND mw.status NOT IN ('suspended','archived')
-         ORDER BY mw.business_name,mw.id"
+         ORDER BY mw.display_name,mw.id"
     );
     $stmt->execute([$userId, $userId]);
     return array_map(static fn(array $row): array => [
         'id' => (int)$row['id'],
         'public_id' => (string)$row['public_id'],
-        'name' => (string)($row['business_name'] ?: 'Merchant workspace'),
+        'name' => (string)($row['display_name'] ?: 'Merchant workspace'),
         'status' => (string)$row['status'],
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
