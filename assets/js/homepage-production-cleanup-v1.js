@@ -12,10 +12,10 @@
   const routes = [
     ['/discover.php', 'Explore local gifts'],
     ['/sales-crm.php', 'See the CRM'],
-    ['/merchant-campaigns.php', 'Build a campaign'],
+    ['/agent.php', 'Explore agentic commerce'],
     ['/sales-crm.php', 'Connect conversations'],
-    ['/inbox.php', 'Follow the lifecycle'],
-    ['/build.php', 'Automate demand']
+    ['/build.php', 'Open Design Studio'],
+    ['/feed.php', 'Explore the social feed']
   ];
   document.querySelectorAll('.pppm-link').forEach((link, index) => {
     const route = routes[index];
@@ -40,25 +40,88 @@
 
   const timelineImages = [
     {
-      src: '/assets/images/hero_agent_chat.png?v=1.0.0',
-      alt: 'Microgifter agent chat workspace'
+      index: 0,
+      src: '/assets/images/hero_inbox.png?v=1.0.0',
+      alt: 'Microgifter gifting inbox workspace'
     },
     {
+      index: 1,
       src: '/assets/images/hero_merchant_CRM.png?v=1.0.0',
       alt: 'Microgifter merchant CRM workspace'
     },
     {
-      src: '/assets/images/hero_inbox.png?v=1.0.0',
-      alt: 'Microgifter gifting inbox workspace'
+      index: 2,
+      src: '/assets/images/hero_agent_chat.png?v=1.0.0',
+      alt: 'Microgifter agentic commerce workspace'
+    },
+    {
+      index: 3,
+      src: '/assets/images/hero_messages.png?v=1.0.0',
+      alt: 'Microgifter customer messaging workspace'
+    },
+    {
+      index: 4,
+      src: '/assets/images/hero_design_studio.png?v=1.0.0',
+      alt: 'Microgifter Design Studio workspace'
+    },
+    {
+      index: 5,
+      src: '/assets/images/hero_social_feed.png?v=1.0.0',
+      alt: 'Microgifter social feed workspace'
+    }
+  ];
+
+  const timelineCopy = [
+    {
+      eyebrow: 'Social Gifting',
+      title: 'Sell now. Send later.',
+      body: 'Give customers a simple inbox for buying, receiving, sending, claiming, and managing local gifts across every stage of the relationship.'
+    },
+    {
+      eyebrow: 'Merchant CRM',
+      title: 'Every action becomes customer memory.',
+      body: 'Connect purchases, claims, visits, messages, referrals, and reward activity to usable customer records.'
+    },
+    {
+      eyebrow: 'Agentic Integrations',
+      title: 'One intelligent layer for customers and merchants.',
+      body: 'Customer agents help people discover, plan, purchase, and send local gifts while merchant agents assist with service, recommendations, campaigns, follow-up, and recurring commerce.'
+    },
+    {
+      eyebrow: 'Customer Messaging',
+      title: 'Keep every conversation connected to the relationship.',
+      body: 'Message customers with purchase, claim, reward, visit, and campaign context already attached so follow-up stays relevant and useful.'
+    },
+    {
+      eyebrow: 'Design Studio',
+      title: 'Create campaigns that are ready to publish.',
+      body: 'Build branded images, offers, social content, campaign assets, and merchant promotions from one connected creative workspace.'
+    },
+    {
+      eyebrow: 'Social Feed',
+      title: 'Turn local activity into ongoing discovery.',
+      body: 'Share products, offers, campaigns, merchant stories, customer moments, and community activity through a social feed built around local commerce.'
     }
   ];
 
   const timelineEvents = [...document.querySelectorAll('#pppm-presentation .pppm-event')];
-  timelineImages.forEach((image, index) => {
-    const visual = timelineEvents[index]?.querySelector('.pppm-visual');
+
+  timelineImages.forEach((image) => {
+    const visual = timelineEvents[image.index]?.querySelector('.pppm-visual');
     if (!visual) return;
     visual.classList.add('pppm-visual--real-image');
     visual.innerHTML = `<img src="${image.src}" alt="${image.alt}" decoding="async">`;
+  });
+
+  timelineCopy.forEach((copy, index) => {
+    const card = timelineEvents[index]?.querySelector('.pppm-card');
+    if (!card) return;
+    const eyebrow = card.querySelector('p');
+    const title = card.querySelector('h3');
+    const body = card.querySelector(':scope > span');
+    if (eyebrow) eyebrow.textContent = copy.eyebrow;
+    if (title) title.textContent = copy.title;
+    if (body) body.textContent = copy.body;
   });
 
   const section = document.querySelector('.final-cta');
