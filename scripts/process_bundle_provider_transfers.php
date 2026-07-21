@@ -8,10 +8,12 @@ if (PHP_SAPI !== 'cli') {
 
 require_once dirname(__DIR__) . '/api/bootstrap.php';
 require_once dirname(__DIR__) . '/api/bundles/_provider_reconciliation.php';
+require_once dirname(__DIR__) . '/api/bundles/_release_readiness.php';
 
 $pdo = mg_db();
 $limit = max(1, min(25, (int)($argv[1] ?? 10)));
 mg_bundle_provider_assert_execution_allowed();
+mg_bundle_release_assert_runtime_allowed($pdo, 'transfer');
 
 $processed = 0;
 $succeeded = 0;
