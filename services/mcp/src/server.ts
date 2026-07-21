@@ -1,11 +1,13 @@
 import { HttpCanonicalBridge } from "./bridge/canonicalBridge.js";
-import { loadInternalProtocolConfig } from "./protocolConfig.js";
+import { HttpOAuthTokenResolver } from "./bridge/oauthBridge.js";
+import { loadInternalProtocolConfig, resolveExternalOAuthConfig } from "./protocolConfig.js";
 import { InMemoryInvocationReceiptSink, type InvocationReceiptSink } from "./receipts.js";
 import { listenInternalMcp } from "./http/app.js";
 import { ServiceRuntimeState, createRuntimeLogger, resolveRuntimeConfig } from "./runtime.js";
 
 const config = loadInternalProtocolConfig();
 const runtimeConfig = resolveRuntimeConfig(config.runtime);
+const externalOAuth = resolveExternalOAuthConfig(config.externalOAuth);
 const logger = createRuntimeLogger(runtimeConfig.logLevel);
 const runtime = new ServiceRuntimeState();
 
@@ -17,6 +19,9 @@ async function main(): Promise<void> {
   const bridge = config.bridge.enabled
     ? new HttpCanonicalBridge(config.bridge, config.connection.connectionId)
     : undefined;
+  const oauthResolver = externalOAuth.enabled
+    ? new HttpOAuthTokenResolver(config.bridge)
+    : undefined;
   const receipts: InvocationReceiptSink = bridge
     ? { record: async (receipt) => bridge.recordReceipt(receipt) }
     : new InMemoryInvocationReceiptSink();
@@ -27,10 +32,12 @@ async function main(): Promise<void> {
     host: config.host,
     port: config.port,
     bridgeEnabled: config.bridge.enabled,
+    externalOAuthEnabled: externalOAuth.enabled,
+    internalBearerFallback: externalOAuth.allowInternalBearer,
     publicBaseUrl: runtimeConfig.publicBaseUrl,
   });
 
-  const server = await listenInternalMcp(config, receipts, bridge, runtime, logger);
+  const server = await listenInternalMcp(config, receipts, bridge, runtime, logger, oauthResolver);
   server.keepAliveTimeout = 65_000;
   server.headersTimeout = 66_000;
   server.requestTimeout = 300_000;
@@ -40,6 +47,7 @@ async function main(): Promise<void> {
     release: runtimeConfig.release,
     host: config.host,
     port: config.port,
+    externalOAuthEnabled: externalOAuth.enabled,
   });
 
   let shutdownPromise: Promise<void> | undefined;
