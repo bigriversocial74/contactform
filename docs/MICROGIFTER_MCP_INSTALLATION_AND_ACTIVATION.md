@@ -32,11 +32,22 @@ From `services/mcp`:
 ```bash
 npm ci --ignore-scripts
 npm run check
-npm run simulate:external-agent
-npm run readiness:external-agent
+npm run build
+node scripts/simulate-external-agent.mjs
+node scripts/external-agent-readiness.mjs
 ```
 
 The simulator uses only loopback networking and sample data. It does not contact Microgifter, ChatGPT, Claude, or any other external service. It must not be used as evidence that public DNS, TLS, Nginx, callbacks, or live client interoperability are working.
+
+## VPS readiness validation
+
+After `/etc/microgifter/mcp.env` has been configured, run the readiness report from `services/mcp` with the environment loaded:
+
+```bash
+node scripts/external-agent-readiness.mjs --strict
+```
+
+The readiness report never prints secret values. Strict mode exits with code `2` while required files or environment values are incomplete.
 
 ## Production activation boundary
 
