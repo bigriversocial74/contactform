@@ -77,8 +77,8 @@ try {
 
     $actionStmt = $pdo->prepare(
         "SELECT COUNT(*) AS total,
-                SUM(status='proposed') AS proposed_total,
-                SUM(approval_required=1) AS approval_total
+                SUM(aa.status='proposed') AS proposed_total,
+                SUM(aa.approval_required=1) AS approval_total
          FROM mcp_automation_actions aa
          INNER JOIN mcp_automation_runs r ON r.id=aa.run_id
          WHERE r.public_id=?"
