@@ -24,28 +24,65 @@
     link.innerHTML = `${route[1]} <span>→</span>`;
   });
 
-  const hero = document.querySelector('.hero-scroll');
   const growthStage = document.getElementById('growthStage');
   if (growthStage) {
-    growthStage.classList.add('hero-product-stage');
+    growthStage.classList.remove('hero-product-stage');
+    growthStage.classList.add('hero-third-message');
     growthStage.innerHTML = `
-      <div class="hero-product-showcase" aria-label="Microgifter product workspace previews">
-        <figure class="hero-product-shot hero-product-shot--agent">
-          <div class="hero-product-media"><img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async"></div>
-          <figcaption><span>01 · Agent chat</span><strong>Turn customer intent into the next thoughtful action.</strong><small>Keep conversations, gifting context, service history, and recommendations connected through one active relationship agent.</small></figcaption>
-        </figure>
-        <figure class="hero-product-shot hero-product-shot--crm">
-          <div class="hero-product-media"><img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async"></div>
-          <figcaption><span>02 · Merchant CRM</span><strong>See the complete relationship behind every customer.</strong><small>Connect purchases, claims, visits, rewards, referrals, messages, and campaign activity in one usable merchant record.</small></figcaption>
-        </figure>
-        <figure class="hero-product-shot hero-product-shot--inbox">
-          <div class="hero-product-media"><img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async"></div>
-          <figcaption><span>03 · Gift inbox</span><strong>Follow every Microgift from purchase through redemption.</strong><small>Manage received, sent, claimed, redeemed, refunded, and regifted activity without losing ownership or customer context.</small></figcaption>
-        </figure>
+      <div class="hero-third-message__inner">
+        <p class="eyebrow">One connected relationship system</p>
+        <h2>Every customer moment becomes part of what happens next.</h2>
+        <p>Microgifter connects conversations, gifting, CRM activity, claims, rewards, and follow-up so every interaction carries useful context forward.</p>
       </div>`;
   }
 
-  const showcaseCards = growthStage ? [...growthStage.querySelectorAll('.hero-product-shot')] : [];
+  const timeline = document.getElementById('pppm-presentation');
+  let showcase = document.getElementById('product-workspace-showcase');
+  if (timeline && !showcase) {
+    showcase = document.createElement('section');
+    showcase.id = 'product-workspace-showcase';
+    showcase.className = 'product-workspace-showcase';
+    showcase.setAttribute('aria-label', 'Microgifter product workspace showcase');
+    showcase.innerHTML = `
+      <div class="product-workspace-showcase__sticky">
+        <div class="product-workspace-showcase__ambient" aria-hidden="true"></div>
+        <div class="product-workspace-showcase__progress" aria-hidden="true"><span></span><span></span><span></span></div>
+        <article class="product-workspace-slide product-workspace-slide--agent" data-product-slide>
+          <div class="product-workspace-slide__copy">
+            <p class="eyebrow">01 · Agent chat</p>
+            <h2>Turn customer intent into the next thoughtful action.</h2>
+            <p>Keep conversations, gifting context, service history, and recommendations connected through one active relationship agent.</p>
+          </div>
+          <figure class="product-workspace-slide__media">
+            <img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async">
+          </figure>
+        </article>
+        <article class="product-workspace-slide product-workspace-slide--crm" data-product-slide>
+          <div class="product-workspace-slide__copy">
+            <p class="eyebrow">02 · Merchant CRM</p>
+            <h2>See the complete relationship behind every customer.</h2>
+            <p>Connect purchases, claims, visits, rewards, referrals, messages, and campaign activity in one usable merchant record.</p>
+          </div>
+          <figure class="product-workspace-slide__media">
+            <img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async">
+          </figure>
+        </article>
+        <article class="product-workspace-slide product-workspace-slide--inbox" data-product-slide>
+          <div class="product-workspace-slide__copy">
+            <p class="eyebrow">03 · Gift inbox</p>
+            <h2>Follow every Microgift from purchase through redemption.</h2>
+            <p>Manage received, sent, claimed, redeemed, refunded, and regifted activity without losing ownership or customer context.</p>
+          </div>
+          <figure class="product-workspace-slide__media">
+            <img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async">
+          </figure>
+        </article>
+      </div>`;
+    timeline.parentNode.insertBefore(showcase, timeline);
+  }
+
+  const slides = showcase ? [...showcase.querySelectorAll('[data-product-slide]')] : [];
+  const progressDots = showcase ? [...showcase.querySelectorAll('.product-workspace-showcase__progress span')] : [];
   const section = document.querySelector('.final-cta');
   const stage = section?.querySelector('.final-cta__stage');
   const orb = section?.querySelector('.final-cta__orb');
@@ -57,60 +94,52 @@
   const range = (value, start, end) => smooth(clamp((value - start) / (end - start)));
   let frame = 0;
 
-  const renderHeroShowcase = () => {
-    if (!hero || !growthStage || !showcaseCards.length) return;
-    if (reduced.matches) {
-      growthStage.style.opacity = '1';
-      growthStage.style.visibility = 'visible';
-      growthStage.style.transform = 'none';
-      showcaseCards.forEach((card, index) => {
-        card.style.opacity = index === 0 ? '1' : '0';
-        card.style.transform = 'none';
-        card.style.filter = 'none';
+  const slideWindows = [
+    { enterStart: .02, enterEnd: .12, exitStart: .28, exitEnd: .36 },
+    { enterStart: .34, enterEnd: .44, exitStart: .60, exitEnd: .68 },
+    { enterStart: .66, enterEnd: .76, exitStart: .91, exitEnd: .99 }
+  ];
+
+  const renderShowcase = () => {
+    if (!showcase || !slides.length) return;
+    if (reduced.matches || !desktop.matches) {
+      slides.forEach(slide => {
+        slide.style.removeProperty('opacity');
+        slide.style.removeProperty('transform');
+        slide.style.removeProperty('filter');
+        slide.style.removeProperty('visibility');
       });
       return;
     }
 
-    const rect = hero.getBoundingClientRect();
-    const distance = Math.max(1, hero.offsetHeight - window.innerHeight);
+    const rect = showcase.getBoundingClientRect();
+    const distance = Math.max(1, showcase.offsetHeight - window.innerHeight);
     const progress = clamp(-rect.top / distance);
-    const stageEnter = range(progress, .685, .715);
-    const stageExit = range(progress, .992, 1);
-    const stageOpacity = stageEnter * (1 - stageExit);
+    let activeIndex = 0;
+    let bestOpacity = -1;
 
-    growthStage.style.opacity = stageOpacity.toFixed(3);
-    growthStage.style.visibility = stageOpacity > .01 ? 'visible' : 'hidden';
-    growthStage.style.transform = `translateY(${((1 - stageEnter) * 28 - stageExit * 18).toFixed(1)}px)`;
-    growthStage.setAttribute('aria-hidden', stageOpacity > .1 ? 'false' : 'true');
-
-    const beats = [
-      { enterStart: .705, enterEnd: .735, holdEnd: .790, exitEnd: .815 },
-      { enterStart: .810, enterEnd: .840, holdEnd: .895, exitEnd: .920 },
-      { enterStart: .915, enterEnd: .945, holdEnd: .982, exitEnd: 1.000 }
-    ];
-
-    showcaseCards.forEach((card, index) => {
-      const beat = beats[index];
-      const enter = range(progress, beat.enterStart, beat.enterEnd);
-      const exit = range(progress, beat.holdEnd, beat.exitEnd);
-      const visible = enter * (1 - exit);
-      const direction = index % 2 === 0 ? 1 : -1;
-      const x = (1 - enter) * direction * 90 - exit * direction * 70;
-      const y = (1 - enter) * 46 - exit * 34;
-      const scale = .94 + enter * .06 - exit * .035;
-
-      card.style.opacity = visible.toFixed(3);
-      card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
-      card.style.filter = `blur(${(((1 - enter) + exit) * 8).toFixed(2)}px)`;
-      card.style.pointerEvents = visible > .8 ? 'auto' : 'none';
-      card.setAttribute('aria-hidden', visible > .1 ? 'false' : 'true');
+    slides.forEach((slide, index) => {
+      const windowConfig = slideWindows[index];
+      const enter = range(progress, windowConfig.enterStart, windowConfig.enterEnd);
+      const exit = range(progress, windowConfig.exitStart, windowConfig.exitEnd);
+      const opacity = enter * (1 - exit);
+      const x = (1 - enter) * 80 - exit * 70;
+      const y = (1 - enter) * 44 - exit * 36;
+      const scale = .97 + enter * .03 - exit * .02;
+      slide.style.opacity = opacity.toFixed(3);
+      slide.style.visibility = opacity > .002 ? 'visible' : 'hidden';
+      slide.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
+      slide.style.filter = `blur(${((1 - enter + exit) * 8).toFixed(2)}px)`;
+      if (opacity > bestOpacity) {
+        bestOpacity = opacity;
+        activeIndex = index;
+      }
     });
+
+    progressDots.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
   };
 
-  const render = () => {
-    frame = 0;
-    renderHeroShowcase();
-
+  const renderFinalCta = () => {
     if (!section || !stage || !orb || !pricing) return;
     if (!desktop.matches || reduced.matches) {
       orb.style.removeProperty('transform');
@@ -141,6 +170,12 @@
     pricing.style.setProperty('opacity', pricingIn.toFixed(3), 'important');
     pricing.style.setProperty('transform', `translate3d(0, ${((1 - pricingIn) * 54).toFixed(1)}px, 0) scale(${(.975 + pricingIn * .025).toFixed(4)})`, 'important');
     pricing.style.pointerEvents = pricingIn > .72 ? 'auto' : 'none';
+  };
+
+  const render = () => {
+    frame = 0;
+    renderShowcase();
+    renderFinalCta();
   };
 
   const requestRender = () => {
