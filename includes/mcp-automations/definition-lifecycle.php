@@ -4,7 +4,8 @@ declare(strict_types=1);
 function mg_mcp_automation_lock_owner_definition(PDO $pdo, int $userId, string $publicId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT a.*,g.public_id AS grant_public_id,g.status AS grant_status,g.allowed_playbooks_json,g.maximum_operation_class AS grant_maximum_operation_class,
+        "SELECT a.*,g.public_id AS grant_public_id,g.status AS grant_status,g.allowed_playbooks_json,g.allowed_trigger_types_json AS grant_allowed_trigger_types_json,
+                g.maximum_operation_class AS grant_maximum_operation_class,g.minimum_frequency_seconds AS grant_minimum_frequency_seconds,
                 g.risk_ceiling,g.revocation_version,g.connection_id,g.authorizing_user_id,g.workspace_type AS grant_workspace_type,g.workspace_id AS grant_workspace_id,
                 g.expires_at AS grant_expires_at,c.public_id AS connection_public_id,c.status AS connection_status,
                 c.maximum_operation_class AS connection_maximum_operation_class,c.expires_at AS connection_expires_at,c.client_id,
@@ -35,6 +36,8 @@ function mg_mcp_automation_definition_grant_projection(array $automation): array
         'workspace_id' => $automation['grant_workspace_id'],
         'status' => (string)$automation['grant_status'],
         'allowed_playbooks_json' => $automation['allowed_playbooks_json'],
+        'allowed_trigger_types_json' => $automation['grant_allowed_trigger_types_json'] ?? '[]',
+        'minimum_frequency_seconds' => $automation['grant_minimum_frequency_seconds'] ?? null,
         'maximum_operation_class' => (string)$automation['grant_maximum_operation_class'],
         'risk_ceiling' => (string)$automation['risk_ceiling'],
         'revocation_version' => (int)$automation['revocation_version'],
@@ -90,14 +93,30 @@ function mg_mcp_automation_transition_definition(PDO $pdo, array $user, string $
 
         $pdo->prepare('UPDATE mcp_automations SET status=?,current_version=current_version+1,updated_at=NOW() WHERE id=?')
             ->execute([$target, (int)$automation['id']]);
-        $triggerStatus = match ($target) {
-            'active' => 'active',
-            'paused' => 'paused',
-            'revoked' => 'revoked',
-            default => 'paused',
-        };
-        $pdo->prepare('UPDATE mcp_automation_triggers SET status=?,updated_at=NOW() WHERE automation_id=? AND trigger_type=\'manual\'')
-            ->execute([$triggerStatus, (int)$automation['id']]);
+        if ($target === 'active') {
+            $pdo->prepare("UPDATE mcp_automation_triggers SET status='active',updated_at=NOW() WHERE automation_id=? AND trigger_type='manual' AND status<>'revoked'")
+                ->execute([(int)$automation['id']]);
+            $pdo->prepare(
+                "UPDATE mcp_automation_triggers SET status='active',updated_at=NOW()
+                 WHERE automation_id=? AND trigger_type IN ('fixed_schedule','recurring_schedule')
+                   AND next_due_at IS NOT NULL AND status NOT IN ('expired','revoked')"
+            )->execute([(int)$automation['id']]);
+            $nextStmt = $pdo->prepare(
+                "SELECT MIN(next_due_at) FROM mcp_automation_triggers
+                 WHERE automation_id=? AND status='active' AND trigger_type IN ('fixed_schedule','recurring_schedule') AND next_due_at IS NOT NULL"
+            );
+            $nextStmt->execute([(int)$automation['id']]);
+            $pdo->prepare('UPDATE mcp_automations SET next_run_at=? WHERE id=?')
+                ->execute([$nextStmt->fetchColumn() ?: null, (int)$automation['id']]);
+        } elseif ($target === 'paused') {
+            $pdo->prepare("UPDATE mcp_automation_triggers SET status='paused',updated_at=NOW() WHERE automation_id=? AND status='active'")
+                ->execute([(int)$automation['id']]);
+            $pdo->prepare('UPDATE mcp_automations SET next_run_at=NULL WHERE id=?')->execute([(int)$automation['id']]);
+        } elseif ($target === 'revoked') {
+            $pdo->prepare("UPDATE mcp_automation_triggers SET status='revoked',next_due_at=NULL,updated_at=NOW() WHERE automation_id=?")
+                ->execute([(int)$automation['id']]);
+            $pdo->prepare('UPDATE mcp_automations SET next_run_at=NULL WHERE id=?')->execute([(int)$automation['id']]);
+        }
         if (in_array($target, ['paused', 'revoked'], true)) {
             $pdo->prepare(
                 "UPDATE mcp_automation_runs
