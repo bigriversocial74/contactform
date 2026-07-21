@@ -36,53 +36,31 @@
       </div>`;
   }
 
-  const timeline = document.getElementById('pppm-presentation');
-  let showcase = document.getElementById('product-workspace-showcase');
-  if (timeline && !showcase) {
-    showcase = document.createElement('section');
-    showcase.id = 'product-workspace-showcase';
-    showcase.className = 'product-workspace-showcase';
-    showcase.setAttribute('aria-label', 'Microgifter product workspace showcase');
-    showcase.innerHTML = `
-      <div class="product-workspace-showcase__sticky">
-        <div class="product-workspace-showcase__ambient" aria-hidden="true"></div>
-        <div class="product-workspace-showcase__progress" aria-hidden="true"><span></span><span></span><span></span></div>
-        <article class="product-workspace-slide product-workspace-slide--agent" data-product-slide>
-          <div class="product-workspace-slide__copy">
-            <p class="eyebrow">01 · Agent chat</p>
-            <h2>Turn customer intent into the next thoughtful action.</h2>
-            <p>Keep conversations, gifting context, service history, and recommendations connected through one active relationship agent.</p>
-          </div>
-          <figure class="product-workspace-slide__media">
-            <img src="/assets/images/hero_agent_chat.png?v=1.0.0" alt="Microgifter agent chat workspace" decoding="async">
-          </figure>
-        </article>
-        <article class="product-workspace-slide product-workspace-slide--crm" data-product-slide>
-          <div class="product-workspace-slide__copy">
-            <p class="eyebrow">02 · Merchant CRM</p>
-            <h2>See the complete relationship behind every customer.</h2>
-            <p>Connect purchases, claims, visits, rewards, referrals, messages, and campaign activity in one usable merchant record.</p>
-          </div>
-          <figure class="product-workspace-slide__media">
-            <img src="/assets/images/hero_merchant_CRM.png?v=1.0.0" alt="Microgifter merchant CRM workspace" decoding="async">
-          </figure>
-        </article>
-        <article class="product-workspace-slide product-workspace-slide--inbox" data-product-slide>
-          <div class="product-workspace-slide__copy">
-            <p class="eyebrow">03 · Gift inbox</p>
-            <h2>Follow every Microgift from purchase through redemption.</h2>
-            <p>Manage received, sent, claimed, redeemed, refunded, and regifted activity without losing ownership or customer context.</p>
-          </div>
-          <figure class="product-workspace-slide__media">
-            <img src="/assets/images/hero_inbox.png?v=1.0.0" alt="Microgifter gifting inbox workspace" decoding="async">
-          </figure>
-        </article>
-      </div>`;
-    timeline.parentNode.insertBefore(showcase, timeline);
-  }
+  document.getElementById('product-workspace-showcase')?.remove();
 
-  const slides = showcase ? [...showcase.querySelectorAll('[data-product-slide]')] : [];
-  const progressDots = showcase ? [...showcase.querySelectorAll('.product-workspace-showcase__progress span')] : [];
+  const timelineImages = [
+    {
+      src: '/assets/images/hero_agent_chat.png?v=1.0.0',
+      alt: 'Microgifter agent chat workspace'
+    },
+    {
+      src: '/assets/images/hero_merchant_CRM.png?v=1.0.0',
+      alt: 'Microgifter merchant CRM workspace'
+    },
+    {
+      src: '/assets/images/hero_inbox.png?v=1.0.0',
+      alt: 'Microgifter gifting inbox workspace'
+    }
+  ];
+
+  const timelineEvents = [...document.querySelectorAll('#pppm-presentation .pppm-event')];
+  timelineImages.forEach((image, index) => {
+    const visual = timelineEvents[index]?.querySelector('.pppm-visual');
+    if (!visual) return;
+    visual.classList.add('pppm-visual--real-image');
+    visual.innerHTML = `<img src="${image.src}" alt="${image.alt}" decoding="async">`;
+  });
+
   const section = document.querySelector('.final-cta');
   const stage = section?.querySelector('.final-cta__stage');
   const orb = section?.querySelector('.final-cta__orb');
@@ -93,51 +71,6 @@
   const smooth = value => value * value * (3 - 2 * value);
   const range = (value, start, end) => smooth(clamp((value - start) / (end - start)));
   let frame = 0;
-
-  const slideWindows = [
-    { enterStart: .02, enterEnd: .12, exitStart: .28, exitEnd: .36 },
-    { enterStart: .34, enterEnd: .44, exitStart: .60, exitEnd: .68 },
-    { enterStart: .66, enterEnd: .76, exitStart: .91, exitEnd: .99 }
-  ];
-
-  const renderShowcase = () => {
-    if (!showcase || !slides.length) return;
-    if (reduced.matches || !desktop.matches) {
-      slides.forEach(slide => {
-        slide.style.removeProperty('opacity');
-        slide.style.removeProperty('transform');
-        slide.style.removeProperty('filter');
-        slide.style.removeProperty('visibility');
-      });
-      return;
-    }
-
-    const rect = showcase.getBoundingClientRect();
-    const distance = Math.max(1, showcase.offsetHeight - window.innerHeight);
-    const progress = clamp(-rect.top / distance);
-    let activeIndex = 0;
-    let bestOpacity = -1;
-
-    slides.forEach((slide, index) => {
-      const windowConfig = slideWindows[index];
-      const enter = range(progress, windowConfig.enterStart, windowConfig.enterEnd);
-      const exit = range(progress, windowConfig.exitStart, windowConfig.exitEnd);
-      const opacity = enter * (1 - exit);
-      const x = (1 - enter) * 80 - exit * 70;
-      const y = (1 - enter) * 44 - exit * 36;
-      const scale = .97 + enter * .03 - exit * .02;
-      slide.style.opacity = opacity.toFixed(3);
-      slide.style.visibility = opacity > .002 ? 'visible' : 'hidden';
-      slide.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
-      slide.style.filter = `blur(${((1 - enter + exit) * 8).toFixed(2)}px)`;
-      if (opacity > bestOpacity) {
-        bestOpacity = opacity;
-        activeIndex = index;
-      }
-    });
-
-    progressDots.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
-  };
 
   const renderFinalCta = () => {
     if (!section || !stage || !orb || !pricing) return;
@@ -172,14 +105,11 @@
     pricing.style.pointerEvents = pricingIn > .72 ? 'auto' : 'none';
   };
 
-  const render = () => {
-    frame = 0;
-    renderShowcase();
-    renderFinalCta();
-  };
-
   const requestRender = () => {
-    if (!frame) frame = window.requestAnimationFrame(render);
+    if (!frame) frame = window.requestAnimationFrame(() => {
+      frame = 0;
+      renderFinalCta();
+    });
   };
 
   window.addEventListener('scroll', requestRender, { passive: true });
