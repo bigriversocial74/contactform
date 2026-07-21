@@ -15,6 +15,7 @@ $expectedOrder = [
     'products',
     'reward_templates',
     'campaigns',
+    'creator_campaigns',
     'claims',
     'locations',
     'loyalty_quests',
@@ -51,6 +52,7 @@ $legacyHrefs = [
     'merchant_crm' => '/merchant-crm.php',
     'reviews' => '/merchant-reviews.php',
     'campaigns' => '/merchant-campaigns.php',
+    'creator_campaigns' => '/merchant-creator-campaigns.php',
     'campaign_ads' => '/merchant-ad-manager.php',
     'distribution' => '/merchant-distribution.php',
     'hosted_games' => '/merchant-games.php',
@@ -69,7 +71,7 @@ $legacyHrefs = [
 ];
 
 $expectedSections = [
-    'Products & Engagement' => ['products', 'reward_templates', 'campaigns', 'claims', 'locations', 'loyalty_quests'],
+    'Products & Engagement' => ['products', 'reward_templates', 'campaigns', 'creator_campaigns', 'claims', 'locations', 'loyalty_quests'],
     'Insights & Records' => ['notifications', 'orders', 'stamps', 'reviews', 'pppm', 'merchant_crm'],
     'Storefront & Distribution' => ['storefront', 'merchant_pwa', 'hosted_games', 'distribution', 'developer_api', 'store_canvas', 'world_canvas', 'integrations'],
     'Business Operations' => ['campaign_ads', 'payments', 'media', 'team', 'agent_chat', 'settings'],
@@ -106,6 +108,7 @@ $checks[] = ['name' => 'exact grouped navigation order', 'ok' => array_keys($ite
 $checks[] = ['name' => 'all prior merchant links preserved', 'ok' => array_reduce(array_keys($legacyHrefs), static function (bool $ok, string $key) use ($items, $legacyHrefs): bool {
     return $ok && isset($items[$key]) && ($items[$key][2] ?? '') === $legacyHrefs[$key];
 }, true)];
+$checks[] = ['name' => 'creator campaigns standalone destination', 'ok' => ($items['creator_campaigns'][2] ?? '') === '/merchant-creator-campaigns.php'];
 $checks[] = ['name' => 'loyalty quests standalone destination', 'ok' => ($items['loyalty_quests'][2] ?? '') === '/merchant-loyalty-quests.php'];
 $checks[] = ['name' => 'world canvas standalone destination', 'ok' => ($items['world_canvas'][2] ?? '') === '/world-canvas.php'];
 $checks[] = ['name' => 'requested merchant labels', 'ok' => ($items['orders'][0] ?? '') === 'My Orders'
@@ -129,6 +132,7 @@ $groupedSections = array_values(array_unique(array_filter(array_map(static fn(ar
 $checks[] = ['name' => 'all navigation entries have destinations', 'ok' => !in_array('', $hrefs, true) && !in_array('#', $hrefs, true)];
 $checks[] = ['name' => 'sidebar mirrors item order', 'ok' => array_keys($sidebar) === $expectedOrder];
 $checks[] = ['name' => 'loyalty quest active state', 'ok' => !empty($sidebar['loyalty_quests']['active']) && mg_merchant_navigation_active_key('merchant-quest-reviews') === 'loyalty_quests'];
+$checks[] = ['name' => 'creator campaign builder active alias', 'ok' => mg_merchant_navigation_active_key('merchant-creator-campaign-builder') === 'creator_campaigns'];
 $checks[] = ['name' => 'world canvas active alias', 'ok' => mg_merchant_navigation_active_key('world-canvas') === 'world_canvas'];
 $checks[] = ['name' => 'four grouped sections plus primary dashboard', 'ok' => $groupedSections === array_keys($expectedSections)];
 $checks[] = ['name' => 'native accessible accordion rendering', 'ok' => str_contains($appSidebar, '<details class="mg-side-nav-accordion"')
