@@ -10,7 +10,10 @@ declare(strict_types=1);
         <h1>Agent drafts</h1>
         <p>Review external-agent drafts, approve the proposal, and separately convert an approved proposal into an inactive native Microgifter draft. Every conversion still requires later manual editing and an additional first-party action before anything can go live.</p>
       </div>
-      <a class="mg-drafts-link" href="/account-ai-connections.php">Manage AI connections</a>
+      <div class="mg-conversion-actions">
+        <a class="mg-drafts-link" href="/account-agent-automations.php">Automation grants</a>
+        <a class="mg-drafts-link" href="/account-ai-connections.php">AI connections</a>
+      </div>
     </header>
 
     <?php if ($notice !== ''): ?><div class="mg-drafts-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
