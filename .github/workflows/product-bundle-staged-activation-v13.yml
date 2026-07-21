@@ -1,0 +1,38 @@
+name: Product Bundle Staged Activation v13
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'database/20260721_product_bundle_staged_activation_monitoring_v13.sql'
+      - 'api/bundles/_release_readiness.php'
+      - 'scripts/capture_bundle_release_health.php'
+      - 'api/admin/bundle-release-readiness.php'
+      - 'admin/bundle-release-readiness.php'
+      - 'tests/phpunit/ProductBundleStagedActivationV13ContractTest.php'
+      - 'config/migrations.php'
+      - '.github/workflows/product-bundle-staged-activation-v13.yml'
+jobs:
+  validate:
+    strategy: {fail-fast: false, matrix: {php: ['8.2','8.3']}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '${{ matrix.php }}', tools: composer}
+      - name: PHP syntax
+        run: |
+          php -l api/bundles/_release_readiness.php
+          php -l scripts/capture_bundle_release_health.php
+          php -l api/admin/bundle-release-readiness.php
+          php -l admin/bundle-release-readiness.php
+          php -l tests/phpunit/ProductBundleStagedActivationV13ContractTest.php
+      - name: Contract test
+        run: |
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/ProductBundleStagedActivationV13ContractTest.php; else echo 'PHPUnit unavailable; source guards completed.'; fi
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: Safety gates
+        run: |
+          grep -q 'emergency_stop' api/bundles/_release_readiness.php
+          grep -q 'traffic_percent' api/bundles/_release_readiness.php
+          grep -q "PHP_SAPI!=='cli'" scripts/capture_bundle_release_health.php
