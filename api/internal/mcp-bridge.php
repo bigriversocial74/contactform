@@ -25,6 +25,11 @@ try {
     } elseif (str_starts_with($operation, 'draft.')) {
         $context = mg_mcp_draft_bridge_authenticate($pdo, $rawBody, $payload);
         $data = mg_mcp_draft_bridge_dispatch($pdo, $context, $operation, $arguments);
+        if ($operation === 'draft.get' && is_array($data) && !empty($data['id'])) {
+            $data['handoff'] = mg_mcp_native_status_for_connection($pdo, $context, (string)$data['id']);
+        } elseif ($operation === 'draft.list' && is_array($data) && is_array($data['items'] ?? null)) {
+            $data['items'] = mg_mcp_native_status_attach_connection_drafts($pdo, $context, $data['items']);
+        }
     } else {
         $context = mg_mcp_bridge_authenticate($pdo, $rawBody, $payload);
         $data = match ($operation) {
@@ -58,23 +63,11 @@ try {
         'bridge_code' => $error->bridgeCode(),
         'http_status' => $error->httpStatus(),
     ]);
-    mg_json([
-        'ok' => false,
-        'error' => [
-            'code' => $error->bridgeCode(),
-            'message' => $error->getMessage(),
-        ],
-    ], $error->httpStatus());
+    mg_json(['ok'=>false,'error'=>['code'=>$error->bridgeCode(),'message'=>$error->getMessage()]], $error->httpStatus());
 } catch (Throwable $error) {
     mg_security_log('error', 'mcp.bridge.failed', 'MCP bridge request failed.', [
         'exception_class' => $error::class,
         'exception_message' => mb_substr($error->getMessage(), 0, 500),
     ]);
-    mg_json([
-        'ok' => false,
-        'error' => [
-            'code' => 'MCP_BRIDGE_INTERNAL_ERROR',
-            'message' => 'The canonical bridge could not complete the request.',
-        ],
-    ], 500);
+    mg_json(['ok'=>false,'error'=>['code'=>'MCP_BRIDGE_INTERNAL_ERROR','message'=>'The canonical bridge could not complete the request.']], 500);
 }
