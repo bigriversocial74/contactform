@@ -2,7 +2,7 @@
 
 This directory is the separately deployable TypeScript control plane for Microgifter Platform Phase 5.
 
-Current Phase 2A/2B posture:
+Current Phase 3A posture:
 
 - disabled by default;
 - stateless Streamable HTTP at `/mcp`;
@@ -15,8 +15,9 @@ Current Phase 2A/2B posture:
 - durable safe invocation receipts through the canonical PHP bridge;
 - loopback-only external-agent compatibility simulator;
 - non-secret deployment-readiness report;
+- read-only and reviewable-draft operation classes;
 - no scheduler or worker;
-- no write-capable tools;
+- no publish, send, purchase, payment, delivery, activation, fulfillment, or execution tools;
 - no production database credentials in Node;
 - HMAC-SHA256 signed Node-to-PHP canonical bridge requests.
 
@@ -26,7 +27,19 @@ Functional read-only tools:
 - `microgifter.catalog.search`
 - `microgifter.catalog.get_item`
 
-Catalog, connection, consent, client, user, workspace, token version, and scope authority are re-resolved from the Microgifter database on every bridged request. Revocation takes effect on the next request.
+Review-only draft tools:
+
+- `microgifter.gift.create_draft`
+- `microgifter.campaign.create_draft`
+- `microgifter.reward.create_draft`
+- `microgifter.message.create_draft`
+- `microgifter.drafts.list`
+- `microgifter.drafts.get`
+- `microgifter.drafts.cancel`
+
+Draft approval remains a stored human decision. It does not convert the draft into a live Microgifter object or enqueue either execution system.
+
+Catalog, connection, consent, client, user, workspace, token version, operation class, and scope authority are re-resolved from the Microgifter database on every bridged request. Revocation takes effect on the next request.
 
 ## Local validation
 
@@ -54,10 +67,12 @@ Primary installation and activation reference:
 docs/MICROGIFTER_MCP_INSTALLATION_AND_ACTIVATION.md
 ```
 
-Phase 2B reference:
+Phase references:
 
 ```text
+docs/MICROGIFTER_MCP_EXTERNAL_AGENT_AUTHORIZATION_PHASE2A.md
 docs/MICROGIFTER_MCP_EXTERNAL_AGENT_SIMULATOR_PHASE2B.md
+docs/MICROGIFTER_MCP_APPROVAL_GATED_DRAFTS_PHASE3A.md
 ```
 
 ## Runtime endpoints
@@ -99,7 +114,7 @@ The validator emits only non-secret configuration metadata.
 
 ## External OAuth launch
 
-The matching PHP deployment requires the Phase 2A migration, the existing bridge settings, and the OAuth settings in:
+The matching PHP deployment requires the Phase 2A and Phase 3A migrations, the existing bridge settings, and the OAuth settings in:
 
 ```text
 deploy/vps/php-bridge.env.example
@@ -118,11 +133,7 @@ MICROGIFTER_MCP_ALLOW_INTERNAL_BEARER=true
 
 Set the internal fallback to `false` only after external OAuth is verified and the deployment no longer needs Phase 1 bearer smoke testing.
 
-Primary Phase 2A runbook:
-
-```text
-docs/MICROGIFTER_MCP_EXTERNAL_AGENT_AUTHORIZATION_PHASE2A.md
-```
+Dynamic OAuth registration remains read-only. Draft-capable clients must be preregistered by an administrator, and users must explicitly consent to each requested draft scope.
 
 ## Internal bridge launch
 
@@ -142,6 +153,8 @@ MICROGIFTER_MCP_BRIDGE_URL=https://microgifter.com/api/internal/mcp-bridge.php \
 MICROGIFTER_MCP_BRIDGE_SECRET=<shared-deployment-secret> \
 npm start
 ```
+
+The Phase 1 internal bearer profile remains read-only. Draft tools are intended for the external OAuth path.
 
 ## Production VPS package
 
