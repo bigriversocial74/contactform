@@ -27,7 +27,13 @@ function mg_mcp_oauth_client_registration(PDO $pdo, string $clientId, bool $lock
 
 function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = null, string $registrationType = 'dynamic'): array
 {
-    mg_mcp_oauth_require_enabled();
+    if (!in_array($registrationType, ['dynamic', 'preregistered'], true)) {
+        throw new MgMcpOAuthException('Invalid registration type.', 'invalid_request', 422);
+    }
+    if ($registrationType === 'dynamic') {
+        mg_mcp_oauth_require_enabled();
+    }
+
     $name = mg_mcp_oauth_text($input['client_name'] ?? '', 3, 180, 'client_name');
     $redirectUris = mg_mcp_oauth_redirect_uris($input['redirect_uris'] ?? []);
     $clientUri = trim((string)($input['client_uri'] ?? ''));
@@ -58,9 +64,6 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
     if (!in_array($clientType, ['first_party', 'chatgpt', 'claude', 'custom', 'enterprise'], true)) {
         $clientType = 'custom';
     }
-    if (!in_array($registrationType, ['dynamic', 'preregistered'], true)) {
-        throw new MgMcpOAuthException('Invalid registration type.', 'invalid_request', 422);
-    }
 
     $pdo->beginTransaction();
     try {
@@ -84,13 +87,12 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
 
         $registrationPublicId = mg_public_uuid();
         $clientId = $clientPublicId;
-        $registrationToken = mg_mcp_oauth_random_token('mgrat_', 32);
         $stmt = $pdo->prepare(
             "INSERT INTO mcp_oauth_client_registrations
              (public_id,mcp_client_id,client_id,client_name,client_uri,logo_uri,status,registration_type,
               redirect_uris_json,grant_types_json,response_types_json,token_endpoint_auth_method,
               registration_access_token_hash,created_by_user_id,created_at,updated_at)
-             VALUES (?,?,?,?,?,?,'active',?,?,?,?, 'none',?,?,NOW(),NOW())"
+             VALUES (?,?,?,?,?,?,'active',?,?,?,?, 'none',NULL,?,NOW(),NOW())"
         );
         $stmt->execute([
             $registrationPublicId,
@@ -103,7 +105,6 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             json_encode($redirectUris, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
             json_encode($grantTypes, JSON_THROW_ON_ERROR),
             json_encode($responseTypes, JSON_THROW_ON_ERROR),
-            mg_mcp_oauth_hash_token($registrationToken),
             $actorId,
         ]);
         $pdo->commit();
@@ -127,8 +128,6 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             'grant_types' => $grantTypes,
             'response_types' => $responseTypes,
             'token_endpoint_auth_method' => 'none',
-            'registration_access_token' => $registrationToken,
-            'registration_client_uri' => mg_mcp_oauth_issuer() . '/oauth/register.php?client_id=' . rawurlencode($clientId),
         ];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) {
@@ -156,7 +155,7 @@ function mg_mcp_oauth_validate_authorization_input(PDO $pdo, array $input): arra
     if ($resource === '' || !hash_equals(mg_mcp_oauth_resource_uri(), $resource)) {
         throw new MgMcpOAuthException('The resource parameter must identify the Microgifter MCP server.', 'invalid_target', 400);
     }
-    $state = mg_mcp_oauth_text($input['state'] ?? '', 16, 512, 'state');
+    $state = mg_mcp_oauth_text($input['state'] ?? '', 1, 512, 'state');
     $challenge = trim((string)($input['code_challenge'] ?? ''));
     if (preg_match('/^[A-Za-z0-9_-]{43,128}$/', $challenge) !== 1
         || strtoupper(trim((string)($input['code_challenge_method'] ?? ''))) !== 'S256') {
