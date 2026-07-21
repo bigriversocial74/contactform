@@ -4,60 +4,56 @@ This is the primary reference for installing, validating, and activating the Mic
 
 ## Current state
 
-The PHP authorization layer, draft review workspace, and database migrations can be deployed before a Node.js VPS is available. Keep the public MCP service and external OAuth switches disabled until DNS, TLS, Nginx, and the Node.js service are ready.
+The PHP OAuth authority, external-agent review workspace, owner conversion workflow, and native handoff-status authority can be deployed before a Node.js VPS is available. Keep the public MCP endpoint and external OAuth switches disabled until DNS, TLS, Nginx, and Node.js are ready.
 
-Current operation ceiling:
+Current boundary:
 
 ```text
-reviewable drafts only
+external agent: read + reviewable draft creation + read-only handoff status
+owner: review + separate inactive native-draft conversion
 ```
 
-Approval records a human decision but does not publish, send, purchase, schedule, activate, fulfill, or execute.
+No MCP tool can publish, send, schedule, purchase, issue, deliver, activate, fulfill, charge, or enqueue execution.
 
 ## Reference documents
 
-1. `docs/MICROGIFTER_MCP_PRODUCTION_VPS_DEPLOYMENT_V1.md` installs Node.js, Nginx, TLS, systemd, health checks, logging, and rollback.
-2. `docs/MICROGIFTER_MCP_EXTERNAL_AGENT_AUTHORIZATION_PHASE2A.md` activates OAuth, client registration, consent, token rotation, and revocation.
-3. `docs/MICROGIFTER_MCP_EXTERNAL_AGENT_SIMULATOR_PHASE2B.md` runs the loopback-only pre-deployment simulator and readiness report.
-4. `docs/MICROGIFTER_MCP_APPROVAL_GATED_DRAFTS_PHASE3A.md` installs reviewable gift, campaign, reward, and message drafts.
+1. `docs/MICROGIFTER_MCP_PRODUCTION_VPS_DEPLOYMENT_V1.md`
+2. `docs/MICROGIFTER_MCP_EXTERNAL_AGENT_AUTHORIZATION_PHASE2A.md`
+3. `docs/MICROGIFTER_MCP_EXTERNAL_AGENT_SIMULATOR_PHASE2B.md`
+4. `docs/MICROGIFTER_MCP_APPROVAL_GATED_DRAFTS_PHASE3A.md`
+5. `docs/MICROGIFTER_MCP_INSTALLATION_PHASE3B_SUPPLEMENT.md`
+6. `docs/MICROGIFTER_MCP_NATIVE_DRAFT_STATUS_PHASE3C.md`
 
 ## Required migrations
-
-The canonical migration runner must include:
 
 ```text
 20260720_microgifter_mcp_automation_foundation_v1
 20260720_mcp_external_agent_authorization_phase2a_v1
 20260720_mcp_approval_gated_drafts_phase3a_v1
+20260720_mcp_approved_draft_conversion_phase3b_v1
 ```
 
-The Phase 3A file is:
+Phase 3C requires **no new SQL**. It uses the existing Microgifter event ledger for state-change evidence.
 
-```text
-database/20260720_mcp_approval_gated_drafts_phase3a_v1.sql
-```
+## Deployment order
 
-## Required deployment order
-
-1. Deploy the latest integration files.
-2. Run all required migrations.
-3. Provision the internal bridge connection and save the one-time credential bundle.
-4. Configure the PHP bridge environment.
-5. Configure the PHP OAuth environment, but keep OAuth disabled until the Node service is ready.
-6. Create DNS for `mcp.microgifter.com`.
-7. Install the Node.js service and Nginx reverse proxy.
-8. Obtain TLS and validate `/health`, `/ready`, and OAuth discovery.
-9. Pre-register the first approved external client.
-10. Choose a `read` or `draft` maximum operation class.
-11. Grant only the minimum required scopes.
-12. Enable external OAuth and run a real client connection.
-13. For draft clients, verify `/account-agent-drafts.php` and prove approval creates no execution-queue rows.
+1. Deploy the latest `integration-from-repair-20260628` files.
+2. Confirm all four migrations above are imported.
+3. Confirm `/account-agent-drafts.php` loads.
+4. Confirm `/account-agent-handoffs.php` loads.
+5. Provision the internal bridge connection and retain the one-time credential bundle.
+6. Configure the PHP bridge and OAuth environment, but leave external OAuth disabled.
+7. After a VPS is available, create DNS for `mcp.microgifter.com`.
+8. Install Node.js, Nginx, TLS, and the MCP systemd service.
+9. Validate `/health`, `/ready`, and OAuth discovery.
+10. Pre-register a client with the minimum required scopes.
+11. Enable external OAuth and run a real client connection.
+12. Verify review, inactive conversion, and read-only handoff status while both execution queues remain unchanged.
 
 ## Pre-deployment validation
 
-From `services/mcp`:
-
 ```bash
+cd services/mcp
 npm ci --ignore-scripts
 npm run check
 npm run build
@@ -65,38 +61,28 @@ node scripts/simulate-external-agent.mjs
 node scripts/external-agent-readiness.mjs
 ```
 
-PHP and clean-database checks:
-
 ```bash
-vendor/bin/phpunit tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php
+vendor/bin/phpunit tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
 php scripts/run_migrations.php
 php scripts/test_mcp_approval_gated_drafts_phase3a.php
+php scripts/test_mcp_approved_draft_conversion_phase3b.php
+php scripts/test_mcp_native_draft_status_phase3c.php
 ```
 
-The simulator uses only loopback networking and sample data. It does not contact Microgifter, ChatGPT, Claude, or any other external service. It must not be used as evidence that public DNS, TLS, Nginx, callbacks, or live client interoperability are working.
+## VPS readiness
 
-## VPS readiness validation
-
-After `/etc/microgifter/mcp.env` has been configured, run the readiness report from `services/mcp` with the environment loaded:
+After `/etc/microgifter/mcp.env` is configured:
 
 ```bash
+cd services/mcp
 node scripts/external-agent-readiness.mjs --strict
 ```
 
-The readiness report never prints secret values. Strict mode exits with code `2` while required files or environment values are incomplete.
+Strict mode exits with code `2` while required configuration is incomplete and never prints secret values.
 
-## First client profile
+## First client
 
-Start with one preregistered internal pilot client.
-
-Recommended read-only scopes:
-
-```text
-profile:read
-catalog:read
-```
-
-Recommended first draft pilot:
+Start with one preregistered pilot client.
 
 ```text
 profile:read
@@ -104,35 +90,21 @@ catalog:read
 gift:draft
 ```
 
-Campaign, reward, and message drafts require a merchant-workspace connection. Dynamic client registration remains read-only.
+Campaign, reward, and message drafts require a merchant-workspace connection. Dynamic registration remains read-only.
 
-## Production activation boundary
+## Production checklist
 
-Do not claim the external MCP service is production-ready until all of the following are verified on the VPS:
+Verify all of the following on the future VPS:
 
-- `https://mcp.microgifter.com/health`;
-- `https://mcp.microgifter.com/ready`;
-- protected-resource metadata;
-- authorization-server metadata;
-- exact redirect URI registration;
-- live authorization code and PKCE exchange;
+- `https://mcp.microgifter.com/health` and `/ready`;
+- protected-resource and authorization-server metadata;
+- exact redirect URI and PKCE exchange;
 - live MCP initialization and tool discovery;
-- revocation taking effect on the next request;
-- draft scope filtering;
+- revocation and scope filtering;
 - owner review at `/account-agent-drafts.php`;
-- approved drafts remain `execution.enabled=false`;
-- no rows are added to `agent_workflow_actions` or `mcp_automation_actions` by the draft lifecycle.
+- owner conversion creates inactive native drafts only;
+- `/account-agent-handoffs.php` reads canonical native state;
+- `microgifter.drafts.get` and `microgifter.drafts.list` include `handoff`;
+- no review, conversion, or status operation changes `agent_workflow_actions` or `mcp_automation_actions`.
 
-## Current execution boundary
-
-The MCP service has no tool that can:
-
-- publish a campaign;
-- send or schedule a message;
-- purchase, issue, or deliver a gift;
-- activate or fulfill a reward;
-- charge a payment method;
-- enqueue a Task Agent action;
-- enqueue an MCP automation action.
-
-A later phase must add a separate human-authorized conversion workflow before an approved draft can become a live Microgifter object.
+Phase 3C reports what happened after a human-created native draft handoff. It does not perform the native action.
