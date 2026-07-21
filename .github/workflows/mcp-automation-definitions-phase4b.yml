@@ -59,10 +59,27 @@ jobs:
           php -l tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
           php scripts/validate_mcp_automation_definitions_phase4b.php
           vendor/bin/phpunit tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
-      - name: Clean database lifecycle and MCP regressions
+      - name: Build clean database
+        run: php scripts/run_migrations.php
+      - name: Execute Phase 4B clean-database lifecycle
+        id: phase4b_lifecycle
+        shell: bash
         run: |
-          php scripts/run_migrations.php
-          php scripts/test_mcp_automation_definitions_phase4b.php
+          set +e
+          php scripts/test_mcp_automation_definitions_phase4b.php > phase4b-lifecycle-php${{ matrix.php }}.log 2>&1
+          status=$?
+          cat phase4b-lifecycle-php${{ matrix.php }}.log
+          exit $status
+      - name: Upload Phase 4B lifecycle diagnostics
+        if: failure() && steps.phase4b_lifecycle.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4b-lifecycle-php${{ matrix.php }}
+          path: phase4b-lifecycle-php${{ matrix.php }}.log
+          if-no-files-found: error
+          retention-days: 3
+      - name: Existing MCP regressions
+        run: |
           vendor/bin/phpunit tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php
           vendor/bin/phpunit tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php
           vendor/bin/phpunit tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php
