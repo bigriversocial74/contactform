@@ -13,6 +13,7 @@ $required = [
     'includes/merchant-workspace.php',
     'includes/merchant-view.php',
     'includes/header-components/app-header.php',
+    'includes/header-templates/create-menu.php',
     'api/merchant/reward-templates.php',
     'api/merchant/campaigns.php',
     'api/merchant/campaigns-core.php',
@@ -52,7 +53,12 @@ foreach (['reward_templates','campaigns','campaign_contacts','wallet_items','cam
 $hasAgentFields = str_contains($sql, 'agent_discoverable') && str_contains($sql, 'agent_add_to_wallet_allowed') && str_contains($sql, 'agent_gift_send_allowed');
 $hasSourceTracking = str_contains($sql, "'newsletter_signup'") && str_contains($sql, "'contest_entry'") && str_contains($sql, "'qr_scan'") && str_contains($sql, "'agent_discovery'");
 $hasManifest = str_contains($manifest, 'stage_12_campaigns_reward_templates.sql');
-$hasCreateMenu = str_contains($headerCreateMenuSurface, 'data-create-menu-option="campaign"') && str_contains($headerCreateMenuSurface, 'data-create-menu-option="agent_offer"') && str_contains($headerCreateMenuSurface, '/merchant-campaigns.php') && str_contains($headerCreateMenuSurface, '/merchant-reward-templates.php');
+$hasCreateMenuRenderer = str_contains($headerCreateMenuSurface, 'data-create-menu-option=');
+$hasCreateMenuCampaign = str_contains($headerCreateMenuSurface, 'data-create-menu-option="campaign"')
+    || (str_contains($createMenu, "'option' => 'campaign'") && str_contains($createMenu, "'href' => '/merchant-campaigns.php'"));
+$hasCreateMenuReward = str_contains($headerCreateMenuSurface, 'data-create-menu-option="agent_offer"')
+    || (str_contains($createMenu, "'option' => 'agent_offer'") && str_contains($createMenu, "'href' => '/merchant-reward-templates.php'"));
+$hasCreateMenu = $hasCreateMenuRenderer && $hasCreateMenuCampaign && $hasCreateMenuReward;
 $hasNav = str_contains($nav, "'campaigns'=>") && str_contains($nav, "'reward_templates'=>");
 $hasViewRoutes = str_contains($view, 'merchant-campaigns-view.php') && str_contains($view, 'merchant-reward-templates-view.php');
 $hasCampaignTypeRegistry = str_contains($registry, 'function mg_campaign_type_registry') && str_contains($registry, "'newsletter_signup'") && str_contains($registry, "'contest_giveaway'") && str_contains($registry, "'qr_reward_drop'");
@@ -78,6 +84,9 @@ echo json_encode([
     'has_agent_fields' => $hasAgentFields,
     'has_source_tracking' => $hasSourceTracking,
     'has_manifest' => $hasManifest,
+    'has_create_menu_renderer' => $hasCreateMenuRenderer,
+    'has_create_menu_campaign' => $hasCreateMenuCampaign,
+    'has_create_menu_reward' => $hasCreateMenuReward,
     'has_create_menu' => $hasCreateMenu,
     'has_nav' => $hasNav,
     'has_view_routes' => $hasViewRoutes,
