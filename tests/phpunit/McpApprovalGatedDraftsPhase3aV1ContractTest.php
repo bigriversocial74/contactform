@@ -75,12 +75,17 @@ final class McpApprovalGatedDraftsPhase3aV1ContractTest extends TestCase
 
     public function testOwnerReviewPageUsesSharedShellAndCsrf(): void
     {
-        $page = (string)file_get_contents($this->root . '/includes/mcp-drafts/account-page.php');
+        $page = implode("\n", [
+            (string)file_get_contents($this->root . '/includes/mcp-drafts/account-page.php'),
+            (string)file_get_contents($this->root . '/includes/mcp-drafts/account-page-phase3b.php'),
+            (string)file_get_contents($this->root . '/includes/mcp-drafts/account-page-phase3b-view.php'),
+        ]);
+        self::assertStringContainsString('account-page-phase3b.php', $page);
         self::assertStringContainsString('mg-app-shell', $page);
         self::assertStringContainsString("require dirname(__DIR__) . '/agent-sidebar.php'", $page);
         self::assertStringContainsString('mg_verify_csrf', $page);
         self::assertStringContainsString('mg_mcp_draft_owner_decide', $page);
-        self::assertStringContainsString('No execution path', $page);
+        self::assertStringContainsString('No conversion available', $page);
     }
 
     public function testDynamicRegistrationStaysReadOnly(): void
