@@ -153,32 +153,36 @@ export function createInternalMcpApp(
     let connection: ConnectionContext | null = null;
     let authenticationType = "none";
     if (externalOAuth.enabled) {
-      if (!oauthResolver) {
-        response.status(503).json(jsonError(-32050, "OAuth authority is unavailable."));
-        return;
-      }
-      try {
-        const principal = await authenticateExternalOAuth(request.headers, oauthResolver, externalOAuth);
-        if (principal) {
-          connection = principal.connection;
-          authenticationType = principal.authenticationType;
-        }
-      } catch (error) {
-        if (error instanceof CanonicalBridgeError && [401, 403].includes(error.status)) {
-          if (error.status === 401) oauthUnauthorized(externalOAuth, response);
-          else response.status(403).json(jsonError(-32003, "The OAuth token is not authorized."));
-          return;
-        }
-        response.status(503).json(jsonError(-32050, "Canonical authority is unavailable."));
-        return;
-      }
-      if (!connection && externalOAuth.allowInternalBearer) {
+      if (externalOAuth.allowInternalBearer) {
         const internal = authenticateInternalBearer(request.headers, config.tokenSha256, config.connection);
         if (internal) {
           connection = internal.connection;
           authenticationType = internal.authenticationType;
         }
       }
+
+      if (!connection) {
+        if (!oauthResolver) {
+          response.status(503).json(jsonError(-32050, "OAuth authority is unavailable."));
+          return;
+        }
+        try {
+          const principal = await authenticateExternalOAuth(request.headers, oauthResolver, externalOAuth);
+          if (principal) {
+            connection = principal.connection;
+            authenticationType = principal.authenticationType;
+          }
+        } catch (error) {
+          if (error instanceof CanonicalBridgeError && [401, 403].includes(error.status)) {
+            if (error.status === 401) oauthUnauthorized(externalOAuth, response);
+            else response.status(403).json(jsonError(-32003, "The OAuth token is not authorized."));
+            return;
+          }
+          response.status(503).json(jsonError(-32050, "Canonical authority is unavailable."));
+          return;
+        }
+      }
+
       if (!connection) {
         oauthUnauthorized(externalOAuth, response);
         return;
