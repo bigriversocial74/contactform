@@ -55,12 +55,14 @@ jobs:
           find includes/mcp-automations -type f -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l config/mcp_automation_definitions_phase4b_release.php
           php -l scripts/validate_mcp_automation_definitions_phase4b.php
+          php -l scripts/test_mcp_automation_definitions_phase4b.php
           php -l tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
           php scripts/validate_mcp_automation_definitions_phase4b.php
           vendor/bin/phpunit tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
-      - name: Existing MCP schema and regressions
+      - name: Clean database lifecycle and MCP regressions
         run: |
           php scripts/run_migrations.php
+          php scripts/test_mcp_automation_definitions_phase4b.php
           vendor/bin/phpunit tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php
           vendor/bin/phpunit tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php
           vendor/bin/phpunit tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php
