@@ -44,8 +44,8 @@ $created=mg_creator_campaign_create_draft($pdo,$merchantUser,[
 $campaign=$created['campaign'];$campaignId=(int)$campaign['id'];$campaignPublic=(string)$campaign['public_id'];
 
 $applicationPublic=mg_creator_campaign_public_id('cca');
-$pdo->prepare("INSERT INTO creator_campaign_applications(public_id,campaign_id,creator_profile_id,creator_user_id,status,cover_note,creator_snapshot_json,submitted_at,lock_version,created_at,updated_at) VALUES(?,?,?,?, 'submitted','Phase 12 CRM validation',JSON_OBJECT('display_name','Phase 12 Creator'),NOW(),1,NOW(),NOW())")
-    ->execute([$applicationPublic,$campaignId,$creatorProfileId,$creatorUserId]);
+$pdo->prepare("INSERT INTO creator_campaign_applications(public_id,campaign_id,creator_profile_id,creator_user_id,status,cover_note,creator_snapshot_json,submitted_at,lock_version,created_by_user_id,updated_by_user_id,created_at,updated_at) VALUES(?,?,?,?, 'submitted','Phase 12 CRM validation',JSON_OBJECT('display_name','Phase 12 Creator'),NOW(),1,?,?,NOW(),NOW())")
+    ->execute([$applicationPublic,$campaignId,$creatorProfileId,$creatorUserId,$merchantId,$merchantId]);
 $applicationId=(int)$pdo->lastInsertId();
 
 $event=mg_creator_campaign_participation_event($pdo,[
