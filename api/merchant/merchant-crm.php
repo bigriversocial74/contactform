@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm-directory.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-crm-creator-campaign-bridge.php';
 
 mg_require_method('GET');
 $user = mg_require_permission('merchant.campaigns.view');
@@ -27,6 +28,7 @@ try {
         'active_contacts'=>(int)($totals['active_contacts'] ?? 0),
         'redeemers'=>(int)($totals['redeemers'] ?? 0),
     ];
+    $directory = mg_merchant_crm_creator_campaign_enrich_directory($pdo,$merchantId,$directory,$query);
     mg_ok($directory);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.crm.unavailable', 'Merchant CRM unavailable.', ['exception_class'=>$error::class,'message'=>$error->getMessage()], $merchantId);
