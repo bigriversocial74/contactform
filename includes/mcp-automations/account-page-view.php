@@ -2,169 +2,28 @@
 declare(strict_types=1);
 ?>
 <section class="mg-app-shell mg-automation-shell">
-  <?php require dirname(__DIR__) . '/agent-sidebar.php'; ?>
+  <?php require dirname(__DIR__).'/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-automation-workspace">
-    <header class="mg-automation-hero">
-      <div>
-        <span class="mg-automation-eyebrow">MCP Phase 4A · owner authority</span>
-        <h1>Agent automation grants</h1>
-        <p>Define the exact connection, playbooks, scopes, targets, limits, risk ceiling, and expiration an external agent may use. Grants do not create schedules, workers, or external effects.</p>
-      </div>
-      <nav class="mg-automation-hero-actions" aria-label="Agent MCP workspaces">
-        <a href="/account-agent-automation-definitions.php">Automation definitions</a>
-        <a href="/account-agent-drafts.php">Agent drafts</a>
-        <a href="/account-agent-handoffs.php">Handoff status</a>
-        <a href="/account-ai-connections.php">AI connections</a>
-      </nav>
-    </header>
-
-    <aside class="mg-automation-runtime-boundary">
-      <strong>Build-only deployment state</strong>
-      <p>The PHP control plane may be deployed now. Node.js, public MCP transport, security keys, schedulers, queues, workers, and action execution remain disabled until the future VPS activation.</p>
-    </aside>
-
-    <?php if ($notice !== ''): ?><div class="mg-automation-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
-    <?php if ($errorMessage !== ''): ?><div class="mg-automation-alert is-error"><?= mg_e($errorMessage) ?></div><?php endif; ?>
-
-    <section class="mg-automation-stats" aria-label="Automation grant status summary">
-      <article><strong><?= (int)($summary['total'] ?? 0) ?></strong><span>Total grants</span></article>
-      <article><strong><?= (int)($summary['draft'] ?? 0) ?></strong><span>Draft</span></article>
-      <article><strong><?= (int)($summary['active'] ?? 0) ?></strong><span>Active</span></article>
-      <article><strong><?= (int)($summary['paused'] ?? 0) ?></strong><span>Paused</span></article>
-      <article><strong><?= (int)($summary['revoked'] ?? 0) ?></strong><span>Revoked</span></article>
-    </section>
-
-    <details class="mg-automation-create"<?= $grants === [] ? ' open' : '' ?>>
-      <summary><span>Create a bounded grant</span><small>Draft first; activation is a separate owner action.</small></summary>
-      <?php if (!$schemaReady): ?>
-        <div class="mg-automation-empty"><strong>Automation schema unavailable</strong><p>Import the existing MCP automation foundation migration before creating grants.</p></div>
-      <?php elseif ($connections === []): ?>
-        <div class="mg-automation-empty"><strong>No eligible AI connections</strong><p>Create or authorize an MCP connection before defining its durable authority.</p><a href="/account-ai-connections.php">Review AI connections</a></div>
-      <?php else: ?>
-        <form method="post" class="mg-automation-form">
-          <input type="hidden" name="csrf_token" value="<?= mg_e(mg_csrf_token()) ?>">
-          <input type="hidden" name="action" value="create_grant">
-          <section>
-            <header><span>1</span><div><h2>Connection and purpose</h2><p>The connection, account, and merchant workspace are copied from canonical authorization records.</p></div></header>
-            <div class="mg-automation-form-grid">
-              <label>AI connection
-                <select name="connection_id" required>
-                  <option value="">Select connection</option>
-                  <?php foreach ($connections as $connection): ?>
-                    <option value="<?= mg_e((string)$connection['id']) ?>">
-                      <?= mg_e((string)$connection['display_name']) ?> · <?= mg_e((string)$connection['client']['name']) ?> · <?= mg_e((string)$connection['status']) ?>
-                    </option>
-                  <?php endforeach; ?>
-                </select>
-              </label>
-              <label>Grant name
-                <input name="label" type="text" minlength="3" maxlength="120" required placeholder="Campaign draft assistant">
-              </label>
-            </div>
-            <label>Authorization reason
-              <textarea name="reason" minlength="10" maxlength="500" rows="3" required placeholder="Explain the business purpose and why this connection should receive the selected authority."></textarea>
-            </label>
-          </section>
-
-          <section>
-            <header><span>2</span><div><h2>Approved playbooks</h2><p>Each playbook expands into a fixed tool allowlist and required active scopes. Arbitrary tool names are never accepted.</p></div></header>
-            <div class="mg-automation-playbooks">
-              <?php foreach ($playbookCatalog as $key => $playbook): ?>
-                <label>
-                  <input type="checkbox" name="playbooks[]" value="<?= mg_e($key) ?>">
-                  <span><strong><?= mg_e((string)$playbook['label']) ?></strong><small><?= mg_e((string)$playbook['description']) ?></small><em><?= mg_e((string)$playbook['operation_class']) ?><?= !empty($playbook['workspace_required']) ? ' · merchant workspace' : '' ?></em></span>
-                </label>
-              <?php endforeach; ?>
-            </div>
-          </section>
-
-          <section>
-            <header><span>3</span><div><h2>Limits and targets</h2><p>Blank limits authorize no larger amount or quantity than the selected playbooks themselves allow; future execution must still pass canonical policy.</p></div></header>
-            <div class="mg-automation-form-grid is-limits">
-              <label>Risk ceiling<select name="risk_ceiling"><option value="low">Low</option><option value="medium">Medium</option></select></label>
-              <label>Expires after<select name="expires_days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label>
-              <label>Currency<input name="currency" type="text" maxlength="3" value="USD"></label>
-              <label>Minimum frequency<select name="minimum_frequency_seconds"><option value="">Not set</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">1 day</option><option value="604800">7 days</option></select></label>
-              <label>Per-run amount, cents<input name="per_run_amount_limit_cents" type="number" min="0" max="100000000" step="1" placeholder="2500"></label>
-              <label>Daily amount, cents<input name="daily_amount_limit_cents" type="number" min="0" max="1000000000" step="1" placeholder="10000"></label>
-              <label>Lifetime amount, cents<input name="lifetime_amount_limit_cents" type="number" min="0" max="10000000000" step="1" placeholder="50000"></label>
-              <label>Per-run quantity<input name="per_run_quantity_limit" type="number" min="0" max="1000000" step="1" placeholder="1"></label>
-              <label>Daily quantity<input name="daily_quantity_limit" type="number" min="0" max="10000000" step="1" placeholder="5"></label>
-              <label>Lifetime quantity<input name="lifetime_quantity_limit" type="number" min="0" max="100000000" step="1" placeholder="25"></label>
-            </div>
-            <div class="mg-automation-target-grid">
-              <label>Allowed product UUIDs<textarea name="allowed_product_ids" rows="3" placeholder="One UUID per line; blank uses canonical published-catalog rules."></textarea></label>
-              <label>Allowed campaign UUIDs<textarea name="allowed_campaign_ids" rows="3" placeholder="Optional campaign restrictions."></textarea></label>
-              <label>Allowed reward-template UUIDs<textarea name="allowed_reward_template_ids" rows="3" placeholder="Optional reward-template restrictions."></textarea></label>
-            </div>
-            <div class="mg-automation-checks">
-              <label><input type="checkbox" name="allow_all_published_catalog" value="1"><span>Allow canonical published-catalog research when no product UUID list is supplied.</span></label>
-              <label><input type="checkbox" name="allow_existing_contacts_only" value="1" checked><span>Restrict future recipient targeting to existing authorized contacts.</span></label>
-            </div>
-          </section>
-
-          <footer><div><strong>Phase 4A policy</strong><span>Manual trigger only · approval policy always · one concurrent run · execution disabled</span></div><button type="submit">Create draft grant</button></footer>
-        </form>
-      <?php endif; ?>
+    <header class="mg-automation-hero"><div><span class="mg-automation-eyebrow">MCP Creator Campaign Phase 13C · owner authority</span><h1>Agent automation grants</h1><p>Define the exact connection, playbooks, scopes, targets, limits, risk ceiling, and expiration an external agent may use. Approval-gated playbooks create owner requests only; every canonical action still requires separate owner approval and execution.</p></div><nav class="mg-automation-hero-actions" aria-label="Agent MCP workspaces"><a href="/account-creator-campaign-actions.php">Canonical action approvals</a><a href="/account-agent-automation-definitions.php">Automation definitions</a><a href="/account-agent-drafts.php">Agent drafts</a><a href="/account-agent-handoffs.php">Handoff status</a><a href="/account-ai-connections.php">AI connections</a></nav></header>
+    <aside class="mg-automation-runtime-boundary"><strong>Owner-executed canonical actions only</strong><p>Schedulers, queues, autonomous workers, and external payment execution remain disabled. Phase 13C permits only manual owner execution after an external request and a separate explicit approval.</p></aside>
+    <?php if($notice!==''):?><div class="mg-automation-alert is-success"><?=mg_e($notice)?></div><?php endif;?><?php if($errorMessage!==''):?><div class="mg-automation-alert is-error"><?=mg_e($errorMessage)?></div><?php endif;?>
+    <section class="mg-automation-stats" aria-label="Automation grant status summary"><article><strong><?= (int)($summary['total']??0) ?></strong><span>Total grants</span></article><article><strong><?= (int)($summary['draft']??0) ?></strong><span>Draft</span></article><article><strong><?= (int)($summary['active']??0) ?></strong><span>Active</span></article><article><strong><?= (int)($summary['paused']??0) ?></strong><span>Paused</span></article><article><strong><?= (int)($summary['revoked']??0) ?></strong><span>Revoked</span></article></section>
+    <details class="mg-automation-create"<?=$grants===[]?' open':''?>><summary><span>Create a bounded grant</span><small>Draft first; activation is a separate owner action.</small></summary>
+      <?php if(!$schemaReady):?><div class="mg-automation-empty"><strong>Automation schema unavailable</strong><p>Import the existing MCP automation foundation migration before creating grants.</p></div>
+      <?php elseif($connections===[]):?><div class="mg-automation-empty"><strong>No eligible AI connections</strong><p>Create or authorize an MCP connection before defining its durable authority.</p><a href="/account-ai-connections.php">Review AI connections</a></div>
+      <?php else:?><form method="post" class="mg-automation-form"><input type="hidden" name="csrf_token" value="<?=mg_e(mg_csrf_token())?>"><input type="hidden" name="action" value="create_grant">
+        <section><header><span>1</span><div><h2>Connection and purpose</h2><p>The connection, account, and merchant workspace are copied from canonical authorization records.</p></div></header><div class="mg-automation-form-grid"><label>AI connection<select name="connection_id" required><option value="">Select connection</option><?php foreach($connections as $connection):?><option value="<?=mg_e((string)$connection['id'])?>"><?=mg_e((string)$connection['display_name'])?> · <?=mg_e((string)$connection['client']['name'])?> · <?=mg_e((string)$connection['status'])?></option><?php endforeach;?></select></label><label>Grant name<input name="label" type="text" minlength="3" maxlength="120" required placeholder="Creator Campaign approval assistant"></label></div><label>Authorization reason<textarea name="reason" minlength="10" maxlength="500" rows="3" required placeholder="Explain the business purpose and why this connection should receive the selected authority."></textarea></label></section>
+        <section><header><span>2</span><div><h2>Approved playbooks</h2><p>Each playbook expands into a fixed tool allowlist and required active scopes. Arbitrary tool names are never accepted.</p></div></header><div class="mg-automation-playbooks"><?php foreach($playbookCatalog as $key=>$playbook):?><label><input type="checkbox" name="playbooks[]" value="<?=mg_e($key)?>"><span><strong><?=mg_e((string)$playbook['label'])?></strong><small><?=mg_e((string)$playbook['description'])?></small><em><?=mg_e((string)$playbook['operation_class'])?><?=!empty($playbook['workspace_required'])?' · merchant workspace':''?></em></span></label><?php endforeach;?></div></section>
+        <section><header><span>3</span><div><h2>Limits and targets</h2><p>Critical Creator Campaign playbooks require a critical ceiling. Limits are rechecked both when a client requests an action and again before the owner executes it.</p></div></header><div class="mg-automation-form-grid is-limits"><label>Risk ceiling<select name="risk_ceiling"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label><label>Expires after<select name="expires_days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label><label>Currency<input name="currency" type="text" maxlength="3" value="USD"></label><label>Minimum frequency<select name="minimum_frequency_seconds"><option value="">Not set</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">1 day</option><option value="604800">7 days</option></select></label><label>Per-run amount, cents<input name="per_run_amount_limit_cents" type="number" min="0" max="100000000" step="1" placeholder="2500"></label><label>Daily amount, cents<input name="daily_amount_limit_cents" type="number" min="0" max="1000000000" step="1" placeholder="10000"></label><label>Lifetime amount, cents<input name="lifetime_amount_limit_cents" type="number" min="0" max="10000000000" step="1" placeholder="50000"></label><label>Per-run quantity<input name="per_run_quantity_limit" type="number" min="0" max="1000000" step="1" placeholder="1"></label><label>Daily quantity<input name="daily_quantity_limit" type="number" min="0" max="10000000" step="1" placeholder="5"></label><label>Lifetime quantity<input name="lifetime_quantity_limit" type="number" min="0" max="100000000" step="1" placeholder="25"></label></div><div class="mg-automation-target-grid"><label>Allowed product UUIDs<textarea name="allowed_product_ids" rows="3" placeholder="One UUID per line; blank uses canonical published-catalog rules."></textarea></label><label>Allowed campaign UUIDs<textarea name="allowed_campaign_ids" rows="3" placeholder="Optional Creator Campaign restrictions."></textarea></label><label>Allowed reward-template UUIDs<textarea name="allowed_reward_template_ids" rows="3" placeholder="Optional reward-template restrictions."></textarea></label></div><div class="mg-automation-checks"><label><input type="checkbox" name="allow_all_published_catalog" value="1"><span>Allow canonical published-catalog research when no product UUID list is supplied.</span></label><label><input type="checkbox" name="allow_existing_contacts_only" value="1" checked><span>Restrict future recipient targeting to existing authorized contacts.</span></label></div></section>
+        <footer><div><strong>Phase 13C policy</strong><span>Manual trigger only · approval always · one concurrent run · separate owner execution</span></div><button type="submit">Create draft grant</button></footer>
+      </form><?php endif;?>
     </details>
-
-    <section class="mg-automation-list-section">
-      <header><div><span class="mg-automation-eyebrow">Durable authority records</span><h2>Your automation grants</h2></div><p>Changing a connection, scope, workspace membership, expiration, or grant state is rechecked before future use.</p></header>
-      <?php if ($grants === []): ?>
-        <div class="mg-automation-empty"><strong>No automation grants yet</strong><p>Create a draft grant above. Nothing can run from a grant in Phase 4A.</p></div>
-      <?php else: ?>
-        <div class="mg-automation-list">
-          <?php foreach ($grants as $grant): ?>
-            <article class="mg-automation-card is-<?= mg_e((string)$grant['status']) ?>">
-              <header>
-                <div><span><?= mg_e(strtoupper((string)$grant['maximum_operation_class'])) ?> AUTHORITY</span><h3><?= mg_e((string)$grant['label']) ?></h3><p><?= mg_e((string)$grant['reason']) ?></p></div>
-                <strong><?= mg_e(ucfirst((string)$grant['status'])) ?></strong>
-              </header>
-              <dl>
-                <div><dt>Client</dt><dd><?= mg_e((string)$grant['client']['name']) ?> · <?= mg_e((string)$grant['client']['status']) ?></dd></div>
-                <div><dt>Connection</dt><dd><?= mg_e((string)$grant['connection']['name']) ?> · <?= mg_e((string)$grant['connection']['status']) ?></dd></div>
-                <div><dt>Workspace</dt><dd><?= mg_e((string)($grant['workspace_id'] ?? 'Personal account')) ?></dd></div>
-                <div><dt>Expires</dt><dd><?= mg_e((string)($grant['expires_at'] ?? 'Not set')) ?></dd></div>
-                <div><dt>Approval</dt><dd><?= mg_e((string)$grant['approval_policy']) ?></dd></div>
-                <div><dt>Risk ceiling</dt><dd><?= mg_e((string)$grant['risk_ceiling']) ?></dd></div>
-                <div><dt>Frequency</dt><dd><?= mg_e($formatFrequency($grant['limits']['minimum_frequency_seconds'])) ?></dd></div>
-                <div><dt>Revocation version</dt><dd><?= (int)$grant['revocation_version'] ?></dd></div>
-              </dl>
-              <div class="mg-automation-tags">
-                <?php foreach ($grant['playbooks'] as $playbookKey): ?><span><?= mg_e((string)($playbookCatalog[$playbookKey]['label'] ?? $playbookKey)) ?></span><?php endforeach; ?>
-              </div>
-              <details>
-                <summary>Review grant policy</summary>
-                <div class="mg-automation-policy-grid">
-                  <section><strong>Tools</strong><ul><?php foreach ($grant['tools'] as $tool): ?><li><code><?= mg_e((string)$tool) ?></code></li><?php endforeach; ?></ul></section>
-                  <section><strong>Amount limits</strong><ul><li>Run: <?= mg_e($formatMoney($grant['limits']['per_run_amount_limit_cents'], $grant['currency'])) ?></li><li>Daily: <?= mg_e($formatMoney($grant['limits']['daily_amount_limit_cents'], $grant['currency'])) ?></li><li>Lifetime: <?= mg_e($formatMoney($grant['limits']['lifetime_amount_limit_cents'], $grant['currency'])) ?></li></ul></section>
-                  <section><strong>Quantity limits</strong><ul><li>Run: <?= mg_e((string)($grant['limits']['per_run_quantity_limit'] ?? 'Not set')) ?></li><li>Daily: <?= mg_e((string)($grant['limits']['daily_quantity_limit'] ?? 'Not set')) ?></li><li>Lifetime: <?= mg_e((string)($grant['limits']['lifetime_quantity_limit'] ?? 'Not set')) ?></li></ul></section>
-                  <section><strong>Runtime evidence</strong><ul><li><?= (int)$grant['automation_count'] ?> automation definitions</li><li><?= (int)$grant['run_count'] ?> runs</li><li><?= (int)$grant['receipt_count'] ?> action receipts</li></ul></section>
-                </div>
-              </details>
-              <?php if ((string)$grant['status'] !== 'revoked'): ?>
-                <form method="post" class="mg-automation-actions">
-                  <input type="hidden" name="csrf_token" value="<?= mg_e(mg_csrf_token()) ?>">
-                  <input type="hidden" name="action" value="transition_grant">
-                  <input type="hidden" name="grant_id" value="<?= mg_e((string)$grant['id']) ?>">
-                  <label>Required action reason<input name="reason" type="text" minlength="5" maxlength="255" required placeholder="Why are you changing this grant?"></label>
-                  <div>
-                    <?php if ((string)$grant['status'] === 'draft'): ?><button type="submit" name="transition" value="activate">Activate grant</button><?php endif; ?>
-                    <?php if ((string)$grant['status'] === 'active'): ?><button class="is-secondary" type="submit" name="transition" value="pause">Pause</button><?php endif; ?>
-                    <?php if ((string)$grant['status'] === 'paused'): ?><button type="submit" name="transition" value="resume">Resume</button><?php endif; ?>
-                    <button class="is-danger" type="submit" name="transition" value="revoke" onclick="return confirm('Permanently revoke this automation grant?');">Revoke</button>
-                  </div>
-                </form>
-              <?php endif; ?>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
+    <section class="mg-automation-list-section"><header><div><span class="mg-automation-eyebrow">Durable authority records</span><h2>Your automation grants</h2></div><p>Changing a connection, scope, workspace membership, expiration, or grant state is rechecked before every request and execution.</p></header>
+      <?php if($grants===[]):?><div class="mg-automation-empty"><strong>No automation grants yet</strong><p>Create a draft grant above. Approval-gated actions remain unavailable until the grant is activated and every request is separately approved.</p></div>
+      <?php else:?><div class="mg-automation-list"><?php foreach($grants as $grant):?><article class="mg-automation-card is-<?=mg_e((string)$grant['status'])?>"><header><div><span><?=mg_e(strtoupper((string)$grant['maximum_operation_class']))?> AUTHORITY</span><h3><?=mg_e((string)$grant['label'])?></h3><p><?=mg_e((string)$grant['reason'])?></p></div><strong><?=mg_e(ucfirst((string)$grant['status']))?></strong></header><dl><div><dt>Client</dt><dd><?=mg_e((string)$grant['client']['name'])?> · <?=mg_e((string)$grant['client']['status'])?></dd></div><div><dt>Connection</dt><dd><?=mg_e((string)$grant['connection']['name'])?> · <?=mg_e((string)$grant['connection']['status'])?></dd></div><div><dt>Workspace</dt><dd><?=mg_e((string)($grant['workspace_id']??'Personal account'))?></dd></div><div><dt>Expires</dt><dd><?=mg_e((string)($grant['expires_at']??'Not set'))?></dd></div><div><dt>Approval</dt><dd><?=mg_e((string)$grant['approval_policy'])?></dd></div><div><dt>Risk ceiling</dt><dd><?=mg_e((string)$grant['risk_ceiling'])?></dd></div><div><dt>Frequency</dt><dd><?=mg_e($formatFrequency($grant['limits']['minimum_frequency_seconds']))?></dd></div><div><dt>Revocation version</dt><dd><?= (int)$grant['revocation_version'] ?></dd></div></dl><div class="mg-automation-tags"><?php foreach($grant['playbooks'] as $playbookKey):?><span><?=mg_e((string)($playbookCatalog[$playbookKey]['label']??$playbookKey))?></span><?php endforeach;?></div><details><summary>Review grant policy</summary><div class="mg-automation-policy-grid"><section><strong>Tools</strong><ul><?php foreach($grant['tools'] as $tool):?><li><code><?=mg_e((string)$tool)?></code></li><?php endforeach;?></ul></section><section><strong>Amount limits</strong><ul><li>Run: <?=mg_e($formatMoney($grant['limits']['per_run_amount_limit_cents'],$grant['currency']))?></li><li>Daily: <?=mg_e($formatMoney($grant['limits']['daily_amount_limit_cents'],$grant['currency']))?></li><li>Lifetime: <?=mg_e($formatMoney($grant['limits']['lifetime_amount_limit_cents'],$grant['currency']))?></li></ul></section><section><strong>Quantity limits</strong><ul><li>Run: <?=mg_e((string)($grant['limits']['per_run_quantity_limit']??'Not set'))?></li><li>Daily: <?=mg_e((string)($grant['limits']['daily_quantity_limit']??'Not set'))?></li><li>Lifetime: <?=mg_e((string)($grant['limits']['lifetime_quantity_limit']??'Not set'))?></li></ul></section><section><strong>Runtime evidence</strong><ul><li><?= (int)$grant['automation_count'] ?> automation definitions</li><li><?= (int)$grant['run_count'] ?> runs</li><li><?= (int)$grant['receipt_count'] ?> action receipts</li></ul></section></div></details>
+        <?php if((string)$grant['status']!=='revoked'):?><form method="post" class="mg-automation-actions"><input type="hidden" name="csrf_token" value="<?=mg_e(mg_csrf_token())?>"><input type="hidden" name="action" value="transition_grant"><input type="hidden" name="grant_id" value="<?=mg_e((string)$grant['id'])?>"><label>Required action reason<input name="reason" type="text" minlength="5" maxlength="255" required placeholder="Why are you changing this grant?"></label><div><?php if((string)$grant['status']==='draft'):?><button type="submit" name="transition" value="activate">Activate grant</button><?php endif;?><?php if((string)$grant['status']==='active'):?><button class="is-secondary" type="submit" name="transition" value="pause">Pause</button><?php endif;?><?php if((string)$grant['status']==='paused'):?><button type="submit" name="transition" value="resume">Resume</button><?php endif;?><button class="is-danger" type="submit" name="transition" value="revoke" onclick="return confirm('Permanently revoke this automation grant?');">Revoke</button></div></form><?php endif;?>
+      </article><?php endforeach;?></div><?php endif;?>
     </section>
-
-    <aside class="mg-automation-safety">
-      <strong>No scheduler or execution path exists in Phase 4A</strong>
-      <p>Grant activation records owner authority only. Phase 4B may create a definition and manual simulation under an active grant, but neither phase can publish a campaign, send a message, purchase or issue a gift, activate a reward, charge a payment method, or enqueue work.</p>
-    </aside>
+    <aside class="mg-automation-safety"><strong>External clients cannot approve or execute</strong><p>Approval-gated tools create review requests only. The merchant must open the canonical action workspace, approve the exact action, and then use a second explicit execution control. Schedulers and autonomous workers remain disabled.</p></aside>
   </main>
 </section>
