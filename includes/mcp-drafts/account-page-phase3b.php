@@ -24,6 +24,19 @@ if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
                 ? 'Draft approved. Prepare conversion only when you are ready to create an inactive Microgifter draft.'
                 : 'Draft rejected. No Microgifter action was performed.';
         } elseif ($action === 'prepare_conversion') {
+            $sourceDraft = mg_mcp_conversion_draft_for_owner(
+                $pdo,
+                (int)$user['id'],
+                (string)($_POST['draft_id'] ?? '')
+            );
+            $sourcePayload = mg_mcp_draft_json($sourceDraft['payload_json'] ?? null);
+            if (!empty($sourcePayload['creator_campaign_proposal'])) {
+                throw new MgMcpDraftException(
+                    'Creator Campaign proposals remain review evidence only until the approval-gated canonical-action phase.',
+                    409,
+                    'MCP_CREATOR_CAMPAIGN_PROPOSAL_CONVERSION_DISABLED'
+                );
+            }
             $conversion = mg_mcp_conversion_prepare($pdo, $user, (string)($_POST['draft_id'] ?? ''));
             $notice = $conversion['duplicate']
                 ? 'The conversion was already prepared.'
@@ -84,7 +97,7 @@ $can_merchant_nav = true;
 $page_body_class = 'mg-agent-drafts-page';
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
-    '/assets/css/mcp-drafts.css?v=20260720-phase3b',
+    '/assets/css/mcp-drafts.css?v=20260722-phase13b',
 ];
 require dirname(__DIR__) . '/header.php';
 require __DIR__ . '/account-page-phase3b-view.php';

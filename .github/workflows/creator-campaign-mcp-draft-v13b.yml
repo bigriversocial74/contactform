@@ -1,0 +1,121 @@
+name: Creator Campaign MCP Draft v13B
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'api/internal/_mcp_creator_campaign_draft_*.php'
+      - 'api/internal/_mcp_draft_bridge.php'
+      - 'services/mcp/src/tools/creatorCampaignDrafts.ts'
+      - 'services/mcp/src/tools/registry.ts'
+      - 'services/mcp/tests/creatorCampaignDrafts.test.mjs'
+      - 'includes/mcp-drafts/account-page-phase3b.php'
+      - 'includes/mcp-drafts/account-page-phase3b-view.php'
+      - 'database/20260722_creator_campaign_mcp_draft_scopes_v13b_single_install.sql'
+      - 'scripts/validate_creator_campaign_mcp_v13b.php'
+      - 'tests/phpunit/CreatorCampaignMcpDraftV13bContractTest.php'
+      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE13B_MCP_DRAFT_PROPOSALS.md'
+      - '.github/workflows/creator-campaign-mcp-draft-v13b.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+concurrency:
+  group: creator-campaign-mcp-draft-v13b-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    strategy:
+      fail-fast: false
+      matrix: {php: ['8.2', '8.3']}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '${{ matrix.php }}', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: services/mcp/package-lock.json}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci --prefix services/mcp
+      - name: PHP syntax
+        run: |
+          php -l api/internal/_mcp_creator_campaign_draft_bridge.php
+          php -l api/internal/_mcp_creator_campaign_draft_values.php
+          php -l api/internal/_mcp_creator_campaign_draft_service.php
+          php -l api/internal/_mcp_draft_bridge.php
+          php -l includes/mcp-drafts/account-page-phase3b.php
+          php -l includes/mcp-drafts/account-page-phase3b-view.php
+          php -l scripts/validate_creator_campaign_mcp_v13b.php
+          php -l tests/phpunit/CreatorCampaignMcpDraftV13bContractTest.php
+      - name: MCP TypeScript and Node contracts
+        shell: bash
+        run: |
+          set +e
+          npm test --prefix services/mcp > mcp-v13b-${{ matrix.php }}.log 2>&1
+          status=$?
+          cat mcp-v13b-${{ matrix.php }}.log
+          exit $status
+      - name: Upload MCP diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creator-campaign-mcp-v13b-${{ matrix.php }}
+          path: mcp-v13b-${{ matrix.php }}.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Phase 13B score
+        run: php scripts/validate_creator_campaign_mcp_v13b.php
+      - name: Phase 13B PHPUnit
+        run: vendor/bin/phpunit tests/phpunit/CreatorCampaignMcpDraftV13bContractTest.php
+      - name: Phase 13A compatibility
+        run: php scripts/validate_creator_campaign_mcp_v13a.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignMcpReadV13aContractTest.php
+      - name: Existing MCP draft and conversion compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
+      - name: Phase 12 compatibility
+        run: php scripts/validate_creator_campaign_crm_v12.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignCrmV12ContractTest.php
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+  scope-sql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env: {MYSQL_DATABASE: microgifter, MYSQL_USER: microgifter, MYSQL_PASSWORD: microgifter, MYSQL_ROOT_PASSWORD: root}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_PORT: '3306'
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Wait for MySQL
+        run: for attempt in {1..30}; do mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0; sleep 1; done; exit 1
+      - name: Apply canonical migration chain
+        run: composer migrate
+      - name: Apply Phase 13B scopes
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_mcp_draft_scopes_v13b_single_install.sql
+      - name: Verify review-only scope contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM mcp_scope_catalog WHERE scope_key IN ('creator_campaigns:draft','creator_campaign_products:draft','creator_campaign_eligibility:draft','creator_campaign_deliverables:draft','creator_campaign_compensation:draft','creator_campaign_attribution:draft','creator_campaign_budget:draft','creator_campaign_rights:draft','creator_campaign_terms:draft','creator_campaign_invitations:draft','creator_campaign_messages:draft','creator_campaign_submission_feedback:draft') AND operation_class='draft' AND active=1 AND grantable=1;")" = "12"
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM mcp_scope_catalog WHERE scope_key LIKE 'creator_campaign%' AND operation_class IN ('approval_gated','bounded_auto','prohibited');")" = "0"
+      - name: Verify SQL idempotency
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_mcp_draft_scopes_v13b_single_install.sql
