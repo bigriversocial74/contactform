@@ -1,12 +1,68 @@
 <?php declare(strict_types=1); ?>
-<section class="mg-ccdv" data-ccdv-creator>
-  <header class="mg-ccdv-head"><div><span class="mg-eyebrow">Creator Campaigns · Phase 4</span><h1>My Deliverables</h1><p>Manage assigned content, revision requests, approvals, and publication proof from one workspace.</p></div><div class="mg-ccdv-actions"><a class="mg-btn mg-btn-ghost" href="/creator-campaigns.php">Campaigns & Agreements</a><button class="mg-btn mg-btn-soft" type="button" data-ccdv-refresh>Refresh</button></div></header>
+<section class="mg-ccdv" data-ccdv-creator data-cc-screen="creator-active-campaign-workspace">
+  <header class="mg-ccdv-head">
+    <div>
+      <a class="mg-cc-back" href="/creator-campaigns.php">← Back to My Campaigns</a>
+      <span class="mg-eyebrow">Creator · Active Campaign Workspace</span>
+      <h1>My Campaign Deliverables</h1>
+      <p>Manage assigned content, revision requests, approvals, tracking tools, performance, and publication proof.</p>
+    </div>
+    <div class="mg-ccdv-actions">
+      <a class="mg-btn mg-btn-soft" href="/creator-campaign-messages.php">Message Merchant</a>
+      <button class="mg-btn mg-btn-ghost" type="button" data-ccdv-refresh>Refresh</button>
+    </div>
+  </header>
+
+  <nav class="mg-ccdv-tabs mg-v11-creator-workspace-tabs" aria-label="Creator active campaign workspace">
+    <a href="/creator-campaigns.php">Summary</a>
+    <a href="/creator-campaigns.php">Agreement</a>
+    <button class="is-active" data-ccdv-status-filter="">Deliverables</button>
+    <button data-ccdv-status-filter="submitted">Submissions</button>
+    <a href="/creator-campaign-tracking.php">Tracking Tools</a>
+    <a href="/creator-campaign-analytics.php">Performance</a>
+    <a href="/creator-campaign-earnings.php">Earnings</a>
+    <a href="/creator-campaign-messages.php">Messages</a>
+  </nav>
+
   <div class="mg-ccdv-live" data-ccdv-live role="status" aria-live="polite"></div>
   <section class="mg-ccdv-metrics" data-ccdv-metrics></section>
-  <section class="mg-ccdv-toolbar"><div class="mg-ccdv-tabs"><button class="is-active" data-ccdv-status-filter="">All</button><button data-ccdv-status-filter="revision_requested">Needs Revision</button><button data-ccdv-status-filter="assigned">Assigned</button><button data-ccdv-status-filter="submitted">In Review</button><button data-ccdv-status-filter="approved">Approved</button><button data-ccdv-status-filter="verified">Verified</button></div></section>
-  <section class="mg-ccdv-state" data-ccdv-loading><strong>Loading assignments</strong><span>Syncing active campaign deliverables from accepted agreements.</span></section>
-  <section class="mg-ccdv-state mg-hidden" data-ccdv-error><strong>Unable to load deliverables</strong><span data-ccdv-error-message></span><button class="mg-btn mg-btn-soft" type="button" data-ccdv-retry>Try again</button></section>
-  <section class="mg-ccdv-list mg-hidden" data-ccdv-list></section>
+
+  <section class="mg-v11-creator-action-layout">
+    <main>
+      <section class="mg-v11-review-intro">
+        <div><span class="mg-eyebrow">Action center</span><h2>Deliverables & submissions</h2><p>Complete your next required action, respond to revisions, and submit publication proof.</p></div>
+        <a class="mg-btn mg-btn-soft" href="/creator-campaign-earnings.php">View Earnings Details</a>
+      </section>
+      <section class="mg-ccdv-toolbar">
+        <div class="mg-ccdv-tabs" aria-label="Deliverable status">
+          <button class="is-active" data-ccdv-status-filter="">All</button>
+          <button data-ccdv-status-filter="revision_requested">Needs Revision</button>
+          <button data-ccdv-status-filter="assigned">Assigned</button>
+          <button data-ccdv-status-filter="submitted">In Review</button>
+          <button data-ccdv-status-filter="approved">Approved</button>
+          <button data-ccdv-status-filter="verified">Verified</button>
+        </div>
+      </section>
+      <section class="mg-ccdv-state" data-ccdv-loading><strong>Loading campaign assignments</strong><span>Syncing active deliverables, revision requests, approvals, and proof requirements.</span></section>
+      <section class="mg-ccdv-state mg-hidden" data-ccdv-error><strong>Unable to load deliverables</strong><span data-ccdv-error-message></span><button class="mg-btn mg-btn-soft" type="button" data-ccdv-retry>Try again</button></section>
+      <section class="mg-ccdv-list mg-hidden" data-ccdv-list></section>
+    </main>
+    <aside class="mg-v11-creator-side-panel">
+      <section>
+        <span class="mg-eyebrow">Campaign tools</span>
+        <h2>Tracking & performance</h2>
+        <a href="/creator-campaign-tracking.php"><strong>Tracking links</strong><span>Copy campaign links, referral codes, and QR tools.</span></a>
+        <a href="/creator-campaign-analytics.php"><strong>Performance</strong><span>Review accepted clicks, conversions, and attributed activity.</span></a>
+        <a href="/creator-campaign-earnings.php"><strong>Earnings</strong><span>Review tracked, approved, payable, and paid amounts.</span></a>
+      </section>
+      <section>
+        <span class="mg-eyebrow">Communication</span>
+        <h2>Merchant messages</h2>
+        <p>Use the canonical Messages center for campaign questions and deliverable feedback.</p>
+        <a class="mg-btn mg-btn-soft" href="/creator-campaign-messages.php">Open Messages</a>
+      </section>
+    </aside>
+  </section>
 
   <dialog class="mg-ccdv-dialog" data-ccdv-submission-dialog>
     <form method="dialog" class="mg-ccdv-dialog-card is-review" data-ccdv-submission-form>
