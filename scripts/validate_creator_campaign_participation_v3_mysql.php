@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/bootstrap.php';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require_once dirname(__DIR__) . '/api/bootstrap.php';
+require_once dirname(__DIR__) . '/includes/creator-campaigns.php';
 $pdo=mg_db();
 function ccp3_assert(bool $ok,string $message):void{if(!$ok)throw new RuntimeException($message);}
 $tables=['creator_campaign_applications','creator_campaign_application_answers','creator_campaign_invitations','creator_campaign_participants','creator_campaign_participation_events','creator_campaign_agreements','creator_campaign_agreement_versions','creator_campaign_agreement_acceptances'];
