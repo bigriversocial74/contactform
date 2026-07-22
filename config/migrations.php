@@ -180,6 +180,7 @@ return [
         '20260721_creator_campaign_merchant_builder_v2.sql',
         '20260721_creator_campaign_participation_v3.sql',
         '20260721_creator_campaign_deliverables_v4.sql',
+        '20260722_creator_campaign_tracking_attribution_v5.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',

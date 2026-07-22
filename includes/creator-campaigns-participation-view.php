@@ -5,7 +5,7 @@ $user = mg_current_user();
 <section class="mg-ccp-creator-shell" data-ccp-creator>
   <header class="mg-ccp-creator-hero">
     <div><span class="mg-eyebrow">Creator Campaign Workspace · Phase 3</span><h1>Creator Campaigns</h1><p>Discover opportunities, apply, respond to invitations, review immutable agreements, and manage active campaigns.</p></div>
-    <div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/creator-campaign-deliverables.php">My Deliverables</a><a class="mg-btn mg-btn-soft" href="/account.php">Creator Profile</a></div>
+    <div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/creator-campaign-deliverables.php">My Deliverables</a><a class="mg-btn mg-btn-soft" href="/creator-campaign-tracking.php">My Tracking Links</a><a class="mg-btn mg-btn-soft" href="/account.php">Creator Profile</a></div>
   </header>
   <?php if (!$user): ?>
     <section class="mg-ccp-state"><strong>Creator sign-in required</strong><span>Sign in with an approved Creator account.</span><a class="mg-btn mg-btn-primary" href="/signin.php">Sign In</a></section>
