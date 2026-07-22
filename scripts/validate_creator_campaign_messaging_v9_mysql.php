@@ -55,10 +55,13 @@ if($section==='all'||$section==='boundaries'){
 }
 
 if($section==='all'||$section==='creator_access'){
-    $stmt=$pdo->query("SELECT p.slug FROM role_permissions rp INNER JOIN roles r ON r.id=rp.role_id INNER JOIN permissions p ON p.id=rp.permission_id WHERE r.slug='creator' AND p.slug IN('gift.message.send','notification.view') ORDER BY p.slug");
+    $required=['creator.campaign_messages.send_own','creator.campaign_messages.view_own','gift.message.send','notification.view'];
+    $p=implode(',',array_fill(0,count($required),'?'));
+    $stmt=$pdo->prepare("SELECT p.slug FROM role_permissions rp INNER JOIN roles r ON r.id=rp.role_id INNER JOIN permissions p ON p.id=rp.permission_id WHERE r.slug='customer' AND p.slug IN ({$p}) ORDER BY p.slug");
+    $stmt->execute($required);
     $found=$stmt->fetchAll(PDO::FETCH_COLUMN);
-    ccm9m(count($found)===2,'Creator role cannot use the canonical Messages or Notifications center.',['found'=>$found]);
-    $results['creator_center_permissions']=$found;
+    ccm9m(count($found)===count($required),'A Creator-model user cannot use the canonical Messages and Notifications centers through the default customer role.',['expected'=>$required,'found'=>$found]);
+    $results['creator_model_customer_role_permissions']=$found;
 }
 
 echo json_encode(['ok'=>true,'section'=>$section,'results'=>$results,'canonical_messages_reused'=>true,'canonical_notifications_reused'=>true,'duplicate_stores'=>false],JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR).PHP_EOL;
