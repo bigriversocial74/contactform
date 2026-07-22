@@ -148,4 +148,18 @@ jobs:
       - name: Verify Phase 12 SQL idempotency
         run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_crm_lifecycle_v12_single_install.sql
       - name: Execute Phase 12 CRM lifecycle
-        run: php scripts/validate_creator_campaign_crm_v12_mysql.php
+        shell: bash
+        run: |
+          set +e
+          php scripts/validate_creator_campaign_crm_v12_mysql.php > phase12-crm-lifecycle.log 2>&1
+          status=$?
+          cat phase12-crm-lifecycle.log
+          exit $status
+      - name: Upload Phase 12 lifecycle diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creator-campaign-crm-v12-lifecycle
+          path: phase12-crm-lifecycle.log
+          if-no-files-found: error
+          retention-days: 7
