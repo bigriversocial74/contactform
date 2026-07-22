@@ -1,6 +1,6 @@
 <?php declare(strict_types=1); ?>
 <section class="mg-cce-shell" data-cce-merchant>
-<header class="mg-cce-head"><div><a href="/merchant-creator-tracking.php">← Tracking & Attribution</a><span>Creator Campaign Finance · Phase 6</span><h1>Compensation & Earnings</h1><p>Create immutable compensation rules and review the append-only creator earnings ledger.</p></div><button class="mg-btn mg-btn-primary" type="button" data-cce-new-rule>New Rule</button></header>
+<header class="mg-cce-head"><div><a href="/merchant-creator-tracking.php">← Tracking & Attribution</a><span>Creator Campaign Finance · Phase 6</span><h1>Compensation & Earnings</h1><p>Create immutable compensation rules and review the append-only creator earnings ledger.</p></div><div class="mg-action-row"><a class="mg-btn" href="/merchant-creator-budgets.php">Budgets & Commitments</a><button class="mg-btn mg-btn-primary" type="button" data-cce-new-rule>New Rule</button></div></header>
 <section class="mg-cce-metrics" data-cce-metrics></section>
 <nav class="mg-cce-tabs"><button class="is-active" data-cce-tab="rules">Rules</button><button data-cce-tab="earnings">Earnings Ledger</button></nav>
 <div class="mg-cce-state" data-cce-state>Loading compensation workspace…</div><section class="mg-cce-list" data-cce-list></section>
