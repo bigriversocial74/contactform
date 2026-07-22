@@ -33,7 +33,7 @@ Phase 10 does not persist duplicate metric counters. Reports read directly from:
 - `creator_campaign_payouts`
 - `creator_campaign_disputes`
 
-Only tracking events with `status='accepted'` are counted. Only attribution decisions with `status IN ('attributed','overridden')` are counted. Suspect, duplicate, invalidated, unattributed, and invalidated-attribution records remain available in their operational workspaces but are excluded from performance totals.
+Only tracking events with `status='accepted'` are counted. Canonical attribution decisions must have `status IN ('attributed','overridden')`, and their underlying conversion event must still be accepted. Suspect, duplicate, invalidated, unattributed, and invalidated-attribution records remain available in their operational workspaces but are excluded from performance totals.
 
 ## Privacy and financial integrity
 
@@ -42,7 +42,8 @@ Only tracking events with `status='accepted'` are counted. Only attribution deci
 - Currency values are never combined across currencies.
 - Creator responses never include merchant budget limits or budget ledger balances.
 - Merchant queries are restricted to the active merchant workspace.
-- Creator queries require the active Creator user model and object ownership.
+- Creator queries require the active Creator user model, approved Creator eligibility, and object ownership.
+- Selecting one Creator preserves the selected campaign summary while participant-level metrics remain restricted to that Creator.
 - Conversion and completion rates return zero when the denominator is zero.
 
 ## CSV safety
@@ -54,9 +55,9 @@ CSV exports are generated on demand and are not stored. Cells beginning with spr
 No new permissions are introduced:
 
 - Merchant: `merchant.intelligence.view`
-- Creator: `creator.campaign_tracking.view_own`
+- Creator: `creator.campaign_messages.view_own`
 
-The existing Creator model and participant ownership checks remain mandatory.
+The Creator permission is the Phase 9 user-model-compatible view permission mapped to the canonical customer role. The existing active Creator model, approved profile, and participant ownership checks remain mandatory, so the permission alone does not expose Creator Campaign data to ordinary customer accounts.
 
 ## SQL
 
