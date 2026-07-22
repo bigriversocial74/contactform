@@ -1,0 +1,33 @@
+name: Phase 10 query portability patch
+on:
+  push:
+    branches: [feature/creator-campaign-analytics-performance-v10-20260722]
+    paths: ['.github/workflows/phase10-query-portability-patch.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/creator-campaign-analytics-performance-v10-20260722
+      - name: Patch Creator option ordering
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('includes/creator-campaigns/analytics-query.php')
+          source = path.read_text()
+          old = "SELECT DISTINCT cc.public_id,cc.title,cc.status,mw.display_name merchant_name FROM creator_campaigns cc INNER JOIN creator_campaign_participants p ON p.campaign_id=cc.id INNER JOIN merchant_workspaces mw ON mw.id=cc.workspace_id WHERE p.creator_user_id=? ORDER BY cc.id DESC LIMIT 250"
+          new = "SELECT DISTINCT cc.public_id,cc.title,cc.status,mw.display_name merchant_name FROM creator_campaigns cc INNER JOIN creator_campaign_participants p ON p.campaign_id=cc.id INNER JOIN merchant_workspaces mw ON mw.id=cc.workspace_id WHERE p.creator_user_id=? ORDER BY cc.public_id DESC LIMIT 250"
+          if old not in source:
+              raise SystemExit('Expected Phase 10 query pattern not found.')
+          path.write_text(source.replace(old, new, 1))
+          PY
+      - name: Commit portability fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add includes/creator-campaigns/analytics-query.php
+          git commit -m "Fix Phase 10 Creator analytics ordering"
+          git push origin HEAD:feature/creator-campaign-analytics-performance-v10-20260722
