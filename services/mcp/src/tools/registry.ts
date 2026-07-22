@@ -37,13 +37,16 @@ function bridgeError(error: unknown): CanonicalBridgeError {
     : new CanonicalBridgeError("The canonical service could not complete the request.", "MCP_CANONICAL_SERVICE_FAILED", 500);
 }
 
-async function recordReceipt(sink: InvocationReceiptSink, receipt: InvocationReceipt): Promise<void> {
+async function recordReceipt(
+  sink: InvocationReceiptSink,
+  receipt: InvocationReceipt,
+): Promise<void> {
   await sink.record(receipt);
 }
 
 export function createInternalMcpServer(dependencies: ToolRegistryDependencies): McpServer {
   const server = new McpServer(
-    { name: "microgifter-mcp", version: "0.5.0", description: "Microgifter MCP read and review-only proposal server" },
+    { name: "microgifter-mcp", version: "0.5.0", description: "Microgifter MCP read and review-only draft server" },
     { capabilities: { tools: { listChanged: false } } },
   );
 
@@ -106,31 +109,50 @@ export function createInternalMcpServer(dependencies: ToolRegistryDependencies):
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       },
       async (arguments_) => {
-        if (!dependencies.bridge) return errorResult("MICROGIFTER_TOOL_DISABLED", "The canonical catalog bridge is not enabled in this release.");
+        if (!dependencies.bridge) {
+          return errorResult("MICROGIFTER_TOOL_DISABLED", "The canonical catalog bridge is not enabled in this release.");
+        }
         const requestId = randomUUID();
         const startedAt = new Date().toISOString();
         const started = Date.now();
         try {
           const data = await dependencies.bridge.searchCatalog(dependencies.connection.connectionId, arguments_);
           await recordReceipt(dependencies.receipts, {
-            requestId, connectionId: dependencies.connection.connectionId,
-            toolName: "microgifter.catalog.search", operationClass: "read", requiredScope: "catalog:read",
-            inputFingerprint: fingerprint(arguments_), resultStatus: "success", httpStatus: 200,
-            durationMs: Date.now() - started, recordCount: data.items.length, startedAt,
+            requestId,
+            connectionId: dependencies.connection.connectionId,
+            toolName: "microgifter.catalog.search",
+            operationClass: "read",
+            requiredScope: "catalog:read",
+            inputFingerprint: fingerprint(arguments_),
+            resultStatus: "success",
+            httpStatus: 200,
+            durationMs: Date.now() - started,
+            recordCount: data.items.length,
+            startedAt,
             completedAt: new Date().toISOString(),
           });
           const output = { ok: true, request_id: requestId, data };
-          return { content: [{ type: "text", text: JSON.stringify(output) }], structuredContent: output };
+          return {
+            content: [{ type: "text", text: JSON.stringify(output) }],
+            structuredContent: output,
+          };
         } catch (error) {
           const failure = bridgeError(error);
           await recordReceipt(dependencies.receipts, {
-            requestId, connectionId: dependencies.connection.connectionId,
-            toolName: "microgifter.catalog.search", operationClass: "read", requiredScope: "catalog:read",
+            requestId,
+            connectionId: dependencies.connection.connectionId,
+            toolName: "microgifter.catalog.search",
+            operationClass: "read",
+            requiredScope: "catalog:read",
             inputFingerprint: fingerprint(arguments_),
             resultStatus: failure.status === 403 ? "denied" : failure.status === 422 ? "validation_error" : "failed",
-            httpStatus: failure.status, durationMs: Date.now() - started, recordCount: 0, errorCode: failure.code,
+            httpStatus: failure.status,
+            durationMs: Date.now() - started,
+            recordCount: 0,
+            errorCode: failure.code,
             ...(failure.status === 403 ? { denialReason: failure.message } : {}),
-            startedAt, completedAt: new Date().toISOString(),
+            startedAt,
+            completedAt: new Date().toISOString(),
           });
           return errorResult(failure.code, failure.message);
         }
@@ -141,35 +163,57 @@ export function createInternalMcpServer(dependencies: ToolRegistryDependencies):
       "microgifter.catalog.get_item",
       {
         description: "Return one currently published Microgifter catalog item through the canonical public projection.",
-        inputSchema: { product_id: z.string().uuid(), slug: z.string().trim().max(190).optional() },
+        inputSchema: {
+          product_id: z.string().uuid(),
+          slug: z.string().trim().max(190).optional(),
+        },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
       },
       async (arguments_) => {
-        if (!dependencies.bridge) return errorResult("MICROGIFTER_TOOL_DISABLED", "The canonical catalog bridge is not enabled in this release.");
+        if (!dependencies.bridge) {
+          return errorResult("MICROGIFTER_TOOL_DISABLED", "The canonical catalog bridge is not enabled in this release.");
+        }
         const requestId = randomUUID();
         const startedAt = new Date().toISOString();
         const started = Date.now();
         try {
           const data = await dependencies.bridge.getCatalogItem(dependencies.connection.connectionId, arguments_);
           await recordReceipt(dependencies.receipts, {
-            requestId, connectionId: dependencies.connection.connectionId,
-            toolName: "microgifter.catalog.get_item", operationClass: "read", requiredScope: "catalog:read",
-            inputFingerprint: fingerprint(arguments_), resultStatus: "success", httpStatus: 200,
-            durationMs: Date.now() - started, recordCount: 1, startedAt,
+            requestId,
+            connectionId: dependencies.connection.connectionId,
+            toolName: "microgifter.catalog.get_item",
+            operationClass: "read",
+            requiredScope: "catalog:read",
+            inputFingerprint: fingerprint(arguments_),
+            resultStatus: "success",
+            httpStatus: 200,
+            durationMs: Date.now() - started,
+            recordCount: 1,
+            startedAt,
             completedAt: new Date().toISOString(),
           });
           const output = { ok: true, request_id: requestId, data };
-          return { content: [{ type: "text", text: JSON.stringify(output) }], structuredContent: output };
+          return {
+            content: [{ type: "text", text: JSON.stringify(output) }],
+            structuredContent: output,
+          };
         } catch (error) {
           const failure = bridgeError(error);
           await recordReceipt(dependencies.receipts, {
-            requestId, connectionId: dependencies.connection.connectionId,
-            toolName: "microgifter.catalog.get_item", operationClass: "read", requiredScope: "catalog:read",
+            requestId,
+            connectionId: dependencies.connection.connectionId,
+            toolName: "microgifter.catalog.get_item",
+            operationClass: "read",
+            requiredScope: "catalog:read",
             inputFingerprint: fingerprint(arguments_),
             resultStatus: failure.status === 403 ? "denied" : failure.status === 422 ? "validation_error" : "failed",
-            httpStatus: failure.status, durationMs: Date.now() - started, recordCount: 0, errorCode: failure.code,
+            httpStatus: failure.status,
+            durationMs: Date.now() - started,
+            recordCount: 0,
+            errorCode: failure.code,
             ...(failure.status === 403 ? { denialReason: failure.message } : {}),
-            startedAt, completedAt: new Date().toISOString(),
+            startedAt,
+            completedAt: new Date().toISOString(),
           });
           return errorResult(failure.code, failure.message);
         }
