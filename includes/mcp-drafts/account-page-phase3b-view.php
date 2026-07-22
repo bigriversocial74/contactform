@@ -6,9 +6,9 @@ declare(strict_types=1);
   <main class="mg-app-workspace mg-drafts-workspace">
     <header class="mg-drafts-hero">
       <div>
-        <span class="mg-drafts-eyebrow">External agent review · Phase 3B</span>
+        <span class="mg-drafts-eyebrow">External agent review · Creator Campaign Phase 13B</span>
         <h1>Agent drafts</h1>
-        <p>Review external-agent drafts, approve the proposal, and separately convert an approved proposal into an inactive native Microgifter draft. Every conversion still requires later manual editing and an additional first-party action before anything can go live.</p>
+        <p>Review external-agent drafts and Creator Campaign proposals. Creator Campaign proposals remain review evidence only; approval does not create or modify a campaign, agreement, compensation rule, earning, payout, invitation, message, or submission decision.</p>
       </div>
       <div class="mg-conversion-actions">
         <a class="mg-drafts-link" href="/account-agent-automations.php">Automation grants</a>
@@ -35,10 +35,15 @@ declare(strict_types=1);
       <section class="mg-drafts-empty"><strong>No agent drafts match this view.</strong><p>Drafts appear here after an authorized external client prepares one for review.</p></section>
     <?php else: ?>
       <section class="mg-drafts-list">
-        <?php foreach ($drafts as $draft): $conversion = is_array($draft['conversion'] ?? null) ? $draft['conversion'] : null; ?>
+        <?php foreach ($drafts as $draft):
+          $conversion = is_array($draft['conversion'] ?? null) ? $draft['conversion'] : null;
+          $payload = is_array($draft['payload'] ?? null) ? $draft['payload'] : [];
+          $isCreatorCampaignProposal = !empty($payload['creator_campaign_proposal']);
+          $proposalKind = $isCreatorCampaignProposal ? (string)($payload['proposal_kind'] ?? 'proposal') : '';
+        ?>
           <article id="draft-<?= mg_e((string)$draft['id']) ?>" class="mg-draft-card is-<?= mg_e((string)$draft['status']) ?>">
             <header>
-              <div><span><?= mg_e(strtoupper((string)$draft['type'])) ?></span><h2><?= mg_e((string)$draft['title']) ?></h2><p><?= mg_e((string)$draft['summary']) ?></p></div>
+              <div><span><?= mg_e($isCreatorCampaignProposal ? 'CREATOR CAMPAIGN · ' . strtoupper(str_replace(['.','_'], ' ', $proposalKind)) : strtoupper((string)$draft['type'])) ?></span><h2><?= mg_e((string)$draft['title']) ?></h2><p><?= mg_e((string)$draft['summary']) ?></p></div>
               <strong><?= mg_e(ucwords(str_replace('_', ' ', (string)$draft['status']))) ?></strong>
             </header>
             <dl>
@@ -57,6 +62,10 @@ declare(strict_types=1);
                 <label>Decision note<textarea name="reason" maxlength="1000" rows="3" placeholder="Required when rejecting; optional when approving"></textarea></label>
                 <div><button type="submit" name="decision" value="reject" class="is-reject">Reject</button><button type="submit" name="decision" value="approve" class="is-approve">Approve draft</button></div>
               </form>
+            <?php elseif ((string)$draft['status'] === 'approved' && $isCreatorCampaignProposal): ?>
+              <section class="mg-conversion-panel is-created">
+                <div><span>Proposal approved</span><strong>Awaiting approval-gated canonical actions</strong><p>This approval records merchant acceptance of the proposal only. Native conversion and execution are disabled until Creator Campaign Phase 13C.</p></div>
+              </section>
             <?php elseif ((string)$draft['status'] === 'approved' && $conversion === null): ?>
               <section class="mg-conversion-panel">
                 <div><span>Step 1 of 2</span><strong>Prepare native conversion</strong><p>This creates conversion evidence only. It does not create a Microgifter object yet.</p></div>
@@ -88,6 +97,6 @@ declare(strict_types=1);
       </section>
     <?php endif; ?>
 
-    <aside class="mg-drafts-safety"><strong>Two human gates remain</strong><p>Agent approval does not create a native object. Conversion requires a second owner action, and the resulting native draft remains private or inactive until a later first-party action makes it live or executes it.</p></aside>
+    <aside class="mg-drafts-safety"><strong>Human approval remains non-executing</strong><p>Creator Campaign proposal approval does not create or mutate native campaign records. Publication, participant decisions, messaging, agreements, compensation, earnings, payouts, and disputes remain unavailable until separately authorized canonical-action phases.</p></aside>
   </main>
 </section>
