@@ -48,7 +48,21 @@ jobs:
           php -l scripts/validate_creator_campaign_mcp_v13b.php
           php -l tests/phpunit/CreatorCampaignMcpDraftV13bContractTest.php
       - name: MCP TypeScript and Node contracts
-        run: npm test --prefix services/mcp
+        shell: bash
+        run: |
+          set +e
+          npm test --prefix services/mcp > mcp-v13b-${{ matrix.php }}.log 2>&1
+          status=$?
+          cat mcp-v13b-${{ matrix.php }}.log
+          exit $status
+      - name: Upload MCP diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creator-campaign-mcp-v13b-${{ matrix.php }}
+          path: mcp-v13b-${{ matrix.php }}.log
+          if-no-files-found: error
+          retention-days: 7
       - name: Phase 13B score
         run: php scripts/validate_creator_campaign_mcp_v13b.php
       - name: Phase 13B PHPUnit
