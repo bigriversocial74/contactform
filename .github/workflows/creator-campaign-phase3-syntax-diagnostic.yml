@@ -1,9 +1,10 @@
 name: Creator Campaign Phase 3 Syntax Diagnostic
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'diagnostic/creator-campaign-phase3-syntax-20260721'
+      - integration-from-repair-20260628
+  workflow_dispatch:
 
 permissions:
   contents: read
