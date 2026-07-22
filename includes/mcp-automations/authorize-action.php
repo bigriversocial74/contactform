@@ -80,7 +80,9 @@ function mg_mcp_automation_authorize_grant_action(
     foreach (['product_id' => 'allowed_product_ids', 'campaign_id' => 'allowed_campaign_ids', 'reward_template_id' => 'allowed_reward_template_ids'] as $inputKey => $policyKey) {
         $targetId = strtolower(trim((string)($targetContext[$inputKey] ?? ''));
         $allowedIds = is_array($targetPolicy[$policyKey] ?? null) ? array_map('strval', $targetPolicy[$policyKey]) : [];
-        if ($targetId === '') continue;
+        if ($targetId === '') {
+            continue;
+        }
         if ($inputKey === 'product_id' && $allowedIds === [] && empty($targetPolicy['allow_all_published_catalog'])) {
             throw new MgMcpAutomationGrantException('The grant does not authorize unrestricted catalog targets.', 403, 'MCP_AUTOMATION_TARGET_DENIED');
         }
@@ -93,10 +95,15 @@ function mg_mcp_automation_authorize_grant_action(
         && $targetContext['recipient_is_existing_contact'] !== true) {
         throw new MgMcpAutomationGrantException('The grant allows existing authorized contacts only.', 403, 'MCP_AUTOMATION_RECIPIENT_DENIED');
     }
-    $sql="SELECT COUNT(*) FROM mcp_automation_runs WHERE grant_id=? AND status IN ('queued','evaluating','waiting_for_approval','approved','executing')";
-    $params=[(int)$grant['id']];
-    if($excludeRunId!==null&&$excludeRunId>0){$sql.=' AND id<>?';$params[]=$excludeRunId;}
-    $concurrency=$pdo->prepare($sql);$concurrency->execute($params);
+    $concurrencySql = "SELECT COUNT(*) FROM mcp_automation_runs
+                       WHERE grant_id=? AND status IN ('queued','evaluating','waiting_for_approval','approved','executing')";
+    $concurrencyParams = [(int)$grant['id']];
+    if ($excludeRunId !== null && $excludeRunId > 0) {
+        $concurrencySql .= ' AND id<>?';
+        $concurrencyParams[] = $excludeRunId;
+    }
+    $concurrency = $pdo->prepare($concurrencySql);
+    $concurrency->execute($concurrencyParams);
     if ((int)$concurrency->fetchColumn() >= (int)$grant['maximum_concurrent_runs']) {
         throw new MgMcpAutomationGrantException('The grant concurrency limit has been reached.', 409, 'MCP_AUTOMATION_CONCURRENCY_LIMIT');
     }
