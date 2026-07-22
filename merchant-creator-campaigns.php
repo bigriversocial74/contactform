@@ -9,8 +9,9 @@ $page_styles = [
     '/assets/css/merchant-workspace.css',
     '/assets/css/merchant-creator-campaigns.css?v=2.0.0',
     '/assets/css/creator-campaign-ui-v11.css?v=11.0.0',
+    '/assets/css/creator-campaign-ui-v11-components.css?v=11.0.0',
 ];
-$page_scripts = ['/assets/js/merchant-creator-campaigns.js?v=2.0.0','/assets/js/merchant-creator-campaign-builder.js?v=2.0.0'];
+$page_scripts = ['/assets/js/merchant-creator-campaigns.js?v=11.0.0','/assets/js/merchant-creator-campaign-builder.js?v=2.0.0'];
 $merchantView = 'creator_campaigns';
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/merchant-workspace.php';
