@@ -28,3 +28,10 @@ require_once __DIR__ . '/deliverable-notification.php';
 require_once __DIR__ . '/deliverable-service.php';
 require_once __DIR__ . '/submission-service.php';
 require_once __DIR__ . '/deliverable-query.php';
+
+require_once __DIR__ . '/tracking-definitions.php';
+require_once __DIR__ . '/tracking-context.php';
+require_once __DIR__ . '/tracking-repository.php';
+require_once __DIR__ . '/tracking-service.php';
+require_once __DIR__ . '/attribution-service.php';
+require_once __DIR__ . '/tracking-query.php';
