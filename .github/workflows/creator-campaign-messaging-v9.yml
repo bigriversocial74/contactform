@@ -80,8 +80,8 @@ jobs:
         run: php scripts/validate_creator_campaign_messaging_v9.php
       - name: Phase 9 PHPUnit
         run: vendor/bin/phpunit tests/phpunit/CreatorCampaignMessagingV9ContractTest.php
-      - name: Existing message delivery bridges
-        run: php scripts/validate_message_delivery_bridges.php && php scripts/validate_message_delivery_verification.php
+      - name: Existing message delivery contract
+        run: php scripts/validate_message_delivery_verification.php
       - name: Migration manifest
         run: php scripts/validate_migration_manifest.php
   mysql-lifecycle:
@@ -141,3 +141,5 @@ jobs:
         run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_messaging_notifications_v9_single_install.sql
       - name: Phase 9 lifecycle
         run: php scripts/validate_creator_campaign_messaging_v9_mysql.php
+      - name: Existing message delivery database bridges
+        run: php scripts/validate_message_delivery_bridges.php
