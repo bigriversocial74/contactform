@@ -41,12 +41,34 @@ export interface DraftListArguments {
   readonly cursor?: string | undefined;
 }
 
+export type CreatorCampaignReadOperation =
+  | "creator_campaigns.list"
+  | "creator_campaigns.get"
+  | "creator_campaigns.validate"
+  | "creator_campaigns.analytics.get"
+  | "creator_campaigns.applications.list"
+  | "creator_campaigns.participants.list"
+  | "creator_campaigns.deliverables.list"
+  | "creator_campaigns.submissions.list"
+  | "creator_campaigns.tracking.get"
+  | "creator_campaigns.attributions.list"
+  | "creator_campaigns.earnings.list"
+  | "creator_campaigns.payouts.list"
+  | "creator_campaigns.disputes.list";
+
+export type CreatorCampaignReadArguments = Readonly<Record<string, unknown>>;
+
 export interface CanonicalBridge {
   resolveConnection(connectionId: string): Promise<ConnectionContext>;
   searchCatalog(connectionId: string, arguments_: CatalogSearchArguments): Promise<CatalogSearchResult>;
   getCatalogItem(
     connectionId: string,
     arguments_: Readonly<{ product_id: string; slug?: string | undefined }>,
+  ): Promise<Readonly<Record<string, unknown>>>;
+  creatorCampaignRead?(
+    connectionId: string,
+    operation: CreatorCampaignReadOperation,
+    arguments_: CreatorCampaignReadArguments,
   ): Promise<Readonly<Record<string, unknown>>>;
   createDraft(connectionId: string, arguments_: DraftCreateArguments): Promise<Readonly<Record<string, unknown>>>;
   listDrafts(connectionId: string, arguments_: DraftListArguments): Promise<Readonly<Record<string, unknown>>>;
@@ -155,6 +177,14 @@ export class HttpCanonicalBridge implements CanonicalBridge {
     arguments_: Readonly<{ product_id: string; slug?: string | undefined }>,
   ): Promise<Readonly<Record<string, unknown>>> {
     return object(await this.request("catalog.get_item", connectionId, arguments_), "catalog item");
+  }
+
+  public async creatorCampaignRead(
+    connectionId: string,
+    operation: CreatorCampaignReadOperation,
+    arguments_: CreatorCampaignReadArguments,
+  ): Promise<Readonly<Record<string, unknown>>> {
+    return object(await this.request(operation, connectionId, arguments_), "Creator Campaign read result");
   }
 
   public async createDraft(connectionId: string, arguments_: DraftCreateArguments): Promise<Readonly<Record<string, unknown>>> {
