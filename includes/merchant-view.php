@@ -82,4 +82,5 @@ elseif($merchantView==='team'):
 elseif($merchantView==='integrations'):
     require __DIR__.'/merchant-integrations-view.php';
 elseif(isset($placeholderViews[$merchantView])):
-    ?><section class="mg-merchant-heading"><div><span class="mg-eyebrow">MerchantÝ½É­ÍÁ…”ð½ÍÁ…¸øñ Äøðüôµ}”¡ÕÝ½É‘Ì¡ÍÑÉ}É•Á±…” |œ°œ€œ°‘µ•É¡…¹ÑY¥•Ü¤¤¤€üøð½ ÄøñÀøðüôµ}” ‘Á±…•¡½±‘•ÉY¥•ÝÍl‘µ•É¡…¹ÑY¥•Ýt¤€üøð½Àøð½‘¥Øøð½Í•Ñ¥½¸øñÍ•Ñ¥½¸±…ÍÌô‰µœµ…ÁÀµÁ…¹•°ˆøñ‘¥Ø±…ÍÌô‰µœµ…ÁÀµÁ…¹•°µ‰½‘äˆøñ‘¥Ø±…ÍÌô‰µœµ•µÁÑäµÍÑ…Ñ”ˆøñÍÑÉ½¹œù]½É­ÍÁ…”É½ÕÑ”É•Í•ÉÙ•ð½ÍÑÉ½¹œøñÀùQ¡”½Á•É…Ñ¥¹œµ½‘Õ±”Ý¥±°‰”½¹¹•Ñ•¥¸¥ÑÌÁ±…¹¹•MÑ…”€ÔÍÕ‰Á¡…Í”¸ð½Àøð½‘¥Øøð½Í•Ñ¥½¸øðýÁ¡À)•¹‘¥˜ì
+    ?><section class="mg-merchant-heading"><div><span class="mg-eyebrow">Merchant workspace</span><h1><?= mg_e(ucwords(str_replace('_',' ',$merchantView))) ?></h1><p><?= mg_e($placeholderViews[$merchantView]) ?></p></div></section><section class="mg-app-panel"><div class="mg-app-panel-body"><div class="mg-empty-state"><strong>Workspace route reserved</strong><p>The operating module will be connected in its planned Stage 5 subphase.</p></div></section><?php
+endif;
