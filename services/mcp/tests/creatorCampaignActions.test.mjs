@@ -32,7 +32,7 @@ test("Phase 13C exposes exactly 22 scope-filtered request tools",async()=>{
   const bridge={requestCreatorCampaignAction:async()=>({id:"action-id",status:"waiting_for_approval"})};
   await withServer(config(),bridge,async({baseUrl})=>{const response=await rpc(baseUrl,{jsonrpc:"2.0",id:1,method:"tools/list",params:{}});const payload=await response.json();assert.deepEqual(payload.result.tools.map(tool=>tool.name),tools);for(const tool of payload.result.tools){assert.equal(tool.annotations.readOnlyHint,false);assert.equal(tool.annotations.destructiveHint,false);assert.equal(tool.annotations.idempotentHint,true);assert.equal(tool.annotations.openWorldHint,false);}});
   await withServer(config(["creator_campaign_payouts:manage"]),bridge,async({baseUrl})=>{const response=await rpc(baseUrl,{jsonrpc:"2.0",id:2,method:"tools/list",params:{}});const payload=await response.json();assert.deepEqual(payload.result.tools.map(tool=>tool.name),["microgifter.creator_campaigns.payout.record"]);});
-  await withServer(config(["creator_campaigns:publish"],"draft"),bridge,async({baseUrl})=>{const response=await rpc(baseUrl,{jsonrpc:"2.0",id:3,method:"tools/list",params:{}});const payload=await response.json();assert.deepEqual(payload.result.tools.map(tool=>tool.name),[]);});
+  await withServer(config(["profile:read"],"draft"),bridge,async({baseUrl})=>{const response=await rpc(baseUrl,{jsonrpc:"2.0",id:3,method:"tools/list",params:{}});const payload=await response.json();assert.deepEqual(payload.result.tools.map(tool=>tool.name),["microgifter.account.get_connection_context"]);});
 });
 
 test("Phase 13C tools create owner requests and never execute canonical actions",async()=>{
