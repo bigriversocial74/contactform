@@ -30,7 +30,7 @@ $add('No Phase 10 SQL or duplicate metric store', !is_file($root . '/database/20
 $add('Authoritative tracking events reused', $has($content['query'], 'creator_campaign_tracking_events'));
 $add('Canonical attribution reused', $has($content['query'], 'creator_campaign_attributions'));
 $add('Accepted tracking state enforced', $has($content['query'], "e.status='accepted'"));
-$add('Canonical attribution states enforced', $has($content['query'], "a.status IN ('attributed','overridden')"));
+$add('Canonical attribution and accepted conversion state enforced', $has($content['query'], "a.status IN ('attributed','overridden')") && substr_count($content['query'], "e.status='accepted'") >= 4);
 
 $add('Integer minor-unit earnings', $has($content['query'], 'amount_minor') && $has($content['docs'], 'integer minor units'));
 $add('Currency isolation', $has($content['query'], 'GROUP BY') && $has($content['query'], '.currency'));
@@ -40,9 +40,9 @@ $add('Bounded custom date range', $has($content['definitions'], '$days > 731'));
 
 $add('Day week month buckets', $has($content['definitions'], "'month'") && $has($content['definitions'], "'week'"));
 $add('Merchant workspace ownership', $has($content['query'], 'cc.workspace_id'));
-$add('Creator object ownership', $has($content['query'], 'creator_user_id'));
+$add('Creator participant filter preserves campaign scope', $has($content['query'], "$scope['participant_id'] !== null && $participantColumn !== null"));
 $add('Creator budget exclusion', $has($content['query'], "if (\$scope['mode'] !== 'merchant')"));
-$add('Existing merchant intelligence permission', $has($content['context'], 'merchant.intelligence.view'));
+$add('User-model-compatible permissions reused', $has($content['context'], 'merchant.intelligence.view') && $has($content['context'], 'creator.campaign_messages.view_own'));
 
 $add('CSV report whitelist', $has($content['export'], 'mg_creator_campaign_analytics_report_types'));
 $add('CSV formula injection protection', $has($content['export'], "/^[=+\\-@\\t\\r]/u"));
