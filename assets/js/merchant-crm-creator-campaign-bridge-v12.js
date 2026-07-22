@@ -126,6 +126,11 @@
       }
       if (contact.canonical_only) {
         row.querySelectorAll('[data-view-timeline],[data-crm-message],[data-crm-gift]').forEach(function (button) { button.disabled = true; button.hidden = true; });
+        row.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+          checkbox.checked = false;
+          checkbox.disabled = true;
+          checkbox.setAttribute('aria-label', 'Canonical Creator Campaign contact is not eligible for legacy bulk actions');
+        });
         var actions = row.querySelector('.mg-crm-row-actions');
         if (actions && contact.creator_campaign_url && !actions.querySelector('[data-open-creator-campaign]')) {
           var link = document.createElement('a'); link.className='mg-crm-icon-btn'; link.href=contact.creator_campaign_url; link.setAttribute('data-open-creator-campaign',''); link.textContent='Campaign'; actions.appendChild(link);
