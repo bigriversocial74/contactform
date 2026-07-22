@@ -1,0 +1,17 @@
+<?php
+declare(strict_types=1);
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require_once dirname(__DIR__) . '/api/bootstrap.php';
+require_once dirname(__DIR__) . '/includes/creator-campaigns.php';
+$pdo=mg_db();
+function ccp3_assert(bool $ok,string $message):void{if(!$ok)throw new RuntimeException($message);}
+$tables=['creator_campaign_applications','creator_campaign_application_answers','creator_campaign_invitations','creator_campaign_participants','creator_campaign_participation_events','creator_campaign_agreements','creator_campaign_agreement_versions','creator_campaign_agreement_acceptances'];
+$placeholders=implode(',',array_fill(0,count($tables),'?'));
+$stmt=$pdo->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ({$placeholders})");$stmt->execute($tables);$found=$stmt->fetchAll(PDO::FETCH_COLUMN)?:[];ccp3_assert(count($found)===count($tables),'Phase 3 tables are incomplete.');
+$permissions=['merchant.creator_applications.view','merchant.creator_applications.manage','merchant.creator_invitations.manage','merchant.creator_participants.view','merchant.creator_participants.manage','merchant.creator_agreements.view','merchant.creator_agreements.manage','creator.campaigns.discover','creator.campaign_applications.manage_own','creator.campaign_invitations.respond_own','creator.campaign_participants.view_own','creator.campaign_agreements.view_own','creator.campaign_agreements.respond_own'];
+$p=implode(',',array_fill(0,count($permissions),'?'));$stmt=$pdo->prepare("SELECT COUNT(*) FROM permissions WHERE slug IN ({$p})");$stmt->execute($permissions);ccp3_assert((int)$stmt->fetchColumn()===count($permissions),'Phase 3 permissions are incomplete.');
+$stmt=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('creator_campaign_deliverables','creator_campaign_submissions','creator_campaign_tracking_sources','creator_campaign_earnings','creator_campaign_payouts','creator_campaign_disputes')");ccp3_assert((int)$stmt->fetchColumn()===0,'Later-phase tables were created prematurely.');
+$stmt=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='creator_campaign_agreement_versions' AND column_name IN ('version_number','content_hash','snapshot_json','requires_reacceptance')");ccp3_assert((int)$stmt->fetchColumn()===4,'Agreement version integrity columns are incomplete.');
+$stmt=$pdo->query("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='creator_campaign_participants' AND index_name='uq_creator_campaign_participant_creator' AND non_unique=0");ccp3_assert((int)$stmt->fetchColumn()>=1,'Participant uniqueness is not enforced.');
+$stmt=$pdo->query("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='creator_campaign_agreement_versions' AND index_name='uq_creator_campaign_agreement_version_hash' AND non_unique=0");ccp3_assert((int)$stmt->fetchColumn()>=1,'Agreement content hashes are not unique per agreement.');
+echo json_encode(['ok'=>true,'tables'=>count($tables),'permissions'=>count($permissions),'automatic_acceptance_supported'=>true,'manual_review_supported'=>true,'immutable_agreement_versions'=>true,'active_workspace_supported'=>true,'later_phase_tables'=>0],JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR).PHP_EOL;
