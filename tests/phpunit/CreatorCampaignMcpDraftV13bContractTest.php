@@ -34,7 +34,9 @@ final class CreatorCampaignMcpDraftV13bContractTest extends TestCase
 
     public function testProposalWritesOnlyToTheReviewLedger(): void
     {
-        $bridge = (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_bridge.php');
+        $bridge = (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_bridge.php')
+            . (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_values.php')
+            . (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_service.php');
         $draftBridge = (string)file_get_contents($this->root . '/api/internal/_mcp_draft_bridge.php');
         self::assertStringContainsString('INSERT INTO mcp_agent_drafts', $bridge);
         self::assertStringContainsString('mg_mcp_draft_event', $bridge);
@@ -48,7 +50,9 @@ final class CreatorCampaignMcpDraftV13bContractTest extends TestCase
 
     public function testWorkspaceResourceAndRiskBoundariesAreEnforced(): void
     {
-        $bridge = (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_bridge.php');
+        $bridge = (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_bridge.php')
+            . (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_values.php')
+            . (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_service.php');
         self::assertStringContainsString('MCP_CREATOR_CAMPAIGN_PROPOSAL_SCOPE_DENIED', $bridge);
         self::assertStringContainsString('MCP_CREATOR_CAMPAIGN_PROPOSAL_WORKSPACE_REQUIRED', $bridge);
         self::assertStringContainsString('mg_creator_campaign_repository_by_public_id', $bridge);
@@ -62,7 +66,9 @@ final class CreatorCampaignMcpDraftV13bContractTest extends TestCase
 
     public function testApprovalStillCannotConvertOrExecuteTheProposal(): void
     {
-        $bridge = (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_bridge.php');
+        $bridge = (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_bridge.php')
+            . (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_values.php')
+            . (string)file_get_contents($this->root . '/api/internal/_mcp_creator_campaign_draft_service.php');
         $account = (string)file_get_contents($this->root . '/includes/mcp-drafts/account-page-phase3b.php');
         $view = (string)file_get_contents($this->root . '/includes/mcp-drafts/account-page-phase3b-view.php');
         self::assertStringContainsString("'native_conversion_enabled' => false", $bridge);
