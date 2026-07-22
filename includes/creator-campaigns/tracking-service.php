@@ -131,6 +131,9 @@ function mg_creator_campaign_tracking_record_by_code(PDO $pdo,string $code,array
         $event=mg_creator_campaign_tracking_insert_event($pdo,$source,$input);
         if(in_array((string)$event['event_type'],mg_creator_campaign_tracking_conversion_event_types(),true)){
             $event['attribution']=mg_creator_campaign_attribution_decide($pdo,$event,null,false);
+            if(function_exists('mg_creator_campaign_crm_project_tracking_event_safe')){
+                $event['crm_projection']=mg_creator_campaign_crm_project_tracking_event_safe($pdo,(string)$event['public_id']);
+            }
         }
         $pdo->commit();
         return $event;
@@ -161,6 +164,9 @@ function mg_creator_campaign_tracking_record_conversion(PDO $pdo,array $input):a
         $input['event_type']=$eventType;
         $event=mg_creator_campaign_tracking_insert_event($pdo,$source,$input);
         $event['attribution']=mg_creator_campaign_attribution_decide($pdo,$event,null,false);
+        if(function_exists('mg_creator_campaign_crm_project_tracking_event_safe')){
+            $event['crm_projection']=mg_creator_campaign_crm_project_tracking_event_safe($pdo,(string)$event['public_id']);
+        }
         $pdo->commit();return $event;
     }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }

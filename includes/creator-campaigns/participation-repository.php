@@ -229,7 +229,12 @@ function mg_creator_campaign_participation_event(PDO $pdo, array $event): array
         );
         $existing->execute([$campaignId, $idempotencyHash]);
         $publicId = (string) ($existing->fetchColumn() ?: '');
-        if ($publicId !== '') return ['public_id' => $publicId, 'idempotent_replay' => true];
+        if ($publicId !== '') {
+            if (function_exists('mg_creator_campaign_crm_project_participation_event_safe')) {
+                mg_creator_campaign_crm_project_participation_event_safe($pdo, $publicId);
+            }
+            return ['public_id' => $publicId, 'idempotent_replay' => true];
+        }
     }
 
     $publicId = mg_creator_campaign_public_id('ccpe');
@@ -270,9 +275,15 @@ function mg_creator_campaign_participation_event(PDO $pdo, array $event): array
         $existing->execute([$campaignId, $idempotencyHash]);
         $replayPublicId = (string) ($existing->fetchColumn() ?: '');
         if ($replayPublicId === '') throw $error;
+        if (function_exists('mg_creator_campaign_crm_project_participation_event_safe')) {
+            mg_creator_campaign_crm_project_participation_event_safe($pdo, $replayPublicId);
+        }
         return ['public_id' => $replayPublicId, 'idempotent_replay' => true];
     }
 
+    if (function_exists('mg_creator_campaign_crm_project_participation_event_safe')) {
+        mg_creator_campaign_crm_project_participation_event_safe($pdo, $publicId);
+    }
     return ['public_id' => $publicId, 'idempotent_replay' => false];
 }
 

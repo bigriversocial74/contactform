@@ -29,11 +29,13 @@ $page_styles = [
     '/assets/css/merchant-crm-desktop-layout-fix.css?v=1.0.0',
     '/assets/css/merchant-crm-kpi-authoritative-v1.css?v=1.0.0',
     '/assets/css/merchant-crm-directory-v1.css?v=1.0.0',
+    '/assets/css/merchant-crm-creator-campaign-v12.css?v=12.0.0',
 ];
 
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
     '/assets/js/merchant-crm-directory-data.js?v=1.0.0',
+    '/assets/js/merchant-crm-creator-campaign-bridge-v12.js?v=12.0.0',
     '/assets/js/merchant-crm.js',
     '/assets/js/merchant-crm-contact-action-modal.js',
     '/assets/js/merchant-crm-action-scheduler.js',

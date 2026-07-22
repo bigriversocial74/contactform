@@ -9,3 +9,4 @@ require_once __DIR__.'/budget-definitions.php';require_once __DIR__.'/budget-con
 require_once __DIR__.'/payout-definitions.php';require_once __DIR__.'/payout-context.php';require_once __DIR__.'/payout-repository.php';require_once __DIR__.'/payout-service.php';require_once __DIR__.'/payout-query.php';
 require_once __DIR__.'/message-definitions.php';require_once __DIR__.'/message-context.php';require_once __DIR__.'/message-repository.php';require_once __DIR__.'/message-notification.php';require_once __DIR__.'/message-service.php';require_once __DIR__.'/message-query.php';
 require_once __DIR__.'/analytics-definitions.php';require_once __DIR__.'/analytics-context.php';require_once __DIR__.'/analytics-query.php';require_once __DIR__.'/analytics-export.php';
+require_once __DIR__.'/crm-definitions.php';require_once __DIR__.'/crm-repository.php';require_once __DIR__.'/crm-service.php';require_once __DIR__.'/crm-query.php';
