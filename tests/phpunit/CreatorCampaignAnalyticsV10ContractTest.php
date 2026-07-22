@@ -14,15 +14,17 @@ final class CreatorCampaignAnalyticsV10ContractTest extends TestCase
         self::assertStringContainsString('creator_campaign_earning_events', $query);
         self::assertStringContainsString("e.status='accepted'", $query);
         self::assertStringContainsString("a.status IN ('attributed','overridden')", $query);
+        self::assertGreaterThanOrEqual(4, substr_count($query, "e.status='accepted'"));
     }
     public function testOwnershipAndFinancialBoundaries(): void
     {
         $query = file_get_contents($this->root . '/includes/creator-campaigns/analytics-query.php');
         $context = file_get_contents($this->root . '/includes/creator-campaigns/analytics-context.php');
         self::assertStringContainsString('cc.workspace_id', $query);
-        self::assertStringContainsString('creator_user_id', $query);
+        self::assertStringContainsString("\$scope['participant_id'] !== null && \$participantColumn !== null", $query);
         self::assertStringContainsString("if (\$scope['mode'] !== 'merchant')", $query);
         self::assertStringContainsString('merchant.intelligence.view', $context);
+        self::assertStringContainsString('creator.campaign_messages.view_own', $context);
     }
     public function testDateAndRateSafety(): void
     {
