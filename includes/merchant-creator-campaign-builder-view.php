@@ -77,7 +77,7 @@
             <label>Maximum approved creators<input type="number" name="maximum_approved_creators" min="1" max="100000"></label>
             <label>Maximum applications<input type="number" name="maximum_applications" min="1" max="100000"></label>
             <label>Application deadline<input type="datetime-local" name="eligibility_application_deadline_at"></label>
-            <label class="mg-cc-toggle"><input type="checkbox" name="automatic_acceptance"><span>Automatic acceptance</span><small>Automatically approve creators who pass every required eligibility rule and the campaign participant limit.</small></label>
+            <label class="mg-cc-toggle"><input type="checkbox" name="automatic_acceptance" disabled><span>Automatic acceptance</span><small>Unavailable until Creator Participation is installed; merchant approval remains required.</small></label>
           </div>
           <div class="mg-cc-repeatable-head"><div><h3>Eligibility rules</h3><p>Specialty, category, platform, verification, location, audience, or relationship filters.</p></div><button class="mg-btn mg-btn-soft" type="button" data-cc-add-rule>Add Rule</button></div>
           <div class="mg-cc-repeatable" data-cc-rules></div>
