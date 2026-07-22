@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/includes/mcp-drafts.php';
+require_once __DIR__ . '/_mcp_creator_campaign_draft_bridge.php';
 
 function mg_mcp_draft_bridge_connection(PDO $pdo, string $connectionPublicId): array
 {
@@ -114,6 +115,9 @@ function mg_mcp_draft_bridge_allowed_types(array $context): array
 function mg_mcp_draft_bridge_dispatch(PDO $pdo, array $context, string $operation, array $arguments): array
 {
     try {
+        if ($operation === 'draft.create' && mg_mcp_creator_campaign_proposal_requested($arguments)) {
+            return mg_mcp_creator_campaign_proposal_create($pdo, $context, $arguments);
+        }
         if ($operation === 'draft.create') return mg_mcp_draft_create($pdo, $context, $arguments);
         if ($operation === 'draft.get') {
             $draft = mg_mcp_draft_get_for_connection($pdo, $context, (string)($arguments['draft_id'] ?? ''));
