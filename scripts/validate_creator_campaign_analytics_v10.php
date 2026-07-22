@@ -40,7 +40,7 @@ $add('Bounded custom date range', $has($content['definitions'], '$days > 731'));
 
 $add('Day week month buckets', $has($content['definitions'], "'month'") && $has($content['definitions'], "'week'"));
 $add('Merchant workspace ownership', $has($content['query'], 'cc.workspace_id'));
-$add('Creator participant filter preserves campaign scope', $has($content['query'], "$scope['participant_id'] !== null && $participantColumn !== null"));
+$add('Creator participant filter preserves campaign scope', $has($content['query'], "\$scope['participant_id'] !== null && \$participantColumn !== null"));
 $add('Creator budget exclusion', $has($content['query'], "if (\$scope['mode'] !== 'merchant')"));
 $add('User-model-compatible permissions reused', $has($content['context'], 'merchant.intelligence.view') && $has($content['context'], 'creator.campaign_messages.view_own'));
 
