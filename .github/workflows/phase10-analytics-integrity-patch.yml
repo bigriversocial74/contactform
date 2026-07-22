@@ -1,0 +1,75 @@
+name: Phase 10 analytics integrity patch
+on:
+  push:
+    branches: [feature/creator-campaign-analytics-performance-v10-20260722]
+    paths: ['.github/workflows/phase10-analytics-integrity-patch.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/creator-campaign-analytics-performance-v10-20260722
+      - name: Harden participant and attribution scope
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('includes/creator-campaigns/analytics-query.php')
+          source = path.read_text()
+
+          old_scope = """    if ($scope['participant_id'] !== null) {
+              if ($participantColumn === null) {
+                  $where[] = '1=0';
+              } else {
+                  $where[] = $participantColumn . '=?';
+                  $params[] = (int) $scope['participant_id'];
+              }
+          }
+          """
+          new_scope = """    if ($scope['participant_id'] !== null && $participantColumn !== null) {
+              $where[] = $participantColumn . '=?';
+              $params[] = (int) $scope['participant_id'];
+          }
+          """
+          if old_scope in source:
+              source = source.replace(old_scope, new_scope, 1)
+
+          old_group = '$where = ["a.status IN (\'attributed\',\'overridden\')"];'
+          new_group = '$where = ["a.status IN (\'attributed\',\'overridden\')", "e.status=\'accepted\'"];'
+          if old_group in source:
+              source = source.replace(old_group, new_group, 1)
+
+          old_attr = '$attributionWhere = ["a.status IN (\'attributed\',\'overridden\')"];'
+          new_attr = '$attributionWhere = ["a.status IN (\'attributed\',\'overridden\')", "e.status=\'accepted\'"];'
+          source = source.replace(old_attr, new_attr)
+
+          old_channel_join = 'FROM creator_campaign_attributions a INNER JOIN creator_campaign_tracking_sources s ON s.id=a.source_id INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id'
+          new_channel_join = 'FROM creator_campaign_attributions a INNER JOIN creator_campaign_tracking_events e ON e.id=a.conversion_event_id INNER JOIN creator_campaign_tracking_sources s ON s.id=a.source_id INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id'
+          if old_channel_join in source:
+              source = source.replace(old_channel_join, new_channel_join, 1)
+
+          old_trend_join = 'FROM creator_campaign_attributions a INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id'
+          new_trend_join = 'FROM creator_campaign_attributions a INNER JOIN creator_campaign_tracking_events e ON e.id=a.conversion_event_id INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id'
+          if old_trend_join in source:
+              source = source.replace(old_trend_join, new_trend_join, 1)
+
+          required = [
+              "$scope['participant_id'] !== null && $participantColumn !== null",
+              '"e.status=\'accepted\'"',
+              'INNER JOIN creator_campaign_tracking_events e ON e.id=a.conversion_event_id',
+          ]
+          missing = [item for item in required if item not in source]
+          if missing:
+              raise SystemExit('Integrity patch incomplete: ' + ', '.join(missing))
+          path.write_text(source)
+          PY
+      - name: Commit analytics integrity fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add includes/creator-campaigns/analytics-query.php
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Harden Phase 10 analytics integrity"
+          git push origin HEAD:feature/creator-campaign-analytics-performance-v10-20260722
