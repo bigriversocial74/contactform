@@ -10,6 +10,7 @@
     </div>
     <div class="mg-v11-detail-actions">
       <a class="mg-btn mg-btn-soft" data-cc-detail-invite href="/merchant-creator-participation.php">Invite Creators</a>
+      <a class="mg-btn mg-btn-soft" href="/merchant-creator-crm.php">CRM</a>
       <a class="mg-btn mg-btn-soft" data-cc-detail-edit href="/merchant-creator-campaign-builder.php">Edit</a>
       <a class="mg-btn mg-btn-primary" data-cc-detail-preview href="/merchant-creator-analytics.php">Analytics</a>
     </div>
@@ -23,6 +24,7 @@
     <a href="/merchant-creator-deliverables.php">Deliverables</a>
     <a href="/merchant-creator-deliverables.php">Submissions</a>
     <a href="/merchant-creator-tracking.php">Tracking</a>
+    <a href="/merchant-creator-crm.php">CRM</a>
     <a href="/merchant-creator-compensation.php">Earnings</a>
     <a href="/merchant-creator-payouts.php">Payouts</a>
     <a href="/merchant-creator-analytics.php">Analytics</a>
