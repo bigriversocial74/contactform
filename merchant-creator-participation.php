@@ -10,6 +10,7 @@ $page_styles = [
     '/assets/css/merchant-creator-campaigns.css?v=2.0.0',
     '/assets/css/creator-campaign-participation.css?v=3.0.1',
     '/assets/css/creator-campaign-ui-v11.css?v=11.0.0',
+    '/assets/css/creator-campaign-ui-v11-components.css?v=11.0.0',
 ];
 $page_scripts = ['/assets/js/merchant-creator-campaign-participation.js?v=3.0.1'];
 $merchantView = 'creator_campaigns';
