@@ -55,7 +55,7 @@ $add('Messages center source context',$has($content['message_thread'],'creator_c
 $add('Merchant workspace page',$has($content['merchant_page'],'mg-app-shell'));
 $add('Creator authenticated page',$has($content['creator_page'],'mg_require_auth'));
 $add('Merchant UI opens canonical Messages',$has($content['merchant_js'],'/messages.php?thread='));
-$add('Clean MySQL lifecycle contract',$has($content['workflow'],'Phase 9 lifecycle'));
+$add('Clean MySQL lifecycle contract',$has($content['workflow'],'Phase 9 tables') && $has($content['workflow'],'Phase 9 Creator center access') && $has($content['workflow'],'Existing message delivery database bridges'));
 $add('No external-send or financial execution boundary',$has($content['docs'],'does not send marketing broadcasts'));
 
 $score=0;
