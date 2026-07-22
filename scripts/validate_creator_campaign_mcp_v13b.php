@@ -13,7 +13,9 @@ $read = static function (string $path) use ($root): string {
 };
 
 $tools = $read('services/mcp/src/tools/creatorCampaignDrafts.ts');
-$bridge = $read('api/internal/_mcp_creator_campaign_draft_bridge.php');
+$bridge = $read('api/internal/_mcp_creator_campaign_draft_bridge.php')
+    . $read('api/internal/_mcp_creator_campaign_draft_values.php')
+    . $read('api/internal/_mcp_creator_campaign_draft_service.php');
 $draftBridge = $read('api/internal/_mcp_draft_bridge.php');
 $sql = $read('database/20260722_creator_campaign_mcp_draft_scopes_v13b_single_install.sql');
 $nodeTest = $read('services/mcp/tests/creatorCampaignDrafts.test.mjs');
