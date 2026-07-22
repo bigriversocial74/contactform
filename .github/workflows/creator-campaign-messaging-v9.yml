@@ -20,6 +20,7 @@ on:
       - 'assets/js/creator-campaign-messages.js'
       - 'scripts/validate_creator_campaign_messaging_v9.php'
       - 'scripts/validate_creator_campaign_messaging_v9_mysql.php'
+      - 'scripts/validate_message_delivery_verification.php'
       - 'tests/phpunit/CreatorCampaignMessagingV9ContractTest.php'
       - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE9_MESSAGING.md'
       - '.github/workflows/creator-campaign-messaging-v9.yml'
@@ -57,6 +58,7 @@ jobs:
           php -l includes/creator-campaign-messages-view.php
           php -l scripts/validate_creator_campaign_messaging_v9.php
           php -l scripts/validate_creator_campaign_messaging_v9_mysql.php
+          php -l scripts/validate_message_delivery_verification.php
           php -l tests/phpunit/CreatorCampaignMessagingV9ContractTest.php
       - name: JavaScript syntax
         run: |
@@ -139,7 +141,17 @@ jobs:
         run: php scripts/validate_creator_campaign_payouts_v8_mysql.php
       - name: Apply Phase 9 SQL
         run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_messaging_notifications_v9_single_install.sql
-      - name: Phase 9 lifecycle
-        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php
+      - name: Phase 9 tables
+        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php tables
+      - name: Phase 9 permissions
+        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php permissions
+      - name: Phase 9 uniqueness and idempotency
+        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php indexes
+      - name: Phase 9 canonical message columns
+        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php columns
+      - name: Phase 9 duplicate-store boundary
+        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php boundaries
+      - name: Phase 9 Creator center access
+        run: php scripts/validate_creator_campaign_messaging_v9_mysql.php creator_access
       - name: Existing message delivery database bridges
         run: php scripts/validate_message_delivery_bridges.php
