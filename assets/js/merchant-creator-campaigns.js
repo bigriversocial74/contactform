@@ -2,32 +2,11 @@
   'use strict';
 
   const endpoint = '/api/merchant/creator-campaigns.php';
-  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const money = (cents, currency = 'USD') => new Intl.NumberFormat(undefined, {style:'currency', currency}).format((Number(cents) || 0) / 100);
-  const localInput = (value) => {
-    if (!value) return '';
-    const date = new Date(String(value).replace(' ', 'T') + 'Z');
-    if (Number.isNaN(date.getTime())) return '';
-    const offset = date.getTimezoneOffset() * 60000;
-    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-  };
   const query = (params) => new URLSearchParams(Object.entries(params).filter(([,value]) => value !== '' && value !== null && value !== undefined)).toString();
 
   async function apiGet(params) {
     const response = await fetch(`${endpoint}?${query(params)}`, {credentials:'same-origin', headers:{Accept:'application/json'}});
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Request failed.');
-    return payload.data || {};
-  }
-
-  async function apiPost(body) {
-    const response = await fetch(endpoint, {
-      method:'POST', credentials:'same-origin',
-      headers:{'Content-Type':'application/json', Accept:'application/json'},
-      body:JSON.stringify({...body, csrf_token:csrf}),
-    });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Request failed.');
     return payload.data || {};
@@ -53,8 +32,12 @@
 
     const renderMetrics = (summary) => {
       const cards = [
-        ['Total',summary.total],['Drafts',summary.drafts],['Scheduled',summary.scheduled],
-        ['Active',summary.active],['Paused',summary.paused],['Completed',summary.completed],['Archived',summary.archived],
+        ['Active Campaigns',summary.active],
+        ['Draft Campaigns',summary.drafts],
+        ['Scheduled',summary.scheduled],
+        ['Paused',summary.paused],
+        ['Completed',summary.completed],
+        ['Campaign Total',summary.total],
       ];
       metrics.innerHTML = cards.map(([label,value]) => `<article class="mg-cc-metric"><span>${esc(label)}</span><strong>${Number(value)||0}</strong></article>`).join('');
     };
@@ -70,21 +53,25 @@
       list.innerHTML = campaigns.map((campaign) => {
         const validation = campaign.builder_validation || {};
         const score = Number(validation.phase2_score || 0);
+        const campaignUrl = `/merchant-creator-campaign-detail.php?campaign=${encodeURIComponent(campaign.public_id)}`;
         return `<article class="mg-cc-campaign-card">
-          <div class="mg-cc-card-cover"></div>
+          <a class="mg-cc-card-cover" href="${campaignUrl}" aria-label="View ${esc(campaign.title)}"></a>
           <div class="mg-cc-card-body">
-            <div class="mg-cc-card-top"><div><h2>${esc(campaign.title)}</h2><span class="mg-cc-card-ref">${esc(campaign.internal_reference)}</span></div><span class="mg-cc-pill ${statusClass(campaign.status)}">${esc(campaign.status)}</span></div>
-            <p>${esc(campaign.description || campaign.objective || 'Creator campaign draft')}</p>
-            <div class="mg-cc-card-meta"><div><strong>${Number(campaign.product_count)||0}</strong><span>Products</span></div><div><strong>${Number(campaign.eligibility_rule_count)||0}</strong><span>Rules</span></div><div><strong>${score}</strong><span>Phase 2 score</span></div></div>
-            <div class="mg-cc-progress" aria-label="Phase 2 readiness ${score}%"><i style="width:${Math.max(0,Math.min(100,score))}%"></i></div>
-            <div class="mg-cc-card-actions"><a class="mg-btn mg-btn-soft" href="/merchant-creator-campaign-builder.php?campaign=${encodeURIComponent(campaign.public_id)}&step=10">Review</a><a class="mg-btn mg-btn-primary" href="/merchant-creator-campaign-builder.php?campaign=${encodeURIComponent(campaign.public_id)}">Edit Builder</a></div>
+            <div class="mg-cc-card-top"><div><h2><a href="${campaignUrl}">${esc(campaign.title)}</a></h2><span class="mg-cc-card-ref">${esc(campaign.objective || campaign.internal_reference || '')}</span></div><span class="mg-cc-pill ${statusClass(campaign.status)}">${esc(String(campaign.status || '').replace(/_/g,' '))}</span></div>
+            <p>${esc(campaign.description || campaign.objective || 'Creator campaign')}</p>
+            <div class="mg-cc-card-meta"><div><strong>${Number(campaign.product_count)||0}</strong><span>Products</span></div><div><strong>${Number(campaign.eligibility_rule_count)||0}</strong><span>Eligibility rules</span></div><div><strong>${score}</strong><span>Readiness</span></div></div>
+            <div class="mg-cc-progress" aria-label="Campaign readiness ${score}%"><i style="width:${Math.max(0,Math.min(100,score))}%"></i></div>
+            <div class="mg-cc-card-actions"><a class="mg-btn mg-btn-soft" href="${campaignUrl}">View Campaign</a><a class="mg-btn mg-btn-primary" href="/merchant-creator-campaign-builder.php?campaign=${encodeURIComponent(campaign.public_id)}">Edit</a></div>
           </div>
         </article>`;
       }).join('');
     };
 
     async function load() {
-      loading.classList.remove('mg-hidden'); error.classList.add('mg-hidden'); empty.classList.add('mg-hidden'); list.classList.add('mg-hidden');
+      loading.classList.remove('mg-hidden');
+      error.classList.add('mg-hidden');
+      empty.classList.add('mg-hidden');
+      list.classList.add('mg-hidden');
       const data = Object.fromEntries(new FormData(form).entries());
       try {
         const response = await apiGet({action:'list', page, limit:24, ...data});
@@ -95,7 +82,7 @@
         pagination.querySelector('[data-cc-page-label]').textContent = `Page ${Number(meta.page)||1} of ${Number(meta.pages)||1} · ${Number(meta.total)||0} total`;
         pagination.querySelector('[data-cc-prev-page]').disabled = Number(meta.page || 1) <= 1;
         pagination.querySelector('[data-cc-next-page]').disabled = Number(meta.page || 1) >= Number(meta.pages || 1);
-        live.textContent = `${(response.campaigns || []).length} creator campaign${(response.campaigns || []).length === 1 ? '' : 's'} loaded.`;
+        live.textContent = `${(response.campaigns || []).length} Creator campaign${(response.campaigns || []).length === 1 ? '' : 's'} loaded.`;
       } catch (err) {
         error.classList.remove('mg-hidden');
         error.querySelector('[data-cc-error-message]').textContent = err.message;
