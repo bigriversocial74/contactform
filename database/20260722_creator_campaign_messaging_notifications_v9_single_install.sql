@@ -100,4 +100,10 @@ SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
 ON p.slug IN ('creator.campaign_messages.view_own','creator.campaign_messages.send_own')
 WHERE r.slug IN ('creator','admin','super_admin');
 
+-- Creator Campaign participants use the canonical Messages and Notifications centers.
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
+ON p.slug IN ('gift.message.send','notification.view')
+WHERE r.slug='creator';
+
 COMMIT;
