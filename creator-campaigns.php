@@ -11,6 +11,7 @@ $page_body_class = 'mg-creator-campaign-workspace-page mg-creator-campaign-ui-v1
 $page_styles = [
     '/assets/css/creator-campaign-participation.css?v=3.0.1',
     '/assets/css/creator-campaign-ui-v11.css?v=11.0.0',
+    '/assets/css/creator-campaign-ui-v11-components.css?v=11.0.0',
 ];
 $page_scripts = ['/assets/js/account-sidebar.js','/assets/js/creator-campaign-participation.js?v=3.0.1'];
 $page_manifest = [
