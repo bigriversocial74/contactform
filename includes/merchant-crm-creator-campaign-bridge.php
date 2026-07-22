@@ -85,14 +85,14 @@ function mg_merchant_crm_creator_campaign_matching_contacts(PDO $pdo, int $merch
     if ($query === '' || !mg_merchant_crm_creator_campaign_bridge_installed($pdo)) return [];
     $like = mg_merchant_crm_search_like($query);
     $stmt = $pdo->prepare(
-        "SELECT DISTINCT mc.public_id
+        "SELECT mc.public_id
          FROM merchant_crm_contact_creator_campaigns r
          INNER JOIN merchant_crm_contacts mc ON mc.id=r.crm_contact_id
          INNER JOIN creator_campaigns cc ON cc.id=r.creator_campaign_id
          WHERE r.merchant_user_id=? AND (
            LOWER(COALESCE(cc.title,'')) LIKE ? ESCAPE '\\\\' OR LOWER(COALESCE(cc.public_id,'')) LIKE ? ESCAPE '\\\\'
            OR LOWER(COALESCE(r.relationship_type,'')) LIKE ? ESCAPE '\\\\' OR LOWER(COALESCE(r.last_event_type,'')) LIKE ? ESCAPE '\\\\'
-         ) ORDER BY MAX(r.last_event_at) DESC LIMIT ".max(1,min(100,$limit))
+         ) GROUP BY mc.public_id ORDER BY MAX(r.last_event_at) DESC LIMIT ".max(1,min(100,$limit))
     );
     $stmt->execute([$merchantId,$like,$like,$like,$like]);
     $ids = array_map('strval',$stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
