@@ -42,7 +42,7 @@ $add('Internal note idempotency',$has($content['sql'],'uq_cc_internal_note_idemp
 
 $add('Workspace participant ownership',$has($content['repository'],'c.workspace_id=?'));
 $add('Creator participant ownership',$has($content['repository'],'p.creator_user_id=?'));
-$add('Canonical participant membership',$has($content['repository'],'message_thread_participants'));
+$add('Canonical participant membership',$has($content['repository'],'message_thread_participants') && $has($content['query'],"COALESCE(mc.status,'not_started')"));
 $add('CSRF on merchant writes',$has($content['merchant_api'],'mg_require_csrf_for_write'));
 $add('CSRF on Creator writes',$has($content['creator_api'],'mg_require_csrf_for_write'));
 
