@@ -62,7 +62,7 @@ function mg_mcp_creator_campaign_action_projection(array $row,bool $duplicate=fa
 
 function mg_mcp_creator_campaign_action_attach_receipt(PDO $pdo,array $row): array
 {
-    $stmt=$pdo->prepare('SELECT public_id,status,canonical_service,canonical_action,before_state_token,after_state_token,result_reference_type,result_reference_public_id,amount_cents,quantity,error_code,error_message,metadata_json,attempted_at,completed_at FROM mcp_action_receipts WHERE action_id=? ORDER BY id DESC LIMIT 1');
+    $stmt=$pdo->prepare('SELECT public_id,status,canonical_service,canonical_action,before_state_token,after_state_token,result_reference_type,result_reference_public_id,amount_cents,quantity,metadata_json,attempted_at,completed_at FROM mcp_action_receipts WHERE action_id=? ORDER BY id DESC LIMIT 1');
     $stmt->execute([(int)$row['id']]);$receipt=$stmt->fetch(PDO::FETCH_ASSOC);
     if($receipt){$receipt['metadata']=mg_mcp_creator_campaign_action_decode($receipt['metadata_json']??null);unset($receipt['metadata_json']);$row['receipt']=$receipt;}
     return $row;
