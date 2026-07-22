@@ -7,7 +7,7 @@
       <h1>Tracking & Attribution</h1>
       <p>Create Creator share links, inspect privacy-safe events, reconcile suspicious activity, and review attribution decisions.</p>
     </div>
-    <div class="mg-action-row"><a class="mg-btn mg-btn-soft" href="/merchant-creator-compensation.php">Compensation & Earnings</a><button class="mg-btn mg-btn-primary" type="button" data-cct-new-source>New Tracking Source</button></div>
+    <div class="mg-action-row"><a class="mg-btn mg-btn-soft" href="/merchant-creator-analytics.php">Analytics</a><a class="mg-btn mg-btn-soft" href="/merchant-creator-compensation.php">Compensation & Earnings</a><button class="mg-btn mg-btn-primary" type="button" data-cct-new-source>New Tracking Source</button></div>
   </header>
   <section class="mg-cct-metrics" data-cct-metrics></section>
   <nav class="mg-cct-tabs" aria-label="Tracking views">
