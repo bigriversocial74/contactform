@@ -22,8 +22,7 @@ final class CreatorCampaignMcpCanonicalV13cContractTest extends TestCase
         $tools=$this->read('services/mcp/src/tools/creatorCampaignActions.ts');$bridge=$this->read('api/internal/_mcp_creator_campaign_action_bridge.php');$request=$this->read('includes/mcp-creator-campaign-actions/request-service.php');
         self::assertStringContainsString('requestCreatorCampaignAction',$tools);self::assertStringContainsString('performed:false',$tools);self::assertStringContainsString('waiting_for_owner_approval',$tools);
         self::assertStringContainsString('mg_mcp_creator_campaign_action_request',$bridge);self::assertStringNotContainsString('mg_mcp_creator_campaign_action_execute',$bridge);
-        self::assertStringContainsString('INSERT INTO mcp_automation_runs',$request);self::assertStringContainsString('INSERT INTO mcp_automation_actions',$request);self::assertStringContainsString('INSERT INTO mcp_creator_campaign_action_approvals',$request);
-        self::assertDoesNotMatchRegularExpression('/(?:INSERT INTO|UPDATE|DELETE FROM) creator_campaign_/',$request);
+        self::assertStringContainsString('INSERT INTO mcp_automation_runs',$request);self::assertStringContainsString('INSERT INTO mcp_automation_actions',$request);self::assertStringContainsString('INSERT INTO mcp_creator_campaign_action_approvals',$request);self::assertDoesNotMatchRegularExpression('/(?:INSERT INTO|UPDATE|DELETE FROM) creator_campaign_/',$request);
     }
 
     public function testOwnerApprovalAndExecutionAreSeparate():void
@@ -43,8 +42,8 @@ final class CreatorCampaignMcpCanonicalV13cContractTest extends TestCase
     public function testOauthAndGrantAuthorityRemainBounded():void
     {
         $oauth=$this->read('includes/mcp-oauth/operation-classes.php').$this->read('includes/mcp-oauth/clients.php');$grants=$this->read('includes/mcp-automations/bootstrap.php').$this->read('includes/mcp-automations/create-grant.php');
-        self::assertStringContainsString("$registrationType==='dynamic'?'read'",$oauth);self::assertStringContainsString("['read', 'draft', 'approval_gated']",$oauth);self::assertStringContainsString('owner_execution_required',$oauth);
-        self::assertStringContainsString('creator_campaign_lifecycle_actions',$grants);self::assertStringContainsString('creator_campaign_financial_actions',$grants);self::assertStringContainsString("$riskCeiling!=='critical'",$grants);self::assertStringContainsString('external_client_direct_execution',$grants);
+        self::assertStringContainsString('$registrationType===\'dynamic\'?\'read\'',$oauth);self::assertStringContainsString("['read', 'draft', 'approval_gated']",$oauth);self::assertStringContainsString('owner_execution_required',$oauth);
+        self::assertStringContainsString('creator_campaign_lifecycle_actions',$grants);self::assertStringContainsString('creator_campaign_financial_actions',$grants);self::assertStringContainsString('$riskCeiling!==\'critical\'',$grants);self::assertStringContainsString('external_client_direct_execution',$grants);
     }
 
     public function testEarningDecisionsAreNativeAndPermissioned():void
