@@ -20,3 +20,11 @@ require_once __DIR__ . '/agreement-service.php';
 require_once __DIR__ . '/application-service.php';
 require_once __DIR__ . '/invitation-service.php';
 require_once __DIR__ . '/participation-query.php';
+
+require_once __DIR__ . '/deliverable-definitions.php';
+require_once __DIR__ . '/deliverable-context.php';
+require_once __DIR__ . '/deliverable-repository.php';
+require_once __DIR__ . '/deliverable-notification.php';
+require_once __DIR__ . '/deliverable-service.php';
+require_once __DIR__ . '/submission-service.php';
+require_once __DIR__ . '/deliverable-query.php';
