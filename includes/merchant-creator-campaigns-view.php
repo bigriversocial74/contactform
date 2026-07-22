@@ -7,6 +7,7 @@
       <p>Manage creator campaigns, track performance, review content, and grow local impact.</p>
     </div>
     <div class="mg-cc-head-actions">
+      <a class="mg-btn mg-btn-soft" href="/merchant-creator-crm.php">Creator CRM</a>
       <a class="mg-btn mg-btn-soft" href="/merchant-creator-analytics.php">Analytics</a>
       <a class="mg-btn mg-btn-primary" href="/merchant-creator-campaign-builder.php">Create Campaign</a>
     </div>
@@ -17,6 +18,7 @@
     <a href="/merchant-creator-participation.php">Applications</a>
     <a href="/merchant-creator-deliverables.php">Content Review</a>
     <a href="/merchant-creator-tracking.php">Tracking</a>
+    <a href="/merchant-creator-crm.php">CRM</a>
     <a href="/merchant-creator-compensation.php">Earnings</a>
     <a href="/merchant-creator-payouts.php">Payouts</a>
     <a href="/merchant-creator-analytics.php">Analytics</a>
@@ -35,7 +37,7 @@
         <a href="/merchant-creator-participation.php"><strong>Applications & agreements</strong><span>Review pending Creator participation and agreement acceptance.</span></a>
         <a href="/merchant-creator-deliverables.php"><strong>Content & deliverables</strong><span>Resolve revisions, approvals, proof, and overdue work.</span></a>
         <a href="/merchant-creator-tracking.php"><strong>Attribution review</strong><span>Inspect tracking sources, conversion events, and overrides.</span></a>
-        <a href="/merchant-creator-compensation.php"><strong>Earnings & budget</strong><span>Review earning qualification, commitments, and budget health.</span></a>
+        <a href="/merchant-creator-crm.php"><strong>CRM lifecycle</strong><span>Connect Creator partners and attributed customers to canonical CRM contacts.</span></a>
       </div>
     </article>
     <article class="mg-cc-panel mg-v11-activity-panel">
@@ -46,7 +48,7 @@
         <a href="/merchant-creator-campaign-builder.php"><strong>Create campaign</strong><span>Open the ten-step campaign builder.</span></a>
         <a href="/merchant-creator-participation.php"><strong>Invite creators</strong><span>Find approved Creator-model users.</span></a>
         <a href="/merchant-creator-deliverables.php"><strong>Review submissions</strong><span>Approve or request content revisions.</span></a>
-        <a href="/merchant-creator-analytics.php"><strong>Review performance</strong><span>Compare campaigns, creators, channels, and outcomes.</span></a>
+        <a href="/merchant-creator-crm.php"><strong>Reconcile CRM</strong><span>Project Creator and customer lifecycle events into canonical contacts.</span></a>
       </div>
     </article>
   </section>
