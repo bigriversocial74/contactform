@@ -11,19 +11,16 @@ on:
       - 'api/merchant/creator-campaign-participation.php'
       - 'creator-campaigns.php'
       - 'merchant-creator-participation.php'
+      - 'merchant-creator-campaign-builder.php'
       - 'includes/creator-campaigns-participation-view.php'
       - 'includes/merchant-creator-campaign-participation-view.php'
-      - 'includes/merchant-creator-campaigns-view.php'
-      - 'includes/merchant-view.php'
-      - 'includes/merchant-creator-campaign-builder-view.php'
       - 'assets/css/creator-campaign-participation.css'
+      - 'assets/js/creator-campaign-builder-phase3.js'
       - 'assets/js/creator-campaign-participation.js'
       - 'assets/js/merchant-creator-campaign-participation.js'
       - 'scripts/validate_creator_campaign_participation_v3.php'
       - 'scripts/validate_creator_campaign_participation_v3_mysql.php'
       - 'tests/phpunit/CreatorCampaignParticipationV3ContractTest.php'
-      - 'tests/phpunit/CreatorCampaignMerchantBuilderV2ContractTest.php'
-      - 'scripts/validate_creator_campaign_merchant_builder_v2.php'
       - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE3_PARTICIPATION.md'
       - '.github/workflows/creator-campaign-participation-v3.yml'
   workflow_dispatch:
@@ -73,28 +70,25 @@ jobs:
           php -l api/merchant/creator-campaign-participation.php
           php -l creator-campaigns.php
           php -l merchant-creator-participation.php
+          php -l merchant-creator-campaign-builder.php
           php -l includes/creator-campaigns-participation-view.php
           php -l includes/merchant-creator-campaign-participation-view.php
-          php -l includes/merchant-creator-campaigns-view.php
-          php -l includes/merchant-view.php
-          php -l includes/merchant-creator-campaign-builder-view.php
           php -l scripts/validate_creator_campaign_participation_v3.php
           php -l scripts/validate_creator_campaign_participation_v3_mysql.php
           php -l tests/phpunit/CreatorCampaignParticipationV3ContractTest.php
-          php -l tests/phpunit/CreatorCampaignMerchantBuilderV2ContractTest.php
-          php -l scripts/validate_creator_campaign_merchant_builder_v2.php
       - name: JavaScript syntax
         run: |
+          node --check assets/js/creator-campaign-builder-phase3.js
           node --check assets/js/creator-campaign-participation.js
           node --check assets/js/merchant-creator-campaign-participation.js
-      - name: Scored Phase validation
+      - name: Phase 2 compatibility validation
         run: |
           php scripts/validate_creator_campaign_merchant_builder_v2.php
-          php scripts/validate_creator_campaign_participation_v3.php
-      - name: PHPUnit contracts
-        run: |
           vendor/bin/phpunit tests/phpunit/CreatorCampaignMerchantBuilderV2ContractTest.php
-          vendor/bin/phpunit tests/phpunit/CreatorCampaignParticipationV3ContractTest.php
+      - name: Phase 3 scored validation
+        run: php scripts/validate_creator_campaign_participation_v3.php
+      - name: Phase 3 PHPUnit contract
+        run: vendor/bin/phpunit tests/phpunit/CreatorCampaignParticipationV3ContractTest.php
       - name: Migration manifest
         run: php scripts/validate_migration_manifest.php
 
