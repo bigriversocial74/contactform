@@ -1,0 +1,492 @@
+/* Creator Campaign Phase 11 — six-screen mockup alignment
+   The repository's six approved mockups define workspace composition and density.
+   Existing Microgifter app chrome, controls, permissions and runtime hooks remain canonical. */
+:root{
+  --cc11-bg:#f7f8fa;
+  --cc11-panel:#fff;
+  --cc11-panel-soft:#fafbfc;
+  --cc11-line:#e5e8ee;
+  --cc11-line-strong:#d6dbe4;
+  --cc11-ink:#101318;
+  --cc11-muted:#677184;
+  --cc11-blue:#2667d8;
+  --cc11-blue-soft:#edf4ff;
+  --cc11-green:#16835b;
+  --cc11-green-soft:#eaf8f1;
+  --cc11-amber:#b36a00;
+  --cc11-amber-soft:#fff5df;
+  --cc11-red:#c43c35;
+  --cc11-red-soft:#fff0ef;
+  --cc11-radius:14px;
+  --cc11-shadow:0 10px 28px rgba(16,24,40,.055);
+}
+
+.mg-creator-campaigns-page,
+.mg-creator-campaign-builder-page,
+.mg-creator-participation-page,
+.mg-creator-deliverables-page,
+.mg-creator-campaign-workspace-page,
+.mg-creator-deliverables-account-page{
+  background:var(--cc11-bg)!important;
+  color:var(--cc11-ink);
+}
+
+/* Shared six-screen workspace frame */
+.mg-cc-workspace,
+.mg-cc-builder,
+.mg-ccp-shell,
+.mg-ccdv,
+.mg-ccp-creator-shell{
+  width:min(100%,1480px);
+  margin:0 auto;
+  padding:22px 24px 38px;
+}
+
+.mg-cc-page-head,
+.mg-ccdv-head,
+.mg-ccp-creator-hero{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:22px;
+  margin:0 0 18px;
+  padding:0;
+  background:transparent;
+  border:0;
+}
+
+.mg-cc-page-head h1,
+.mg-ccdv-head h1,
+.mg-ccp-creator-hero h1{
+  margin:3px 0 5px;
+  font-size:clamp(1.65rem,2.2vw,2.35rem);
+  line-height:1.08;
+  letter-spacing:-.04em;
+  color:var(--cc11-ink);
+}
+
+.mg-cc-page-head p,
+.mg-ccdv-head p,
+.mg-ccp-creator-hero p{
+  margin:0;
+  max-width:760px;
+  color:var(--cc11-muted);
+  line-height:1.5;
+  font-size:.92rem;
+}
+
+.mg-eyebrow{
+  color:#596579;
+  font-size:.69rem;
+  font-weight:850;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+
+.mg-cc-back{
+  display:inline-flex;
+  align-items:center;
+  margin:0 0 8px;
+  color:#566278;
+  font-size:.82rem;
+  font-weight:750;
+  text-decoration:none;
+}
+.mg-cc-back:hover{color:var(--cc11-blue)}
+
+.mg-btn{
+  border-radius:9px!important;
+  min-height:38px;
+  padding:9px 14px!important;
+  font-size:.82rem!important;
+  font-weight:760!important;
+  box-shadow:none!important;
+}
+.mg-btn-primary{background:var(--cc11-blue)!important;border-color:var(--cc11-blue)!important;color:#fff!important}
+.mg-btn-soft{background:#fff!important;border-color:var(--cc11-line-strong)!important;color:#253149!important}
+.mg-btn-ghost{background:transparent!important;border-color:var(--cc11-line)!important;color:#4d596d!important}
+.mg-btn-danger{background:#fff!important;border-color:#efaaa6!important;color:#b82f29!important}
+
+/* Screen 1: Merchant Creator Campaign Overview */
+.mg-cc-workspace[data-cc-overview]{padding-top:18px}
+.mg-cc-workspace[data-cc-overview] .mg-cc-page-head{align-items:center}
+.mg-cc-workspace[data-cc-overview] .mg-cc-page-head p{font-size:.84rem}
+
+.mg-cc-metrics,
+.mg-ccp-metrics,
+.mg-ccdv-metrics{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(128px,1fr));
+  gap:10px;
+  margin:0 0 14px;
+}
+.mg-cc-metric,
+.mg-ccp-metric,
+.mg-ccdv-metric{
+  min-height:92px;
+  padding:14px 15px;
+  background:var(--cc11-panel);
+  border:1px solid var(--cc11-line);
+  border-radius:12px;
+  box-shadow:0 4px 15px rgba(16,24,40,.035);
+}
+.mg-cc-metric span,
+.mg-ccp-metric span,
+.mg-ccdv-metric span{
+  display:block;
+  color:#667187;
+  font-size:.7rem;
+  font-weight:760;
+  letter-spacing:.015em;
+  text-transform:none;
+}
+.mg-cc-metric strong,
+.mg-ccp-metric strong,
+.mg-ccdv-metric strong{
+  display:block;
+  margin-top:7px;
+  font-size:1.55rem;
+  line-height:1;
+  letter-spacing:-.04em;
+  color:var(--cc11-ink);
+}
+.mg-cc-metric strong::after,
+.mg-ccp-metric strong::after,
+.mg-ccdv-metric strong::after{
+  content:"";
+  display:block;
+  width:26px;
+  height:2px;
+  margin-top:10px;
+  border-radius:999px;
+  background:#6ea17c;
+  opacity:.7;
+}
+
+.mg-cc-grid-top{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(300px,.78fr);
+  gap:12px;
+  margin:0 0 14px;
+}
+.mg-cc-panel,
+.mg-cc-campaign-card,
+.mg-cc-step-panel,
+.mg-cc-summary,
+.mg-cc-step-nav,
+.mg-ccp-list,
+.mg-ccdv-list{
+  background:var(--cc11-panel);
+  border:1px solid var(--cc11-line);
+  border-radius:var(--cc11-radius);
+  box-shadow:var(--cc11-shadow);
+}
+.mg-cc-panel{padding:16px}
+.mg-cc-panel>header{margin-bottom:12px}
+.mg-cc-panel h2{font-size:1rem!important;margin:2px 0 0!important}
+.mg-cc-health{gap:8px}
+.mg-cc-health div{padding:12px;border-radius:10px;background:var(--cc11-panel-soft);border:1px solid #eef0f4}
+
+.mg-cc-filters,
+.mg-ccp-filters,
+.mg-ccdv-toolbar{
+  margin:0 0 12px;
+  padding:11px 12px;
+  background:var(--cc11-panel);
+  border:1px solid var(--cc11-line);
+  border-radius:12px;
+  box-shadow:none;
+}
+.mg-cc-filters{grid-template-columns:minmax(250px,1fr) 190px auto}
+.mg-cc-filters input,.mg-cc-filters select,
+.mg-ccp-filters input,.mg-ccp-filters select,
+.mg-ccdv-toolbar input,.mg-ccdv-toolbar select{
+  min-height:38px;
+  border-radius:8px!important;
+  border-color:var(--cc11-line-strong)!important;
+  font-size:.82rem!important;
+}
+
+.mg-cc-campaign-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.mg-cc-campaign-card{display:grid;grid-template-columns:92px minmax(0,1fr);overflow:hidden;min-height:164px}
+.mg-cc-card-cover{
+  width:100%;height:100%!important;min-height:164px;
+  background:linear-gradient(145deg,#efe5d6 0%,#baa47e 45%,#263044 100%)!important;
+}
+.mg-cc-card-body{padding:14px 15px!important}
+.mg-cc-card-top h2{font-size:.98rem!important}
+.mg-cc-card-body>p{min-height:0!important;margin:8px 0;color:var(--cc11-muted);font-size:.8rem;line-height:1.45}
+.mg-cc-card-meta{margin:10px 0!important;gap:6px!important}
+.mg-cc-card-meta div{padding:7px 8px!important;border-radius:7px!important}
+.mg-cc-card-actions{justify-content:flex-end!important;margin-top:10px!important}
+
+/* Screen 2: Campaign Builder — Compensation reference */
+.mg-cc-builder{max-width:none;padding:16px 20px 32px}
+.mg-cc-builder .mg-cc-page-head{margin-bottom:12px;padding:0 2px}
+.mg-cc-builder .mg-cc-page-head h1{font-size:1.45rem}
+.mg-cc-builder .mg-cc-page-head p{display:none}
+.mg-cc-builder-layout{
+  grid-template-columns:210px minmax(560px,1fr) 286px!important;
+  gap:12px!important;
+  align-items:start;
+}
+.mg-cc-step-nav{
+  top:78px!important;
+  padding:8px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+.mg-cc-step-nav button{
+  min-height:46px;
+  padding:7px 8px!important;
+  border-radius:8px!important;
+  grid-template-columns:24px minmax(0,1fr)!important;
+  gap:0 8px!important;
+}
+.mg-cc-step-nav button>span{width:23px!important;height:23px!important;border-radius:50%!important;font-size:.68rem}
+.mg-cc-step-nav strong{font-size:.75rem!important}
+.mg-cc-step-nav small{font-size:.62rem!important}
+.mg-cc-step-nav button.is-active{background:var(--cc11-blue-soft)!important;color:#245ab4!important}
+
+.mg-cc-step-panel{
+  padding:20px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+.mg-cc-step-panel>header{padding-bottom:13px!important;margin-bottom:15px!important}
+.mg-cc-step-panel h2{font-size:1.28rem!important}
+.mg-cc-step-panel header p{font-size:.82rem}
+.mg-cc-form-grid{gap:12px!important}
+.mg-cc-builder-form label{font-size:.75rem!important}
+.mg-cc-builder-form input,.mg-cc-builder-form select,.mg-cc-builder-form textarea{
+  border-radius:8px!important;
+  padding:9px 10px!important;
+  font-size:.82rem!important;
+}
+.mg-cc-repeatable-row{border-radius:9px!important;padding:10px!important}
+.mg-cc-builder-footer{border-radius:10px!important;padding:10px 12px!important}
+.mg-cc-summary{
+  top:78px!important;
+  padding:15px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+.mg-cc-summary h2{font-size:1rem!important}
+.mg-cc-summary-score{padding:11px!important;border-radius:9px!important}
+.mg-cc-summary-score strong{font-size:1.65rem!important}
+.mg-cc-summary dl div{padding:8px 0!important;font-size:.76rem}
+.mg-cc-summary-checklist div{font-size:.72rem!important}
+
+/* Screen 3: Merchant Campaign Detail language on participation/tracking/analytics pages */
+.mg-ccp-shell,
+.mg-ccdv{padding-top:17px}
+.mg-ccp-shell .mg-cc-page-head,
+.mg-ccdv .mg-ccdv-head{
+  padding:12px 14px;
+  background:var(--cc11-panel);
+  border:1px solid var(--cc11-line);
+  border-radius:12px;
+}
+.mg-ccp-shell .mg-cc-page-head h1,
+.mg-ccdv .mg-ccdv-head h1{font-size:1.45rem}
+.mg-ccp-tabs,
+.mg-ccdv-tabs,
+.mg-ccp-creator-tabs{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  overflow-x:auto;
+  border-bottom:1px solid var(--cc11-line);
+  background:transparent;
+  padding:0 2px;
+  margin:0 0 12px;
+}
+.mg-ccp-tabs button,
+.mg-ccdv-tabs button,
+.mg-ccp-creator-tabs button{
+  min-width:max-content;
+  border:0!important;
+  border-bottom:2px solid transparent!important;
+  border-radius:0!important;
+  background:transparent!important;
+  padding:10px 12px!important;
+  color:#5f6a7d!important;
+  font-size:.76rem!important;
+  font-weight:730!important;
+}
+.mg-ccp-tabs button.is-active,
+.mg-ccdv-tabs button.is-active,
+.mg-ccp-creator-tabs button.is-active{
+  color:var(--cc11-blue)!important;
+  border-bottom-color:var(--cc11-blue)!important;
+}
+
+/* Screen 4: Merchant Applications and Content Review */
+.mg-ccp-list,
+.mg-ccdv-list{
+  min-height:420px;
+  overflow:hidden;
+  padding:0!important;
+}
+.mg-ccp-list>article,
+.mg-ccdv-list>article{
+  border-radius:0!important;
+  border:0!important;
+  border-bottom:1px solid var(--cc11-line)!important;
+  box-shadow:none!important;
+}
+.mg-ccp-list>article:last-child,
+.mg-ccdv-list>article:last-child{border-bottom:0!important}
+
+.mg-ccp-dialog,
+.mg-ccdv-dialog{background:rgba(16,19,24,.36)!important;backdrop-filter:blur(3px)}
+.mg-ccp-dialog-card,
+.mg-ccdv-dialog-card{
+  width:min(1120px,94vw)!important;
+  max-height:90vh;
+  border-radius:14px!important;
+  border:1px solid var(--cc11-line)!important;
+  box-shadow:0 26px 70px rgba(16,24,40,.22)!important;
+}
+.mg-ccdv-dialog-card.is-review{
+  width:min(1280px,96vw)!important;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+}
+.mg-ccdv-review-actions{
+  display:flex!important;
+  justify-content:flex-end!important;
+  flex-wrap:wrap;
+  gap:8px!important;
+}
+.mg-ccdv-form-grid{gap:12px!important}
+.mg-ccdv-form-grid label{font-size:.76rem!important}
+.mg-ccdv-form-grid input,.mg-ccdv-form-grid select,.mg-ccdv-form-grid textarea,
+.mg-ccp-dialog input,.mg-ccp-dialog select,.mg-ccp-dialog textarea{
+  border-radius:8px!important;
+  border-color:var(--cc11-line-strong)!important;
+}
+
+/* Screen 5: Creator Discover Campaigns */
+.mg-creator-campaign-account-shell,
+.mg-creator-campaign-account-page .mg-account-shell{
+  background:var(--cc11-bg)!important;
+}
+.mg-ccp-creator-shell{max-width:none;padding:18px 22px 34px}
+.mg-ccp-creator-hero{
+  align-items:center;
+  margin-bottom:12px;
+}
+.mg-ccp-creator-hero h1{font-size:1.55rem}
+.mg-ccp-creator-hero p{font-size:.83rem}
+.mg-ccp-filters{
+  display:grid!important;
+  grid-template-columns:minmax(230px,1.2fr) repeat(2,minmax(160px,.65fr)) auto!important;
+  gap:8px!important;
+  align-items:end;
+}
+.mg-ccp-creator-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px!important;
+}
+.mg-ccp-creator-grid>article{
+  overflow:hidden;
+  border:1px solid var(--cc11-line)!important;
+  border-radius:12px!important;
+  background:var(--cc11-panel)!important;
+  box-shadow:var(--cc11-shadow)!important;
+}
+.mg-ccp-creator-grid img{aspect-ratio:16/8;object-fit:cover;width:100%}
+
+/* Screen 6: Creator Active Campaign Workspace */
+.mg-ccp-creator-tabs button[data-ccp-creator-tab="active_campaigns"]::after{
+  content:"Action center";
+  margin-left:6px;
+  padding:2px 6px;
+  border-radius:999px;
+  color:#4c6280;
+  background:#edf1f6;
+  font-size:.58rem;
+  vertical-align:middle;
+}
+.mg-creator-deliverables-account-page .mg-account-shell{background:var(--cc11-bg)!important}
+.mg-creator-deliverables-account-page .mg-ccdv{
+  max-width:none;
+  padding:18px 22px 34px;
+}
+.mg-creator-deliverables-account-page .mg-ccdv-head{
+  padding:12px 14px;
+  background:var(--cc11-panel);
+  border:1px solid var(--cc11-line);
+  border-radius:12px;
+}
+
+/* Common operational cards produced by the Phase 3–10 JS controllers */
+.mg-ccp-card,
+.mg-ccdv-card,
+.mg-cca-card,
+.mg-cct-card,
+.mg-cce-card,
+.mg-ccpayout-card{
+  background:var(--cc11-panel)!important;
+  border:1px solid var(--cc11-line)!important;
+  border-radius:11px!important;
+  box-shadow:none!important;
+}
+
+.mg-cc-pill,
+.mg-ccp-pill,
+.mg-ccdv-pill{
+  min-height:24px!important;
+  padding:3px 8px!important;
+  border-radius:999px!important;
+  font-size:.65rem!important;
+  letter-spacing:.02em!important;
+}
+
+.mg-cc-state,
+.mg-ccp-state,
+.mg-ccdv-state{
+  min-height:210px!important;
+  border:1px dashed var(--cc11-line-strong)!important;
+  border-radius:12px!important;
+  background:var(--cc11-panel)!important;
+  color:var(--cc11-muted)!important;
+}
+.mg-cc-live,.mg-ccp-live,.mg-ccdv-live{min-height:18px!important;font-size:.76rem!important}
+.mg-cc-pagination{border-radius:11px!important;box-shadow:none!important}
+
+/* Avoid oversized hero/dashboard behavior */
+.mg-cc-workspace h1,
+.mg-cc-builder h1,
+.mg-ccp-shell h1,
+.mg-ccdv h1,
+.mg-ccp-creator-shell h1{max-width:none}
+
+@media(max-width:1280px){
+  .mg-cc-metrics,.mg-ccp-metrics,.mg-ccdv-metrics{grid-template-columns:repeat(3,1fr)}
+  .mg-cc-builder-layout{grid-template-columns:190px minmax(0,1fr)!important}
+  .mg-cc-summary{grid-column:1/-1;position:static!important}
+  .mg-ccp-creator-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  .mg-cc-workspace,.mg-cc-builder,.mg-ccp-shell,.mg-ccdv,.mg-ccp-creator-shell{padding:14px 14px 28px}
+  .mg-cc-page-head,.mg-ccdv-head,.mg-ccp-creator-hero{flex-direction:column;align-items:stretch}
+  .mg-cc-grid-top,.mg-cc-builder-layout{grid-template-columns:1fr!important}
+  .mg-cc-step-nav{position:static!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mg-cc-campaign-grid,.mg-ccp-creator-grid{grid-template-columns:1fr}
+  .mg-ccp-filters{grid-template-columns:1fr!important}
+}
+@media(max-width:600px){
+  .mg-cc-metrics,.mg-ccp-metrics,.mg-ccdv-metrics{grid-template-columns:repeat(2,1fr)}
+  .mg-cc-step-nav{grid-template-columns:1fr}
+  .mg-cc-campaign-card{grid-template-columns:68px minmax(0,1fr)}
+  .mg-cc-card-cover{min-height:180px}
+  .mg-cc-card-actions{flex-direction:column}
+  .mg-cc-card-actions .mg-btn{width:100%}
+}

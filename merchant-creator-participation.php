@@ -4,11 +4,13 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Creator Participation | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
-$page_body_class = 'mg-creator-participation-page';
+$page_body_class = 'mg-creator-participation-page mg-creator-campaign-ui-v11';
 $page_styles = [
     '/assets/css/merchant-workspace.css',
     '/assets/css/merchant-creator-campaigns.css?v=2.0.0',
     '/assets/css/creator-campaign-participation.css?v=3.0.1',
+    '/assets/css/creator-campaign-ui-v11.css?v=11.0.0',
+    '/assets/css/creator-campaign-ui-v11-components.css?v=11.0.0',
 ];
 $page_scripts = ['/assets/js/merchant-creator-campaign-participation.js?v=3.0.1'];
 $merchantView = 'creator_campaigns';
