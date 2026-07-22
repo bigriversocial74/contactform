@@ -5,6 +5,7 @@ import type { CanonicalBridge } from "../bridge/canonicalBridge.js";
 import { CanonicalBridgeError } from "../bridge/canonicalBridge.js";
 import type { ConnectionContext } from "../contracts.js";
 import type { InvocationReceipt, InvocationReceiptSink } from "../receipts.js";
+import { registerCreatorCampaignReadTools } from "./creatorCampaigns.js";
 import { registerDraftTools } from "./drafts.js";
 
 export interface ToolRegistryDependencies {
@@ -44,7 +45,7 @@ async function recordReceipt(
 
 export function createInternalMcpServer(dependencies: ToolRegistryDependencies): McpServer {
   const server = new McpServer(
-    { name: "microgifter-mcp", version: "0.3.0", description: "Microgifter MCP read and review-only draft server" },
+    { name: "microgifter-mcp", version: "0.4.0", description: "Microgifter MCP read and review-only draft server" },
     { capabilities: { tools: { listChanged: false } } },
   );
 
@@ -219,6 +220,7 @@ export function createInternalMcpServer(dependencies: ToolRegistryDependencies):
     );
   }
 
+  registerCreatorCampaignReadTools(server, dependencies);
   registerDraftTools(server, dependencies);
   return server;
 }
