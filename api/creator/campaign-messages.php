@@ -13,7 +13,7 @@ try {
         $context=mg_creator_campaign_message_creator_context($pdo,$user,'creator.campaign_messages.view_own');
         mg_ok([
             'summary'=>mg_creator_campaign_message_summary($pdo,'creator_user_id',(int)$context['creator_user_id'],$actorUserId),
-            'threads'=>mg_creator_campaign_message_list($pdo,'mc.creator_user_id',(int)$context['creator_user_id'],$actorUserId),
+            'threads'=>mg_creator_campaign_message_list($pdo,'p.creator_user_id',(int)$context['creator_user_id'],$actorUserId),
         ]);
     }
     if ($method!=='POST') mg_fail('Method not allowed.',405);
