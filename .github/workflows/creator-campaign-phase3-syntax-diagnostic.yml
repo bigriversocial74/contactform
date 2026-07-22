@@ -1,0 +1,55 @@
+name: Creator Campaign Phase 3 Syntax Diagnostic
+
+on:
+  push:
+    branches:
+      - 'diagnostic/creator-campaign-phase3-syntax-20260721'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+          - includes/creator-campaigns/participation-definitions.php
+          - includes/creator-campaigns/participation-context.php
+          - includes/creator-campaigns/participation-repository.php
+          - includes/creator-campaigns/participant-service.php
+          - includes/creator-campaigns/eligibility-evaluator.php
+          - includes/creator-campaigns/application-answers.php
+          - includes/creator-campaigns/application-creator.php
+          - includes/creator-campaigns/application-merchant.php
+          - includes/creator-campaigns/application-service.php
+          - includes/creator-campaigns/invitation-creator.php
+          - includes/creator-campaigns/invitation-directory.php
+          - includes/creator-campaigns/invitation-merchant.php
+          - includes/creator-campaigns/invitation-service.php
+          - includes/creator-campaigns/agreement-service.php
+          - includes/creator-campaigns/participation-query.php
+          - includes/creator-campaigns/bootstrap.php
+          - api/creator/campaigns.php
+          - api/merchant/creator-campaign-participation.php
+          - creator-campaigns.php
+          - merchant-creator-participation.php
+          - includes/creator-campaigns-participation-view.php
+          - includes/merchant-creator-campaign-participation-view.php
+          - includes/merchant-creator-campaigns-view.php
+          - includes/merchant-view.php
+          - includes/merchant-creator-campaign-builder-view.php
+          - scripts/validate_creator_campaign_participation_v3.php
+          - scripts/validate_creator_campaign_participation_v3_mysql.php
+          - tests/phpunit/CreatorCampaignParticipationV3ContractTest.php
+          - tests/phpunit/CreatorCampaignMerchantBuilderV2ContractTest.php
+          - scripts/validate_creator_campaign_merchant_builder_v2.php
+    runs-on: ubuntu-latest
+    name: ${{ matrix.file }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - run: php -l "${{ matrix.file }}"
