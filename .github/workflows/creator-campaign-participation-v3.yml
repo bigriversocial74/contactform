@@ -1,0 +1,95 @@
+name: Creator Campaign Participation v3
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'api/creator/campaigns.php'
+      - 'api/merchant/creator-campaign-participation.php'
+      - 'assets/css/creator-campaign-participation.css'
+      - 'assets/js/creator-campaign-participation.js'
+      - 'assets/js/merchant-creator-campaign-participation.js'
+      - 'config/migrations.php'
+      - 'creator-campaigns.php'
+      - 'database/20260721_creator_campaign_participation_v3.sql'
+      - 'docs/creator-campaigns/**'
+      - 'includes/creator-campaigns/**'
+      - 'includes/*creator-campaign*participation*'
+      - 'merchant-creator-participation.php'
+      - 'scripts/validate_creator_campaign_participation_v3*'
+      - 'tests/phpunit/CreatorCampaignParticipationV3ContractTest.php'
+      - '.github/workflows/creator-campaign-participation-v3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+      - run: composer install --no-interaction --prefer-dist
+      - name: PHP syntax
+        run: |
+          php -l api/creator/campaigns.php
+          php -l api/merchant/creator-campaign-participation.php
+          php -l creator-campaigns.php
+          php -l merchant-creator-participation.php
+          find includes/creator-campaigns -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/creator-campaign-participation.js
+          node --check assets/js/merchant-creator-campaign-participation.js
+      - name: Phase 3 scored contract
+        run: php scripts/validate_creator_campaign_participation_v3.php .
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: PHPUnit contract
+        run: vendor/bin/phpunit tests/phpunit/CreatorCampaignParticipationV3ContractTest.php
+
+  mysql-lifecycle:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_test
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: microgifter_test
+      DB_USER: microgifter
+      DB_PASS: microgifter
+      APP_ENV: testing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql, mbstring
+          tools: composer:v2
+      - run: composer install --no-interaction --prefer-dist
+      - name: Apply canonical migrations
+        run: composer migrate
+      - name: Run participation lifecycle
+        run: php scripts/validate_creator_campaign_participation_v3_mysql.php
