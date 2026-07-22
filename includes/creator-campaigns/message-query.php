@@ -3,22 +3,22 @@ declare(strict_types=1);
 
 function mg_creator_campaign_message_list(PDO $pdo, string $scopeColumn, int $scopeId, int $viewerUserId): array
 {
-    if (!in_array($scopeColumn, ['mc.merchant_workspace_id','mc.creator_user_id'], true)) throw new InvalidArgumentException('Invalid message query scope.');
-    $sql = "SELECT mc.public_id context_public_id,mc.status,mc.lock_version,mc.updated_at,
-                   mt.public_id thread_public_id,mt.subject,mt.updated_at thread_updated_at,
+    if (!in_array($scopeColumn, ['c.workspace_id','p.creator_user_id'], true)) throw new InvalidArgumentException('Invalid message query scope.');
+    $sql = "SELECT mc.public_id context_public_id,COALESCE(mc.status,'not_started') status,COALESCE(mc.lock_version,0) lock_version,COALESCE(mc.updated_at,p.updated_at) updated_at,
+                   mt.public_id thread_public_id,COALESCE(mt.subject,CONCAT(c.title,' · ',COALESCE(NULLIF(u.display_name,''),NULLIF(u.full_name,''),u.email))) subject,mt.updated_at thread_updated_at,
                    c.public_id campaign_public_id,c.title campaign_name,
                    p.public_id participant_public_id,p.status participant_status,
                    COALESCE(NULLIF(u.display_name,''),NULLIF(u.full_name,''),u.email) creator_name,
                    (SELECT m.body FROM messages m WHERE m.thread_id=mt.id AND COALESCE(m.moderation_status,'clear') NOT IN('hidden','removed') ORDER BY m.id DESC LIMIT 1) last_message,
                    (SELECT m.created_at FROM messages m WHERE m.thread_id=mt.id AND COALESCE(m.moderation_status,'clear') NOT IN('hidden','removed') ORDER BY m.id DESC LIMIT 1) last_message_at,
                    (SELECT COUNT(*) FROM messages m LEFT JOIN message_thread_participants vp ON vp.thread_id=m.thread_id AND vp.user_id=? WHERE m.thread_id=mt.id AND m.sender_user_id<>? AND (vp.last_read_at IS NULL OR m.created_at>vp.last_read_at) AND COALESCE(m.moderation_status,'clear') NOT IN('hidden','removed')) unread_count
-            FROM creator_campaign_message_contexts mc
-            INNER JOIN message_threads mt ON mt.id=mc.thread_id
-            INNER JOIN creator_campaigns c ON c.id=mc.campaign_id
-            INNER JOIN creator_campaign_participants p ON p.id=mc.participant_id
-            INNER JOIN users u ON u.id=mc.creator_user_id
-            WHERE {$scopeColumn}=?
-            ORDER BY COALESCE(mt.updated_at,mc.updated_at) DESC,mc.id DESC
+            FROM creator_campaign_participants p
+            INNER JOIN creator_campaigns c ON c.id=p.campaign_id
+            INNER JOIN users u ON u.id=p.creator_user_id
+            LEFT JOIN creator_campaign_message_contexts mc ON mc.campaign_id=p.campaign_id AND mc.participant_id=p.id
+            LEFT JOIN message_threads mt ON mt.id=mc.thread_id
+            WHERE {$scopeColumn}=? AND p.status NOT IN('declined','removed')
+            ORDER BY COALESCE(mt.updated_at,mc.updated_at,p.updated_at) DESC,p.id DESC
             LIMIT 200";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$viewerUserId,$viewerUserId,$scopeId]);
