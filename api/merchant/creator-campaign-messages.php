@@ -13,7 +13,7 @@ try {
         $context=mg_creator_campaign_message_merchant_context($pdo,$user,'merchant.creator_messages.view');
         $data=[
             'summary'=>mg_creator_campaign_message_summary($pdo,'merchant_workspace_id',(int)$context['workspace_id'],$actorUserId),
-            'threads'=>mg_creator_campaign_message_list($pdo,'mc.merchant_workspace_id',(int)$context['workspace_id'],$actorUserId),
+            'threads'=>mg_creator_campaign_message_list($pdo,'c.workspace_id',(int)$context['workspace_id'],$actorUserId),
             'notes'=>[],
         ];
         try {
