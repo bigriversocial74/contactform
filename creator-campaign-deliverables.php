@@ -11,6 +11,7 @@ $page_body_class = 'mg-creator-deliverables-account-page mg-creator-campaign-ui-
 $page_styles = [
     '/assets/css/creator-campaign-deliverables.css?v=4.0.0',
     '/assets/css/creator-campaign-ui-v11.css?v=11.0.0',
+    '/assets/css/creator-campaign-ui-v11-components.css?v=11.0.0',
 ];
 $page_scripts = ['/assets/js/account-sidebar.js','/assets/js/creator-campaign-deliverables.js?v=4.0.0'];
 $page_manifest = [
