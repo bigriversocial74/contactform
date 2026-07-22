@@ -25,7 +25,7 @@ $checks=[
 'Lifecycle'=>[
  ['Optional automatic acceptance',str_contains($s['app'],'automatic_acceptance')&&str_contains($s['app'],'mg_creator_campaign_evaluate_automatic_acceptance')],
  ['Fail-closed rule evaluator',str_contains($s['evaluator'],"'eligible' => \$eligible")&&str_contains($s['evaluator'],'participant_capacity')],
- ['Manual review remains supported',str_contains($s['app'],"'approve'=>'approved'")&&str_contains($s['merchant_view'],'data-review-action="approve"')],
+ ['Manual review remains supported',(bool)preg_match("/'approve'\\s*=>\\s*'approved'/",$s['app'])&&str_contains($s['merchant_view'],'data-review-action="approve"')],
  ['Invitation acceptance offers Version 1',str_contains($s['invite'],'mg_creator_campaign_agreement_ensure_offered')],
 ],
 'Agreements'=>[
