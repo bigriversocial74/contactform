@@ -17,8 +17,6 @@ elseif($merchantView==='reward_templates'):
     require __DIR__.'/merchant-reward-templates-view.php';
 elseif($merchantView==='campaigns'):
     require __DIR__.'/merchant-campaigns-view.php';
-elseif($merchantView==='creator_campaigns' && !empty($merchantCreatorParticipation)):
-    require __DIR__.'/merchant-creator-campaign-participation-view.php';
 elseif($merchantView==='creator_campaigns'):
     require __DIR__.'/merchant-creator-campaigns-view.php';
 elseif($merchantView==='creator_campaign_builder'):
