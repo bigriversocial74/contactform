@@ -79,6 +79,32 @@ function mg_merchant_crm_creator_campaign_decorate(array $contact, array $relati
     return $contact;
 }
 
+function mg_merchant_crm_creator_campaign_contact_ids(PDO $pdo, int $merchantId, int $limit = 100): array
+{
+    if ($merchantId < 1 || !mg_merchant_crm_creator_campaign_bridge_installed($pdo)) return [];
+    $limit = max(1,min(250,$limit));
+    $stmt = $pdo->prepare(
+        'SELECT mc.public_id
+         FROM merchant_crm_contact_creator_campaigns r
+         INNER JOIN merchant_crm_contacts mc ON mc.id=r.crm_contact_id
+         WHERE r.merchant_user_id=?
+         GROUP BY mc.public_id
+         ORDER BY MAX(r.last_event_at) DESC
+         LIMIT '.$limit
+    );
+    $stmt->execute([$merchantId]);
+    return array_map('strval',$stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+}
+
+function mg_merchant_crm_creator_campaign_recent_contacts(PDO $pdo, int $merchantId, int $limit = 100): array
+{
+    return mg_merchant_crm_search_contacts_by_ids(
+        $pdo,
+        $merchantId,
+        mg_merchant_crm_creator_campaign_contact_ids($pdo,$merchantId,$limit)
+    );
+}
+
 function mg_merchant_crm_creator_campaign_matching_contacts(PDO $pdo, int $merchantId, string $query, int $limit = 100): array
 {
     $query = mg_merchant_crm_search_query($query);
@@ -107,8 +133,14 @@ function mg_merchant_crm_creator_campaign_enrich_directory(PDO $pdo, int $mercha
     }
     $contacts = is_array($directory['contacts']??null) ? $directory['contacts'] : [];
     $byId = [];
-    foreach ($contacts as $contact) $byId[(string)($contact['crm_contact_id']??$contact['id']??'')] = $contact;
-    foreach (mg_merchant_crm_creator_campaign_matching_contacts($pdo,$merchantId,$query,100) as $contact) {
+    foreach ($contacts as $contact) {
+        $id = (string)($contact['crm_contact_id']??$contact['id']??'');
+        if ($id !== '') $byId[$id] = $contact;
+    }
+    $supplement = trim($query) === ''
+        ? mg_merchant_crm_creator_campaign_recent_contacts($pdo,$merchantId,100)
+        : mg_merchant_crm_creator_campaign_matching_contacts($pdo,$merchantId,$query,100);
+    foreach ($supplement as $contact) {
         $id = (string)($contact['crm_contact_id']??$contact['id']??'');
         if ($id !== '' && !isset($byId[$id])) $byId[$id] = $contact;
     }
