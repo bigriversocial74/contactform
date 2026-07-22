@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [integration-from-repair-20260628]
     paths:
-      - 'api/internal/_mcp_creator_campaign_draft_bridge.php'
+      - 'api/internal/_mcp_creator_campaign_draft_*.php'
       - 'api/internal/_mcp_draft_bridge.php'
       - 'services/mcp/src/tools/creatorCampaignDrafts.ts'
       - 'services/mcp/src/tools/registry.ts'
@@ -40,6 +40,8 @@ jobs:
       - name: PHP syntax
         run: |
           php -l api/internal/_mcp_creator_campaign_draft_bridge.php
+          php -l api/internal/_mcp_creator_campaign_draft_values.php
+          php -l api/internal/_mcp_creator_campaign_draft_service.php
           php -l api/internal/_mcp_draft_bridge.php
           php -l includes/mcp-drafts/account-page-phase3b.php
           php -l includes/mcp-drafts/account-page-phase3b-view.php
