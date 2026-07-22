@@ -95,15 +95,11 @@ SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
 ON p.slug IN ('merchant.creator_messages.view','merchant.creator_messages.manage','merchant.creator_notes.manage')
 WHERE r.slug IN ('merchant','admin','super_admin');
 
+-- Creator is an enabled user model. The canonical customer role is assigned to every user,
+-- while the Creator context and object-ownership checks remain mandatory in the API service.
 INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
 SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
 ON p.slug IN ('creator.campaign_messages.view_own','creator.campaign_messages.send_own')
-WHERE r.slug IN ('creator','admin','super_admin');
-
--- Creator Campaign participants use the canonical Messages and Notifications centers.
-INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
-SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
-ON p.slug IN ('gift.message.send','notification.view')
-WHERE r.slug='creator';
+WHERE r.slug IN ('customer','creator','admin','super_admin');
 
 COMMIT;
