@@ -83,7 +83,7 @@ $purchase=mg_creator_campaign_tracking_record_conversion($pdo,[
     ],
 ]);
 cccrm12_assert(!empty($purchase['crm_projection']['projected']),'Trusted purchase conversion was not projected in real time.');
-$stmt=$pdo->prepare("SELECT mc.id,mc.lifecycle_stage,r.relationship_type,e.projection_status,ce.campaign_id legacy_campaign_id
+$stmt=$pdo->prepare("SELECT mc.id,mc.public_id,mc.lifecycle_stage,r.relationship_type,e.projection_status,ce.campaign_id legacy_campaign_id
  FROM merchant_crm_contacts mc
  INNER JOIN merchant_crm_contact_creator_campaigns r ON r.crm_contact_id=mc.id AND r.creator_campaign_id=? AND r.relationship_type='customer'
  INNER JOIN merchant_crm_creator_campaign_events e ON e.crm_contact_id=mc.id AND e.source_event_key=?
@@ -120,10 +120,13 @@ cccrm12_assert((int)$stmt->fetchColumn()===1,'Projection run audit was not compl
 
 $directory=mg_merchant_crm_directory_list($pdo,$merchantId,'',250,0);
 $directory=mg_merchant_crm_creator_campaign_enrich_directory($pdo,$merchantId,$directory,'');
+$creatorContactPublic=strtolower((string)$creatorContact['public_id']);
+$customerContactPublic=strtolower((string)$customerContact['public_id']);
 $creatorVisible=false;$customerVisible=false;
 foreach($directory['contacts']??[] as $contact){
-    if((int)($contact['user_id']??0)===$creatorUserId&&!empty($contact['creator_campaign_count']))$creatorVisible=true;
-    if((int)($contact['user_id']??0)===$customerUserId&&!empty($contact['creator_campaign_count']))$customerVisible=true;
+    $contactPublic=strtolower((string)($contact['id']??''));
+    if($contactPublic===$creatorContactPublic&&!empty($contact['creator_campaign_count']))$creatorVisible=true;
+    if($contactPublic===$customerContactPublic&&!empty($contact['creator_campaign_count']))$customerVisible=true;
 }
 cccrm12_assert($creatorVisible&&$customerVisible,'Creator Campaign relationships are not visible in the canonical CRM directory.');
 $stmt=$pdo->prepare('SELECT COUNT(*) FROM merchant_crm_contact_campaigns WHERE merchant_user_id=? AND crm_contact_id IN (?,?)');
