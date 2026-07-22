@@ -121,7 +121,7 @@ function mg_creator_campaign_analytics_options(PDO $pdo, array $scope): array
         $stmt = $pdo->prepare("SELECT p.public_id,cc.public_id campaign_public_id,cc.title campaign_title,COALESCE(cp.display_name,u.display_name,u.full_name,u.email) creator_name,p.status FROM creator_campaign_participants p INNER JOIN creator_campaigns cc ON cc.id=p.campaign_id INNER JOIN creator_profiles cp ON cp.id=p.creator_profile_id INNER JOIN users u ON u.id=p.creator_user_id WHERE cc.workspace_id=? ORDER BY cc.title,creator_name,p.id");
         $stmt->execute([(int) $scope['workspace_id']]);
     } else {
-        $stmt = $pdo->prepare('SELECT DISTINCT cc.public_id,cc.title,cc.status,mw.display_name merchant_name FROM creator_campaigns cc INNER JOIN creator_campaign_participants p ON p.campaign_id=cc.id INNER JOIN merchant_workspaces mw ON mw.id=cc.workspace_id WHERE p.creator_user_id=? ORDER BY cc.id DESC LIMIT 250');
+        $stmt = $pdo->prepare('SELECT DISTINCT cc.public_id,cc.title,cc.status,mw.display_name merchant_name FROM creator_campaigns cc INNER JOIN creator_campaign_participants p ON p.campaign_id=cc.id INNER JOIN merchant_workspaces mw ON mw.id=cc.workspace_id WHERE p.creator_user_id=? ORDER BY cc.public_id DESC LIMIT 250');
         $stmt->execute([(int) $scope['creator_user_id']]);
         $campaigns = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $stmt = $pdo->prepare("SELECT p.public_id,cc.public_id campaign_public_id,cc.title campaign_title,mw.display_name merchant_name,p.status FROM creator_campaign_participants p INNER JOIN creator_campaigns cc ON cc.id=p.campaign_id INNER JOIN merchant_workspaces mw ON mw.id=cc.workspace_id WHERE p.creator_user_id=? ORDER BY cc.title,p.id");
