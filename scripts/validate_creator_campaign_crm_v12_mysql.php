@@ -13,7 +13,7 @@ cccrm12_assert(mg_creator_campaign_crm_installed($pdo),'Phase 12 CRM schema is i
 $tables=mg_creator_campaign_crm_required_tables();$placeholders=implode(',',array_fill(0,count($tables),'?'));
 $stmt=$pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ({$placeholders})");$stmt->execute($tables);
 cccrm12_assert((int)$stmt->fetchColumn()===count($tables),'Phase 12 required tables are missing.');
-$stmt=$pdo->query("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='merchant_crm_creator_campaign_events' AND index_name='uq_merchant_crm_cc_event_source' AND non_unique=0");
+$stmt=$pdo->query("SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='merchant_crm_creator_campaign_events' AND index_name='uq_merchant_crm_cc_event_source' AND non_unique=0");
 cccrm12_assert((int)$stmt->fetchColumn()===1,'Projection source idempotency index is missing.');
 $stmt=$pdo->query("SELECT COUNT(*) FROM permissions WHERE slug IN ('merchant.creator_crm.view','merchant.creator_crm.manage')");
 cccrm12_assert((int)$stmt->fetchColumn()===2,'Phase 12 permissions are incomplete.');
