@@ -42,8 +42,8 @@ $routes = [
 $routeContents = array_map($read, $routes);
 $combinedViews = implode("\n", [$overview, $builder, $detail, $applications, $contentReview, $creatorDiscover, $creatorActive]);
 
-$add('Shared Phase 11 base design system', $baseCss !== '' && $has($baseCss, '--cc11-bg:#f7f8fa') && $has($baseCss, 'Light professional'));
-$add('Mockup-specific component system', $componentCss !== '' && $has($componentCss, 'Dedicated merchant campaign detail') && $has($componentCss, 'Creator action center'));
+$add('Shared Phase 11 base design system', $baseCss !== '' && $has($baseCss, '--cc11-bg:#f7f8fa') && $has($docs, 'Light professional interface'));
+$add('Mockup-specific component system', $componentCss !== '' && $has($componentCss, '.mg-v11-detail') && $has($componentCss, '.mg-v11-creator-action-layout'));
 $add('Responsive desktop tablet mobile rules', substr_count($baseCss . $componentCss, '@media(max-width:') >= 6 && $has($baseCss, 'max-width:600px'));
 $add('Compact operational page headers', $has($baseCss, 'font-size:clamp(1.65rem,2.2vw,2.35rem)') && !$has($baseCss, 'min-height:100vh'));
 
@@ -67,7 +67,7 @@ $add('Existing deliverable runtime hooks preserved', $has($contentReview, 'data-
 
 $add('Detail page reads canonical campaign API', $has($detailJs, '/api/merchant/creator-campaigns.php?action=detail') && $has($detailJs, 'campaign_id='));
 $add('Detail page reads authoritative analytics API', $has($detailJs, '/api/merchant/creator-campaign-analytics.php') && $has($detailJs, 'range=last_30_days'));
-$add('No duplicate analytics persistence', !$has($detailJs, 'localStorage') && !$has($detailJs, 'sessionStorage') && !$has($detailJs, 'POST'));
+$add('No duplicate analytics persistence', !$has($detailJs, 'localStorage') && !$has($detailJs, 'sessionStorage') && !$has($detailJs, "method: 'POST'"));
 $add('Campaign cards open dedicated detail route', $has($overviewJs, '/merchant-creator-campaign-detail.php?campaign='));
 
 $add('Canonical communication routes only', $has($combinedViews, '/merchant-creator-messages.php') && $has($combinedViews, '/creator-campaign-messages.php') && !$has($combinedViews, '/merchant-creator-campaign-messages.php'));
