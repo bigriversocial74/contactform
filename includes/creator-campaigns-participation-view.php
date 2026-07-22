@@ -2,35 +2,76 @@
 declare(strict_types=1);
 $user = mg_current_user();
 ?>
-<section class="mg-ccp-creator-shell" data-ccp-creator>
+<section class="mg-ccp-creator-shell" data-ccp-creator data-cc-screen="creator-discovery-active-workspace">
   <header class="mg-ccp-creator-hero">
-    <div><span class="mg-eyebrow">Creator Campaign Workspace · Phase 3</span><h1>Creator Campaigns</h1><p>Discover opportunities, apply, respond to invitations, review immutable agreements, and manage active campaigns.</p></div>
-    <div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/creator-campaign-deliverables.php">My Deliverables</a><a class="mg-btn mg-btn-soft" href="/creator-campaign-tracking.php">My Tracking Links</a><a class="mg-btn mg-btn-soft" href="/account.php">Creator Profile</a></div>
+    <div>
+      <span class="mg-eyebrow">Creator · Campaign Workspace</span>
+      <h1>Discover Campaigns</h1>
+      <p>Find brand opportunities that match your content, audience, location, and Creator profile.</p>
+    </div>
+    <div class="mg-action-row">
+      <a class="mg-btn mg-btn-primary" href="/creator-campaign-deliverables.php">My Deliverables</a>
+      <a class="mg-btn mg-btn-soft" href="/creator-campaign-tracking.php">Tracking Tools</a>
+      <a class="mg-btn mg-btn-soft" href="/creator-campaign-analytics.php">Performance</a>
+    </div>
   </header>
   <?php if (!$user): ?>
     <section class="mg-ccp-state"><strong>Creator sign-in required</strong><span>Sign in with an approved Creator account.</span><a class="mg-btn mg-btn-primary" href="/signin.php">Sign In</a></section>
   <?php else: ?>
     <nav class="mg-ccp-tabs mg-ccp-creator-tabs" aria-label="Creator campaign workspace">
-      <button type="button" class="is-active" data-ccp-creator-tab="discover">Discover</button>
+      <button type="button" class="is-active" data-ccp-creator-tab="discover">Discover Campaigns</button>
       <button type="button" data-ccp-creator-tab="invitations">Invitations</button>
       <button type="button" data-ccp-creator-tab="applications">Applications</button>
-      <button type="button" data-ccp-creator-tab="active_campaigns">Active Campaigns</button>
+      <button type="button" data-ccp-creator-tab="active_campaigns">My Campaigns</button>
       <button type="button" data-ccp-creator-tab="agreements">Agreements</button>
+      <a href="/creator-campaign-deliverables.php">Deliverables</a>
+      <a href="/creator-campaign-tracking.php">Tracking</a>
+      <a href="/creator-campaign-analytics.php">Performance</a>
+      <a href="/creator-campaign-earnings.php">Earnings</a>
+      <a href="/creator-campaign-payouts.php">Payouts</a>
+      <a href="/creator-campaign-messages.php">Messages</a>
     </nav>
+
     <form class="mg-ccp-filters" data-ccp-creator-filters>
-      <label class="is-wide">Search<input type="search" name="search" maxlength="120" placeholder="Campaign, merchant, or objective"></label>
+      <label class="is-wide">Search campaigns<input type="search" name="search" maxlength="120" placeholder="Campaign, merchant, product, or objective"></label>
       <label>Category<select name="category" data-ccp-category><option value="">All categories</option></select></label>
       <label>Objective<select name="objective" data-ccp-objective><option value="">All objectives</option></select></label>
       <button class="mg-btn mg-btn-soft" type="submit">Apply</button>
     </form>
-    <div class="mg-ccp-live" data-ccp-creator-live role="status" aria-live="polite"></div>
-    <section class="mg-ccp-state" data-ccp-creator-loading><strong>Loading creator campaigns</strong><span>Preparing your campaign workspace.</span></section>
-    <section class="mg-ccp-state mg-hidden" data-ccp-creator-error role="alert"><strong>Unable to load campaigns</strong><span data-ccp-creator-error-message></span><button class="mg-btn mg-btn-soft" type="button" data-ccp-creator-retry>Try Again</button></section>
-    <section class="mg-ccp-creator-grid mg-hidden" data-ccp-creator-list></section>
-    <footer class="mg-cc-pagination mg-hidden" data-ccp-creator-pagination><span data-ccp-creator-page-label></span><div><button class="mg-btn mg-btn-ghost" type="button" data-ccp-creator-prev>Previous</button><button class="mg-btn mg-btn-soft" type="button" data-ccp-creator-next>Next</button></div></footer>
 
-    <dialog class="mg-ccp-dialog" data-ccp-campaign-dialog><section class="mg-ccp-dialog-card"><header><div><span class="mg-eyebrow">Campaign Opportunity</span><h2 data-ccp-campaign-title>Creator campaign</h2></div><button type="button" class="mg-ccp-close" data-ccp-close-campaign aria-label="Close">×</button></header><div data-ccp-campaign-content></div><form data-ccp-application-form><input type="hidden" name="campaign_id"><input type="hidden" name="application_id"><input type="hidden" name="expected_lock_version" value="0"><label>Why are you a fit<textarea name="cover_note" rows="5" maxlength="8000"></textarea></label><label>Portfolio URL<input type="url" name="portfolio_url" maxlength="600"></label><div data-ccp-application-questions></div><div class="mg-ccp-dialog-actions"><button type="button" class="mg-btn mg-btn-ghost" data-ccp-save-draft>Save Draft</button><button type="submit" class="mg-btn mg-btn-primary">Submit Application</button></div></form></section></dialog>
+    <div class="mg-v11-creator-discover-layout">
+      <main class="mg-v11-creator-results">
+        <div class="mg-ccp-live" data-ccp-creator-live role="status" aria-live="polite"></div>
+        <section class="mg-ccp-state" data-ccp-creator-loading><strong>Loading Creator opportunities</strong><span>Matching eligible scheduled and active campaigns to your Creator profile.</span></section>
+        <section class="mg-ccp-state mg-hidden" data-ccp-creator-error role="alert"><strong>Unable to load campaigns</strong><span data-ccp-creator-error-message></span><button class="mg-btn mg-btn-soft" type="button" data-ccp-creator-retry>Try Again</button></section>
+        <section class="mg-ccp-creator-grid mg-hidden" data-ccp-creator-list></section>
+        <footer class="mg-cc-pagination mg-hidden" data-ccp-creator-pagination><span data-ccp-creator-page-label></span><div><button class="mg-btn mg-btn-ghost" type="button" data-ccp-creator-prev>Previous</button><button class="mg-btn mg-btn-soft" type="button" data-ccp-creator-next>Next</button></div></footer>
+      </main>
+      <aside class="mg-v11-profile-readiness" aria-label="Creator profile readiness">
+        <span class="mg-eyebrow">Your profile</span>
+        <h2>Campaign readiness</h2>
+        <p>Campaign eligibility uses your canonical Creator profile, specialties, location, verification, and portfolio.</p>
+        <ul>
+          <li><span>Profile information</span><a href="/account.php">Review</a></li>
+          <li><span>Bio & links</span><a href="/account.php">Update</a></li>
+          <li><span>Social accounts</span><a href="/account.php">Connect</a></li>
+          <li><span>Portfolio</span><a href="/account.php">Manage</a></li>
+          <li><span>Verification</span><a href="/account.php">Status</a></li>
+        </ul>
+        <a class="mg-btn mg-btn-soft" href="/account.php">Complete Creator Profile</a>
+      </aside>
+    </div>
 
-    <dialog class="mg-ccp-dialog" data-ccp-agreement-dialog><section class="mg-ccp-dialog-card mg-ccp-agreement-card"><header><div><span class="mg-eyebrow">Immutable Agreement Version</span><h2 data-ccp-agreement-title>Creator agreement</h2></div><button type="button" class="mg-ccp-close" data-ccp-close-agreement aria-label="Close">×</button></header><div data-ccp-agreement-content></div><form data-ccp-agreement-form><input type="hidden" name="agreement_id"><input type="hidden" name="expected_lock_version"><label>Response note<textarea name="response_note" rows="3" maxlength="2000"></textarea></label><div class="mg-ccp-dialog-actions"><button type="button" class="mg-btn mg-btn-ghost" data-ccp-download-agreement>Export JSON</button><button type="button" class="mg-btn mg-btn-danger" data-ccp-agreement-decision="declined">Decline</button><button type="button" class="mg-btn mg-btn-primary" data-ccp-agreement-decision="accepted">Accept Version</button></div></form></section></dialog>
+    <dialog class="mg-ccp-dialog" data-ccp-campaign-dialog>
+      <section class="mg-ccp-dialog-card mg-v11-campaign-opportunity-card">
+        <header><div><span class="mg-eyebrow">Campaign Opportunity</span><h2 data-ccp-campaign-title>Creator campaign</h2></div><button type="button" class="mg-ccp-close" data-ccp-close-campaign aria-label="Close">×</button></header>
+        <div data-ccp-campaign-content></div>
+        <form data-ccp-application-form><input type="hidden" name="campaign_id"><input type="hidden" name="application_id"><input type="hidden" name="expected_lock_version" value="0"><label>Why are you a fit<textarea name="cover_note" rows="5" maxlength="8000"></textarea></label><label>Portfolio URL<input type="url" name="portfolio_url" maxlength="600"></label><div data-ccp-application-questions></div><div class="mg-ccp-dialog-actions"><button type="button" class="mg-btn mg-btn-ghost" data-ccp-save-draft>Save Draft</button><button type="submit" class="mg-btn mg-btn-primary">Submit Application</button></div></form>
+      </section>
+    </dialog>
+
+    <dialog class="mg-ccp-dialog" data-ccp-agreement-dialog>
+      <section class="mg-ccp-dialog-card mg-ccp-agreement-card"><header><div><span class="mg-eyebrow">Immutable Agreement Version</span><h2 data-ccp-agreement-title>Creator agreement</h2></div><button type="button" class="mg-ccp-close" data-ccp-close-agreement aria-label="Close">×</button></header><div data-ccp-agreement-content></div><form data-ccp-agreement-form><input type="hidden" name="agreement_id"><input type="hidden" name="expected_lock_version"><label>Response note<textarea name="response_note" rows="3" maxlength="2000"></textarea></label><div class="mg-ccp-dialog-actions"><button type="button" class="mg-btn mg-btn-ghost" data-ccp-download-agreement>Export JSON</button><button type="button" class="mg-btn mg-btn-danger" data-ccp-agreement-decision="declined">Decline</button><button type="button" class="mg-btn mg-btn-primary" data-ccp-agreement-decision="accepted">Accept Version</button></div></form></section>
+    </dialog>
   <?php endif; ?>
 </section>
