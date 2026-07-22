@@ -1,15 +1,15 @@
 <?php declare(strict_types=1); ?>
-<section class="mg-cc-builder" data-cc-builder>
+<section class="mg-cc-builder" data-cc-builder data-cc-screen="campaign-builder">
   <header class="mg-cc-page-head mg-cc-builder-head">
     <div>
       <a class="mg-cc-back" href="/merchant-creator-campaigns.php">← Creator Campaigns</a>
-      <span class="mg-eyebrow">Merchant Campaign Builder · Phase 2</span>
+      <span class="mg-eyebrow">Merchant · Create Creator Campaign</span>
       <h1 data-cc-builder-title>Create Creator Campaign</h1>
-      <p>Campaign details, products, eligibility, application questions, validation, preview, and duplication are operational now.</p>
+      <p>Define campaign details, products, Creator eligibility, deliverables, compensation, attribution, budgets, rights, and terms.</p>
     </div>
     <div class="mg-cc-head-actions">
       <span class="mg-cc-pill" data-cc-status>Draft</span>
-      <button class="mg-btn mg-btn-ghost" type="button" data-cc-duplicate disabled>Duplicate</button>
+      <button class="mg-btn mg-btn-soft" type="button" data-cc-duplicate disabled>Duplicate</button>
     </div>
   </header>
 
@@ -21,10 +21,10 @@
         6=>'Attribution',7=>'Budget',8=>'Content Rights',9=>'Terms',10=>'Review',
       ];
       foreach ($steps as $number=>$label):
-        $enabled = in_array($number,[1,2,3,10],true);
+        $savedHere = in_array($number,[1,2,3,10],true);
       ?>
-        <button type="button" data-cc-step-button="<?= $number ?>" class="<?= $number===1?'is-active':'' ?><?= !$enabled?' is-gated':'' ?>">
-          <span><?= $number ?></span><strong><?= mg_e($label) ?></strong><small><?= $enabled?'Available':'Later phase' ?></small>
+        <button type="button" data-cc-step-button="<?= $number ?>" class="<?= $number===1?'is-active':'' ?>">
+          <span><?= $number ?></span><strong><?= mg_e($label) ?></strong><small><?= $savedHere?'Builder':'Operational workspace' ?></small>
         </button>
       <?php endforeach; ?>
     </nav>
@@ -39,7 +39,7 @@
         <input type="hidden" name="expected_lock_version" data-cc-lock-version value="0">
 
         <section class="mg-cc-step-panel is-active" data-cc-step="1">
-          <header><span class="mg-eyebrow">Step 1</span><h2>Campaign details</h2><p>Define the merchant-owned campaign record and creator-facing opportunity.</p></header>
+          <header><span class="mg-eyebrow">Step 1 of 10</span><h2>Campaign details</h2><p>Define the merchant-owned campaign record and Creator-facing opportunity.</p></header>
           <div class="mg-cc-form-grid">
             <label class="is-wide">Campaign name<input name="title" maxlength="180" required placeholder="Summer Local Favorites"></label>
             <label>Internal reference<input name="internal_reference" maxlength="100" placeholder="CC-SUMMER-2026"></label>
@@ -53,48 +53,72 @@
             <label>Application deadline<input type="datetime-local" name="application_deadline_at"></label>
             <label>Geographic eligibility<input name="geographic_label" maxlength="160" placeholder="Phoenix metro or remote"></label>
             <label>Campaign cover image<select name="cover_asset_public_id" data-cc-asset-options><option value="">No cover selected</option></select></label>
-            <label class="is-wide">Description<textarea name="description" maxlength="16000" rows="6" required placeholder="Explain the campaign, products, creator opportunity, and intended customer outcome."></textarea></label>
+            <label class="is-wide">Description<textarea name="description" maxlength="16000" rows="6" required placeholder="Explain the campaign, products, Creator opportunity, and intended customer outcome."></textarea></label>
           </div>
         </section>
 
         <section class="mg-cc-step-panel" data-cc-step="2">
-          <header><span class="mg-eyebrow">Step 2</span><h2>Products and offers</h2><p>Connect the campaign to canonical merchant products, versions, and reward offers.</p></header>
+          <header><span class="mg-eyebrow">Step 2 of 10</span><h2>Products and offers</h2><p>Connect the campaign to canonical merchant products, versions, and reward offers.</p></header>
           <div class="mg-cc-form-grid">
             <label>Campaign focus<select name="campaign_focus"><option value="merchant_profile">Merchant profile</option><option value="single_product">Single product</option><option value="multiple_products">Multiple products</option><option value="product_collection">Product collection</option><option value="microgift_offer">Microgift offer</option><option value="reward">Reward</option><option value="event">Event</option><option value="service">Service</option><option value="experience">Experience</option><option value="general_brand_campaign">General brand campaign</option></select></label>
             <label>Featured offer or reward<select name="featured_reward_public_id" data-cc-reward-options><option value="">No reward selected</option></select></label>
             <label>Creator product access<select name="creator_product_access"><option value="none">No product access</option><option value="purchase_required">Creator purchases</option><option value="reimbursed">Reimbursed purchase</option><option value="provided">Product provided</option><option value="loaned">Product loaned</option><option value="digital_access">Digital access</option></select></label>
             <label class="is-wide">Creator landing destination<input type="url" name="creator_landing_url" maxlength="500" placeholder="https://microgifter.com/store.php?s=..."></label>
           </div>
-          <div class="mg-cc-repeatable-head"><div><h3>Campaign products</h3><p>Choose primary, featured, commissionable, excluded, or creator-compensation relationships.</p></div><button class="mg-btn mg-btn-soft" type="button" data-cc-add-product>Add Product</button></div>
+          <div class="mg-cc-repeatable-head"><div><h3>Campaign products</h3><p>Choose primary, featured, commissionable, excluded, or Creator-compensation relationships.</p></div><button class="mg-btn mg-btn-soft" type="button" data-cc-add-product>Add Product</button></div>
           <div class="mg-cc-repeatable" data-cc-products></div>
         </section>
 
         <section class="mg-cc-step-panel" data-cc-step="3">
-          <header><span class="mg-eyebrow">Step 3</span><h2>Creator eligibility</h2><p>Set participation limits, approved Creator filters, and optional application questions.</p></header>
+          <header><span class="mg-eyebrow">Step 3 of 10</span><h2>Creator eligibility</h2><p>Set participation limits, approved Creator filters, and optional application questions.</p></header>
           <div class="mg-cc-form-grid">
             <label>Participation method<select name="eligibility_access_mode"><option value="open">Application required</option><option value="invite_only">Invite only</option><option value="approved_creators">Approved brand creators</option><option value="selected_creators">Selected creators only</option><option value="hybrid">Applications and invitations</option></select></label>
-            <label>Existing creator preference<select name="existing_creator_preference"><option value="none">No preference</option><option value="preferred">Preferred</option><option value="required">Required</option></select></label>
-            <label>Maximum approved creators<input type="number" name="maximum_approved_creators" min="1" max="100000"></label>
+            <label>Existing Creator preference<select name="existing_creator_preference"><option value="none">No preference</option><option value="preferred">Preferred</option><option value="required">Required</option></select></label>
+            <label>Maximum approved Creators<input type="number" name="maximum_approved_creators" min="1" max="100000"></label>
             <label>Maximum applications<input type="number" name="maximum_applications" min="1" max="100000"></label>
             <label>Application deadline<input type="datetime-local" name="eligibility_application_deadline_at"></label>
-            <label class="mg-cc-toggle"><input type="checkbox" name="automatic_acceptance" disabled><span>Automatic acceptance</span><small>Unavailable until Creator Participation is installed; merchant approval remains required.</small></label>
+            <label class="mg-cc-toggle"><input type="checkbox" name="automatic_acceptance" disabled><span>Automatic acceptance</span><small>Merchant approval and agreement controls remain authoritative.</small></label>
           </div>
           <div class="mg-cc-repeatable-head"><div><h3>Eligibility rules</h3><p>Specialty, category, platform, verification, location, audience, or relationship filters.</p></div><button class="mg-btn mg-btn-soft" type="button" data-cc-add-rule>Add Rule</button></div>
           <div class="mg-cc-repeatable" data-cc-rules></div>
-          <div class="mg-cc-repeatable-head"><div><h3>Application questions</h3><p>Ask up to 25 structured questions without creating duplicate creator profile data.</p></div><button class="mg-btn mg-btn-soft" type="button" data-cc-add-question>Add Question</button></div>
+          <div class="mg-cc-repeatable-head"><div><h3>Application questions</h3><p>Ask up to 25 structured questions without duplicating Creator profile data.</p></div><button class="mg-btn mg-btn-soft" type="button" data-cc-add-question>Add Question</button></div>
           <div class="mg-cc-repeatable" data-cc-questions></div>
         </section>
 
-        <?php foreach ([4=>'Deliverables',5=>'Compensation',6=>'Attribution',7=>'Budget',8=>'Content Rights',9=>'Terms and Disclosures'] as $number=>$label): ?>
+        <?php
+        $operationalSteps = [
+          4 => ['Deliverables', 'Define contractual deliverables, quantities, platforms, talking points, disclosures, due dates, and revision limits.', '/merchant-creator-deliverables.php', 'Open Deliverables'],
+          5 => ['Compensation', 'Configure fixed fees, deliverable payments, conversion compensation, qualifications, holds, reversals, and earning events.', '/merchant-creator-compensation.php', 'Open Compensation'],
+          6 => ['Attribution', 'Create tracking links, referral codes, QR sources, conversion windows, and auditable attribution decisions.', '/merchant-creator-tracking.php', 'Open Tracking & Attribution'],
+          7 => ['Budget and Limits', 'Fund campaign budgets, reserve qualified earnings, enforce caps, and review available, reserved, and committed balances.', '/merchant-creator-budgets.php', 'Open Budget Controls'],
+          8 => ['Content Rights', 'Review immutable agreement rights, Creator-specific terms, disclosures, cancellation rules, and reacceptance requirements.', '/merchant-creator-participation.php', 'Open Agreements'],
+          9 => ['Terms and Disclosures', 'Issue and manage immutable agreement versions with campaign terms, disclosures, cancellation, and reversal rules.', '/merchant-creator-participation.php', 'Open Agreements & Terms'],
+        ];
+        foreach ($operationalSteps as $number => [$label, $copy, $href, $action]):
+        ?>
         <section class="mg-cc-step-panel" data-cc-step="<?= $number ?>">
-          <header><span class="mg-eyebrow">Step <?= $number ?></span><h2><?= mg_e($label) ?></h2><p>This approved domain is intentionally dependency-gated until its dedicated implementation phase.</p></header>
-          <article class="mg-cc-gated-card"><span class="mg-cc-pill is-amber">Planned</span><h3>No placeholder data will be saved</h3><p>The builder preserves the ten-step information architecture without storing unvalidated contractual, tracking, or financial rules in generic JSON.</p></article>
+          <header><span class="mg-eyebrow">Step <?= $number ?> of 10</span><h2><?= mg_e($label) ?></h2><p><?= mg_e($copy) ?></p></header>
+          <article class="mg-v11-builder-domain-card">
+            <div>
+              <span class="mg-cc-pill is-green">Operational</span>
+              <h3><?= mg_e($label) ?> workspace</h3>
+              <p>This domain uses its dedicated Phase <?= $number === 4 ? '4' : ($number === 5 ? '6' : ($number === 6 ? '5' : ($number === 7 ? '7' : '3'))) ?> service and audit controls rather than storing financial or contractual rules in generic builder JSON.</p>
+            </div>
+            <a class="mg-btn mg-btn-primary" href="<?= mg_e($href) ?>"><?= mg_e($action) ?></a>
+          </article>
         </section>
         <?php endforeach; ?>
 
         <section class="mg-cc-step-panel" data-cc-step="10">
-          <header><span class="mg-eyebrow">Step 10</span><h2>Review and readiness</h2><p>Review the creator-facing campaign, Phase 2 score, lifecycle history, and future dependencies.</p></header>
+          <header><span class="mg-eyebrow">Step 10 of 10</span><h2>Review and publish</h2><p>Review the campaign foundation, current readiness, lifecycle history, and operational workspaces before publication.</p></header>
           <div class="mg-cc-review" data-cc-review></div>
+          <div class="mg-v11-builder-links">
+            <a href="/merchant-creator-deliverables.php">Deliverables</a>
+            <a href="/merchant-creator-compensation.php">Compensation</a>
+            <a href="/merchant-creator-tracking.php">Attribution</a>
+            <a href="/merchant-creator-budgets.php">Budget</a>
+            <a href="/merchant-creator-participation.php">Agreements</a>
+          </div>
           <div class="mg-cc-review-actions">
             <button class="mg-btn mg-btn-ghost" type="button" data-cc-review-duplicate disabled>Duplicate</button>
             <span class="mg-cc-lifecycle-actions" data-cc-lifecycle-actions></span>
@@ -114,7 +138,7 @@
     <aside class="mg-cc-summary" data-cc-summary>
       <span class="mg-eyebrow">Campaign summary</span>
       <h2 data-cc-summary-title>Untitled campaign</h2>
-      <div class="mg-cc-summary-score"><strong data-cc-summary-score>0</strong><span>/100 Phase 2</span></div>
+      <div class="mg-cc-summary-score"><strong data-cc-summary-score>0</strong><span>/100 Builder</span></div>
       <dl>
         <div><dt>Objective</dt><dd data-cc-summary-objective>Not selected</dd></div>
         <div><dt>Products</dt><dd data-cc-summary-products>0</dd></div>
@@ -123,6 +147,13 @@
         <div><dt>Dates</dt><dd data-cc-summary-dates>Not scheduled</dd></div>
       </dl>
       <div class="mg-cc-summary-checklist" data-cc-summary-checklist></div>
+      <div class="mg-v11-summary-domain-links">
+        <span>Operational workspaces</span>
+        <a href="/merchant-creator-deliverables.php">Deliverables</a>
+        <a href="/merchant-creator-compensation.php">Compensation</a>
+        <a href="/merchant-creator-tracking.php">Attribution</a>
+        <a href="/merchant-creator-budgets.php">Budget</a>
+      </div>
     </aside>
   </div>
 </section>
