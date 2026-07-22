@@ -82,13 +82,9 @@ function mg_creator_campaign_analytics_apply_scope(
         $where[] = $campaignColumn . '=?';
         $params[] = (int) $scope['campaign_id'];
     }
-    if ($scope['participant_id'] !== null) {
-        if ($participantColumn === null) {
-            $where[] = '1=0';
-        } else {
-            $where[] = $participantColumn . '=?';
-            $params[] = (int) $scope['participant_id'];
-        }
+    if ($scope['participant_id'] !== null && $participantColumn !== null) {
+        $where[] = $participantColumn . '=?';
+        $params[] = (int) $scope['participant_id'];
     }
 }
 
@@ -169,7 +165,7 @@ function mg_creator_campaign_analytics_tracking_by(PDO $pdo, array $scope, strin
 
 function mg_creator_campaign_analytics_attribution_by(PDO $pdo, array $scope, string $groupColumn): array
 {
-    $where = ["a.status IN ('attributed','overridden')"];
+    $where = ["a.status IN ('attributed','overridden')", "e.status='accepted'"];
     $params = [];
     mg_creator_campaign_analytics_apply_scope($scope, $where, $params, 'cc.workspace_id', 'a.creator_user_id', 'a.campaign_id', 'a.participant_id');
     $where[] = mg_creator_campaign_analytics_date_condition('a.attributed_at', $scope['range'], $params);
@@ -261,11 +257,11 @@ function mg_creator_campaign_analytics_channel_rows(PDO $pdo, array $scope): arr
         }
     }
 
-    $attributionWhere = ["a.status IN ('attributed','overridden')"];
+    $attributionWhere = ["a.status IN ('attributed','overridden')", "e.status='accepted'"];
     $attributionParams = [];
     mg_creator_campaign_analytics_apply_scope($scope, $attributionWhere, $attributionParams, 'cc.workspace_id', 'a.creator_user_id', 'a.campaign_id', 'a.participant_id');
     $attributionWhere[] = mg_creator_campaign_analytics_date_condition('a.attributed_at', $scope['range'], $attributionParams);
-    $stmt = $pdo->prepare("SELECT COALESCE(NULLIF(s.channel,''),'other') channel,COALESCE(NULLIF(s.platform,''),'Unspecified') platform,COUNT(*) conversions FROM creator_campaign_attributions a INNER JOIN creator_campaign_tracking_sources s ON s.id=a.source_id INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id WHERE " . implode(' AND ', $attributionWhere) . ' GROUP BY channel,platform');
+    $stmt = $pdo->prepare("SELECT COALESCE(NULLIF(s.channel,''),'other') channel,COALESCE(NULLIF(s.platform,''),'Unspecified') platform,COUNT(*) conversions FROM creator_campaign_attributions a INNER JOIN creator_campaign_tracking_events e ON e.id=a.conversion_event_id INNER JOIN creator_campaign_tracking_sources s ON s.id=a.source_id INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id WHERE " . implode(' AND ', $attributionWhere) . ' GROUP BY channel,platform');
     $stmt->execute($attributionParams);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
         $key = strtolower((string) $row['channel']) . '|' . strtolower((string) $row['platform']);
@@ -303,12 +299,12 @@ function mg_creator_campaign_analytics_timeseries(PDO $pdo, array $scope): array
         $rows[(string) $row['bucket']] = $row + ['conversions' => 0, 'earnings' => [], 'paid' => []];
     }
 
-    $attributionWhere = ["a.status IN ('attributed','overridden')"];
+    $attributionWhere = ["a.status IN ('attributed','overridden')", "e.status='accepted'"];
     $attributionParams = [];
     mg_creator_campaign_analytics_apply_scope($scope, $attributionWhere, $attributionParams, 'cc.workspace_id', 'a.creator_user_id', 'a.campaign_id', 'a.participant_id');
     $attributionWhere[] = mg_creator_campaign_analytics_date_condition('a.attributed_at', $scope['range'], $attributionParams);
     $expression = mg_creator_campaign_analytics_bucket_expression('a.attributed_at', $bucket);
-    $stmt = $pdo->prepare("SELECT {$expression} bucket,COUNT(*) conversions FROM creator_campaign_attributions a INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id WHERE " . implode(' AND ', $attributionWhere) . ' GROUP BY bucket ORDER BY bucket');
+    $stmt = $pdo->prepare("SELECT {$expression} bucket,COUNT(*) conversions FROM creator_campaign_attributions a INNER JOIN creator_campaign_tracking_events e ON e.id=a.conversion_event_id INNER JOIN creator_campaigns cc ON cc.id=a.campaign_id WHERE " . implode(' AND ', $attributionWhere) . ' GROUP BY bucket ORDER BY bucket');
     $stmt->execute($attributionParams);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
         $key = (string) $row['bucket'];
