@@ -43,13 +43,15 @@ function mg_creator_campaign_participation_application_by_public_id(
     ?int $creatorUserId = null,
     bool $forUpdate = false
 ): array {
+    $publicId = trim($publicId);
+    if ($publicId === '') throw new InvalidArgumentException('application_id is required.');
     $sql = 'SELECT a.*,cp.display_name creator_display_name,cp.slug creator_slug,
                    u.email creator_email,u.full_name creator_full_name
             FROM creator_campaign_applications a
             INNER JOIN creator_profiles cp ON cp.id=a.creator_profile_id
             INNER JOIN users u ON u.id=a.creator_user_id
             WHERE a.public_id=?';
-    $params = [trim($publicId)];
+    $params = [$publicId];
     if ($campaignId !== null) {
         $sql .= ' AND a.campaign_id=?';
         $params[] = $campaignId;
@@ -74,13 +76,15 @@ function mg_creator_campaign_participation_invitation_by_public_id(
     ?int $creatorUserId = null,
     bool $forUpdate = false
 ): array {
+    $publicId = trim($publicId);
+    if ($publicId === '') throw new InvalidArgumentException('invitation_id is required.');
     $sql = 'SELECT i.*,cp.display_name creator_display_name,cp.slug creator_slug,
                    u.email creator_email,u.full_name creator_full_name
             FROM creator_campaign_invitations i
             INNER JOIN creator_profiles cp ON cp.id=i.creator_profile_id
             INNER JOIN users u ON u.id=i.creator_user_id
             WHERE i.public_id=?';
-    $params = [trim($publicId)];
+    $params = [$publicId];
     if ($campaignId !== null) {
         $sql .= ' AND i.campaign_id=?';
         $params[] = $campaignId;
@@ -104,13 +108,15 @@ function mg_creator_campaign_participation_participant_by_public_id(
     ?int $creatorUserId = null,
     bool $forUpdate = false
 ): array {
+    $publicId = trim($publicId);
+    if ($publicId === '') throw new InvalidArgumentException('participant_id is required.');
     $sql = 'SELECT p.*,cp.display_name creator_display_name,cp.slug creator_slug,
                    u.email creator_email,u.full_name creator_full_name
             FROM creator_campaign_participants p
             INNER JOIN creator_profiles cp ON cp.id=p.creator_profile_id
             INNER JOIN users u ON u.id=p.creator_user_id
             WHERE p.public_id=?';
-    $params = [trim($publicId)];
+    $params = [$publicId];
     if ($campaignId !== null) {
         $sql .= ' AND p.campaign_id=?';
         $params[] = $campaignId;
@@ -188,49 +194,127 @@ function mg_creator_campaign_participation_summary(PDO $pdo, int $campaignId): a
         'invitations' => 'SELECT COUNT(*) FROM creator_campaign_invitations WHERE campaign_id=?',
         'pending_invitations' => "SELECT COUNT(*) FROM creator_campaign_invitations WHERE campaign_id=? AND status='pending'",
         'participants' => "SELECT COUNT(*) FROM creator_campaign_participants WHERE campaign_id=? AND status IN ('approved','agreement_pending','active','completed','suspended')",
-        'agreement_pending' => "SELQPÕÓÕS•
+        'agreement_pending' => "SELECT COUNT(*) FROM creator_campaign_participants WHERE campaign_id=? AND status='agreement_pending'",
+        'active' => "SELECT COUNT(*) FROM creator_campaign_participants WHERE campaign_id=? AND status='active'",
+    ];
+    $summary = [];
+    foreach ($queries as $key => $sql) {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$campaignId]);
+        $summary[$key] = (int) $stmt->fetchColumn();
+    }
+    return $summary;
+}
 
-ŠH”“ÓHÜ™X]Ü—ØØ[\ZYÛ—Ü\XÚ\[ÈÒT‘HØ[\ZYÛ—ÚYOÈS‘İ]\ÏIØYÜ™Y[Y[Ü[™[™ÉÈ‹ˆNÂˆ	İ[[X\HH×NÂˆ›Ü™XXÚ
-	]Y\šY\È\È	Ù^HOˆ	Ü[
-HÂˆ	İ]H	ËOœ™\\™J	Ü[
-NÂˆ	İ]O™^Xİ]JÉØ[\ZYÛ’YJNÂˆ	İ[[X\VÉÙ^WHH
-[
-H	İ]O™™]ÚÛÛ[[Š
-NÂˆBˆ™]\›ˆ	İ[[X\NÂŸB‚™[˜İ[ÛˆY×ØÜ™X]Ü—ØØ[\ZYÛ—Ü\XÚ\][Û—Ù]™[
-ˆÈ	Ëˆ\œ˜^H	]BŠNˆ[Âˆ	Y[\İ[˜ŞR\ÚH[ÂˆYˆ
-Y[\J	]VÉÚY[\İ[˜ŞWÚÙ^I×JJHÂˆ	Y[\İ[˜ŞR\ÚHY×ØÜ™X]Ü—ØØ[\ZYÛ—ÚY[\İ[˜ŞWÚ\Ú
-ˆY×ØÜ™X]Ü—ØØ[\ZYÛ—İ˜[Y]WÚY[\İ[˜ŞWÚÙ^J	]VÉÚY[\İ[˜ŞWÚÙ^I×JBˆ
-NÂˆBˆ	İ]H	ËOœ™\\™Jˆ	Ú[”ÑT•S•ÈÜ™X]Ü—ØØ[\ZYÛ—Ü\XÚ\][Û—Ù]™[Âˆ
-X›X×ÚYØ[\ZYÛ—ÚY\XØ][Û—ÚY[š]][Û—ÚY\XÚ\[ÚYXİÜ—İ\Ù\—ÚY]™[İ\Kˆœ›ÛWÜİ]\Ë×Üİ]\Ë™X\ÛÛ‹ÛÛ^ÚœÛÛ‹Y[\İ[˜ŞWÚ\ÚÜ™X]YØ]
-BˆSQTÈ
-ËËËËËËËËËËËË“ÕÊ
-JIÂˆ
-NÂˆ	İ]O™^Xİ]JÂˆY×ØÜ™X]Ü—ØØ[\ZYÛ—ÜX›X×ÚY
-	ØØÜIÊKˆ
-[
-H	]VÉØØ[\ZYÛ—ÚY	×Kˆ	]VÉØ\XØ][Û—ÚY	×HÏÈ[ˆ	]VÉÚ[š]][Û—ÚY	×HÏÈ[ˆ	]VÉÜ\XÚ\[ÚY	×HÏÈ[ˆ
-[
-H	]VÉØXİÜ—İ\Ù\—ÚY	×KˆY×ØÜ™X]Ü—ØØ[\ZYÛ—Üİš[™Ê	]VÉÙ]™[İ\I×HÏÈ[	Ù]™[İ\IËLYJKˆ	]VÉÙœ›ÛWÜİ]\É×HÏÈ[ˆ	]VÉİ×Üİ]\É×HÏÈ[ˆY×ØÜ™X]Ü—ØØ[\ZYÛ—Üİš[™Ê	]VÉÜ™X\ÛÛ‰×HÏÈ[	Ü™X\ÛÛ‰ËL
-KˆY×ØÜ™X]Ü—ØØ[\ZYÛ—ÚœÛÛ—Ù[˜ÛÙJ	]VÉØÛÛ^	×HÏÈ[
-Kˆ	Y[\İ[˜ŞR\ÚˆJNÂˆ™]\›ˆ
-[
-H	ËO›\İ[œÙ\Y
+function mg_creator_campaign_participation_event(PDO $pdo, array $event): array
+{
+    $campaignId = (int) ($event['campaign_id'] ?? 0);
+    $actorUserId = (int) ($event['actor_user_id'] ?? 0);
+    $eventType = trim((string) ($event['event_type'] ?? ''));
+    if ($campaignId < 1 || $actorUserId < 1 || $eventType === '') {
+        throw new InvalidArgumentException('Participation event campaign, actor, and type are required.');
+    }
 
-NÂŸB‚™[˜İ[ÛˆY×ØÜ™X]Ü—ØØ[\ZYÛ—Ü\XÚ\][Û—ØÜ™X]Ü—ÜÛ˜\Úİ
-È	Ë[	Ü™X]Ü•\Ù\’Y
-Nˆ\œ˜^BÂˆ	İ]H	ËOœ™\\™Jˆ”ÑSPÕÜœX›X×ÚYÜ™X]Ü—Ü›Ùš[WÜX›X×ÚYÜ™\Ü^WÛ˜[YKÜœÛYËÜ˜š[ËÜ›Y]Y]WÚœÛÛ‹ˆšXY[™K˜]˜]\—İ\›˜Ûİ™\—İ\››ØØ][Û—ÛX™[ÙXœÚ]Wİ\›˜ÛÛ\][Û—ÜØÛÜ™Bˆ”“ÓHÜ™X]Ü—Ü›Ùš[\ÈÜˆQ•“ÒSˆX›X×Ü›Ùš[\ÈÓˆ\Ù\—ÚYXÜ\Ù\—ÚYˆÒT‘HÜ\Ù\—ÚYOÈSRUH‚ˆ
-NÂˆ	İ]O™^Xİ]JÉÜ™X]Ü•\Ù\’YJNÂˆ	›İÈH	İ]O™™]Ú
-Î‘‘UÒĞTÔÓĞÊHÎˆ×NÂˆ	›İÖÉÛY]Y]I×HHY×ØÜ™X]Ü—ØØ[\ZYÛ—Ü\XÚ\][Û—ÙXÛÙWÚœÛÛŠ	›İÖÉÛY]Y]WÚœÛÛ‰×HÏÈ[
-NÂˆ[œÙ]
-	›İÖÉÛY]Y]WÚœÛÛ‰×JNÂˆ™]\›ˆ	›İÎÂŸB‚™[˜İ[ÛˆY×ØÜ™X]Ü—ØØ[\ZYÛ—Ü\XÚ\][Û—ØÜ™X]Ü—ØWÜX›X×ÚY
-È	Ëİš[™È	Ü™X]Ü”X›XÒY
-Nˆ\œ˜^BÂˆ	İ]H	ËOœ™\\™Jˆ”ÑSPÕÜšYÜ™X]Ü—Ü›Ùš[WÚYÜœX›X×ÚYÜ™X]Ü—Ü›Ùš[WÜX›X×ÚYÜ\Ù\—ÚYˆÜ™\Ü^WÛ˜[YKÜœÛYËÜ˜š[ËÜœİ]\ÈÜ™X]Ü—Ü›Ùš[WÜİ]\ËˆKœİ]\È\Ù\—Üİ]\ËK™[Û˜[YKK™\Ü^WÛ˜[YH\Ù\—Ù\Ü^WÛ˜[YKK™[XZ[ˆ[XKœİ]\ÈÜ™X]Ü—Ø\ÜÚYÛ›Y[Üİ]\ËˆšXY[™K˜]˜]\—İ\››ØØ][Û—ÛX™[ÙXœÚ]Wİ\›˜ÛÛ\][Û—ÜØÛÜ™Bˆ”“ÓHÜ™X]Ü—Ü›Ùš[\ÈÜˆS“‘Tˆ“ÒSˆ\Ù\œÈHÓˆKšYXÜ\Ù\—ÚYˆS“‘Tˆ“ÒSˆ\Ù\—Û[Ù[È[HÓˆ[K˜ÛÙOIØÜ™X]Ü‰ÂˆS“‘Tˆ“ÒSˆ\Ù\—Û[Ù[Ø\ÜÚYÛ›Y[È[XHÓˆ[XK\Ù\—ÚYXÜ\Ù\—ÚYS‘[XK\Ù\—Û[Ù[ÚY][KšYˆQ•“ÒSˆX›X×Ü›Ùš[\ÈÓˆ\Ù\—ÚYXÜ\Ù\—ÚYˆÒT‘HÜœX›X×ÚYOÈSRUH‚ˆ
-NÂˆ	İ]O™^Xİ]Jİš[J	Ü™X]Ü”X›XÒY
-WJNÂˆ	›İÈH	İ]O™™]Ú
-Î‘‘UÒĞTÔÓĞÊNÂˆYˆ
-I›İÊH›İÈ™]È[[YQ^Ù\[ÛŠ	ĞÜ™X]ÜˆXØÛİ[›İ›İ[™‰ÊNÂˆYˆ
-ˆ
-İš[™ÊH	›İÖÉİ\Ù\—Üİ]\É×HOOH	ØXİ]™IÂˆ
-İš[™ÊH	›İÖÉØÜ™X]Ü—Ø\ÜÚYÛ›Y[Üİ]\É×HOOH	ØXİ]™IÂˆ
-İš[™ÊH	›İÖÉØÜ™X]Ü—Ü›Ùš[WÜİ]\É×HOOH	ØXİ]™IÂˆ
-HÂˆ›İÈ™]ÈÛXZ[‘^Ù\[ÛŠ	ÓÛ›HXİ]™H\›İ™YÜ™X]ÜˆXØÛİ[ÈX^H\XÚ\]K‰ÊNÂˆBˆ™]\›ˆ	›İÎÂŸB
+    $idempotencyKey = trim((string) ($event['idempotency_key'] ?? ''));
+    $idempotencyHash = $idempotencyKey === ''
+        ? null
+        : (function_exists('mg_creator_campaign_idempotency_hash')
+            ? mg_creator_campaign_idempotency_hash($idempotencyKey)
+            : hash('sha256', $idempotencyKey));
+
+    if ($idempotencyHash !== null) {
+        $existing = $pdo->prepare(
+            'SELECT public_id FROM creator_campaign_participation_events
+             WHERE campaign_id=? AND idempotency_hash=? LIMIT 1'
+        );
+        $existing->execute([$campaignId, $idempotencyHash]);
+        $publicId = (string) ($existing->fetchColumn() ?: '');
+        if ($publicId !== '') return ['public_id' => $publicId, 'idempotent_replay' => true];
+    }
+
+    $publicId = mg_creator_campaign_public_id('ccpe');
+    $context = $event['context'] ?? null;
+    $contextJson = $context === null
+        ? null
+        : (function_exists('mg_creator_campaign_json_encode')
+            ? mg_creator_campaign_json_encode($context)
+            : json_encode($context, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+    try {
+        $stmt = $pdo->prepare(
+            'INSERT INTO creator_campaign_participation_events
+             (public_id,campaign_id,application_id,invitation_id,participant_id,actor_user_id,
+              event_type,from_status,to_status,reason,context_json,idempotency_hash,created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())'
+        );
+        $stmt->execute([
+            $publicId,
+            $campaignId,
+            isset($event['application_id']) ? (int) $event['application_id'] : null,
+            isset($event['invitation_id']) ? (int) $event['invitation_id'] : null,
+            isset($event['participant_id']) ? (int) $event['participant_id'] : null,
+            $actorUserId,
+            $eventType,
+            isset($event['from_status']) ? (string) $event['from_status'] : null,
+            isset($event['to_status']) ? (string) $event['to_status'] : null,
+            isset($event['reason']) ? substr(trim((string) $event['reason']), 0, 1000) : null,
+            $contextJson,
+            $idempotencyHash,
+        ]);
+    } catch (PDOException $error) {
+        if ($idempotencyHash === null || (string) $error->getCode() !== '23000') throw $error;
+        $existing = $pdo->prepare(
+            'SELECT public_id FROM creator_campaign_participation_events
+             WHERE campaign_id=? AND idempotency_hash=? LIMIT 1'
+        );
+        $existing->execute([$campaignId, $idempotencyHash]);
+        $replayPublicId = (string) ($existing->fetchColumn() ?: '');
+        if ($replayPublicId === '') throw $error;
+        return ['public_id' => $replayPublicId, 'idempotent_replay' => true];
+    }
+
+    return ['public_id' => $publicId, 'idempotent_replay' => false];
+}
+
+function mg_creator_campaign_participation_creator_by_public_id(PDO $pdo, string $creatorPublicId): array
+{
+    $creatorPublicId = trim($creatorPublicId);
+    if ($creatorPublicId === '') throw new InvalidArgumentException('creator_profile_id is required.');
+    $stmt = $pdo->prepare(
+        'SELECT cp.id creator_profile_id,cp.public_id creator_profile_public_id,cp.user_id,
+                cp.display_name,cp.slug,cp.bio,cp.status creator_profile_status,cp.metadata_json,
+                u.email,u.display_name user_display_name,u.full_name,u.status user_status,
+                pp.headline,pp.avatar_url,pp.location_label,pp.website_url,pp.completion_score
+         FROM creator_profiles cp
+         INNER JOIN users u ON u.id=cp.user_id
+         LEFT JOIN public_profiles pp ON pp.user_id=cp.user_id
+         WHERE cp.public_id=? LIMIT 1'
+    );
+    $stmt->execute([$creatorPublicId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) throw new RuntimeException('Creator profile not found.');
+    $row['metadata'] = mg_creator_campaign_participation_decode_json($row['metadata_json'] ?? null) ?: [];
+    unset($row['metadata_json']);
+    return $row;
+}
+
+function mg_creator_campaign_participation_creator_snapshot(PDO $pdo, int $creatorUserId): array
+{
+    if ($creatorUserId < 1) throw new InvalidArgumentException('creator_user_id is required.');
+    $stmt = $pdo->prepare(
+        'SELECT cp.id creator_profile_id,cp.public_id creator_profile_public_id,cp.user_id,
+                cp.display_name,cp.slug,cp.bio,cp.status creator_profile_status,cp.metadata_json,
+                u.email,u.display_name user_display_name,u.full_name,u.status user_status,
+                pp.headline,pp.avatar_url,pp.location_label,pp.website_url,pp.completion_score
+         FROM creator_profiles cp
+         INNER JOIN users u ON u.id=cp.user_id
+         LEFT JOIN public_profiles pp ON pp.user_id=cp.user_id
+         WHERE cp.user_id=? LIMIT 1'
+    );
+    $stmt->execute([$creatorUserId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) throw new RuntimeException('Creator profile not found.');
+    $row['metadata'] = mg_creator_campaign_participation_decode_json($row['metadata_json'] ?? null) ?: [];
+    unset($row['metadata_json']);
+    return $row;
+}
