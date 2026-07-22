@@ -10,7 +10,8 @@ function mg_mcp_automation_authorize_grant_action(
     string $riskLevel,
     int $proposedAmountCents = 0,
     int $proposedQuantity = 0,
-    array $targetContext = []
+    array $targetContext = [],
+    ?int $excludeRunId = null
 ): array {
     if (!mg_mcp_automation_schema_ready($pdo)) {
         throw new MgMcpAutomationGrantException('Automation authority is unavailable.', 503, 'MCP_AUTOMATION_SCHEMA_MISSING');
@@ -77,11 +78,9 @@ function mg_mcp_automation_authorize_grant_action(
     }
     $targetPolicy = mg_mcp_automation_json_object($grant['target_policy_json']);
     foreach (['product_id' => 'allowed_product_ids', 'campaign_id' => 'allowed_campaign_ids', 'reward_template_id' => 'allowed_reward_template_ids'] as $inputKey => $policyKey) {
-        $targetId = strtolower(trim((string)($targetContext[$inputKey] ?? '')));
+        $targetId = strtolower(trim((string)($targetContext[$inputKey] ?? ''));
         $allowedIds = is_array($targetPolicy[$policyKey] ?? null) ? array_map('strval', $targetPolicy[$policyKey]) : [];
-        if ($targetId === '') {
-            continue;
-        }
+        if ($targetId === '') continue;
         if ($inputKey === 'product_id' && $allowedIds === [] && empty($targetPolicy['allow_all_published_catalog'])) {
             throw new MgMcpAutomationGrantException('The grant does not authorize unrestricted catalog targets.', 403, 'MCP_AUTOMATION_TARGET_DENIED');
         }
@@ -94,11 +93,10 @@ function mg_mcp_automation_authorize_grant_action(
         && $targetContext['recipient_is_existing_contact'] !== true) {
         throw new MgMcpAutomationGrantException('The grant allows existing authorized contacts only.', 403, 'MCP_AUTOMATION_RECIPIENT_DENIED');
     }
-    $concurrency = $pdo->prepare(
-        "SELECT COUNT(*) FROM mcp_automation_runs
-         WHERE grant_id=? AND status IN ('queued','evaluating','waiting_for_approval','approved','executing')"
-    );
-    $concurrency->execute([(int)$grant['id']]);
+    $sql="SELECT COUNT(*) FROM mcp_automation_runs WHERE grant_id=? AND status IN ('queued','evaluating','waiting_for_approval','approved','executing')";
+    $params=[(int)$grant['id']];
+    if($excludeRunId!==null&&$excludeRunId>0){$sql.=' AND id<>?';$params[]=$excludeRunId;}
+    $concurrency=$pdo->prepare($sql);$concurrency->execute($params);
     if ((int)$concurrency->fetchColumn() >= (int)$grant['maximum_concurrent_runs']) {
         throw new MgMcpAutomationGrantException('The grant concurrency limit has been reached.', 409, 'MCP_AUTOMATION_CONCURRENCY_LIMIT');
     }
@@ -110,6 +108,6 @@ function mg_mcp_automation_authorize_grant_action(
         'maximum_operation_class' => (string)$grant['maximum_operation_class'],
         'approval_policy' => (string)$grant['approval_policy'],
         'risk_ceiling' => (string)$grant['risk_ceiling'],
-        'execution_enabled' => false,
+        'execution_enabled' => $operationClass === 'approval_gated',
     ];
 }
