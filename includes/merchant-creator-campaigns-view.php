@@ -4,24 +4,29 @@
     <div>
       <span class="mg-eyebrow">Brand–Creator Campaign System</span>
       <h1>Creator Campaigns</h1>
-      <p>Build product-led creator opportunities without mixing them into rewards, contests, QR drops, or CRM campaigns.</p>
+      <p>Build product-led creator opportunities, then manage applications, invitations, and participants in the separate participation workspace.</p>
     </div>
-    <a class="mg-btn mg-btn-primary" href="/merchant-creator-campaign-builder.php">Create Campaign</a>
+    <div class="mg-cc-head-actions">
+      <a class="mg-btn mg-btn-soft" href="/merchant-creator-participation.php">Manage Participation</a>
+      <a class="mg-btn mg-btn-primary" href="/merchant-creator-campaign-builder.php">Create Campaign</a>
+    </div>
   </header>
 
   <section class="mg-cc-metrics" data-cc-metrics aria-label="Creator campaign summary"></section>
 
   <section class="mg-cc-grid mg-cc-grid-top">
     <article class="mg-cc-panel">
-      <header><div><span class="mg-eyebrow">Phase 2 readiness</span><h2>Campaign health</h2></div><span class="mg-cc-pill is-blue">Builder</span></header>
+      <header><div><span class="mg-eyebrow">Phase 3 readiness</span><h2>Campaign health</h2></div><span class="mg-cc-pill is-blue">Participation</span></header>
       <div class="mg-cc-health" data-cc-health>
-        <div><strong>Details, products, eligibility</strong><span>Operational in this phase</span></div>
+        <div><strong>Details, products, eligibility</strong><span>Operational in the campaign builder</span></div>
+        <div><strong>Applications, invitations, participants</strong><span>Operational in Creator Participation</span></div>
         <div><strong>Agreements and execution</strong><span>Dependency-gated until later approved phases</span></div>
       </div>
     </article>
     <article class="mg-cc-panel">
       <header><div><span class="mg-eyebrow">Architecture</span><h2>Separated campaign domain</h2></div></header>
       <p class="mg-cc-panel-copy">Creator campaigns are workspace-owned and do not reuse the legacy <code>campaigns</code> table used by rewards and CRM automation.</p>
+      <a class="mg-btn mg-btn-soft" href="/merchant-creator-participation.php">Open Participation Workspace</a>
     </article>
   </section>
 
