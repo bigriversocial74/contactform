@@ -1,0 +1,45 @@
+name: Phase 10 participant scope patch
+on:
+  push:
+    branches: [feature/creator-campaign-analytics-performance-v10-20260722]
+    paths: ['.github/workflows/phase10-participant-scope-patch.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/creator-campaign-analytics-performance-v10-20260722
+      - name: Preserve campaign rows for participant filters
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('includes/creator-campaigns/analytics-query.php')
+          source = path.read_text()
+          old = """    if ($scope['participant_id'] !== null) {
+              if ($participantColumn === null) {
+                  $where[] = '1=0';
+              } else {
+                  $where[] = $participantColumn . '=?';
+                  $params[] = (int) $scope['participant_id'];
+              }
+          }
+          """
+          new = """    if ($scope['participant_id'] !== null && $participantColumn !== null) {
+              $where[] = $participantColumn . '=?';
+              $params[] = (int) $scope['participant_id'];
+          }
+          """
+          if old not in source:
+              raise SystemExit('Expected participant scope pattern not found.')
+          path.write_text(source.replace(old, new, 1))
+          PY
+      - name: Commit participant scope fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add includes/creator-campaigns/analytics-query.php
+          git commit -m "Fix Phase 10 participant campaign scope"
+          git push origin HEAD:feature/creator-campaign-analytics-performance-v10-20260722
