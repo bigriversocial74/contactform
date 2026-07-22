@@ -2,7 +2,7 @@
 <section class="mg-cct-shell" data-cct-creator>
   <header class="mg-cct-head">
     <div><a class="mg-cct-back" href="/creator-campaigns.php">← Creator Campaigns</a><span class="mg-eyebrow">Creator Campaigns · Phase 5</span><h1>My Tracking Links</h1><p>Create campaign share links and review clicks, engagement, and attributed outcomes.</p></div>
-    <button class="mg-btn mg-btn-primary" type="button" data-cct-new-source>New Tracking Link</button>
+    <div class="mg-action-row"><a class="mg-btn mg-btn-soft" href="/creator-campaign-earnings.php">My Earnings</a><button class="mg-btn mg-btn-primary" type="button" data-cct-new-source>New Tracking Link</button></div>
   </header>
   <section class="mg-cct-metrics" data-cct-metrics></section>
   <nav class="mg-cct-tabs" aria-label="Creator tracking views"><button class="is-active" type="button" data-cct-tab="sources">Links</button><button type="button" data-cct-tab="events">Activity</button></nav>

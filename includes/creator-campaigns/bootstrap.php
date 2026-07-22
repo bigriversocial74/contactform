@@ -35,3 +35,9 @@ require_once __DIR__ . '/tracking-repository.php';
 require_once __DIR__ . '/tracking-service.php';
 require_once __DIR__ . '/attribution-service.php';
 require_once __DIR__ . '/tracking-query.php';
+
+require_once __DIR__ . '/compensation-definitions.php';
+require_once __DIR__ . '/compensation-context.php';
+require_once __DIR__ . '/compensation-repository.php';
+require_once __DIR__ . '/compensation-service.php';
+require_once __DIR__ . '/compensation-query.php';
