@@ -113,7 +113,7 @@ test("Creator Campaign draft tools are deterministic, non-destructive, and scope
     assert.deepEqual(payload.result.tools.map((tool) => tool.name), ["microgifter.creator_campaigns.budget.propose"]);
   });
 
-  await withServer(config(allScopes, "read"), bridge, async ({ baseUrl }) => {
+  await withServer(config([], "read"), bridge, async ({ baseUrl }) => {
     const response = await rpc(baseUrl, { jsonrpc: "2.0", id: 3, method: "tools/list", params: {} });
     const payload = await response.json();
     assert.deepEqual(payload.result.tools.map((tool) => tool.name), []);
