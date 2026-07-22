@@ -144,7 +144,7 @@ jobs:
           set -euo pipefail
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='microgifter' AND table_name IN ('merchant_crm_creator_campaign_events','merchant_crm_contact_creator_campaigns','merchant_crm_creator_campaign_projection_runs');")" = "3"
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM permissions WHERE slug IN ('merchant.creator_crm.view','merchant.creator_crm.manage');")" = "2"
-          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='merchant_crm_creator_campaign_events' AND index_name='uq_merchant_crm_cc_event_source' AND non_unique=0;")" = "1"
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='merchant_crm_creator_campaign_events' AND index_name='uq_merchant_crm_cc_event_source' AND non_unique=0;")" = "1"
       - name: Verify Phase 12 SQL idempotency
         run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_crm_lifecycle_v12_single_install.sql
       - name: Execute Phase 12 CRM lifecycle
