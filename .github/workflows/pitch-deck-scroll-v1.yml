@@ -5,6 +5,7 @@ on:
     paths:
       - 'pitch-deck.php'
       - 'assets/css/pitch-deck-scroll-v1.css'
+      - 'assets/css/pitch-deck-scroll-runtime-v2.css'
       - 'assets/js/pitch-deck-scroll-v1.js'
       - 'scripts/validate_pitch_deck_scroll_v1.php'
       - '.github/workflows/pitch-deck-scroll-v1.yml'
