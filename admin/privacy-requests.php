@@ -3,27 +3,57 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
 
-$user=mg_require_admin_page_permission('admin.privacy_requests.view');
-$permissions=is_array($user['permissions']??null)?$user['permissions']:[];
-$roles=is_array($user['roles']??null)?$user['roles']:[];
-$canManage=in_array('super_admin',$roles,true)||in_array('admin.privacy_requests.manage',$permissions,true);
-$page_title='Privacy Requests | Microgifter';
-$page_section='account';
-$header_mode='account';
-$page_body_class='mg-admin-privacy-page';
-$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-privacy-requests-v1.css?v=1.0.0'];
-$page_scripts=['/assets/js/admin-privacy-requests-v1.js?v=1.0.0'];
-$adminActive='privacy-requests';
+$user = mg_require_admin_page_permission('admin.privacy_requests.view');
+$permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+$roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+$canManage = in_array('super_admin',$roles,true) || in_array('admin.privacy_requests.manage',$permissions,true);
+$page_title = 'Privacy Requests | Microgifter';
+$page_section = 'account';
+$header_mode = 'account';
+$page_body_class = 'mg-admin-privacy-page';
+$page_styles = [
+    '/assets/css/admin-shell.css',
+    '/assets/css/admin-privacy-requests-v1.css?v=1.0.0',
+    '/assets/css/admin-privacy-create-v1.css?v=1.0.0',
+];
+$page_scripts = ['/assets/js/admin-privacy-requests-v1.js?v=1.1.0'];
+$adminActive = 'privacy-requests';
+$csrfToken = mg_csrf_token();
 require dirname(__DIR__) . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-admin-app">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
   <main class="mg-app-workspace mg-admin-workspace">
-    <section class="mg-admin-privacy" data-admin-privacy data-can-manage="<?= $canManage?'true':'false' ?>">
+    <section class="mg-admin-privacy" data-admin-privacy data-can-manage="<?= $canManage ? 'true' : 'false' ?>" data-csrf-token="<?= mg_e($csrfToken) ?>">
       <header class="mg-admin-privacy-hero">
-        <div><a href="/account-admin.php">← Admin dashboard</a><span>Privacy governance</span><h1>Privacy requests</h1><p>Review verified requests, jurisdiction deadlines, account restrictions, merchant-controller handoffs, legal holds, retention actions, and final erasure receipts.</p></div>
-        <div class="mg-admin-privacy-summary" data-privacy-summary><strong>—</strong><span>requests loaded</span></div>
+        <div>
+          <a href="/account-admin.php">← Admin dashboard</a>
+          <span>Privacy governance</span>
+          <h1>Privacy requests</h1>
+          <p>Review verified requests, jurisdiction deadlines, account restrictions, merchant-controller handoffs, legal holds, retention actions, and final erasure receipts.</p>
+        </div>
+        <div class="mg-admin-privacy-hero-side">
+          <div class="mg-admin-privacy-summary" data-privacy-summary><strong>—</strong><span>requests loaded</span></div>
+          <?php if ($canManage): ?><button class="mg-btn mg-btn-primary" type="button" data-privacy-create-toggle>Start admin request</button><?php endif; ?>
+        </div>
       </header>
+
+      <?php if ($canManage): ?>
+        <section class="mg-admin-privacy-create" data-privacy-create-panel hidden>
+          <header>
+            <div><span>Administrative workflow</span><h2>Start an account-erasure review</h2><p>This creates a governed request. The account remains active until an authorized administrator approves and restricts it.</p></div>
+            <button type="button" data-privacy-create-close aria-label="Close">×</button>
+          </header>
+          <form data-privacy-create-form>
+            <input type="hidden" name="csrf_token" value="<?= mg_e($csrfToken) ?>">
+            <label>Account email<input type="email" name="email" maxlength="255" required autocomplete="off" placeholder="customer@example.com"></label>
+            <label>Jurisdiction<select name="jurisdiction" required><option value="">Choose jurisdiction</option><option value="eu_eea">European Union / EEA</option><option value="uk">United Kingdom</option><option value="california">California</option><option value="other_us">Other United States</option><option value="other">Other / not listed</option></select></label>
+            <label class="is-wide">Administrative reason<textarea name="reason" rows="3" minlength="8" maxlength="500" required placeholder="Document the verified request, support case, policy basis, or administrative reason."></textarea></label>
+            <div class="mg-admin-privacy-create-notice" data-privacy-create-notice role="status" aria-live="polite"></div>
+            <div class="mg-admin-privacy-create-actions"><button class="mg-btn mg-btn-ghost" type="button" data-privacy-create-close>Cancel</button><button class="mg-btn mg-btn-primary" type="submit">Create review request</button></div>
+          </form>
+        </section>
+      <?php endif; ?>
 
       <form class="mg-admin-privacy-filters" data-privacy-filters role="search">
         <label class="is-wide">Search<input type="search" name="q" maxlength="160" autocomplete="off" placeholder="Request ID, email, or account name"></label>
