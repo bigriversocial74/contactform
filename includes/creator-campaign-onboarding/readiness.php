@@ -61,6 +61,7 @@ function mg_creator_campaign_onboarding_campaign_readiness(
         'budget_configured'=>(int)$campaign['budget_count'] > 0,
         'tracking_configured'=>(int)$campaign['tracking_count'] > 0,
         'agreement_service_ready'=>$agreementServiceReady,
+        'automatic_acceptance_disabled'=>(int)($campaign['automatic_acceptance'] ?? 0) === 0,
     ];
     return [
         'selected'=>true,
@@ -95,11 +96,37 @@ function mg_creator_campaign_onboarding_readiness(
     $perCreatorCommitment = (int)($financials['per_creator_limit_minor'] ?? 0) * $maximumCreators;
     $financialWithinCeiling = $budget > 0 && max($flatCommitment, $perCreatorCommitment) <= $budget;
 
+    $primaryOperatorId = (int)($onboarding['primary_operator_user_id'] ?? 0);
+    $operatorIds = [$primaryOperatorId];
+    foreach (array_keys(MG_CREATOR_CAMPAIGN_ONBOARDING_ROLE_KEYS) as $key) {
+        $operatorIds[] = (int)($roles[$key]['user_id'] ?? 0);
+    }
+    $operatorEvidence = mg_creator_campaign_onboarding_operator_evidence(
+        $pdo,
+        (int)$workspace['id'],
+        (int)$workspace['merchant_user_id'],
+        $operatorIds
+    );
+    $primaryOperatorCurrent = $primaryOperatorId > 0 && !empty($operatorEvidence[$primaryOperatorId]['current']);
+    $roleComplete = true;
+    $roleEvidence = [];
+    foreach (array_keys(MG_CREATOR_CAMPAIGN_ONBOARDING_ROLE_KEYS) as $key) {
+        $userId = (int)($roles[$key]['user_id'] ?? 0);
+        $roleEvidence[$key] = $operatorEvidence[$userId] ?? [
+            'user_id'=>$userId,
+            'account_active'=>false,
+            'workspace_current'=>false,
+            'current'=>false,
+        ];
+        if ($userId < 1 || empty($roleEvidence[$key]['current'])) $roleComplete = false;
+    }
+
     $smokeFingerprintPayload = [
-        'version'=>'creator_campaign_onboarding_smoke_v15',
+        'version'=>'creator_campaign_onboarding_smoke_v15_1',
         'onboarding_id'=>(string)$onboarding['public_id'],
         'workspace_id'=>(string)$workspace['public_id'],
-        'primary_operator_user_id'=>(int)($onboarding['primary_operator_user_id'] ?? 0),
+        'primary_operator_user_id'=>$primaryOperatorId,
+        'primary_operator_evidence'=>$operatorEvidence[$primaryOperatorId] ?? null,
         'support_contact'=>(string)($onboarding['support_contact'] ?? ''),
         'pilot_goal'=>(string)($onboarding['pilot_goal'] ?? ''),
         'expected_campaign_volume'=>(string)($onboarding['expected_campaign_volume'] ?? ''),
@@ -108,13 +135,20 @@ function mg_creator_campaign_onboarding_readiness(
         'product_selection'=>(array)($onboarding['product_selection'] ?? []),
         'selected_product_evidence'=>array_map(static fn(array $product): array => [
             'public_id'=>(string)$product['public_id'],
+            'current_version_id'=>(int)($product['current_version_id'] ?? 0),
             'version_public_id'=>(string)($product['version_public_id'] ?? ''),
             'status'=>(string)$product['status'],
+            'version_status'=>(string)($product['version_status'] ?? ''),
+            'unit_value_cents'=>(int)($product['unit_value_cents'] ?? 0),
+            'currency'=>(string)($product['currency'] ?? ''),
+            'ready_image_count'=>(int)($product['ready_image_count'] ?? 0),
+            'active_pppm_count'=>(int)($product['active_pppm_count'] ?? 0),
             'checks'=>(array)$product['checks'],
         ], $selectedProducts),
         'compensation_defaults'=>$financials,
         'creator_preferences'=>$preferences,
         'operator_roles'=>$roles,
+        'operator_evidence'=>$roleEvidence,
         'campaign'=>$campaignReadiness['campaign'],
         'campaign_checks'=>$campaignReadiness['checks'],
         'financial_within_ceiling'=>$financialWithinCeiling,
@@ -122,33 +156,29 @@ function mg_creator_campaign_onboarding_readiness(
     ];
     $currentSmokeHash = hash('sha256', mg_creator_campaign_onboarding_encode($smokeFingerprintPayload));
     $latestSmoke = null;
+    $currentPassingSmoke = null;
     foreach ($receipts as $receipt) {
-        if ((string)$receipt['receipt_type'] === 'readiness_smoke_test') {
-            $latestSmoke = $receipt;
-            break;
+        if ((string)$receipt['receipt_type'] !== 'readiness_smoke_test') continue;
+        $latestSmoke ??= $receipt;
+        if ($currentPassingSmoke === null
+            && (string)$receipt['status'] === 'passed'
+            && hash_equals($currentSmokeHash, (string)($receipt['snapshot_hash'] ?? ''))) {
+            $currentPassingSmoke = $receipt;
         }
     }
     $latestSmokeCurrent = $latestSmoke !== null
         && hash_equals($currentSmokeHash, (string)($latestSmoke['snapshot_hash'] ?? ''));
 
-    $roleComplete = true;
-    foreach (array_keys(MG_CREATOR_CAMPAIGN_ONBOARDING_ROLE_KEYS) as $key) {
-        if ((int)($roles[$key]['user_id'] ?? 0) < 1) {
-            $roleComplete = false;
-            break;
-        }
-    }
-
     $steps = [
         1=>[
             'key'=>'enrollment',
             'label'=>mg_creator_campaign_onboarding_step_label(1),
-            'complete'=>(int)($onboarding['primary_operator_user_id'] ?? 0) > 0
+            'complete'=>$primaryOperatorCurrent
                 && trim((string)($onboarding['support_contact'] ?? '')) !== ''
                 && trim((string)($onboarding['pilot_goal'] ?? '')) !== ''
                 && trim((string)($onboarding['expected_campaign_volume'] ?? '')) !== ''
                 && !empty($onboarding['intended_launch_date']),
-            'detail'=>'Primary operator, support path, pilot goal, volume, and target date.',
+            'detail'=>'Current primary operator, support path, pilot goal, volume, and target date.',
         ],
         2=>[
             'key'=>'business',
@@ -188,19 +218,19 @@ function mg_creator_campaign_onboarding_readiness(
             'key'=>'roles',
             'label'=>mg_creator_campaign_onboarding_step_label(6),
             'complete'=>$roleComplete,
-            'detail'=>'Named owner, review, finance, payout-record, and emergency roles.',
+            'detail'=>'Current workspace members hold owner, review, finance, payout-record, and emergency roles.',
         ],
         7=>[
             'key'=>'campaign',
             'label'=>mg_creator_campaign_onboarding_step_label(7),
             'complete'=>!empty($campaignReadiness['complete']),
-            'detail'=>'Canonical builder, product, deliverable, compensation, budget, attribution, and agreement services are ready.',
+            'detail'=>'Canonical builder, product, deliverable, compensation, budget, attribution, agreement infrastructure, and manual Creator approval controls are ready.',
         ],
         8=>[
             'key'=>'smoke_test',
             'label'=>mg_creator_campaign_onboarding_step_label(8),
-            'complete'=>$latestSmokeCurrent && (string)$latestSmoke['status'] === 'passed',
-            'detail'=>'A durable read-only production smoke-test receipt has passed.',
+            'complete'=>$currentPassingSmoke !== null,
+            'detail'=>'A durable read-only production smoke-test receipt matches the current launch state.',
         ],
         9=>[
             'key'=>'launch',
@@ -213,8 +243,7 @@ function mg_creator_campaign_onboarding_readiness(
     $setupSteps = array_slice($steps, 0, 7, true);
     $setupReady = count(array_filter($setupSteps, static fn(array $step): bool => !empty($step['complete']))) === count($setupSteps);
     $launchReady = $setupReady
-        && $latestSmokeCurrent
-        && (string)$latestSmoke['status'] === 'passed'
+        && $currentPassingSmoke !== null
         && empty($pilot['emergency_disabled']);
     $completed = count(array_filter($steps, static fn(array $step): bool => !empty($step['complete'])));
     $score = (int)round(($completed / count($steps)) * 100);
@@ -238,8 +267,10 @@ function mg_creator_campaign_onboarding_readiness(
         'campaign'=>$campaignReadiness,
         'financial_exposure'=>$financialExposure,
         'financial_within_ceiling'=>$financialWithinCeiling,
+        'operator_evidence'=>$operatorEvidence,
         'latest_smoke_test'=>$latestSmoke,
         'latest_smoke_test_current'=>$latestSmokeCurrent,
+        'current_passing_smoke_test'=>$currentPassingSmoke,
         'current_smoke_hash'=>$currentSmokeHash,
         'pilot_emergency_clear'=>empty($pilot['emergency_disabled']),
         'generated_at'=>gmdate('c'),
