@@ -19,6 +19,10 @@
 
   const slideCount = slides.length;
   deck.style.setProperty('--pitch-slides', String(slideCount));
+
+  // Sticky positioning fails when an ancestor clips overflow. The deck only
+  // needs clipping inside its pinned scene, so keep the outer wrapper visible.
+  deck.style.setProperty('overflow', 'visible', 'important');
   deck.classList.add('is-enhanced');
 
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
