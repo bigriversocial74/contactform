@@ -78,7 +78,7 @@ function mg_mcp_automation_authorize_grant_action(
     }
     $targetPolicy = mg_mcp_automation_json_object($grant['target_policy_json']);
     foreach (['product_id' => 'allowed_product_ids', 'campaign_id' => 'allowed_campaign_ids', 'reward_template_id' => 'allowed_reward_template_ids'] as $inputKey => $policyKey) {
-        $targetId = strtolower(trim((string)($targetContext[$inputKey] ?? ''));
+        $targetId = strtolower(trim((string)($targetContext[$inputKey] ?? '')));
         $allowedIds = is_array($targetPolicy[$policyKey] ?? null) ? array_map('strval', $targetPolicy[$policyKey]) : [];
         if ($targetId === '') {
             continue;
