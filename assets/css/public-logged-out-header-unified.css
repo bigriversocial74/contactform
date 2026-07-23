@@ -97,41 +97,29 @@ html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-s
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input::placeholder{
   color:#81948f!important;
 }
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a{
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a{
   border-color:#e0e9e4!important;
   background:#fff!important;
   color:#183c37!important;
   box-shadow:0 10px 26px rgba(11,45,42,.045)!important;
 }
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a:hover,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:hover{
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a:hover{
   border-color:#bcd9ae!important;
   background:#f2faee!important;
   color:#285f1b!important;
   transform:translateX(-2px)!important;
 }
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:first-child{
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a{
   border-color:#102d4c!important;
   background:#102d4c!important;
   color:#fff!important;
   box-shadow:0 14px 30px rgba(9,26,49,.20)!important;
 }
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:first-child:hover{
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:hover{
   border-color:#173b63!important;
   background:#173b63!important;
   color:#fff!important;
-}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:last-child{
-  border-color:#72d43f!important;
-  background:#72d43f!important;
-  color:#0b2d2a!important;
-  box-shadow:0 14px 30px rgba(76,174,36,.18)!important;
-}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:last-child:hover{
-  border-color:#82df50!important;
-  background:#82df50!important;
-  color:#0b2d2a!important;
+  transform:translateX(-2px)!important;
 }
 
 @media(max-width:1080px){
