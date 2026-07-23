@@ -1,0 +1,65 @@
+name: Privacy Retention and Account Erasure v1
+
+on:
+  pull_request:
+    paths:
+      - 'database/20260723_privacy_retention_account_erasure_v1_single_install.sql'
+      - 'includes/privacy/account-erasure.php'
+      - 'api/me/privacy-request.php'
+      - 'api/admin/privacy-requests.php'
+      - 'privacy-center.php'
+      - 'admin/privacy-requests.php'
+      - 'assets/css/privacy-center-v1.css'
+      - 'assets/css/admin-privacy-requests-v1.css'
+      - 'assets/js/privacy-center-v1.js'
+      - 'assets/js/admin-privacy-requests-v1.js'
+      - 'scripts/process_privacy_erasure_queue.php'
+      - 'scripts/validate_privacy_retention_account_erasure_v1.php'
+      - 'docs/privacy/account-erasure-retention-v1.md'
+      - 'privacy.php'
+      - 'account.php'
+      - 'includes/account-sidebar.php'
+      - 'admin/users.php'
+      - '.github/workflows/privacy-retention-account-erasure-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+      - name: PHP syntax
+        run: |
+          php -l includes/privacy/account-erasure.php
+          php -l api/me/privacy-request.php
+          php -l api/admin/privacy-requests.php
+          php -l privacy-center.php
+          php -l admin/privacy-requests.php
+          php -l scripts/process_privacy_erasure_queue.php
+          php -l scripts/validate_privacy_retention_account_erasure_v1.php
+          php -l privacy.php
+          php -l account.php
+          php -l includes/account-sidebar.php
+          php -l admin/users.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/privacy-center-v1.js
+          node --check assets/js/admin-privacy-requests-v1.js
+      - name: Validate privacy lifecycle contract
+        run: php scripts/validate_privacy_retention_account_erasure_v1.php
+      - name: Validate single-install SQL contract
+        run: |
+          grep -q 'CREATE TABLE IF NOT EXISTS privacy_requests' database/20260723_privacy_retention_account_erasure_v1_single_install.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS privacy_legal_holds' database/20260723_privacy_retention_account_erasure_v1_single_install.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS privacy_suppression_tombstones' database/20260723_privacy_retention_account_erasure_v1_single_install.sql
+          grep -q 'admin.privacy_requests.manage' database/20260723_privacy_retention_account_erasure_v1_single_install.sql
