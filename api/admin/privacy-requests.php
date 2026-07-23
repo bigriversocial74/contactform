@@ -13,7 +13,36 @@ $canManage=$isSuper||in_array('admin.privacy_requests.manage',$permissions,true)
 if(!$canView)mg_fail('Permission denied.',403);
 $pdo=mg_db();
 
+function mg_admin_privacy_detail(PDO $pdo,int $requestId): ?array
+{
+    $request=mg_privacy_request_by_id($pdo,$requestId);
+    if(!$request)return null;
+    if(!empty($request['user_id'])){
+        $user=$pdo->prepare('SELECT id,email,display_name,full_name,status,privacy_state,deletion_requested_at,deletion_due_at,anonymized_at FROM users WHERE id=? LIMIT 1');
+        $user->execute([(int)$request['user_id']]);
+        $request['user']=$user->fetch(PDO::FETCH_ASSOC)?:null;
+    }else{$request['user']=null;}
+    $collections=[
+        'events'=>['SELECT e.*,u.display_name AS actor_name FROM privacy_request_events e LEFT JOIN users u ON u.id=e.actor_user_id WHERE e.request_id=? ORDER BY e.id DESC LIMIT 100','details_json'],
+        'holds'=>['SELECT h.*,p.display_name AS placed_by_name,r.display_name AS released_by_name FROM privacy_legal_holds h LEFT JOIN users p ON p.id=h.placed_by_user_id LEFT JOIN users r ON r.id=h.released_by_user_id WHERE h.request_id=? ORDER BY h.id DESC','scope_json'],
+        'handoffs'=>['SELECT h.*,u.display_name AS merchant_name,u.email AS merchant_email FROM privacy_merchant_handoffs h JOIN users u ON u.id=h.merchant_user_id WHERE h.request_id=? ORDER BY h.id',''],
+        'actions'=>['SELECT * FROM privacy_data_actions WHERE request_id=? ORDER BY id','details_json'],
+    ];
+    foreach($collections as $key=>[$sql,$jsonColumn]){
+        $stmt=$pdo->prepare($sql);$stmt->execute([$requestId]);$rows=$stmt->fetchAll(PDO::FETCH_ASSOC)?:[];
+        if($jsonColumn!=='')foreach($rows as &$row){$row['details']=json_decode((string)($row[$jsonColumn]??''),true)?:[];unset($row[$jsonColumn]);}unset($row);
+        $request[$key]=$rows;
+    }
+    return $request;
+}
+
 if(($_SERVER['REQUEST_METHOD']??'GET')==='GET'){
+    $requestId=(int)($_GET['request_id']??0);
+    if($requestId>0){
+        $item=mg_admin_privacy_detail($pdo,$requestId);
+        if(!$item)mg_fail('Privacy request not found.',404);
+        mg_ok(['item'=>$item,'can_manage'=>$canManage]);
+    }
     $items=mg_privacy_list_requests($pdo,[
         'status'=>trim((string)($_GET['status']??'')),
         'jurisdiction'=>trim((string)($_GET['jurisdiction']??'')),
@@ -62,7 +91,7 @@ try{
             break;
         case 'extend':
             $newDue=trim((string)($input['new_due_at']??''));
-            $date=DateTimeImmutable::createFromFormat('Y-m-d',$newDue,new DateTimeZone('UTC'));
+            $date=DateTimeImmutable::createFromFormat('!Y-m-d',$newDue,new DateTimeZone('UTC'));
             if(!$date)throw new RuntimeException('Provide a valid extension date.');
             $max=(new DateTimeImmutable((string)$request['response_due_at'],new DateTimeZone('UTC')))->modify('+60 days');
             if($date>$max)throw new RuntimeException('The extension exceeds the supported two-month maximum.');
@@ -106,7 +135,7 @@ try{
     $pdo->commit();
     mg_audit('admin.privacy.'.$action,'privacy_request',['request_id'=>$requestId,'reason'=>$reason,'result'=>$result],$actorId);
     mg_security_log('info','admin.privacy.completed','Privacy administration action completed.',['request_id'=>$requestId,'action'=>$action],$actorId);
-    mg_ok(['result'=>$result,'request'=>mg_privacy_request_by_id($pdo,$requestId)],'Privacy action completed.');
+    mg_ok(['result'=>$result,'request'=>mg_admin_privacy_detail($pdo,$requestId)],'Privacy action completed.');
 }catch(RuntimeException $error){
     if($pdo->inTransaction())$pdo->rollBack();
     mg_security_log('warning','admin.privacy.rejected','Privacy administration action rejected.',['request_id'=>$requestId,'action'=>$action,'reason'=>$error->getMessage()],$actorId);
