@@ -35,19 +35,93 @@ html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header
 html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-phone-equation,
 html body[data-authenticated="false"] .mg-public-mobile-equation{display:none!important}
 
-/* Mobile menu must beat the older light-shell selectors loaded in the document head. */
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-backdrop{background:rgba(5,27,24,.58)!important;backdrop-filter:blur(5px)!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-panel{border:1px solid rgba(255,255,255,.1)!important;background:linear-gradient(180deg,#0b2d2a,#071f1d)!important;color:#fff!important;box-shadow:-30px 0 80px rgba(5,27,24,.30)!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-logo,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-close,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-phone,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-socials a{color:#fff!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input{border-color:rgba(255,255,255,.16)!important;background:rgba(255,255,255,.08)!important;color:#fff!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input::placeholder{color:rgba(255,255,255,.58)!important}
+/* Light public slideout menu. Keep the existing motion and layout while matching the white public shell. */
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-backdrop{
+  background:rgba(20,27,31,.28)!important;
+  backdrop-filter:blur(7px)!important;
+  -webkit-backdrop-filter:blur(7px)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-panel{
+  border:0!important;
+  border-left:1px solid #dfe7e3!important;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfcfa 58%,#f4f7f4 100%)!important;
+  color:#183c37!important;
+  box-shadow:-28px 0 80px rgba(11,45,42,.18)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-head{
+  border-bottom:1px solid #e1e9e5!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-logo{
+  color:#0b2d2a!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-logo img{
+  filter:none!important;
+  opacity:1!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-close{
+  border:1px solid #dce7e2!important;
+  background:#f7fbf8!important;
+  color:#0b2d2a!important;
+  box-shadow:0 8px 22px rgba(11,45,42,.06)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-close:hover{
+  border-color:#c7d8d0!important;
+  background:#eef5f1!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-contact{
+  border-bottom:1px solid #e7eeea!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-phone{
+  color:#244b46!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-socials a{
+  border:1px solid #dce7e2!important;
+  background:#f7fbf8!important;
+  color:#0b2d2a!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-socials a:hover{
+  border-color:#72d43f!important;
+  background:#effbe9!important;
+  color:#326f1d!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input{
+  border-color:#dce7e2!important;
+  background:#fff!important;
+  color:#183c37!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 28px rgba(11,45,42,.05)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input:focus{
+  border-color:#72d43f!important;
+  outline:3px solid rgba(114,212,63,.18)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input::placeholder{
+  color:#81948f!important;
+}
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.055)!important;color:#fff!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a{
+  border-color:#e0e9e4!important;
+  background:#fff!important;
+  color:#183c37!important;
+  box-shadow:0 10px 26px rgba(11,45,42,.045)!important;
+}
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a:hover,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:hover{border-color:rgba(114,212,63,.7)!important;background:rgba(114,212,63,.12)!important;color:#dfffd0!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:hover{
+  border-color:#bcd9ae!important;
+  background:#f2faee!important;
+  color:#285f1b!important;
+  transform:translateX(-2px)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:last-child{
+  border-color:#72d43f!important;
+  background:#72d43f!important;
+  color:#0b2d2a!important;
+  box-shadow:0 14px 30px rgba(76,174,36,.18)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:last-child:hover{
+  border-color:#82df50!important;
+  background:#82df50!important;
+  color:#0b2d2a!important;
+}
 
 @media(max-width:1080px){
   html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone-stack,
