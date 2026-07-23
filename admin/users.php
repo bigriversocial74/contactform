@@ -7,6 +7,8 @@ require_once dirname(__DIR__) . '/includes/admin-auth.php';
 $user = mg_require_admin_page_permission('admin.users.view');
 $canViewUsers = true;
 $canCreateUsers = mg_admin_page_user_has_permission($user, 'admin.users.manage');
+$canViewPrivacyRequests = mg_admin_page_user_has_permission($user, 'admin.privacy_requests.view')
+    || mg_admin_page_user_has_permission($user, 'admin.privacy_requests.manage');
 $canManageAiLimits = mg_admin_page_user_has_permission($user, 'admin.settings.manage')
     || mg_admin_page_user_has_permission($user, 'admin.commerce.manage')
     || mg_admin_page_user_has_permission($user, 'subscriptions.admin');
@@ -47,6 +49,9 @@ require dirname(__DIR__) . '/includes/header.php';
         <?php if ($canViewUsers): ?>
           <div class="mg-admin-users-hero-actions">
             <span>Last updated <strong data-users-updated>—</strong></span>
+            <?php if ($canViewPrivacyRequests): ?>
+              <a class="mg-btn mg-btn-soft" href="/admin/privacy-requests.php">Privacy requests</a>
+            <?php endif; ?>
             <?php if ($canCreateUsers): ?>
               <button class="mg-btn mg-btn-primary" type="button" data-user-create-open>Create user</button>
             <?php endif; ?>
@@ -137,72 +142,7 @@ require dirname(__DIR__) . '/includes/header.php';
               <tbody data-users-list></tbody>
             </table>
           </div>
-
-          <footer class="mg-admin-users-pagination mg-hidden" data-users-pagination>
-            <span data-users-page-label></span>
-            <button class="mg-btn mg-btn-soft" type="button" data-users-more>Load more users</button>
-          </footer>
         </section>
-
-        <?php if ($canCreateUsers): ?>
-          <div class="mg-admin-user-create-layer mg-hidden" data-user-create-layer>
-            <button class="mg-admin-user-create-backdrop" type="button" data-user-create-close aria-label="Close create user"></button>
-            <aside class="mg-admin-user-create-modal" role="dialog" aria-modal="true" aria-labelledby="mg-admin-user-create-title">
-              <header>
-                <div>
-                  <span class="mg-eyebrow">Admin action</span>
-                  <h2 id="mg-admin-user-create-title">Create user</h2>
-                  <p>Create a user, assign initial roles, set account status, and record the reason.</p>
-                </div>
-                <button class="mg-admin-user-drawer-close" type="button" data-user-create-close aria-label="Close create user">×</button>
-              </header>
-              <form data-user-create-form>
-                <div class="mg-admin-user-create-grid">
-                  <label>Full name
-                    <input name="full_name" type="text" maxlength="160" required autocomplete="off">
-                  </label>
-                  <label>Display name
-                    <input name="display_name" type="text" maxlength="160" autocomplete="off">
-                  </label>
-                  <label>Email
-                    <input name="email" type="email" maxlength="255" required autocomplete="off">
-                  </label>
-                  <label>Temporary password
-                    <input name="password" type="text" minlength="12" maxlength="120" placeholder="Leave blank to auto-generate">
-                  </label>
-                  <label>Account status
-                    <select name="status">
-                      <option value="active">Active</option>
-                      <option value="pending">Pending</option>
-                      <option value="disabled">Disabled</option>
-                    </select>
-                  </label>
-                  <label>Email verification
-                    <select name="email_verified">
-                      <option value="0">Unverified</option>
-                      <option value="1">Verified</option>
-                    </select>
-                  </label>
-                </div>
-                <fieldset class="mg-admin-user-create-roles">
-                  <legend>Initial roles</legend>
-                  <label><input type="checkbox" name="roles[]" value="customer" checked> Customer</label>
-                  <label><input type="checkbox" name="roles[]" value="merchant"> Merchant</label>
-                  <label><input type="checkbox" name="roles[]" value="admin"> Admin</label>
-                  <label><input type="checkbox" name="roles[]" value="super_admin"> Super admin</label>
-                </fieldset>
-                <label class="mg-admin-management-reason"><span>Required action reason</span>
-                  <textarea name="reason" rows="3" maxlength="240" required placeholder="Explain why this admin-created account is needed."></textarea>
-                </label>
-                <div class="mg-admin-user-create-notice" data-user-create-notice role="status" aria-live="polite"></div>
-                <footer>
-                  <button class="mg-btn mg-btn-ghost" type="button" data-user-create-close>Cancel</button>
-                  <button class="mg-btn mg-btn-primary" type="submit">Create user</button>
-                </footer>
-              </form>
-            </aside>
-          </div>
-        <?php endif; ?>
       <?php endif; ?>
     </section>
   </div>
