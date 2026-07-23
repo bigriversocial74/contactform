@@ -13,6 +13,9 @@ if (($page_section ?? '') === 'feed') {
     $page_scripts[] = '/assets/js/store-presence-feed.js';
     $late_styles[] = '/assets/css/store-presence-feed.css';
 }
+if (($page_section ?? '') === 'campaign') {
+    $late_styles[] = '/assets/css/public-campaign-layout-cleanup-v1.css?v=1.0.0';
+}
 if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
     $page_scripts[] = '/assets/js/admin-moderation.js';
     $page_scripts[] = '/assets/js/content-' . 'review-actions.js';
