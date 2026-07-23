@@ -43,7 +43,7 @@ function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input
     $objective = mg_mcp_automation_text($input['objective'] ?? '', 10, 1000, 'Simulation objective');
     $riskLevel = strtolower(trim((string)($input['risk_level'] ?? 'low')));
     if (!in_array($riskLevel, MG_MCP_AUTOMATION_GRANT_RISK_LEVELS, true)) {
-        throw new MgMcpAutomationGrantException('Phase 4B simulations allow only low or medium risk.');
+        throw new MgMcpAutomationGrantException('Select a supported automation risk level.');
     }
     $proposedAmount = mg_mcp_automation_optional_uint($input['proposed_amount_cents'] ?? null, 100000000, 'Proposed amount');
     $proposedQuantity = mg_mcp_automation_optional_uint($input['proposed_quantity'] ?? null, 1000000, 'Proposed quantity');
@@ -65,17 +65,19 @@ function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input
         mg_mcp_automation_assert_grant_activatable($pdo, $grant);
         $playbookKey = strtolower(trim((string)($input['playbook_key'] ?? '')));
         $playbook = mg_mcp_automation_definition_playbook($grant, $playbookKey);
+        $boundedReview = (string)($playbook['execution_mode'] ?? '') === 'bounded_review_artifact';
 
         $riskRank = ['low' => 10, 'medium' => 20, 'high' => 30, 'critical' => 40];
         if (($riskRank[$riskLevel] ?? 1000) > ($riskRank[(string)$grant['risk_ceiling']] ?? 0)) {
-            throw new MgMcpAutomationGrantException('The simulation risk exceeds the grant risk ceiling.', 403, 'MCP_AUTOMATION_RISK_DENIED');
+            throw new MgMcpAutomationGrantException('The automation risk exceeds the grant risk ceiling.', 403, 'MCP_AUTOMATION_RISK_DENIED');
         }
 
         $publicId = mg_public_uuid();
         $configuration = [
-            'phase' => 'phase4b',
-            'mode' => 'manual_simulation_only',
-            'simulation_only' => true,
+            'phase' => $boundedReview ? 'phase13d' : 'phase4b',
+            'mode' => $boundedReview ? 'manual_bounded_playbook' : 'manual_simulation_only',
+            'simulation_only' => !$boundedReview,
+            'review_artifact_only' => $boundedReview,
             'execution_requested' => false,
             'objective' => $objective,
             'risk_level' => $riskLevel,
@@ -111,7 +113,8 @@ function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input
             $triggerPublicId,
             $automationId,
             json_encode([
-                'simulation_only' => true,
+                'simulation_only' => !$boundedReview,
+                'review_artifact_only' => $boundedReview,
                 'owner_initiated' => true,
                 'scheduler_enabled' => false,
             ], JSON_THROW_ON_ERROR),
@@ -127,7 +130,8 @@ function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input
             'automation_public_id' => $publicId,
             'grant_public_id' => (string)$grant['public_id'],
             'playbook_key' => $playbookKey,
-            'simulation_only' => true,
+            'simulation_only' => !$boundedReview,
+            'review_artifact_only' => $boundedReview,
             'execution_enabled' => false,
         ]);
         $pdo->commit();
@@ -136,7 +140,8 @@ function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input
             'automation_public_id' => $publicId,
             'grant_public_id' => (string)$grant['public_id'],
             'playbook_key' => $playbookKey,
-            'simulation_only' => true,
+            'simulation_only' => !$boundedReview,
+            'review_artifact_only' => $boundedReview,
             'execution_enabled' => false,
         ];
         mg_audit('mcp_automation_definition_created', 'mcp_automation', $metadata, $userId);
