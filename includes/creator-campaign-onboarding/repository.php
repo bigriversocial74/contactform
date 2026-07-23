@@ -60,15 +60,19 @@ function mg_creator_campaign_onboarding_ensure(PDO $pdo, array $user, array $wor
     $existing = mg_creator_campaign_onboarding_row($pdo, $ownerId, $workspaceId);
     if ($existing) return $existing;
 
-    $pdo->prepare(
-        "INSERT INTO creator_campaign_merchant_onboarding
+    $insert = $pdo->prepare(
+        "INSERT IGNORE INTO creator_campaign_merchant_onboarding
          (public_id,pilot_id,workspace_id,owner_user_id,status,current_step,created_at,updated_at)
          VALUES (?,?,?,?,'invited',1,NOW(),NOW())"
-    )->execute([mg_public_uuid(), $pilotId, $workspaceId, $ownerId]);
+    );
+    $insert->execute([mg_public_uuid(), $pilotId, $workspaceId, $ownerId]);
+    $created = $insert->rowCount() === 1;
 
     $row = mg_creator_campaign_onboarding_row($pdo, $ownerId, $workspaceId);
     if (!$row) throw new MgCreatorCampaignOnboardingException('Onboarding record could not be created.', 500);
-    mg_creator_campaign_onboarding_event($pdo, $row, $ownerId, 'creator_campaign.onboarding.created', 'enrollment', 'info', 'Merchant onboarding workspace created.');
+    if ($created) {
+        mg_creator_campaign_onboarding_event($pdo, $row, $ownerId, 'creator_campaign.onboarding.created', 'enrollment', 'info', 'Merchant onboarding workspace created.');
+    }
     return $row;
 }
 
@@ -109,7 +113,8 @@ function mg_creator_campaign_onboarding_products(PDO $pdo, int $merchantUserId):
 function mg_creator_campaign_onboarding_campaigns(PDO $pdo, int $workspaceId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT cc.id,cc.public_id,cc.title,cc.status,cc.lock_version,cc.starts_at,cc.ends_at,cc.updated_at,
+        "SELECT cc.id,cc.public_id,cc.title,cc.status,cc.lock_version,cc.automatic_acceptance,
+                cc.starts_at,cc.ends_at,cc.updated_at,
                 COUNT(DISTINCT CASE WHEN ccp.relationship_type<>'excluded' THEN ccp.id END) product_count,
                 COUNT(DISTINCT ccr.id) eligibility_count,
                 COUNT(DISTINCT ccd.id) deliverable_count,
@@ -131,7 +136,7 @@ function mg_creator_campaign_onboarding_campaigns(PDO $pdo, int $workspaceId): a
     );
     $stmt->execute([$workspaceId]);
     return array_map(static function(array $row): array {
-        foreach (['product_count','eligibility_count','deliverable_count','active_compensation_count','budget_count','agreement_count','tracking_count','lock_version'] as $key) {
+        foreach (['product_count','eligibility_count','deliverable_count','active_compensation_count','budget_count','agreement_count','tracking_count','lock_version','automatic_acceptance'] as $key) {
             $row[$key] = (int)($row[$key] ?? 0);
         }
         return $row;
@@ -151,7 +156,7 @@ function mg_creator_campaign_onboarding_team(PDO $pdo, int $workspaceId, int $ow
          FROM merchant_team_members mtm
          INNER JOIN users u ON u.id=mtm.user_id AND u.status='active'
          WHERE mtm.workspace_id=? AND mtm.status='active' AND mtm.user_id IS NOT NULL
-         ORDER BY FIELD(mtm.role_key,'owner','admin','manager','viewer'),display_name,mtm.id"
+         ORDER BY FIELD(mtm.role_key,'owner','admin','manager','location_staff','claims_staff','analyst','viewer'),display_name,mtm.id"
     );
     $stmt->execute([$workspaceId]);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
@@ -159,6 +164,48 @@ function mg_creator_campaign_onboarding_team(PDO $pdo, int $workspaceId, int $ow
         $rows[] = $row;
     }
     return $rows;
+}
+
+function mg_creator_campaign_onboarding_operator_evidence(
+    PDO $pdo,
+    int $workspaceId,
+    int $ownerUserId,
+    array $userIds
+): array {
+    $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), static fn(int $id): bool => $id > 0)));
+    if ($userIds === []) return [];
+    $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT u.id,u.status,
+                MAX(CASE WHEN mtm.workspace_id=? AND mtm.status='active' THEN 1 ELSE 0 END) active_workspace_member
+         FROM users u
+         LEFT JOIN merchant_team_members mtm ON mtm.user_id=u.id AND mtm.workspace_id=?
+         WHERE u.id IN ({$placeholders})
+         GROUP BY u.id,u.status"
+    );
+    $stmt->execute([$workspaceId,$workspaceId,...$userIds]);
+    $evidence = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $userId = (int)$row['id'];
+        $accountActive = (string)$row['status'] === 'active';
+        $workspaceCurrent = $userId === $ownerUserId || (int)$row['active_workspace_member'] === 1;
+        $evidence[$userId] = [
+            'user_id'=>$userId,
+            'account_active'=>$accountActive,
+            'workspace_current'=>$workspaceCurrent,
+            'current'=>$accountActive && $workspaceCurrent,
+        ];
+    }
+    foreach ($userIds as $userId) {
+        $evidence[$userId] ??= [
+            'user_id'=>$userId,
+            'account_active'=>false,
+            'workspace_current'=>false,
+            'current'=>false,
+        ];
+    }
+    ksort($evidence);
+    return $evidence;
 }
 
 function mg_creator_campaign_onboarding_resolve_team_user(PDO $pdo, int $workspaceId, int $ownerUserId, string $publicId): int
