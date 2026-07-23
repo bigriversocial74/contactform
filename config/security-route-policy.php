@@ -4,7 +4,7 @@ declare(strict_types=1);
 return [
     'public_pages' => [
         'index.php','learn-more.php','signin.php','signup.php','forgot-password.php','reset-password.php','verify-email.php',
-        'privacy.php','terms.php','pitch-deck.php','product.php','store.php','profile.php','merchant.php',
+        'privacy.php','terms.php','cookies.php','pitch-deck.php','product.php','store.php','profile.php','merchant.php',
     ],
     'private_page_patterns' => [
         '/^account(?:-[a-z0-9-]+)?\.php$/',
