@@ -32,10 +32,13 @@ $checks = [
     'existing Microgifter landscape assets are reused' => str_contains($page, '/assets/images/mountains.png?v=2.0.0')
         && str_contains($page, '/assets/images/foreground.png?v=2.0.0')
         && str_contains($page, '/assets/images/orb.png?v=2.0.0'),
-    'scroll presentation uses a sticky full viewport stage' => str_contains($css, '.pitch-deck.is-enhanced .pitch-sticky')
-        && str_contains($css, 'position: sticky')
+    'desktop stage keeps full viewport presentation dimensions' => str_contains($css, '.pitch-deck.is-enhanced .pitch-sticky')
         && str_contains($css, 'height: calc(100svh - 72px)'),
-    'sticky stage escapes clipped wrapper overflow' => str_contains($js, "deck.style.setProperty('overflow', 'visible', 'important')"),
+    'controller does not depend on browser sticky behavior' => str_contains($js, 'function positionStage()')
+        && str_contains($js, "stage.style.setProperty('position', 'absolute', 'important')")
+        && str_contains($js, 'window.scrollY - deckTop + headerOffset')
+        && str_contains($js, 'stageTravel'),
+    'stage escapes clipped wrapper overflow' => str_contains($js, "deck.style.setProperty('overflow', 'visible', 'important')"),
     'slides support animated transition variables' => str_contains($css, '--slide-opacity')
         && str_contains($css, '--slide-y')
         && str_contains($css, '--slide-scale')
@@ -50,7 +53,8 @@ $checks = [
         && str_contains($js, "event.key === 'End'"),
     'mobile and reduced-motion fallbacks remain readable' => str_contains($css, '@media (max-width: 900px)')
         && str_contains($css, '@media (prefers-reduced-motion: reduce)')
-        && str_contains($js, "window.matchMedia('(prefers-reduced-motion: reduce)')"),
+        && str_contains($js, "window.matchMedia('(prefers-reduced-motion: reduce)')")
+        && str_contains($js, 'showStaticSlides()'),
     'print output supports one slide per page' => str_contains($css, '@media print')
         && str_contains($css, 'break-after: page'),
     'investor calls to action are connected' => str_contains($page, 'href="/investors.php"')
