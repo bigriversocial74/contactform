@@ -111,6 +111,17 @@ html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-a
   color:#285f1b!important;
   transform:translateX(-2px)!important;
 }
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:first-child{
+  border-color:#102d4c!important;
+  background:#102d4c!important;
+  color:#fff!important;
+  box-shadow:0 14px 30px rgba(9,26,49,.20)!important;
+}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:first-child:hover{
+  border-color:#173b63!important;
+  background:#173b63!important;
+  color:#fff!important;
+}
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:last-child{
   border-color:#72d43f!important;
   background:#72d43f!important;
