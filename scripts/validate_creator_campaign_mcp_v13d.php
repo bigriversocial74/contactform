@@ -103,7 +103,7 @@ $add(
     str_contains($bridge, 'mg_mcp_draft_bridge_authenticate')
         && str_contains($bridge, "['merchant', 'merchant_workspace']")
         && str_contains($common, 'mg_mcp_creator_campaign_bridge_dispatch')
-        && str_contains($common, 'mg_creator_campaign_repository_by_public_id')
+        && str_contains($allPlaybookPhp, 'mg_creator_campaign_repository_by_public_id')
         && str_contains($common, 'MCP_CREATOR_CAMPAIGN_PLAYBOOK_RESOURCE_NOT_FOUND'),
     10
 );
