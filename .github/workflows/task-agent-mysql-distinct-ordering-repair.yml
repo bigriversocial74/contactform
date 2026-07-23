@@ -36,4 +36,4 @@ jobs:
       - name: Task Agent lifecycle regression
         run: vendor/bin/phpunit tests/phpunit/TaskAgentPhase35LifecycleHandoffV1ContractTest.php
       - name: Repository production quality
-        run: php scripts/repository_production_quality.php --json=build/repository-production-quality-${{ matrix.php }}.json
+        run: php scripts/audit_repository_production_quality.php --gate
