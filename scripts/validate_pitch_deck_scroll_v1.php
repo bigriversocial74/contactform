@@ -14,8 +14,10 @@ $workflow = $read('.github/workflows/pitch-deck-scroll-v1.yml');
 
 $checks = [
     'pitch deck page exists' => $page !== '',
-    'dedicated pitch deck assets are registered' => str_contains($page, '/assets/css/pitch-deck-scroll-v1.css?v=1.0.0')
-        && str_contains($page, '/assets/js/pitch-deck-scroll-v1.js?v=1.0.0'),
+    'versioned pitch deck assets are registered' => str_contains($page, '/assets/css/pitch-deck-scroll-v1.css?v=1.0.0')
+        && str_contains($page, '/assets/css/pitch-deck-scroll-runtime-v2.css?v=2.1.0')
+        && str_contains($page, '/assets/js/pitch-deck-scroll-v1.js?v=2.1.0'),
+    'pitch deck page revalidates changed asset versions' => str_contains($page, "Cache-Control: public, max-age=0, must-revalidate"),
     'page uses the shared public shell' => str_contains($page, "require __DIR__ . '/includes/header.php'")
         && str_contains($page, "require __DIR__ . '/includes/footer.php'"),
     'deck contains ten investor chapters' => substr_count($page, 'data-pitch-slide data-slide-label=') === 10
@@ -34,16 +36,24 @@ $checks = [
     'existing Microgifter landscape assets are reused' => str_contains($page, '/assets/images/mountains.png?v=2.0.0')
         && str_contains($page, '/assets/images/foreground.png?v=2.0.0')
         && str_contains($page, '/assets/images/orb.png?v=2.0.0'),
-    'audited runtime v2 is loaded by the controller' => str_contains($js, "const RUNTIME_VERSION = '2.0.0'")
+    'audited runtime v2.1 is loaded' => str_contains($js, "const RUNTIME_VERSION = '2.1.0'")
         && str_contains($js, '/assets/css/pitch-deck-scroll-runtime-v2.css?v=')
         && $runtimeCss !== '',
     'scroll track uses explicit pixel geometry' => str_contains($js, 'stepPixels * slideCount')
         && str_contains($js, "scrollSection.style.setProperty('height', `${sectionHeight}px`, 'important')")
-        && str_contains($js, 'sectionHeight = stageHeight + stepPixels * slideCount'),
+        && str_contains($js, 'sectionHeight = minimumStageHeight + stepPixels * slideCount'),
     'stage uses stable fixed positioning while active' => str_contains($js, "setImportant('position', 'fixed')")
         && str_contains($js, "setStageState('before')")
         && str_contains($js, "setStageState('after')")
         && str_contains($js, "setStageState('active')"),
+    'header gap follows only visible header area' => str_contains($js, 'function readVisibleHeaderOffset()')
+        && str_contains($js, 'rect.bottom <= 0')
+        && str_contains($js, 'visibleHeaderOffset = readVisibleHeaderOffset()')
+        && str_contains($js, "setImportant('top', `${visibleHeaderOffset}px`)")
+        && str_contains($js, 'activeStageHeight = Math.max(400, window.innerHeight - visibleHeaderOffset)')
+        && str_contains($js, "--pitch-header-visible"),
+    'slide fitting uses the minimum header-constrained viewport' => str_contains($js, 'minimumStageHeight - parseFloat(styles.paddingTop')
+        && str_contains($js, 'startScroll = Math.max(0, sectionTop - headerHeight)'),
     'slides have deliberate hold and reveal phases' => str_contains($js, 'const HOLD_PORTION = 0.74')
         && str_contains($js, 'const REVEAL_PORTION = 0.44')
         && str_contains($js, 'positionFromTimeline')
