@@ -47,10 +47,10 @@ $selectedAgentId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
         <div class="mg-task-agent-opportunities" data-task-agent-opportunities></div>
       </section>
       <div class="mg-agent-runtime-messages" data-agent-runtime-messages aria-live="polite"></div>
-      <form class="mg-agent-runtime-composer" data-agent-runtime-composer>
-        <textarea name="message" rows="2" maxlength="3000" placeholder="Message this agent…" required></textarea>
-        <button type="submit">Send</button>
-        <small data-agent-runtime-status></small>
+      <form class="mg-agent-runtime-composer mg-specialty-agent-composer" data-agent-runtime-composer>
+        <textarea name="message" rows="1" maxlength="3000" placeholder="Message this agent…" aria-label="Message this specialty agent" required></textarea>
+        <button type="submit" aria-label="Send message" title="Send message"><span aria-hidden="true">↑</span><span class="mg-specialty-agent-send-label">Send</span></button>
+        <small data-agent-runtime-status aria-live="polite"></small>
       </form>
     </main>
 
