@@ -72,6 +72,7 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <button class="mg-btn mg-btn-primary" type="submit"><?= $isMerchant ? 'Create account and continue' : 'Create account' ?></button>
+    <p class="mg-auth-legal">By creating an account, you agree to the <a href="/terms.php">Terms of Service</a> and acknowledge the <a href="/privacy.php">Privacy Policy</a>.</p>
     <div class="mg-auth-switch-row">
       <p>Already have an account? <a href="/signin.php?return=<?= rawurlencode($isMerchant ? '/account-subscriptions.php?plan=' . $selectedPlan . '&source=signup' : '/agent.php') ?>">Sign in</a></p>
       <p><a href="/signup.php?type=<?= $isMerchant ? 'customer' : 'merchant' ?>"><?= $isMerchant ? 'Create a customer account instead' : 'Create a merchant account' ?></a></p>
