@@ -8,11 +8,11 @@ on:
       - index.php
       - includes/footer.php
       - includes/header-components/public-header.php
-      - includes/pricing-cards.php
       - assets/css/homepage-parallax-exact-v2.css
-      - assets/css/pricing-local-business-v1.css
+      - assets/css/homepage-core-positioning-v1.css
       - assets/css/universal-footer.css
       - assets/js/homepage-parallax-exact-v2.js
+      - assets/js/homepage-core-positioning-v1.js
       - assets/images/foreground.png
       - assets/images/mountains.png
       - assets/images/orb.png
@@ -33,8 +33,8 @@ jobs:
           php -l index.php
           php -l includes/footer.php
           php -l includes/header-components/public-header.php
-          php -l includes/pricing-cards.php
           node --check assets/js/homepage-parallax-exact-v2.js
+          node --check assets/js/homepage-core-positioning-v1.js
           test -s assets/images/foreground.png
           test -s assets/images/mountains.png
           test -s assets/images/orb.png
@@ -42,9 +42,17 @@ jobs:
           grep -q '/assets/images/mountains.png' index.php
           grep -q '/assets/images/orb.png' index.php
           grep -q '/assets/css/homepage-parallax-exact-v2.css' index.php
+          grep -q '/assets/css/homepage-core-positioning-v1.css' index.php
           grep -q '/assets/js/homepage-parallax-exact-v2.js' index.php
-          grep -q 'The Future of Gifting Has Arrived.' index.php
-          grep -q 'mg_render_public_pricing_cards' index.php
+          grep -q '/assets/js/homepage-core-positioning-v1.js' index.php
+          grep -q 'Microgifter Is the Future' index.php
+          grep -q 'of Social Gifting.' index.php
+          grep -q 'Turn Future Demand Into Real-Time Revenue.' index.php
+          grep -q 'Increase Engagement. Grow Sales. Build Loyalty.' index.php
+          grep -q 'data-homepage-core-v1' index.php
+          grep -q 'data-core-chapter' index.php
+          ! grep -q 'mg_render_public_pricing_cards(' index.php
+          ! grep -q "require_once __DIR__ . '/includes/pricing-cards.php'" index.php
           grep -q 'body.mg-homepage-exact-v2' assets/css/universal-footer.css
           grep -q 'overflow-x:clip!important' assets/css/universal-footer.css
           grep -q 'mg-home-header-past-hero' includes/footer.php
