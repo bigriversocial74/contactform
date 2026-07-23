@@ -1,0 +1,129 @@
+name: Creator Campaign Pilot Launch Onboarding v15
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - 'account-creator-campaign-onboarding.php'
+      - 'includes/creator-campaign-onboarding.php'
+      - 'includes/creator-campaign-onboarding/**'
+      - 'includes/creator-campaign-pilot/page-view.php'
+      - 'includes/creator-campaign-pilot/page-view-onboarding.php'
+      - 'assets/css/creator-campaign-onboarding.css'
+      - 'assets/js/creator-campaign-onboarding.js'
+      - 'database/20260723_creator_campaign_pilot_launch_onboarding_v15_single_install.sql'
+      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE15_PILOT_LAUNCH_ONBOARDING.md'
+      - 'scripts/validate_creator_campaign_onboarding_v15.php'
+      - 'tests/phpunit/CreatorCampaignPilotLaunchOnboardingV15ContractTest.php'
+      - '.github/workflows/creator-campaign-pilot-launch-onboarding-v15.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+concurrency:
+  group: creator-campaign-pilot-launch-onboarding-v15-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    strategy:
+      fail-fast: false
+      matrix: {php: ['8.2','8.3']}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '${{ matrix.php }}', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l account-creator-campaign-onboarding.php
+          php -l includes/creator-campaign-onboarding.php
+          php -l includes/creator-campaign-onboarding/bootstrap.php
+          php -l includes/creator-campaign-onboarding/repository.php
+          php -l includes/creator-campaign-onboarding/service.php
+          php -l includes/creator-campaign-onboarding/readiness.php
+          php -l includes/creator-campaign-onboarding/smoke-test.php
+          php -l includes/creator-campaign-onboarding/page-view.php
+          php -l includes/creator-campaign-onboarding/page-view-foundation.php
+          php -l includes/creator-campaign-onboarding/page-view-guardrails.php
+          php -l includes/creator-campaign-onboarding/page-view-launch.php
+          php -l includes/creator-campaign-pilot/page-view.php
+          php -l includes/creator-campaign-pilot/page-view-onboarding.php
+          php -l scripts/validate_creator_campaign_onboarding_v15.php
+          php -l tests/phpunit/CreatorCampaignPilotLaunchOnboardingV15ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/creator-campaign-onboarding.js
+      - name: Phase 15 score
+        run: php scripts/validate_creator_campaign_onboarding_v15.php
+      - name: Phase 15 PHPUnit
+        run: vendor/bin/phpunit tests/phpunit/CreatorCampaignPilotLaunchOnboardingV15ContractTest.php
+      - name: Creator Campaign Phase 1-14 compatibility
+        run: |
+          php scripts/validate_creator_campaign_native_foundation_v1.php
+          php scripts/validate_creator_campaign_merchant_builder_v2.php
+          php scripts/validate_creator_campaign_participation_v3.php
+          php scripts/validate_creator_campaign_deliverables_v4.php
+          php scripts/validate_creator_campaign_tracking_v5.php
+          php scripts/validate_creator_campaign_compensation_v6.php
+          php scripts/validate_creator_campaign_budgets_v7.php
+          php scripts/validate_creator_campaign_ui_v11.php
+          php scripts/validate_creator_campaign_crm_v12.php
+          php scripts/validate_creator_campaign_mcp_v13d.php
+          php scripts/validate_creator_campaign_pilot_v14.php
+          vendor/bin/phpunit tests/phpunit/CreatorCampaignProductionPilotV14ContractTest.php
+      - name: Migration compatibility
+        run: php scripts/validate_migration_manifest.php
+
+  sql-lifecycle:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env: {MYSQL_DATABASE: microgifter, MYSQL_USER: microgifter, MYSQL_PASSWORD: microgifter, MYSQL_ROOT_PASSWORD: root}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_PORT: '3306'
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Wait for MySQL
+        run: for attempt in {1..30}; do mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0; sleep 1; done; exit 1
+      - name: Apply canonical migration chain
+        run: composer migrate
+      - name: Apply Creator Campaign prerequisites
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_compensation_earnings_v6_single_install.sql
+          mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_budget_controls_v7_single_install.sql
+          mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_mcp_canonical_actions_v13c_single_install.sql
+          mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_mcp_bounded_playbooks_v13d_single_install.sql
+          mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_production_pilot_v14_single_install.sql
+      - name: Capture MCP authority scope count
+        run: mysql -N -B -h 127.0.0.1 -uroot -proot microgifter -e "SELECT COUNT(*) FROM mcp_scope_catalog;" > /tmp/scope-count-before
+      - name: Apply Phase 15 onboarding migration
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260723_creator_campaign_pilot_launch_onboarding_v15_single_install.sql
+      - name: Verify onboarding schema and no authority elevation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('creator_campaign_merchant_onboarding','creator_campaign_onboarding_events','creator_campaign_onboarding_receipts');")" = "3"
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM schema_migrations WHERE migration_key='20260723_creator_campaign_pilot_launch_onboarding_v15_single_install';")" = "1"
+          test "$(mysql -N -B -h 127.0.0.1 -uroot -proot microgifter -e "SELECT COUNT(*) FROM mcp_scope_catalog;")" = "$(cat /tmp/scope-count-before)"
+      - name: Verify Phase 15 SQL idempotency
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260723_creator_campaign_pilot_launch_onboarding_v15_single_install.sql

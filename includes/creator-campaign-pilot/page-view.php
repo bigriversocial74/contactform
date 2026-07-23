@@ -37,6 +37,8 @@ $playbookLabel = static function (string $key) use ($playbookCards): string {
     <?php if ($notice !== ''): ?><div class="mg-pilot-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
     <?php if ($errorMessage !== ''): ?><div class="mg-pilot-alert is-error"><?= mg_e($errorMessage) ?></div><?php endif; ?>
 
+    <?php require __DIR__ . '/page-view-onboarding.php'; ?>
+
     <?php if (!$schemaReady || !$pilot): ?>
       <section class="mg-pilot-empty">
         <strong>Phase 14 operator schema is unavailable</strong>
