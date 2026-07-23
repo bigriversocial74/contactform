@@ -6,9 +6,9 @@ declare(strict_types=1);
   <main class="mg-app-workspace mg-drafts-workspace">
     <header class="mg-drafts-hero">
       <div>
-        <span class="mg-drafts-eyebrow">External agent review · Creator Campaign Phase 13B</span>
+        <span class="mg-drafts-eyebrow">External agent review · Creator Campaign Phases 13B–13D</span>
         <h1>Agent drafts</h1>
-        <p>Review external-agent drafts and Creator Campaign proposals. Creator Campaign proposals remain review evidence only; approval does not create or modify a campaign, agreement, compensation rule, earning, payout, invitation, message, or submission decision.</p>
+        <p>Review external-agent proposals and bounded playbook artifacts. Approval records merchant review only; it never creates or modifies a campaign, agreement, compensation rule, earning, payout, invitation, message, or submission decision.</p>
       </div>
       <div class="mg-conversion-actions">
         <a class="mg-drafts-link" href="/account-agent-automations.php">Automation grants</a>
@@ -39,6 +39,7 @@ declare(strict_types=1);
           $conversion = is_array($draft['conversion'] ?? null) ? $draft['conversion'] : null;
           $payload = is_array($draft['payload'] ?? null) ? $draft['payload'] : [];
           $isCreatorCampaignProposal = !empty($payload['creator_campaign_proposal']);
+          $isCreatorCampaignPlaybookOutput = !empty($payload['creator_campaign_playbook_output']);
           $proposalKind = $isCreatorCampaignProposal ? (string)($payload['proposal_kind'] ?? 'proposal') : '';
         ?>
           <article id="draft-<?= mg_e((string)$draft['id']) ?>" class="mg-draft-card is-<?= mg_e((string)$draft['status']) ?>">
@@ -60,8 +61,12 @@ declare(strict_types=1);
                 <input type="hidden" name="action" value="decision">
                 <input type="hidden" name="draft_id" value="<?= mg_e((string)$draft['id']) ?>">
                 <label>Decision note<textarea name="reason" maxlength="1000" rows="3" placeholder="Required when rejecting; optional when approving"></textarea></label>
-                <div><button type="submit" name="decision" value="reject" class="is-reject">Reject</button><button type="submit" name="decision" value="approve" class="is-approve">Approve draft</button></div>
+                <div><button type="submit" name="decision" value="reject" class="is-reject">Reject</button><button type="submit" name="decision" value="approve" class="is-approve">Approve review</button></div>
               </form>
+            <?php elseif ((string)$draft['status'] === 'approved' && $isCreatorCampaignPlaybookOutput): ?>
+              <section class="mg-conversion-panel is-created">
+                <div><span>Playbook review approved</span><strong>Review evidence complete</strong><p>This approval accepts the report or recommendation only. The artifact cannot convert or execute; any canonical action requires a separately scoped Phase 13C request and owner execution.</p></div>
+              </section>
             <?php elseif ((string)$draft['status'] === 'approved' && $isCreatorCampaignProposal): ?>
               <section class="mg-conversion-panel is-created">
                 <div><span>Proposal approved</span><strong>Awaiting approval-gated canonical actions</strong><p>This approval records merchant acceptance of the proposal only. Native conversion and execution are disabled until Creator Campaign Phase 13C.</p></div>
@@ -97,6 +102,6 @@ declare(strict_types=1);
       </section>
     <?php endif; ?>
 
-    <aside class="mg-drafts-safety"><strong>Human approval remains non-executing</strong><p>Creator Campaign proposal approval does not create or mutate native campaign records. Publication, participant decisions, messaging, agreements, compensation, earnings, payouts, and disputes remain unavailable until separately authorized canonical-action phases.</p></aside>
+    <aside class="mg-drafts-safety"><strong>Human approval remains non-executing</strong><p>Creator Campaign proposal and playbook approval does not create or mutate native campaign records. Publication, participant decisions, messaging, agreements, compensation, earnings, payouts, and disputes remain separately authorized actions.</p></aside>
   </main>
 </section>

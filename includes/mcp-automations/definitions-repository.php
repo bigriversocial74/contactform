@@ -61,7 +61,7 @@ function mg_mcp_automation_recent_simulations(PDO $pdo, int $userId, int $limit 
          INNER JOIN mcp_automation_grants g ON g.id=r.grant_id
          LEFT JOIN mcp_automation_actions aa ON aa.run_id=r.id
          WHERE a.owner_user_id=? AND g.authorizing_user_id=?
-           AND JSON_UNQUOTE(JSON_EXTRACT(r.output_summary_json,'$.mode'))='manual_simulation_only'
+           AND JSON_UNQUOTE(JSON_EXTRACT(r.output_summary_json,'$.mode')) IN ('manual_simulation_only','manual_bounded_playbook')
          GROUP BY r.id,a.id,g.id
          ORDER BY r.created_at DESC,r.id DESC
          LIMIT " . $limit
