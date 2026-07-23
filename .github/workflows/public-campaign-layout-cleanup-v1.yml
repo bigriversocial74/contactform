@@ -1,0 +1,32 @@
+name: Public Campaign Layout Cleanup v1
+
+on:
+  pull_request:
+    paths:
+      - 'assets/css/public-campaign-layout-cleanup-v1.css'
+      - 'includes/footer.php'
+      - 'scripts/validate_public_campaign_layout_cleanup_v1.php'
+      - '.github/workflows/public-campaign-layout-cleanup-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l includes/footer.php
+          php -l scripts/validate_public_campaign_layout_cleanup_v1.php
+      - name: Validate campaign layout cleanup
+        run: php scripts/validate_public_campaign_layout_cleanup_v1.php
