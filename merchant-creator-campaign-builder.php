@@ -15,6 +15,7 @@ $page_scripts = [
     '/assets/js/merchant-creator-campaigns.js?v=11.0.0',
     '/assets/js/merchant-creator-campaign-builder.js?v=2.0.0',
     '/assets/js/creator-campaign-builder-phase3.js?v=3.0.0',
+    '/assets/js/creator-campaign-context-filter.js?v=20260723-audit-v1',
 ];
 $merchantView = 'creator_campaign_builder';
 require __DIR__ . '/includes/header.php';
