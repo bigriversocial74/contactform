@@ -1,6 +1,9 @@
 (function () {
   'use strict';
 
+  // Clear the pre-auto-selection key before the primary client resolves the
+  // authoritative database mode. Do not derive a mode from the raw select
+  // default while the API request is still in flight.
   var legacyModeKey = 'mgAdminStripeConfigurationMode';
   try { window.localStorage.removeItem(legacyModeKey); } catch (error) {}
 
@@ -10,6 +13,7 @@
 
     var form = root.querySelector('[data-payment-settings-form]');
     var mode = root.querySelector('[data-payment-mode]');
+    var modeWarning = root.querySelector('[data-payment-mode-warning]');
     var persistence = root.querySelector('[data-payment-persistence-state]');
     var saveButton = root.querySelector('[data-payment-save-button]');
     var stripeToggle = root.querySelector('[data-admin-stripe-payment-toggle]');
@@ -17,6 +21,25 @@
 
     function selectedMode() {
       return mode.value === 'live' ? 'live' : 'test';
+    }
+
+    function normalizedMode(value) {
+      return value === 'live' ? 'live' : (value === 'test' ? 'test' : '');
+    }
+
+    function responseMode(data) {
+      data = data || {};
+      return normalizedMode(data.selected_mode)
+        || normalizedMode(data.provider && data.provider.mode)
+        || selectedMode();
+    }
+
+    function requestedModeFromUrl() {
+      try {
+        return normalizedMode(new URL(window.location.href).searchParams.get('mode'));
+      } catch (error) {
+        return '';
+      }
     }
 
     function setState(message, type) {
@@ -39,12 +62,24 @@
       return value.slice(0, prefixLength) + '…' + value.slice(-4);
     }
 
-    function updateModeUrl() {
+    function updateModeUrl(value) {
+      var resolved = normalizedMode(value) || selectedMode();
       try {
         var url = new URL(window.location.href);
-        url.searchParams.set('mode', selectedMode());
+        url.searchParams.set('mode', resolved);
         window.history.replaceState(null, '', url.pathname + '?' + url.searchParams.toString() + url.hash);
       } catch (error) {}
+    }
+
+    function syncModeWarning() {
+      if (!modeWarning) return;
+      var text = String(modeWarning.textContent || '');
+      var storedRecord = text.match(/stored in the (Test|Live) record/i);
+      if (!storedRecord) return;
+
+      var warningMode = String(storedRecord[1] || '').toLowerCase();
+      var shouldHide = warningMode !== selectedMode();
+      if (modeWarning.hidden !== shouldHide) modeWarning.hidden = shouldHide;
     }
 
     function submittedValues() {
@@ -59,6 +94,7 @@
     function compareStorage(storage, expected) {
       var mismatches = [];
       if (!storage || !storage.exists) return ['No database credential record exists for ' + expected.mode + '.'];
+      if (String(storage.mode || '') !== String(expected.mode || '')) mismatches.push('configuration mode');
       if (String(storage.publishable_key || '') !== String(expected.publishable_key || '').trim()) mismatches.push('publishable key');
       if (String(storage.connect_client_id || '') !== String(expected.connect_client_id || '').trim()) mismatches.push('Connect client ID');
       if (Number(storage.platform_fee_bps || 0) !== Number(expected.platform_fee_bps || 0)) mismatches.push('platform share');
@@ -74,6 +110,7 @@
 
     function describeStorage(data, expected) {
       var storage = data && data.storage ? data.storage : {};
+      var recordMode = normalizedMode(storage.mode) || (expected && normalizedMode(expected.mode)) || responseMode(data);
       if (expected) {
         var mismatches = compareStorage(storage, expected);
         if (mismatches.length) {
@@ -83,7 +120,7 @@
       }
 
       if (!storage.exists) {
-        setState('No ' + selectedMode() + ' Stripe configuration is currently saved in the database.', 'error');
+        setState('No ' + recordMode + ' Stripe configuration is currently saved in the database.', 'error');
         return;
       }
       if (storage.decryption_error) {
@@ -92,7 +129,7 @@
       }
 
       var parts = [
-        'Database record verified for ' + selectedMode() + ' at ' + formatDate(storage.updated_at) + '.',
+        'Database record verified for ' + recordMode + ' at ' + formatDate(storage.updated_at) + '.',
         storage.publishable_key ? 'Publishable key saved.' : 'Publishable key missing.',
         storage.secret_configured ? 'API key saved securely.' : 'API key missing.',
         storage.webhook_configured ? 'Webhook secret saved securely.' : 'Webhook secret missing.',
@@ -103,11 +140,16 @@
       setState(parts.join(' '), expected ? 'success' : (storage.secret_configured ? 'success' : 'error'));
     }
 
-    async function readBack(expected) {
-      var selected = selectedMode();
+    async function readBack(expected, requestedMode) {
+      var selected = normalizedMode(requestedMode) || (expected && normalizedMode(expected.mode)) || selectedMode();
       try {
         var response = await Microgifter.get('/api/admin/payment-settings.php?mode=' + encodeURIComponent(selected) + '&verify=' + Date.now());
-        describeStorage(response.data || response, expected || null);
+        var data = response.data || response;
+        var resolved = responseMode(data);
+        mode.value = resolved;
+        updateModeUrl(resolved);
+        describeStorage(data, expected || null);
+        syncModeWarning();
       } catch (error) {
         setState(error.message || 'Unable to verify saved Stripe settings.', 'error');
       }
@@ -120,23 +162,58 @@
         window.setTimeout(function () { verifyWhenSaveFinishes(expected, attempt + 1); }, 250);
         return;
       }
-      readBack(expected);
+      readBack(expected, expected.mode);
+    }
+
+    async function initializePersistence() {
+      var requested = requestedModeFromUrl();
+      if (requested) {
+        mode.value = requested;
+        updateModeUrl(requested);
+        setState('Loading the saved ' + requested + ' database record…', 'loading');
+        await readBack(null, requested);
+        return;
+      }
+
+      setState('Resolving the authoritative saved Stripe configuration mode…', 'loading');
+      try {
+        var response = await Microgifter.get('/api/admin/payment-settings.php?mode=auto&verify=' + Date.now());
+        var data = response.data || response;
+        var resolved = responseMode(data);
+        mode.value = resolved;
+        updateModeUrl(resolved);
+        describeStorage(data, null);
+        syncModeWarning();
+      } catch (error) {
+        setState(error.message || 'Unable to resolve the saved Stripe configuration mode.', 'error');
+      }
     }
 
     mode.addEventListener('change', function () {
-      updateModeUrl();
-      setState('Loading the saved ' + selectedMode() + ' database record…', 'loading');
-      window.setTimeout(function () { readBack(null); }, 100);
+      var selected = selectedMode();
+      updateModeUrl(selected);
+      syncModeWarning();
+      setState('Loading the saved ' + selected + ' database record…', 'loading');
+      window.setTimeout(function () { readBack(null, selected); }, 100);
     });
 
     form.addEventListener('submit', function () {
       var expected = submittedValues();
-      updateModeUrl();
+      updateModeUrl(expected.mode);
       setState('Saving and verifying the ' + expected.mode + ' Stripe database record…', 'loading');
       window.setTimeout(function () { verifyWhenSaveFinishes(expected, 0); }, 100);
     }, true);
 
-    updateModeUrl();
-    window.setTimeout(function () { readBack(null); }, 350);
+    if (modeWarning && window.MutationObserver) {
+      new MutationObserver(syncModeWarning).observe(modeWarning, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['hidden']
+      });
+    }
+
+    initializePersistence();
   });
 })();
