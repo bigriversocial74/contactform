@@ -77,7 +77,7 @@ function mg_creator_campaign_compensation_calculate(array $rule,int $sourceAmoun
 {
     if($sourceAmountMinor<(int)($rule['minimum_source_amount_minor']??0)) return 0;
     $amount=match((string)$rule['compensation_type']){
-        'percent_conversion'=>(int)floor($sourceAmountMinor*((int)$rule['rate_bps'])/10000),
+        'percent_conversion'=>mg_creator_campaign_compensation_percent_minor($sourceAmountMinor,(int)($rule['rate_bps']??0)),
         'fixed_deliverable','flat_conversion','milestone'=>(int)($rule['flat_amount_minor']??0),
         default=>0,
     };
@@ -123,19 +123,43 @@ function mg_creator_campaign_compensation_record_source_earning(PDO $pdo,array $
 function mg_creator_campaign_compensation_adjust(PDO $pdo,array $user,string $participantPublicId,array $input): array
 {
     $context=mg_creator_campaign_compensation_merchant_context($pdo,$user,'merchant.creator_compensation.manage');
-    $participant=mg_creator_campaign_compensation_participant($pdo,$participantPublicId,(int)$context['workspace_id'],null,false);
+    $idempotencyKey=trim((string)($input['idempotency_key']??''));
+    if($idempotencyKey==='') throw new InvalidArgumentException('idempotency_key is required.');
     $amount=(int)($input['amount_minor']??0);
     if($amount===0) throw new InvalidArgumentException('amount_minor must be a non-zero integer.');
     $currency=mg_creator_campaign_compensation_currency($input['currency']??'USD');
     $reason=trim((string)($input['reason']??''));
     if($reason==='') throw new InvalidArgumentException('reason is required.');
-    $idempotency=mg_creator_campaign_idempotency_hash((string)($input['idempotency_key']??''));
-    if(trim((string)($input['idempotency_key']??''))==='') throw new InvalidArgumentException('idempotency_key is required.');
-    $sourcePublicId='manual:'.hash('sha256',$participantPublicId.'|'.$idempotency);
-    $publicId=mg_creator_campaign_public_id('ccee');
-    $pdo->prepare('INSERT INTO creator_campaign_earning_events(public_id,campaign_id,participant_id,creator_user_id,agreement_version_id,event_type,source_type,source_public_id,amount_minor,currency,idempotency_hash,source_hash,calculation_snapshot_json,reason,created_by_user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-        ->execute([$publicId,(int)$participant['campaign_id'],(int)$participant['id'],(int)$participant['creator_user_id'],(int)$participant['latest_accepted_version_id'],'adjustment','manual',$sourcePublicId,$amount,$currency,$idempotency,hash('sha256',$sourcePublicId),mg_creator_campaign_json_encode(['manual_adjustment'=>true,'amount_minor'=>$amount,'currency'=>$currency]),mb_substr($reason,0,2000),(int)$context['actor_user_id']]);
-    return ['earning_event_id'=>$publicId,'amount_minor'=>$amount,'currency'=>$currency];
+    $idempotency=mg_creator_campaign_idempotency_hash($idempotencyKey);
+
+    mg_creator_campaign_assert_transaction_boundary($pdo);
+    $pdo->beginTransaction();
+    try{
+        $participant=mg_creator_campaign_compensation_participant($pdo,$participantPublicId,(int)$context['workspace_id'],null,true);
+        $stmt=$pdo->prepare('SELECT public_id,amount_minor,currency FROM creator_campaign_earning_events WHERE campaign_id=? AND idempotency_hash=? LIMIT 1 FOR UPDATE');
+        $stmt->execute([(int)$participant['campaign_id'],$idempotency]);
+        $existing=$stmt->fetch(PDO::FETCH_ASSOC);
+        if($existing){
+            $pdo->commit();
+            return ['earning_event_id'=>$existing['public_id'],'amount_minor'=>(int)$existing['amount_minor'],'currency'=>$existing['currency'],'idempotent'=>true];
+        }
+        $sourcePublicId='manual:'.hash('sha256',$participantPublicId.'|'.$idempotency);
+        $publicId=mg_creator_campaign_public_id('ccee');
+        $pdo->prepare('INSERT INTO creator_campaign_earning_events(public_id,campaign_id,participant_id,creator_user_id,agreement_version_id,event_type,source_type,source_public_id,amount_minor,currency,idempotency_hash,source_hash,calculation_snapshot_json,reason,created_by_user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+            ->execute([$publicId,(int)$participant['campaign_id'],(int)$participant['id'],(int)$participant['creator_user_id'],(int)$participant['latest_accepted_version_id'],'adjustment','manual',$sourcePublicId,$amount,$currency,$idempotency,hash('sha256',$sourcePublicId),mg_creator_campaign_json_encode(['manual_adjustment'=>true,'amount_minor'=>$amount,'currency'=>$currency]),mb_substr($reason,0,2000),(int)$context['actor_user_id']]);
+        $pdo->commit();
+        return ['earning_event_id'=>$publicId,'amount_minor'=>$amount,'currency'=>$currency,'idempotent'=>false];
+    }catch(PDOException $e){
+        if($pdo->inTransaction())$pdo->rollBack();
+        if((string)$e->getCode()==='23000'){
+            $participant=mg_creator_campaign_compensation_participant($pdo,$participantPublicId,(int)$context['workspace_id'],null,false);
+            $stmt=$pdo->prepare('SELECT public_id,amount_minor,currency FROM creator_campaign_earning_events WHERE campaign_id=? AND idempotency_hash=? LIMIT 1');
+            $stmt->execute([(int)$participant['campaign_id'],$idempotency]);
+            $existing=$stmt->fetch(PDO::FETCH_ASSOC);
+            if($existing) return ['earning_event_id'=>$existing['public_id'],'amount_minor'=>(int)$existing['amount_minor'],'currency'=>$existing['currency'],'idempotent'=>true];
+        }
+        throw $e;
+    }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
 
 function mg_creator_campaign_compensation_reverse(PDO $pdo,array $user,string $earningPublicId,array $input): array
@@ -147,11 +171,28 @@ function mg_creator_campaign_compensation_reverse(PDO $pdo,array $user,string $e
         if((string)$event['event_type']==='reversal') throw new DomainException('A reversal event cannot be reversed.');
         $reason=trim((string)($input['reason']??''));
         if($reason==='') throw new InvalidArgumentException('reason is required.');
-        $publicId=mg_creator_campaign_public_id('ccee');
         $key=mg_creator_campaign_idempotency_hash('reversal:'.$earningPublicId);
+        $stmt=$pdo->prepare('SELECT public_id,amount_minor,currency FROM creator_campaign_earning_events WHERE reversal_of_event_id=? OR (campaign_id=? AND idempotency_hash=?) ORDER BY id ASC LIMIT 1 FOR UPDATE');
+        $stmt->execute([(int)$event['id'],(int)$event['campaign_id'],$key]);
+        $existing=$stmt->fetch(PDO::FETCH_ASSOC);
+        if($existing){
+            $pdo->commit();
+            return ['earning_event_id'=>$existing['public_id'],'reversal_of'=>$earningPublicId,'amount_minor'=>(int)$existing['amount_minor'],'currency'=>$existing['currency'],'idempotent'=>true];
+        }
+        $publicId=mg_creator_campaign_public_id('ccee');
         $snapshot=['reversal_of'=>$earningPublicId,'original_amount_minor'=>(int)$event['amount_minor']];
         $pdo->prepare('INSERT INTO creator_campaign_earning_events(public_id,campaign_id,participant_id,creator_user_id,agreement_version_id,rule_id,rule_version_id,event_type,source_type,source_public_id,source_amount_minor,amount_minor,currency,reversal_of_event_id,idempotency_hash,source_hash,calculation_snapshot_json,reason,created_by_user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
             ->execute([$publicId,(int)$event['campaign_id'],(int)$event['participant_id'],(int)$event['creator_user_id'],(int)$event['agreement_version_id'],$event['rule_id'],$event['rule_version_id'],'reversal',(string)$event['source_type'],'reversal:'.$earningPublicId,$event['source_amount_minor'],-1*(int)$event['amount_minor'],(string)$event['currency'],(int)$event['id'],$key,hash('sha256','reversal|'.$event['source_hash']),mg_creator_campaign_json_encode($snapshot),mb_substr($reason,0,2000),(int)$context['actor_user_id']]);
-        $pdo->commit();return ['earning_event_id'=>$publicId,'reversal_of'=>$earningPublicId];
+        $pdo->commit();return ['earning_event_id'=>$publicId,'reversal_of'=>$earningPublicId,'amount_minor'=>-1*(int)$event['amount_minor'],'currency'=>(string)$event['currency'],'idempotent'=>false];
+    }catch(PDOException $e){
+        if($pdo->inTransaction())$pdo->rollBack();
+        if((string)$e->getCode()==='23000'){
+            $event=mg_creator_campaign_earning_event($pdo,$earningPublicId,(int)$context['workspace_id'],false);
+            $stmt=$pdo->prepare('SELECT public_id,amount_minor,currency FROM creator_campaign_earning_events WHERE reversal_of_event_id=? LIMIT 1');
+            $stmt->execute([(int)$event['id']]);
+            $existing=$stmt->fetch(PDO::FETCH_ASSOC);
+            if($existing) return ['earning_event_id'=>$existing['public_id'],'reversal_of'=>$earningPublicId,'amount_minor'=>(int)$existing['amount_minor'],'currency'=>$existing['currency'],'idempotent'=>true];
+        }
+        throw $e;
     }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
