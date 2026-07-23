@@ -8,10 +8,10 @@ $header_mode = 'public';
 $page_body_class = 'mg-legal-public-page';
 $page_styles = ['/assets/css/legal-pages.css?v=1.0.0'];
 $page_meta = [
-    'description' => 'Learn how Microgifter collects, uses, protects, and shares information across social gifting, merchant CRM, campaigns, rewards, claims, commerce, analytics, and agent-enabled services.',
+    'description' => 'Learn how Microgifter collects, uses, protects, retains, deletes, and shares information across social gifting, merchant CRM, campaigns, rewards, claims, commerce, analytics, and agent-enabled services.',
     'canonical' => 'https://microgifter.com/privacy.php',
     'og_title' => 'Microgifter Privacy Policy',
-    'og_description' => 'Microgifter does not sell customer or merchant data. Read how information is used to operate, secure, analyze, and improve the platform.',
+    'og_description' => 'Microgifter does not sell customer or merchant data. Read how information is used, secured, retained, deleted, and analyzed.',
 ];
 $page_manifest = [
     'id' => 'privacy',
@@ -31,7 +31,7 @@ require __DIR__ . '/includes/header.php';
     <div class="mg-legal-wrap">
       <p class="mg-legal-eyebrow">Trust, privacy, and responsible data use</p>
       <h1>Privacy Policy</h1>
-      <p class="mg-legal-summary">This Privacy Policy explains how Microgifter collects, uses, analyzes, protects, and shares information when customers, merchants, creators, organizations, and authorized agents use Microgifter services.</p>
+      <p class="mg-legal-summary">This Privacy Policy explains how Microgifter collects, uses, analyzes, protects, retains, deletes, and shares information when customers, merchants, creators, organizations, and authorized agents use Microgifter services.</p>
       <div class="mg-legal-meta"><span>Effective July 23, 2026</span><span>Last updated July 23, 2026</span></div>
       <div class="mg-legal-promise">
         <strong>Microgifter does not sell customer data or merchant data to third parties.</strong>
@@ -52,7 +52,7 @@ require __DIR__ . '/includes/header.php';
         <a href="#share">6. How information is shared</a>
         <a href="#no-sale">7. No sale of data</a>
         <a href="#cookies">8. Cookies and tracking</a>
-        <a href="#retention">9. Retention</a>
+        <a href="#retention">9. Retention and deletion</a>
         <a href="#security">10. Security</a>
         <a href="#rights">11. Privacy rights</a>
         <a href="#children">12. Children</a>
@@ -76,33 +76,25 @@ require __DIR__ . '/includes/header.php';
             <li><strong>Merchant service provider.</strong> When a merchant uses Microgifter to manage its customer records, campaigns, claims, rewards, or communications, Microgifter may process information on the merchant’s behalf and according to the merchant’s instructions.</li>
             <li><strong>Independent platform use.</strong> Microgifter may also use information for its own legitimate platform purposes, including security, fraud prevention, service analytics, demand intelligence, recommendations, product development, compliance, and aggregated or deidentified insights.</li>
           </ul>
-          <p>Merchants remain responsible for their own customer notices, permissions, lawful instructions, and use of information within their business.</p>
+          <p>Merchants remain responsible for their own customer notices, permissions, lawful instructions, retention decisions, and use of information within their business.</p>
         </section>
 
         <section class="mg-legal-section" id="collect">
           <h2>3. Information we collect</h2>
-
           <h3>Account and profile information</h3>
           <p>We may collect names, display names, email addresses, phone numbers, passwords in hashed form, verification status, profile images, addresses, business information, account type, roles, permissions, subscription details, preferences, and authentication or recovery information.</p>
-
           <h3>Gifting, purchase, claim, and redemption information</h3>
           <p>We collect information needed to create, purchase, deliver, schedule, receive, claim, redeem, refund, regift, or track a Microgift, reward, offer, product, service, experience, or other transaction. This may include buyer and recipient details, gift messages, item details, values, delivery timing, claim codes, QR activity, transaction status, merchant verification, and lifecycle history.</p>
-
           <h3>Merchant, CRM, campaign, and loyalty information</h3>
           <p>Merchants may provide customer records, product and service catalogs, locations, campaign rules, participant lists, messages, rewards, referrals, contest entries, creator relationships, attributed customers, visits, claims, redemptions, loyalty activity, customer preferences, notes, and other business records used in the Services.</p>
-
           <h3>Content and communications</h3>
           <p>We may collect content that users or merchants create, upload, publish, submit, or send, including messages, reviews, images, videos, campaign content, creative assets, support requests, forms, comments, attachments, and communication history.</p>
-
           <h3>Payment and subscription information</h3>
           <p>Payment card details are generally handled by payment processors. Microgifter may receive transaction identifiers, payment status, card brand, limited card details such as the last four digits, billing information, refunds, disputes, subscription status, fraud signals, and settlement or payout records.</p>
-
           <h3>Device, usage, and location information</h3>
           <p>We may collect IP address, browser and device type, operating system, identifiers, pages viewed, clicks, searches, referral source, session activity, timestamps, diagnostics, error logs, security events, approximate location derived from IP address, merchant location data, and precise device location when a user expressly allows it for a location-based feature.</p>
-
           <h3>AI, agent, and MCP information</h3>
           <p>When users connect or use AI-assisted, agent, automation, or MCP features, we may collect prompts, instructions, selected tools, permissions, approvals, generated outputs, action receipts, errors, connected-client information, and the business or account context needed to perform authorized actions.</p>
-
           <h3>Information from others</h3>
           <p>We may receive information from merchants, gift senders or recipients, creators, employers, sponsors, payment processors, identity or security providers, service providers, integrations, publicly available sources, and other users who are authorized to provide it.</p>
         </section>
@@ -128,9 +120,7 @@ require __DIR__ . '/includes/header.php';
 
         <section class="mg-legal-section" id="merchant-data">
           <h2>5. Merchant data and customer records</h2>
-          <div class="mg-legal-callout">
-            <p><strong>Merchant data belongs to the merchant.</strong> Using Microgifter does not transfer ownership of a merchant’s customer lists, CRM records, catalogs, campaign records, content, or other business data to Microgifter.</p>
-          </div>
+          <div class="mg-legal-callout"><p><strong>Merchant data belongs to the merchant.</strong> Using Microgifter does not transfer ownership of a merchant’s customer lists, CRM records, catalogs, campaign records, content, or other business data to Microgifter.</p></div>
           <p>By placing Merchant Data in the Services, the merchant authorizes Microgifter to host, copy, transmit, organize, combine, process, secure, display, analyze, model, and otherwise use that data as needed to provide, support, personalize, market, protect, improve, and develop Microgifter and its related features.</p>
           <p>This permission includes use for gifting, CRM, campaigns, loyalty, rewards, messaging, claims, redemption, attribution, creator programs, fraud prevention, analytics, forecasting, demand intelligence, recommendations, benchmarking, automated commerce, agent features, MCP services, and other Microgifter functionality.</p>
           <p>Microgifter may create and use aggregated or deidentified information that does not reasonably identify a merchant or individual. We may use such information for lawful business purposes, including research, reporting, benchmarking, forecasting, platform improvement, and new services.</p>
@@ -161,13 +151,16 @@ require __DIR__ . '/includes/header.php';
         <section class="mg-legal-section" id="cookies">
           <h2>8. Cookies and similar technologies</h2>
           <p>Microgifter may use cookies, local storage, session storage, pixels, logs, and similar technologies to keep users signed in, protect sessions, remember preferences, maintain carts and workflows, measure performance, prevent abuse, understand usage, support campaign attribution, and improve the Services.</p>
-          <p>Browser controls may allow users to block or delete cookies. Some Services may not function correctly when essential cookies or storage are disabled.</p>
+          <p>Browser controls may allow users to block or delete cookies. Some Services may not function correctly when essential cookies or storage are disabled. See our <a href="/cookies.php">Cookie Policy</a> and Cookie Settings controls.</p>
         </section>
 
         <section class="mg-legal-section" id="retention">
-          <h2>9. Data retention</h2>
-          <p>We retain information for as long as reasonably necessary to provide the Services, maintain accounts and transaction records, comply with legal and accounting obligations, prevent fraud, enforce agreements, resolve disputes, support merchants and customers, and protect the platform.</p>
-          <p>Retention periods vary by data type and context. Transaction, claim, redemption, payment, audit, security, consent, and dispute records may be retained longer than general account or preference data. Backups and logs may persist for a limited period after deletion. Aggregated or deidentified information may be retained without a fixed time limit when it no longer reasonably identifies an individual or merchant.</p>
+          <h2>9. Data retention, account closure, and erasure</h2>
+          <p>We retain information only for as long as reasonably necessary for the purpose for which it was collected, to provide the Services, maintain transaction and ownership records, comply with legal or accounting obligations, prevent fraud, enforce agreements, resolve disputes, support merchants and customers, and protect the platform.</p>
+          <p>There is no single retention period for every type of information. General profile, preference, authentication, device, and private agent-planning data may be deleted when an account-erasure request is finalized. Transaction, gift ownership, claim, redemption, payment, refund, commission, payout, consent, audit, security, fraud, chargeback, dispute, tax, and legal-claim evidence may be retained longer when necessary, but direct identifiers should be removed or minimized where reasonably possible.</p>
+          <p>A verified account-erasure request immediately disables the account, revokes active sessions and recovery credentials, stops new account activity, and hides public identity. Microgifter then reviews legal holds, unresolved transactions, merchant-controlled CRM records, and required retention before deleting or anonymizing data. Merchant-controlled records may be routed to the applicable merchant for review and lawful action.</p>
+          <p>Encrypted backups may continue to contain information until they expire through a restricted backup-rotation schedule. Erased identities are protected by suppression tombstones so a backup restoration or later import does not silently recreate the account. Aggregated or deidentified information may be retained when it no longer reasonably identifies an individual or merchant.</p>
+          <div class="mg-legal-callout"><p><strong>Manage a request:</strong> signed-in users may open the <a href="/privacy-center.php">Privacy &amp; Data Center</a> to submit and review a verified account-erasure request.</p></div>
         </section>
 
         <section class="mg-legal-section" id="security">
@@ -191,8 +184,8 @@ require __DIR__ . '/includes/header.php';
             <li>Appeal a denied privacy request where applicable.</li>
             <li>Complain to an appropriate privacy or data-protection authority.</li>
           </ul>
-          <p>Microgifter may need to verify identity, account ownership, authority, or merchant relationship before completing a request. Some information may be retained when required by law or needed for security, fraud prevention, transactions, disputes, contracts, or the rights of others.</p>
-
+          <p>Microgifter may need to verify identity, account ownership, authority, or merchant relationship before completing a request. Some information may be retained when required by law or needed for security, fraud prevention, transactions, disputes, contracts, legal claims, or the rights of others. A legal hold may temporarily block irreversible erasure while the remaining data is restricted from ordinary use.</p>
+          <p>Signed-in users can submit a verified deletion request through the <a href="/privacy-center.php">Privacy &amp; Data Center</a>. Other requests and authorized-agent requests may be sent to <a href="mailto:admin@microgifter.com">admin@microgifter.com</a>.</p>
           <h3>California and other U.S. state notices</h3>
           <p>During the preceding twelve months, Microgifter may have collected the categories described in Section 3, including identifiers, customer records, commercial information, internet or device activity, approximate or precise geolocation when enabled, professional or business information, user content, inferences, and limited sensitive information such as account credentials or payment-related data handled through service providers.</p>
           <p>We collect these categories from users, merchants, transaction participants, devices, service providers, integrations, and authorized third parties. We use and disclose them for the business purposes described in Sections 4 and 6. We do not sell personal information. We do not use sensitive personal information to infer characteristics except as permitted for providing, securing, or improving the Services.</p>
@@ -223,6 +216,7 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-legal-contact">
             <strong>Microgifter Privacy</strong>
             <p>Email: <a href="mailto:admin@microgifter.com">admin@microgifter.com</a></p>
+            <p>Request center: <a href="/privacy-center.php">Privacy &amp; Data Center</a></p>
             <p>Online: <a href="/learn-more.php">Contact Microgifter</a></p>
             <p>United States</p>
           </div>
