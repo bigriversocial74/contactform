@@ -1,0 +1,35 @@
+name: Specialty Agent Composer Parity v1
+
+on:
+  pull_request:
+    paths:
+      - 'agent.php'
+      - 'includes/personal-agent/multi-agent-workspace.php'
+      - 'assets/css/specialty-agent-composer-parity-v1.css'
+      - 'scripts/validate_specialty_agent_composer_parity_v1.php'
+      - '.github/workflows/specialty-agent-composer-parity-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l includes/personal-agent/multi-agent-workspace.php
+          php -l scripts/validate_specialty_agent_composer_parity_v1.php
+      - name: Specialty composer contract
+        run: php scripts/validate_specialty_agent_composer_parity_v1.php
