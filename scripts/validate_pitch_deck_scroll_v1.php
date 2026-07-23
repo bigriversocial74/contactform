@@ -8,7 +8,9 @@ $read = static fn(string $path): string => is_file($root . '/' . $path)
 
 $page = $read('pitch-deck.php');
 $css = $read('assets/css/pitch-deck-scroll-v1.css');
+$runtimeCss = $read('assets/css/pitch-deck-scroll-runtime-v2.css');
 $js = $read('assets/js/pitch-deck-scroll-v1.js');
+$workflow = $read('.github/workflows/pitch-deck-scroll-v1.yml');
 
 $checks = [
     'pitch deck page exists' => $page !== '',
@@ -32,21 +34,31 @@ $checks = [
     'existing Microgifter landscape assets are reused' => str_contains($page, '/assets/images/mountains.png?v=2.0.0')
         && str_contains($page, '/assets/images/foreground.png?v=2.0.0')
         && str_contains($page, '/assets/images/orb.png?v=2.0.0'),
-    'desktop stage keeps full viewport presentation dimensions' => str_contains($css, '.pitch-deck.is-enhanced .pitch-sticky')
-        && str_contains($css, 'height: calc(100svh - 72px)'),
-    'controller does not depend on browser sticky behavior' => str_contains($js, 'function positionStage()')
-        && str_contains($js, "stage.style.setProperty('position', 'absolute', 'important')")
-        && str_contains($js, 'window.scrollY - deckTop + headerOffset')
-        && str_contains($js, 'stageTravel'),
-    'stage escapes clipped wrapper overflow' => str_contains($js, "deck.style.setProperty('overflow', 'visible', 'important')"),
-    'slides support animated transition variables' => str_contains($css, '--slide-opacity')
-        && str_contains($css, '--slide-y')
-        && str_contains($css, '--slide-scale')
-        && str_contains($css, '--slide-blur')
-        && str_contains($css, '--slide-local'),
-    'controller maps page scroll to all deck slides' => str_contains($js, 'currentProgress * (slideCount - 1)')
-        && str_contains($js, 'slides.forEach((slide, index) => renderSlide')
-        && str_contains($js, 'jumpTo(activeIndex + 1)'),
+    'audited runtime v2 is loaded by the controller' => str_contains($js, "const RUNTIME_VERSION = '2.0.0'")
+        && str_contains($js, '/assets/css/pitch-deck-scroll-runtime-v2.css?v=')
+        && $runtimeCss !== '',
+    'scroll track uses explicit pixel geometry' => str_contains($js, 'stepPixels * slideCount')
+        && str_contains($js, "scrollSection.style.setProperty('height', `${sectionHeight}px`, 'important')")
+        && str_contains($js, 'sectionHeight = stageHeight + stepPixels * slideCount'),
+    'stage uses stable fixed positioning while active' => str_contains($js, "setImportant('position', 'fixed')")
+        && str_contains($js, "setStageState('before')")
+        && str_contains($js, "setStageState('after')")
+        && str_contains($js, "setStageState('active')"),
+    'slides have deliberate hold and reveal phases' => str_contains($js, 'const HOLD_PORTION = 0.74')
+        && str_contains($js, 'const REVEAL_PORTION = 0.44')
+        && str_contains($js, 'positionFromTimeline')
+        && str_contains($js, 'revealForItem'),
+    'controller avoids inertial progress lag' => !str_contains($js, 'currentProgress +=')
+        && str_contains($js, 'timeline = timelineFromScroll()')
+        && str_contains($js, 'rafId = 0'),
+    'short desktop viewports are fitted safely' => str_contains($js, 'function fitSlides()')
+        && str_contains($js, '--pitch-fit')
+        && str_contains($runtimeCss, '@media (min-width: 901px) and (max-height: 900px)')
+        && str_contains($runtimeCss, '@media (min-width: 901px) and (max-height: 740px)'),
+    'runtime removes expensive full-slide blur repainting' => str_contains($runtimeCss, 'filter: none !important')
+        && str_contains($runtimeCss, 'backdrop-filter: none !important')
+        && str_contains($runtimeCss, 'animation-play-state: paused !important')
+        && str_contains($js, "slide.style.setProperty('--slide-blur', '0px')"),
     'deck includes progress navigation and keyboard controls' => str_contains($page, 'data-pitch-jump="9"')
         && str_contains($js, "event.key === 'ArrowDown'")
         && str_contains($js, "event.key === 'Home'")
@@ -54,9 +66,11 @@ $checks = [
     'mobile and reduced-motion fallbacks remain readable' => str_contains($css, '@media (max-width: 900px)')
         && str_contains($css, '@media (prefers-reduced-motion: reduce)')
         && str_contains($js, "window.matchMedia('(prefers-reduced-motion: reduce)')")
-        && str_contains($js, 'showStaticSlides()'),
+        && str_contains($js, 'showStaticSlides'),
     'print output supports one slide per page' => str_contains($css, '@media print')
         && str_contains($css, 'break-after: page'),
+    'workflow covers the audited runtime stylesheet' => str_contains($workflow, "assets/css/pitch-deck-scroll-runtime-v2.css")
+        && str_contains($workflow, 'node --check assets/js/pitch-deck-scroll-v1.js'),
     'investor calls to action are connected' => str_contains($page, 'href="/investors.php"')
         && str_contains($page, 'href="/learn-more.php"')
         && str_contains($page, 'linkedin.com/in/david-evans-15005530/'),
