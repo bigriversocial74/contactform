@@ -65,7 +65,7 @@ final class CreatorCampaignProductionAuditV1ContractTest extends TestCase
         self::assertStringContainsString('WHERE campaign_id=? AND idempotency_hash=? LIMIT 1 FOR UPDATE', $source);
         self::assertStringContainsString('WHERE reversal_of_event_id=? OR (campaign_id=? AND idempotency_hash=?)', $source);
         self::assertGreaterThanOrEqual(4, substr_count($source, "'idempotent'=>true"));
-        self::assertStringContainsString("(string)$e->getCode()==='23000'", $source);
+        self::assertStringContainsString('(string)$e->getCode()===\'23000\'', $source);
     }
 
     public function testSmokeReceiptsAreStatusAwareAndCurrentStateBound(): void
