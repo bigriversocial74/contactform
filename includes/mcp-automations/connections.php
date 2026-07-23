@@ -146,3 +146,28 @@ function mg_mcp_automation_target_ids(mixed $value, string $label): array
     }
     return $ids;
 }
+
+function mg_mcp_automation_target_public_ids(mixed $value, string $label): array
+{
+    $text = trim((string)$value);
+    if ($text === '') {
+        return [];
+    }
+    $parts = preg_split('/[\s,]+/', $text) ?: [];
+    $ids = [];
+    foreach ($parts as $part) {
+        $id = strtolower(trim((string)$part));
+        if ($id === '') {
+            continue;
+        }
+        if (preg_match('/^[a-z][a-z0-9]{1,9}_[a-z0-9]{8,64}$/', $id) !== 1) {
+            throw new MgMcpAutomationGrantException($label . ' contains an invalid public ID.');
+        }
+        $ids[] = $id;
+    }
+    $ids = array_values(array_unique($ids));
+    if (count($ids) > 50) {
+        throw new MgMcpAutomationGrantException($label . ' may contain at most 50 public IDs.');
+    }
+    return $ids;
+}

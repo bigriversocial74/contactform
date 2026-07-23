@@ -16,7 +16,7 @@ function mg_mcp_automation_create_grant(PDO $pdo, array $user, array $input): ar
     $reason = mg_mcp_automation_text($input['reason'] ?? '', 10, 500, 'Authorization reason');
     $riskCeiling = strtolower(trim((string)($input['risk_ceiling'] ?? 'low')));
     if (!in_array($riskCeiling, MG_MCP_AUTOMATION_GRANT_RISK_LEVELS, true)) {
-        throw new MgMcpAutomationGrantException('Phase 4A allows only low or medium risk ceilings.');
+        throw new MgMcpAutomationGrantException('Select a supported risk ceiling.');
     }
     $expiresDays = (int)($input['expires_days'] ?? 30);
     if (!in_array($expiresDays, [7, 30, 90, 180, 365], true)) {
@@ -38,7 +38,7 @@ function mg_mcp_automation_create_grant(PDO $pdo, array $user, array $input): ar
         'minimum_frequency_seconds' => mg_mcp_automation_optional_uint($input['minimum_frequency_seconds'] ?? null, 31536000, 'Minimum frequency'),
     ];
     if ($limits['minimum_frequency_seconds'] !== null && $limits['minimum_frequency_seconds'] < 3600) {
-        throw new MgMcpAutomationGrantException('Phase 4A grants cannot authorize a frequency faster than once per hour.');
+        throw new MgMcpAutomationGrantException('Automation grants cannot authorize a frequency faster than once per hour.');
     }
 
     $targetPolicy = [
@@ -48,9 +48,11 @@ function mg_mcp_automation_create_grant(PDO $pdo, array $user, array $input): ar
         'allow_all_published_catalog' => !empty($input['allow_all_published_catalog']),
         'allow_existing_contacts_only' => !empty($input['allow_existing_contacts_only']),
         'allowed_product_ids' => mg_mcp_automation_target_ids($input['allowed_product_ids'] ?? '', 'Allowed products'),
-        'allowed_campaign_ids' => mg_mcp_automation_target_ids($input['allowed_campaign_ids'] ?? '', 'Allowed campaigns'),
+        'allowed_campaign_ids' => mg_mcp_automation_target_public_ids($input['allowed_campaign_ids'] ?? '', 'Allowed Creator Campaigns'),
         'allowed_reward_template_ids' => mg_mcp_automation_target_ids($input['allowed_reward_template_ids'] ?? '', 'Allowed reward templates'),
-        'phase4a_execution_disabled' => true,
+        'external_client_direct_execution' => false,
+        'owner_approval_required' => true,
+        'owner_execution_required' => true,
     ];
 
     $pdo->beginTransaction();
@@ -63,6 +65,9 @@ function mg_mcp_automation_create_grant(PDO $pdo, array $user, array $input): ar
         $scopes = mg_mcp_automation_connection_scopes($pdo, (int)$connection['id']);
         $targetPolicy['merchant_workspace_only'] = $connection['workspace_id'] !== null;
         $authority = mg_mcp_automation_normalize_playbooks($input, $connection, $scopes);
+        if ((string)$authority['maximum_operation_class'] === 'approval_gated' && $riskCeiling !== 'critical') {
+            throw new MgMcpAutomationGrantException('Creator Campaign approval-gated playbooks require a critical risk ceiling because their fixed catalogs include critical actions.');
+        }
 
         $publicId = mg_public_uuid();
         $expiresAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
@@ -105,7 +110,10 @@ function mg_mcp_automation_create_grant(PDO $pdo, array $user, array $input): ar
             'maximum_operation_class' => $authority['maximum_operation_class'],
             'playbooks' => $authority['playbooks'],
             'execution_enabled' => false,
-        ]);
+            'external_client_direct_execution' => false,
+            'owner_approval_required' => true,
+            'owner_execution_required' => (string)$authority['maximum_operation_class'] === 'approval_gated',
+        ], (string)$authority['maximum_operation_class'] === 'approval_gated' ? 'high' : 'info');
         $pdo->commit();
 
         $metadata = [
@@ -114,6 +122,9 @@ function mg_mcp_automation_create_grant(PDO $pdo, array $user, array $input): ar
             'playbooks' => $authority['playbooks'],
             'maximum_operation_class' => $authority['maximum_operation_class'],
             'execution_enabled' => false,
+            'external_client_direct_execution' => false,
+            'owner_approval_required' => true,
+            'owner_execution_required' => (string)$authority['maximum_operation_class'] === 'approval_gated',
         ];
         mg_audit('mcp_automation_grant_created', 'mcp_automation_grant', $metadata, $userId);
         mg_event('mcp.automation_grant.created', $metadata, $userId);

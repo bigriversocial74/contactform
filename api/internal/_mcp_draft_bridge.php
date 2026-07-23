@@ -29,13 +29,17 @@ function mg_mcp_draft_bridge_connection(PDO $pdo, string $connectionPublicId): a
 
     $connectionClass = (string)$context['maximum_operation_class'];
     $clientClass = (string)$context['client_maximum_operation_class'];
-    if (!in_array($connectionClass, ['read', 'draft'], true)
-        || !in_array($clientClass, ['read', 'draft'], true)
+    if (!in_array($connectionClass, ['read', 'draft', 'approval_gated'], true)
+        || !in_array($clientClass, ['read', 'draft', 'approval_gated'], true)
         || mg_mcp_draft_operation_rank($connectionClass) > mg_mcp_draft_operation_rank($clientClass)) {
-        throw new MgMcpBridgeException('Connection exceeds the review-only operation boundary.', 403, 'MCP_OPERATION_CLASS_DENIED');
+        throw new MgMcpBridgeException('Connection exceeds the supported operation boundary.', 403, 'MCP_OPERATION_CLASS_DENIED');
     }
 
-    $allowedClasses = $connectionClass === 'draft' ? ['read', 'draft'] : ['read'];
+    $allowedClasses = match ($connectionClass) {
+        'approval_gated' => ['read', 'draft', 'approval_gated'],
+        'draft' => ['read', 'draft'],
+        default => ['read'],
+    };
     $placeholders = implode(',', array_fill(0, count($allowedClasses), '?'));
     $scopeStmt = $pdo->prepare(
         "SELECT cs.scope_key

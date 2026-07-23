@@ -27,9 +27,11 @@ if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
             'response_types' => ['code'],
             'token_endpoint_auth_method' => 'none',
         ], (int)$user['id'], 'preregistered');
-        $notice = (string)$created['maximum_operation_class'] === 'draft'
-            ? 'OAuth client registered for read and reviewable-draft access. Draft approval never executes an action.'
-            : 'OAuth client registered with read-only access and exact callback URLs.';
+        $notice = match ((string)$created['maximum_operation_class']) {
+            'approval_gated' => 'OAuth client registered for read, proposal, and owner approval-gated action-request access. The client cannot approve or execute actions.',
+            'draft' => 'OAuth client registered for read and reviewable-draft access. Draft approval never executes an action.',
+            default => 'OAuth client registered with read-only access and exact callback URLs.',
+        };
     } catch (MgMcpOAuthException $error) {
         $errorMessage = $error->getMessage();
     } catch (Throwable $error) {
@@ -54,7 +56,7 @@ $page_title = 'MCP OAuth Clients | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-mcp-oauth-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/mcp-oauth.css?v=20260720-phase3a'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/mcp-oauth.css?v=20260722-phase13c'];
 $adminActive = 'mcp-connections';
 require dirname(__DIR__) . '/includes/header.php';
 ?>
@@ -63,13 +65,13 @@ require dirname(__DIR__) . '/includes/header.php';
   <div class="mg-app-workspace mg-admin-workspace">
     <main class="mg-admin-oauth-shell">
       <header class="mg-ai-hero">
-        <div><a href="/admin/mcp-connections.php">← MCP operations</a><span class="mg-eyebrow">MCP Phase 3A</span><h1>OAuth clients</h1><p>Pre-register external AI clients with either read-only access or reviewable-draft access. Dynamic registration remains read-only.</p></div>
+        <div><a href="/admin/mcp-connections.php">← MCP operations</a><span class="mg-eyebrow">MCP Creator Campaign Phase 13C</span><h1>OAuth clients</h1><p>Pre-register external AI clients with read-only, reviewable-draft, or owner approval-gated request authority. Dynamic registration remains read-only.</p></div>
         <div class="mg-ai-endpoint"><span>Authorization issuer</span><code><?= mg_e(mg_mcp_oauth_issuer()) ?></code></div>
       </header>
       <?php if ($notice !== ''): ?><div class="mg-ai-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
       <?php if ($errorMessage !== ''): ?><div class="mg-ai-alert is-error"><?= mg_e($errorMessage) ?></div><?php endif; ?>
       <?php if (is_array($created)): ?>
-        <section class="mg-ai-secret"><strong>Registered OAuth client</strong><label>Client ID<input readonly value="<?= mg_e((string)$created['client_id']) ?>"></label><p>Maximum operation class: <strong><?= mg_e((string)$created['maximum_operation_class']) ?></strong>. No client secret is issued because public clients use PKCE S256.</p></section>
+        <section class="mg-ai-secret"><strong>Registered OAuth client</strong><label>Client ID<input readonly value="<?= mg_e((string)$created['client_id']) ?>"></label><p>Maximum operation class: <strong><?= mg_e((string)$created['maximum_operation_class']) ?></strong>. Public clients use PKCE S256. Approval-gated clients may request actions but cannot approve or execute them.</p></section>
       <?php endif; ?>
       <div class="mg-admin-oauth-grid">
         <section class="mg-ai-panel">
@@ -78,7 +80,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <input type="hidden" name="csrf_token" value="<?= mg_e(mg_csrf_token()) ?>">
             <label>Client name<input required name="client_name" maxlength="180" placeholder="ChatGPT"></label>
             <label>Client type<select name="client_type"><option value="chatgpt">ChatGPT</option><option value="claude">Claude</option><option value="custom" selected>Custom</option><option value="enterprise">Enterprise</option></select></label>
-            <label>Maximum authority<select name="maximum_operation_class"><option value="read">Read only</option><option value="draft">Read + reviewable drafts</option></select><small>Draft authority can store gift, campaign, reward, and message drafts for human review. It cannot publish, send, purchase, schedule, or execute.</small></label>
+            <label>Maximum authority<select name="maximum_operation_class"><option value="read">Read only</option><option value="draft">Read + reviewable drafts</option><option value="approval_gated">Read + drafts + approval-gated action requests</option></select><small>Approval-gated authority creates owner review requests only. The merchant must separately approve and execute every action inside Microgifter.</small></label>
             <label>Client website<input name="client_uri" type="url" maxlength="500" placeholder="https://example.com"></label>
             <label>Logo URL<input name="logo_uri" type="url" maxlength="500" placeholder="https://example.com/logo.png"></label>
             <label>Exact redirect URIs<textarea required name="redirect_uris" rows="6" placeholder="https://client.example.com/oauth/callback&#10;http://127.0.0.1:3000/callback"></textarea><small>One URI per line. HTTPS is required except for localhost loopback callbacks.</small></label>

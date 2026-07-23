@@ -16,7 +16,7 @@ function mg_mcp_oauth_client_registration(PDO $pdo, string $clientId, bool $lock
     if (!$registration
         || (string)$registration['status'] !== 'active'
         || !in_array((string)$registration['mcp_client_status'], ['development', 'active'], true)
-        || !in_array((string)$registration['maximum_operation_class'], ['read', 'draft'], true)) {
+        || !in_array((string)$registration['maximum_operation_class'], ['read', 'draft', 'approval_gated'], true)) {
         throw new MgMcpOAuthException('OAuth client is unavailable.', 'invalid_client', 401);
     }
     $registration['redirect_uris'] = mg_mcp_oauth_json_decode($registration['redirect_uris_json']);
@@ -48,7 +48,7 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
     if ($responseTypes !== ['code']) throw new MgMcpOAuthException('Only the code response type is supported.', 'invalid_client_metadata', 422);
     $authMethod = strtolower(trim((string)($input['token_endpoint_auth_method'] ?? 'none')));
     if ($authMethod !== 'none') {
-        throw new MgMcpOAuthException('Phase 3A supports public clients using token_endpoint_auth_method=none.', 'invalid_client_metadata', 422);
+        throw new MgMcpOAuthException('Public clients must use token_endpoint_auth_method=none.', 'invalid_client_metadata', 422);
     }
     $clientType = strtolower(trim((string)($input['client_type'] ?? 'custom')));
     if (!in_array($clientType, ['first_party', 'chatgpt', 'claude', 'custom', 'enterprise'], true)) $clientType = 'custom';
@@ -73,9 +73,11 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             json_encode($redirectUris, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
             $maximumOperationClass,
             json_encode([
-                'oauth_phase' => '3A',
+                'oauth_phase' => '13C',
                 'registration_type' => $registrationType,
-                'review_only_drafts' => $maximumOperationClass === 'draft',
+                'review_only_drafts' => in_array($maximumOperationClass, ['draft', 'approval_gated'], true),
+                'approval_gated_requests' => $maximumOperationClass === 'approval_gated',
+                'owner_execution_required' => $maximumOperationClass === 'approval_gated',
                 'execution_enabled' => false,
             ], JSON_THROW_ON_ERROR),
             $actorId,
@@ -113,6 +115,7 @@ function mg_mcp_oauth_register_client(PDO $pdo, array $input, ?int $actorId = nu
             'redirect_uri_count' => count($redirectUris),
             'maximum_operation_class' => $maximumOperationClass,
             'execution_enabled' => false,
+            'owner_execution_required' => $maximumOperationClass === 'approval_gated',
         ];
         mg_audit('mcp_oauth_client_registered', 'mcp_oauth_client', $metadata, $actorId);
         mg_event('mcp.oauth.client.registered', $metadata, $actorId);

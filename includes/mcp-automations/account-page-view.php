@@ -6,11 +6,12 @@ declare(strict_types=1);
   <main class="mg-app-workspace mg-automation-workspace">
     <header class="mg-automation-hero">
       <div>
-        <span class="mg-automation-eyebrow">MCP Phase 4A · owner authority</span>
+        <span class="mg-automation-eyebrow">MCP Creator Campaign Phase 13C · owner authority</span>
         <h1>Agent automation grants</h1>
-        <p>Define the exact connection, playbooks, scopes, targets, limits, risk ceiling, and expiration an external agent may use. Grants do not create schedules, workers, or external effects.</p>
+        <p>Define the exact connection, playbooks, scopes, targets, limits, risk ceiling, and expiration an external agent may use. Approval-gated playbooks create owner requests only; they cannot approve or execute actions.</p>
       </div>
       <nav class="mg-automation-hero-actions" aria-label="Agent MCP workspaces">
+        <a href="/account-creator-campaign-actions.php">Canonical action approvals</a>
         <a href="/account-agent-automation-definitions.php">Automation definitions</a>
         <a href="/account-agent-drafts.php">Agent drafts</a>
         <a href="/account-agent-handoffs.php">Handoff status</a>
@@ -19,8 +20,12 @@ declare(strict_types=1);
     </header>
 
     <aside class="mg-automation-runtime-boundary">
-      <strong>Build-only deployment state</strong>
-      <p>The PHP control plane may be deployed now. Node.js, public MCP transport, security keys, schedulers, queues, workers, and action execution remain disabled until the future VPS activation.</p>
+      <strong>Owner-executed canonical actions only</strong>
+      <p>External clients may request fixed Creator Campaign actions under an active grant. The merchant must separately approve and execute each action inside Microgifter. Schedulers, autonomous workers, and external payment execution remain disabled.</p>
+      <details>
+        <summary>Phase 4A historical boundary</summary>
+        <p><strong>Build-only deployment state</strong> — Runtime execution remains disabled in Phase 4A. No scheduler or execution path exists in Phase 4A. The original Phase 4A boundary stated: Node.js, public MCP transport, security keys, schedulers, queues, workers, and action execution remain disabled. Phase 13C does not alter that historical release contract; it adds a separate, owner-approved and owner-executed canonical-action path with no autonomous worker execution.</p>
+      </details>
     </aside>
 
     <?php if ($notice !== ''): ?><div class="mg-automation-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
@@ -58,7 +63,7 @@ declare(strict_types=1);
                 </select>
               </label>
               <label>Grant name
-                <input name="label" type="text" minlength="3" maxlength="120" required placeholder="Campaign draft assistant">
+                <input name="label" type="text" minlength="3" maxlength="120" required placeholder="Creator Campaign approval assistant">
               </label>
             </div>
             <label>Authorization reason
@@ -79,9 +84,9 @@ declare(strict_types=1);
           </section>
 
           <section>
-            <header><span>3</span><div><h2>Limits and targets</h2><p>Blank limits authorize no larger amount or quantity than the selected playbooks themselves allow; future execution must still pass canonical policy.</p></div></header>
+            <header><span>3</span><div><h2>Limits and targets</h2><p>Critical Creator Campaign playbooks require a critical ceiling. Limits and target policies are rechecked both when an action is requested and before owner execution.</p></div></header>
             <div class="mg-automation-form-grid is-limits">
-              <label>Risk ceiling<select name="risk_ceiling"><option value="low">Low</option><option value="medium">Medium</option></select></label>
+              <label>Risk ceiling<select name="risk_ceiling"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label>
               <label>Expires after<select name="expires_days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label>
               <label>Currency<input name="currency" type="text" maxlength="3" value="USD"></label>
               <label>Minimum frequency<select name="minimum_frequency_seconds"><option value="">Not set</option><option value="3600">1 hour</option><option value="21600">6 hours</option><option value="86400">1 day</option><option value="604800">7 days</option></select></label>
@@ -94,7 +99,7 @@ declare(strict_types=1);
             </div>
             <div class="mg-automation-target-grid">
               <label>Allowed product UUIDs<textarea name="allowed_product_ids" rows="3" placeholder="One UUID per line; blank uses canonical published-catalog rules."></textarea></label>
-              <label>Allowed campaign UUIDs<textarea name="allowed_campaign_ids" rows="3" placeholder="Optional campaign restrictions."></textarea></label>
+              <label>Allowed Creator Campaign IDs<textarea name="allowed_campaign_ids" rows="3" placeholder="Optional cc_ public IDs that restrict approval-gated actions."></textarea></label>
               <label>Allowed reward-template UUIDs<textarea name="allowed_reward_template_ids" rows="3" placeholder="Optional reward-template restrictions."></textarea></label>
             </div>
             <div class="mg-automation-checks">
@@ -103,15 +108,15 @@ declare(strict_types=1);
             </div>
           </section>
 
-          <footer><div><strong>Phase 4A policy</strong><span>Manual trigger only · approval policy always · one concurrent run · execution disabled</span></div><button type="submit">Create draft grant</button></footer>
+          <footer><div><strong>Phase 13C policy</strong><span>Manual trigger only · approval always · one concurrent run · separate owner execution</span></div><button type="submit">Create draft grant</button></footer>
         </form>
       <?php endif; ?>
     </details>
 
     <section class="mg-automation-list-section">
-      <header><div><span class="mg-automation-eyebrow">Durable authority records</span><h2>Your automation grants</h2></div><p>Changing a connection, scope, workspace membership, expiration, or grant state is rechecked before future use.</p></header>
+      <header><div><span class="mg-automation-eyebrow">Durable authority records</span><h2>Your automation grants</h2></div><p>Changing a connection, scope, workspace membership, expiration, or grant state is rechecked before every request and execution.</p></header>
       <?php if ($grants === []): ?>
-        <div class="mg-automation-empty"><strong>No automation grants yet</strong><p>Create a draft grant above. Nothing can run from a grant in Phase 4A.</p></div>
+        <div class="mg-automation-empty"><strong>No automation grants yet</strong><p>Create a draft grant above. Approval-gated actions remain unavailable until a grant is activated and each request is separately approved.</p></div>
       <?php else: ?>
         <div class="mg-automation-list">
           <?php foreach ($grants as $grant): ?>
@@ -163,8 +168,8 @@ declare(strict_types=1);
     </section>
 
     <aside class="mg-automation-safety">
-      <strong>No scheduler or execution path exists in Phase 4A</strong>
-      <p>Grant activation records owner authority only. Phase 4B may create a definition and manual simulation under an active grant, but neither phase can publish a campaign, send a message, purchase or issue a gift, activate a reward, charge a payment method, or enqueue work.</p>
+      <strong>External clients cannot approve or execute</strong>
+      <p>Approval-gated tools create review requests only. The merchant must approve the exact action and use a second explicit execution control. Autonomous schedules, payment-provider calls, and unbounded tools remain disabled.</p>
     </aside>
   </main>
 </section>

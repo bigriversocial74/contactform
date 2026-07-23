@@ -25,8 +25,8 @@ final class MgMcpAutomationGrantException extends RuntimeException
 }
 
 const MG_MCP_AUTOMATION_GRANT_STATUSES = ['draft', 'active', 'paused', 'expired', 'revoked'];
-const MG_MCP_AUTOMATION_GRANT_OPERATION_CLASSES = ['read', 'monitor', 'recommend', 'task', 'draft'];
-const MG_MCP_AUTOMATION_GRANT_RISK_LEVELS = ['low', 'medium'];
+const MG_MCP_AUTOMATION_GRANT_OPERATION_CLASSES = ['read', 'monitor', 'recommend', 'task', 'draft', 'approval_gated'];
+const MG_MCP_AUTOMATION_GRANT_RISK_LEVELS = ['low', 'medium', 'high', 'critical'];
 
 function mg_mcp_automation_operation_rank(string $operationClass): int
 {
@@ -93,6 +93,60 @@ function mg_mcp_automation_playbook_catalog(): array
             'workspace_required' => true,
             'tools' => [
                 'microgifter.message.create_draft' => 'message:draft',
+            ],
+        ],
+        'creator_campaign_lifecycle_actions' => [
+            'label' => 'Creator Campaign lifecycle actions',
+            'description' => 'Request publication, scheduling, pause, resume, completion, or cancellation. Every request requires separate owner approval and execution.',
+            'operation_class' => 'approval_gated',
+            'workspace_required' => true,
+            'tools' => [
+                'microgifter.creator_campaigns.publish' => 'creator_campaigns:publish',
+                'microgifter.creator_campaigns.schedule' => 'creator_campaigns:publish',
+                'microgifter.creator_campaigns.pause' => 'creator_campaigns:publish',
+                'microgifter.creator_campaigns.resume' => 'creator_campaigns:publish',
+                'microgifter.creator_campaigns.complete' => 'creator_campaigns:publish',
+                'microgifter.creator_campaigns.cancel' => 'creator_campaigns:publish',
+            ],
+        ],
+        'creator_campaign_participant_actions' => [
+            'label' => 'Creator Campaign participant actions',
+            'description' => 'Request application decisions, invitations, agreement offers, and participant controls with per-action owner approval.',
+            'operation_class' => 'approval_gated',
+            'workspace_required' => true,
+            'tools' => [
+                'microgifter.creator_campaigns.application.approve' => 'creator_campaign_participants:manage',
+                'microgifter.creator_campaigns.application.decline' => 'creator_campaign_participants:manage',
+                'microgifter.creator_campaigns.invitation.send' => 'creator_campaign_participants:manage',
+                'microgifter.creator_campaigns.agreement.offer' => 'creator_campaign_agreements:manage',
+                'microgifter.creator_campaigns.participant.suspend' => 'creator_campaign_participants:manage',
+                'microgifter.creator_campaigns.participant.remove' => 'creator_campaign_participants:manage',
+            ],
+        ],
+        'creator_campaign_review_actions' => [
+            'label' => 'Creator Campaign review actions',
+            'description' => 'Request submission decisions and attribution overrides with per-action owner approval.',
+            'operation_class' => 'approval_gated',
+            'workspace_required' => true,
+            'tools' => [
+                'microgifter.creator_campaigns.submission.approve' => 'creator_campaign_submissions:review',
+                'microgifter.creator_campaigns.submission.request_revision' => 'creator_campaign_submissions:review',
+                'microgifter.creator_campaigns.submission.reject' => 'creator_campaign_submissions:review',
+                'microgifter.creator_campaigns.attribution.override' => 'creator_campaign_attribution:manage',
+            ],
+        ],
+        'creator_campaign_financial_actions' => [
+            'label' => 'Creator Campaign financial actions',
+            'description' => 'Request earning decisions, internal payout records, and dispute resolutions. No payment provider is called.',
+            'operation_class' => 'approval_gated',
+            'workspace_required' => true,
+            'tools' => [
+                'microgifter.creator_campaigns.earning.approve' => 'creator_campaign_earnings:manage',
+                'microgifter.creator_campaigns.earning.hold' => 'creator_campaign_earnings:manage',
+                'microgifter.creator_campaigns.earning.reject' => 'creator_campaign_earnings:manage',
+                'microgifter.creator_campaigns.earning.reverse' => 'creator_campaign_earnings:manage',
+                'microgifter.creator_campaigns.payout.record' => 'creator_campaign_payouts:manage',
+                'microgifter.creator_campaigns.dispute.resolve' => 'creator_campaign_disputes:manage',
             ],
         ],
     ];

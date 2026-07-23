@@ -70,6 +70,11 @@ export interface CanonicalBridge {
     operation: CreatorCampaignReadOperation,
     arguments_: CreatorCampaignReadArguments,
   ): Promise<Readonly<Record<string, unknown>>>;
+  requestCreatorCampaignAction?(
+    connectionId: string,
+    toolName: string,
+    input: Readonly<Record<string, unknown>>,
+  ): Promise<Readonly<Record<string, unknown>>>;
   createDraft(connectionId: string, arguments_: DraftCreateArguments): Promise<Readonly<Record<string, unknown>>>;
   listDrafts(connectionId: string, arguments_: DraftListArguments): Promise<Readonly<Record<string, unknown>>>;
   getDraft(connectionId: string, draftId: string): Promise<Readonly<Record<string, unknown>>>;
@@ -185,6 +190,17 @@ export class HttpCanonicalBridge implements CanonicalBridge {
     arguments_: CreatorCampaignReadArguments,
   ): Promise<Readonly<Record<string, unknown>>> {
     return object(await this.request(operation, connectionId, arguments_), "Creator Campaign read result");
+  }
+
+  public async requestCreatorCampaignAction(
+    connectionId: string,
+    toolName: string,
+    input: Readonly<Record<string, unknown>>,
+  ): Promise<Readonly<Record<string, unknown>>> {
+    return object(await this.request("creator_campaign_actions.request", connectionId, {
+      tool_name: toolName,
+      input,
+    }), "Creator Campaign action request");
   }
 
   public async createDraft(connectionId: string, arguments_: DraftCreateArguments): Promise<Readonly<Record<string, unknown>>> {

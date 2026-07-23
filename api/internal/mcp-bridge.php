@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_mcp_bridge.php';
 require_once __DIR__ . '/_mcp_creator_campaign_bridge.php';
 require_once __DIR__ . '/_mcp_draft_bridge.php';
+require_once __DIR__ . '/_mcp_creator_campaign_action_bridge.php';
 require_once __DIR__ . '/_mcp_oauth_bridge.php';
 
 mg_require_method('POST');
@@ -31,6 +32,9 @@ try {
         } elseif ($operation === 'draft.list' && is_array($data) && is_array($data['items'] ?? null)) {
             $data['items'] = mg_mcp_native_status_attach_connection_drafts($pdo, $context, $data['items']);
         }
+    } elseif (str_starts_with($operation, 'creator_campaign_actions.')) {
+        $context = mg_mcp_creator_campaign_action_bridge_authenticate($pdo, $rawBody, $payload);
+        $data = mg_mcp_creator_campaign_action_bridge_dispatch($pdo, $context, $operation, $arguments);
     } elseif (str_starts_with($operation, 'creator_campaigns.')) {
         $context = mg_mcp_bridge_authenticate($pdo, $rawBody, $payload);
         $data = mg_mcp_creator_campaign_bridge_dispatch($pdo, $context, $operation, $arguments);
