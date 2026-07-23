@@ -75,7 +75,7 @@ final class CreatorCampaignProductionPilotV14ContractTest extends TestCase
             'Pilot readiness',
             'Operator checklist',
             'Bounded assistants',
-            'Run history',
+            'Playbook run history',
             'Recent recommendations',
             'MCP security feed',
             'Emergency stop',
