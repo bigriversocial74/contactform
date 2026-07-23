@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_mcp_creator_campaign_bridge.php';
 require_once __DIR__ . '/_mcp_creator_campaign_draft_bridge.php';
 require_once dirname(__DIR__, 2) . '/includes/mcp-creator-campaign-playbooks.php';
+require_once dirname(__DIR__, 2) . '/includes/creator-campaign-pilot/runtime.php';
 
 function mg_mcp_creator_campaign_playbook_bridge_authenticate(
     PDO $pdo,
@@ -44,6 +45,7 @@ function mg_mcp_creator_campaign_playbook_bridge_dispatch(
                 'MCP_CREATOR_CAMPAIGN_PLAYBOOK_OPERATION_UNKNOWN'
             );
         }
+        mg_creator_campaign_pilot_assert_playbook_enabled($pdo, (int)($context['workspace_id'] ?? 0));
         $toolName = mg_mcp_bridge_text($arguments['tool_name'] ?? '', 180, 'tool_name');
         $input = is_array($arguments['input'] ?? null) ? $arguments['input'] : [];
         return mg_mcp_creator_campaign_playbook_run($pdo, $context, $toolName, $input);
