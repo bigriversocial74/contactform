@@ -45,6 +45,24 @@ function mg_creator_campaign_compensation_minor(mixed $value,string $field,bool 
     return $amount;
 }
 
+/**
+ * Calculate floor(source minor units * basis points / 10,000) without
+ * converting financial integers to floating point.
+ */
+function mg_creator_campaign_compensation_percent_minor(int $sourceAmountMinor,int $rateBps): int
+{
+    if($sourceAmountMinor<0) throw new InvalidArgumentException('source_amount_minor cannot be negative.');
+    if($rateBps<0||$rateBps>10000) throw new InvalidArgumentException('rate_bps must be between 0 and 10000.');
+    if($sourceAmountMinor===0||$rateBps===0) return 0;
+
+    $whole=intdiv($sourceAmountMinor,10000);
+    $remainder=$sourceAmountMinor%10000;
+    if($whole>intdiv(PHP_INT_MAX,$rateBps)) {
+        throw new OverflowException('The percentage compensation calculation exceeds the supported integer range.');
+    }
+    return ($whole*$rateBps)+intdiv($remainder*$rateBps,10000);
+}
+
 function mg_creator_campaign_compensation_rule_snapshot(array $input): array
 {
     return [
