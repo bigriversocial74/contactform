@@ -17,7 +17,7 @@ function mg_task_agent_order_tracking_items(PDO $pdo, int $userId, int $agentId,
     $stmt=$pdo->prepare("SELECT DISTINCT
         o.id order_internal_id,o.public_id order_id,o.currency,o.subtotal_cents,o.discount_cents,o.tax_cents,o.platform_fee_cents,o.total_cents,
         o.payment_status,o.fulfillment_status,o.source_type,o.paid_at,o.cancelled_at,o.created_at,o.updated_at,
-        oi.public_id order_item_id,oi.title_snapshot,oi.quantity,oi.unit_amount_cents,oi.line_total_cents,
+        oi.id order_item_internal_id,oi.public_id order_item_id,oi.title_snapshot,oi.quantity,oi.unit_amount_cents,oi.line_total_cents,
         cp.public_id product_id,cpv.public_id product_version_id,
         s.public_id shortlist_id,p.public_id plan_id,p.title plan_title,
         r.public_id receipt_id,r.receipt_number,r.status receipt_status,r.finalized_at

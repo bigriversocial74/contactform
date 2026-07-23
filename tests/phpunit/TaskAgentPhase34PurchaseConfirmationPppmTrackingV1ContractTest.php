@@ -11,7 +11,8 @@ final class TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest exten
         self::assertIsString($service);
         foreach([
             'o.buyer_user_id=?','s.owner_user_id=o.buyer_user_id','s.agent_id=?',"s.status='selected'",'s.plan_id IS NOT NULL',
-            's.product_version_id=oi.product_version_id','cpv.public_id product_version_id','match_basis','exact_product_version',
+            's.product_version_id=oi.product_version_id','oi.id order_item_internal_id','cpv.public_id product_version_id','match_basis','exact_product_version',
+            'ORDER BY o.created_at DESC,o.id DESC,oi.id DESC',
             'mg_order_issuance_summary','commerce_orders','commerce_order_items','receipts','pppm_items','microgift_instances','microgift_inbox_items',
         ] as $marker)self::assertStringContainsString($marker,$service);
     }
@@ -66,7 +67,7 @@ final class TaskAgentPhase34PurchaseConfirmationPppmTrackingV1ContractTest exten
         self::assertNotFalse($start);
         $model=substr($service,$start);
         self::assertStringContainsString('array_slice($items,0,8)',$model);
-        foreach(['order_internal_id','buyer_user_id','actor_user_id','source_reference','idempotency_key','receipt_id','shortlist_id','plan_id','product_version_id'] as $forbidden){
+        foreach(['order_internal_id','order_item_internal_id','buyer_user_id','actor_user_id','source_reference','idempotency_key','receipt_id','shortlist_id','plan_id','product_version_id'] as $forbidden){
             self::assertStringNotContainsString($forbidden,$model);
         }
         foreach(['payment_status','fulfillment_status','issuance_state','issued_units','pppm_items','microgifts','inbox_items'] as $marker){
