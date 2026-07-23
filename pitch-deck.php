@@ -10,9 +10,10 @@ $page_styles = [
     '/assets/css/public-dark-shell.css',
     '/assets/css/public-header-cleanup.css',
     '/assets/css/pitch-deck-scroll-v1.css?v=1.0.0',
+    '/assets/css/pitch-deck-scroll-runtime-v2.css?v=2.1.0',
 ];
 $page_scripts = [
-    '/assets/js/pitch-deck-scroll-v1.js?v=1.0.0',
+    '/assets/js/pitch-deck-scroll-v1.js?v=2.1.0',
 ];
 $page_meta = [
     'description' => 'Microgifter investor pitch deck: the connected social gifting, merchant CRM, campaign, loyalty, and automated commerce platform built to make local the easy choice.',
@@ -43,7 +44,7 @@ $page_manifest = [
     ],
 ];
 
-header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
+header('Cache-Control: public, max-age=0, must-revalidate');
 require __DIR__ . '/includes/header.php';
 ?>
 <div class="pitch-deck" data-pitch-deck data-slide-count="10">
