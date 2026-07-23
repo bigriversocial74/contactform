@@ -1,0 +1,10 @@
+/* Personal agent desktop summary row v1.
+   Seven metrics stay on one row on wide desktop layouts. */
+@media (min-width:1281px){
+  .mg-personal-agent-app .mg-personal-agent-summary{
+    grid-template-columns:repeat(7,minmax(0,1fr));
+  }
+  .mg-personal-agent-app .mg-personal-agent-stat{
+    padding:12px;
+  }
+}
