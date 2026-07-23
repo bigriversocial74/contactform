@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__,2) . '/includes/privacy/account-erasure.php';
 require_once dirname(__DIR__,2) . '/includes/privacy/admin-operations.php';
+require_once dirname(__DIR__,2) . '/includes/privacy/finalization-operations.php';
 
 $actor = mg_require_api_user();
 $actorId = (int) $actor['id'];
@@ -49,10 +50,17 @@ try {
     if ($action === 'create_admin_request') {
         $item = mg_privacy_create_admin_delete_request($pdo,$actorId,$input);
         $requestId = (int) ($item['id'] ?? 0);
+        $targetUserId = (int) ($item['user_id'] ?? 0);
+        if ($requestId > 0 && $targetUserId > 0) {
+            $dueAt = (string) ($item['extended_due_at'] ?: $item['response_due_at']);
+            mg_privacy_create_operational_handoffs($pdo,$requestId,$targetUserId,$dueAt);
+            $item = mg_privacy_admin_request_detail($pdo,$requestId) ?? $item;
+        }
         $pdo->commit();
-        mg_audit('admin.privacy.create_admin_request','privacy_request',['request_id'=>$requestId,'target_user_id'=>$item['user_id'] ?? null,'reason'=>$reason],$actorId);
+        mg_audit('admin.privacy.create_admin_request','privacy_request',['request_id'=>$requestId,'target_user_id'=>$targetUserId ?: null,'reason'=>$reason],$actorId);
         mg_security_log('info','admin.privacy.request_created','Administrative privacy request created.',['request_id'=>$requestId],$actorId);
-        mg_ok(['item'=>$item],'Administrative privacy request created.',201);
+        $message = !empty($item['existing']) ? 'Existing active privacy request loaded.' : 'Administrative privacy request created.';
+        mg_ok(['item'=>$item],$message,!empty($item['existing']) ? 200 : 201);
     }
 
     if ($requestId < 1) throw new RuntimeException('Valid request ID required.');
@@ -78,14 +86,21 @@ try {
             }
             $approvalReason = $reason !== '' ? $reason : 'Approved after administrative privacy review.';
             $pdo->prepare('UPDATE privacy_requests SET decision="approve",status=IF(status IN ("submitted","identity_verified","acknowledged","under_review","approved"),"approved",status),decision_reason=?,assigned_to_user_id=?,updated_at=NOW() WHERE id=?')->execute([$approvalReason,$actorId,$requestId]);
-            if ($userId > 0 && !in_array((string) $request['status'],['restricted','blocked_by_hold','processing'],true)) {
+            if ($userId > 0 && empty($request['restricted_at'])) {
+                mg_privacy_assert_account_restriction_safe($pdo,$userId);
                 $result = mg_privacy_restrict_account($pdo,$requestId,$userId);
             }
             if ($userId > 0) {
                 $due = (string) ($request['grace_ends_at'] ?: $request['response_due_at']);
                 $pdo->prepare('UPDATE users SET deletion_due_at=? WHERE id=?')->execute([$due,$userId]);
+                mg_privacy_create_operational_handoffs($pdo,$requestId,$userId,(string) ($request['extended_due_at'] ?: $request['response_due_at']));
             }
-            $result['status'] = 'restricted';
+            if ($userId > 0 && mg_privacy_active_hold($pdo,$requestId,$userId)) {
+                $pdo->prepare('UPDATE privacy_requests SET status="blocked_by_hold",updated_at=NOW() WHERE id=?')->execute([$requestId]);
+                $result['status'] = 'blocked_by_hold';
+            } else {
+                $result['status'] = 'restricted';
+            }
             mg_privacy_event($pdo,$requestId,'request_approved',['reason'=>$approvalReason],$actorId);
             break;
 
@@ -113,6 +128,7 @@ try {
             $dueSql = mg_privacy_dt($newDueAt);
             $pdo->prepare('UPDATE privacy_requests SET extended_due_at=?,grace_ends_at=IF(grace_ends_at IS NULL OR grace_ends_at<?,?,grace_ends_at),extension_reason=?,updated_at=NOW() WHERE id=?')->execute([$dueSql,$dueSql,$dueSql,$reason,$requestId]);
             if ($userId > 0) $pdo->prepare('UPDATE users SET deletion_due_at=? WHERE id=?')->execute([$dueSql,$userId]);
+            $pdo->prepare('UPDATE privacy_merchant_handoffs SET due_at=?,updated_at=NOW() WHERE request_id=? AND status NOT IN ("completed","not_applicable")')->execute([$dueSql,$requestId]);
             mg_privacy_event($pdo,$requestId,'deadline_extended',['new_due_at'=>$dueSql,'reason'=>$reason],$actorId);
             $result = ['extended_due_at'=>$dueSql];
             break;
@@ -141,15 +157,15 @@ try {
 
         case 'handoff_complete':
             $handoffId = (int) ($input['handoff_id'] ?? 0);
-            $stmt = $pdo->prepare('UPDATE privacy_merchant_handoffs SET status="completed",completed_at=NOW(),notes=?,updated_at=NOW() WHERE id=? AND request_id=?');
-            $stmt->execute([$reason !== '' ? $reason : null,$handoffId,$requestId]);
+            $stmt = $pdo->prepare('UPDATE privacy_merchant_handoffs SET status="completed",completed_at=NOW(),notes=CONCAT_WS("\n",notes,?),updated_at=NOW() WHERE id=? AND request_id=?');
+            $stmt->execute([$reason !== '' ? $reason : 'Controller or operational handoff completed.',$handoffId,$requestId]);
             if ($stmt->rowCount() < 1) throw new RuntimeException('Merchant handoff not found.');
             mg_privacy_event($pdo,$requestId,'merchant_handoff_completed',['handoff_id'=>$handoffId],$actorId);
             $result = ['handoff_id'=>$handoffId,'completed'=>true];
             break;
 
         case 'finalize':
-            $result = mg_privacy_finalize_request($pdo,$requestId,$actorId,!empty($input['force']));
+            $result = mg_privacy_finalize_with_operations($pdo,$requestId,$actorId,!empty($input['force']));
             break;
 
         default:
