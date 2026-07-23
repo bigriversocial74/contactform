@@ -7,6 +7,8 @@ require_once dirname(__DIR__) . '/includes/admin-auth.php';
 $user = mg_require_admin_page_permission('admin.users.view');
 $canViewUsers = true;
 $canCreateUsers = mg_admin_page_user_has_permission($user, 'admin.users.manage');
+$canViewPrivacyRequests = mg_admin_page_user_has_permission($user, 'admin.privacy_requests.view')
+    || mg_admin_page_user_has_permission($user, 'admin.privacy_requests.manage');
 $canManageAiLimits = mg_admin_page_user_has_permission($user, 'admin.settings.manage')
     || mg_admin_page_user_has_permission($user, 'admin.commerce.manage')
     || mg_admin_page_user_has_permission($user, 'subscriptions.admin');
@@ -47,6 +49,9 @@ require dirname(__DIR__) . '/includes/header.php';
         <?php if ($canViewUsers): ?>
           <div class="mg-admin-users-hero-actions">
             <span>Last updated <strong data-users-updated>—</strong></span>
+            <?php if ($canViewPrivacyRequests): ?>
+              <a class="mg-btn mg-btn-soft" href="/admin/privacy-requests.php">Privacy requests</a>
+            <?php endif; ?>
             <?php if ($canCreateUsers): ?>
               <button class="mg-btn mg-btn-primary" type="button" data-user-create-open>Create user</button>
             <?php endif; ?>

@@ -21,6 +21,7 @@ $accountNav += [
   'preferences' => ['Activity', 'Preferences', 'Notification delivery settings', '/notification-preferences.php'],
   'settings' => ['Account', 'Profile Settings', 'Name, email, and security', '/account.php'],
   'subscriptions' => ['Account', 'My Subscriptions', 'Plans, billing, and access', '/account-subscriptions.php'],
+  'privacy' => ['Account', 'Privacy & Data', 'Requests, retention, and account deletion', '/privacy-center.php'],
 ];
 $currentSection = '';
 ?>
