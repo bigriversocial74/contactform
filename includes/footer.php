@@ -1,6 +1,6 @@
 <?php
 $page_scripts = $page_scripts ?? [];
-$late_styles = ['/assets/css/universal-footer.css', '/assets/css/market-alerts.css'];
+$late_styles = ['/assets/css/universal-footer.css', '/assets/css/market-alerts.css', '/assets/css/cookie-consent.css?v=1.0.0'];
 if (($page_manifest['id'] ?? '') === 'developer-docs') {
     $late_styles[] = '/assets/css/docs-polish.css';
 }
@@ -63,7 +63,7 @@ $core_scripts = [
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
     '/assets/js/auth-state.js','/assets/js/onboarding.js','/assets/js/agent-tabs.js','/assets/js/agent-controls.js',
     '/assets/js/agent-toolbar-state.js','/assets/js/agent-sidebar.js','/assets/js/agent-items.js','/assets/js/media-delivery.js',
-    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/scanner-device-session.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js','/assets/js/subscription-checkout.js',
+    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/scanner-device-session.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js','/assets/js/subscription-checkout.js','/assets/js/cookie-consent.js?v=1.0.0',
 ];
 $scripts = array_values(array_unique(array_merge($core_scripts, $page_scripts)));
 $user = mg_current_user();
@@ -145,11 +145,14 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <a href="/mcp-server.php">MCP Server</a>
         <a href="/privacy.php">Privacy</a>
         <a href="/terms.php">Terms</a>
+        <a href="/cookies.php">Cookies</a>
+        <button class="mg-footer-cookie-settings" type="button" data-mg-cookie-settings aria-haspopup="dialog">Cookie Settings</button>
         <a href="/signin.php">Sign In</a>
       </div>
     </div>
   </div>
 </footer>
+<?php require __DIR__ . '/cookie-consent.php'; ?>
 <?php if (!$user && (string)($page_manifest['id'] ?? '') === 'index'): ?>
 <script>
 (() => {
