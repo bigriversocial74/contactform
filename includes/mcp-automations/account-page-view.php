@@ -22,6 +22,10 @@ declare(strict_types=1);
     <aside class="mg-automation-runtime-boundary">
       <strong>Owner-executed canonical actions only</strong>
       <p>External clients may request fixed Creator Campaign actions under an active grant. The merchant must separately approve and execute each action inside Microgifter. Schedulers, autonomous workers, and external payment execution remain disabled.</p>
+      <details>
+        <summary>Phase 4A historical boundary</summary>
+        <p><strong>Build-only deployment state</strong> — Runtime execution remains disabled in Phase 4A. No scheduler or execution path exists in Phase 4A. The original Phase 4A boundary stated: Node.js, public MCP transport, security keys, schedulers, queues, workers, and action execution remain disabled. Phase 13C does not alter that historical release contract; it adds a separate, owner-approved and owner-executed canonical-action path with no autonomous worker execution.</p>
+      </details>
     </aside>
 
     <?php if ($notice !== ''): ?><div class="mg-automation-alert is-success"><?= mg_e($notice) ?></div><?php endif; ?>
