@@ -108,7 +108,7 @@ $checks = [
         && str_contains($cookiePage, 'No site-wide analytics, marketing pixel, or external-media tracker is enabled globally at publication.')
         && str_contains($cookiePage, 'Microgifter does not sell customer data, Merchant Data, or cookie-derived personal information'),
     'Cookie Policy supports withdrawal' => substr_count($cookiePage, 'data-mg-cookie-settings') >= 2
-        && str_contains($cookiePage, 'change or withdraw')
+        && str_contains($cookiePage, 'changed or withdrawn')
         && str_contains($cookiePage, 'up to 180 days'),
     'legal pages remain available together' => $privacy !== '' && $terms !== ''
         && str_contains($cookiePage, 'href="/privacy.php"')
