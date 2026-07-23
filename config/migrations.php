@@ -256,5 +256,6 @@ return [
         'stage_19_design_studio_qr_library.sql' => 'Manual Stage 19 Design Studio import.',
         'stage_19_design_studio_campaign_links_import_fix.sql' => 'Manual Stage 19 recovery import.',
         'world_canvas_remaining_22_26_consolidated.sql' => 'Manual World Canvas Stage 22-26 bundle for already-partial installs.',
+        '20260723_creator_campaign_phases_1_15_production_audit_repair_v1.sql' => 'Manual Creator Campaign Phases 1–15 production repair after the Phase 15 single-install migration.',
     ],
 ];
