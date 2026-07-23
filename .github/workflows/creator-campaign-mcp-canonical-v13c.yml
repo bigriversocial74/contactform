@@ -120,6 +120,10 @@ jobs:
         run: for attempt in {1..30}; do mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0; sleep 1; done; exit 1
       - name: Apply canonical migration chain
         run: composer migrate
+      - name: Apply Phase 6 earnings prerequisite
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_compensation_earnings_v6_single_install.sql
+      - name: Apply Phase 7 budget prerequisite
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_budget_controls_v7_single_install.sql
       - name: Apply Phase 13C migration
         run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_mcp_canonical_actions_v13c_single_install.sql
       - name: Verify authority schema
