@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS privacy_merchant_handoffs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   request_id BIGINT UNSIGNED NOT NULL,
   merchant_user_id BIGINT UNSIGNED NOT NULL,
+  handoff_type ENUM('controller_record','account_ownership') NOT NULL DEFAULT 'controller_record',
   status ENUM('pending','notified','acknowledged','completed','declined','not_applicable') NOT NULL DEFAULT 'pending',
   due_at DATETIME NOT NULL,
   notified_at DATETIME NULL,
@@ -143,8 +144,9 @@ CREATE TABLE IF NOT EXISTS privacy_merchant_handoffs (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_privacy_handoff_request_merchant (request_id, merchant_user_id),
+  UNIQUE KEY uq_privacy_handoff_request_merchant_type (request_id, merchant_user_id, handoff_type),
   KEY idx_privacy_handoff_due (status, due_at),
+  KEY idx_privacy_handoff_type (handoff_type, status, due_at),
   CONSTRAINT fk_privacy_handoff_request FOREIGN KEY (request_id) REFERENCES privacy_requests(id) ON DELETE CASCADE,
   CONSTRAINT fk_privacy_handoff_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
