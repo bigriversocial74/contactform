@@ -4,13 +4,17 @@ on:
   pull_request:
     paths:
       - 'database/20260723_privacy_retention_account_erasure_v1_single_install.sql'
+      - 'config/privacy-retention-example.php'
       - 'includes/privacy/account-erasure.php'
+      - 'includes/privacy/admin-operations.php'
+      - 'includes/privacy/finalization-operations.php'
       - 'api/me/privacy-request.php'
       - 'api/admin/privacy-requests.php'
       - 'privacy-center.php'
       - 'admin/privacy-requests.php'
       - 'assets/css/privacy-center-v1.css'
       - 'assets/css/admin-privacy-requests-v1.css'
+      - 'assets/css/admin-privacy-create-v1.css'
       - 'assets/js/privacy-center-v1.js'
       - 'assets/js/admin-privacy-requests-v1.js'
       - 'scripts/process_privacy_erasure_queue.php'
@@ -38,9 +42,14 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: PHP syntax
         run: |
           php -l includes/privacy/account-erasure.php
+          php -l includes/privacy/admin-operations.php
+          php -l includes/privacy/finalization-operations.php
           php -l api/me/privacy-request.php
           php -l api/admin/privacy-requests.php
           php -l privacy-center.php
@@ -51,6 +60,7 @@ jobs:
           php -l account.php
           php -l includes/account-sidebar.php
           php -l admin/users.php
+          php -l config/privacy-retention-example.php
       - name: JavaScript syntax
         run: |
           node --check assets/js/privacy-center-v1.js
