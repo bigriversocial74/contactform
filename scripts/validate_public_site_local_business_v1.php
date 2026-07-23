@@ -21,6 +21,10 @@ $signin = $read('signin.php');
 $signup = $read('signup.php');
 $forgot = $read('forgot-password.php');
 $reset = $read('reset-password.php');
+$privacy = $read('privacy.php');
+$terms = $read('terms.php');
+$legalCss = $read('assets/css/legal-pages.css');
+$routePolicy = $read('config/security-route-policy.php');
 
 $checks = [
     'shared public pricing renderer exists' => str_contains($pricingCards, 'function mg_render_public_pricing_cards(array $options = []): void'),
@@ -77,6 +81,10 @@ $checks = [
     'logged-in navigation remains separately rendered' => $loggedInHeader !== ''
         && str_contains($header, "require dirname(__DIR__) . '/header-templates/logged-in.php'"),
     'public mobile header styling remains present' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel'),
+    'both slideout account actions use one blue treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-auth a{')
+        && str_contains($headerCss, 'background:#102d4c!important')
+        && str_contains($headerCss, 'background:#173b63!important')
+        && !str_contains($headerCss, '.mg-public-mobile-auth a:last-child{'),
     'pricing page remains plans-first without opening hero' => !str_contains($pricing, 'mg-price-hero')
         && str_contains($pricing, '<section class="mg-price-plans"')
         && str_contains($pricing, 'Choose the right operating level for your business.'),
@@ -104,8 +112,34 @@ $checks = [
         && str_contains($signin, 'data-success-redirect="/agent.php"')
         && str_contains($signup, '/api/auth/register.php')
         && str_contains($signup, 'name="selected_plan"'),
+    'account creation links Terms and Privacy' => str_contains($signup, 'href="/terms.php"')
+        && str_contains($signup, 'href="/privacy.php"')
+        && str_contains($signup, 'By creating an account'),
     'password recovery contracts remain intact' => str_contains($forgot, '/api/auth/password/forgot.php')
         && str_contains($reset, '/api/auth/password/reset.php'),
+    'legal pages are public and use shared styling' => str_contains($routePolicy, "'privacy.php','terms.php'")
+        && str_contains($privacy, "'id' => 'privacy'")
+        && str_contains($terms, "'id' => 'terms'")
+        && str_contains($privacy, '/assets/css/legal-pages.css?v=1.0.0')
+        && str_contains($terms, '/assets/css/legal-pages.css?v=1.0.0'),
+    'privacy policy contains no-sale and security commitments' => str_contains($privacy, 'does not sell customer data or merchant data to third parties')
+        && str_contains($privacy, 'Microgifter is dedicated to protecting and securing its platforms')
+        && str_contains($privacy, 'AI, agent, and MCP information')
+        && str_contains($privacy, 'Privacy choices and rights'),
+    'merchant ownership and platform analysis permission are explicit' => str_contains($privacy, 'Merchant data belongs to the merchant')
+        && str_contains($privacy, 'forecasting, demand intelligence')
+        && str_contains($terms, 'Merchant Data remains owned by the merchant')
+        && str_contains($terms, 'The merchant grants Microgifter a worldwide, nonexclusive, royalty-free license'),
+    'terms cover core platform services and governed agents' => str_contains($terms, 'social gifting, pre-sale commerce')
+        && str_contains($terms, 'Claims, redemption, refunds, expiration, and regifting')
+        && str_contains($terms, 'AI-assisted features, agents, automation, and MCP')
+        && str_contains($terms, 'Connected agents do not bypass Microgifter permissions'),
+    'footer exposes Privacy and Terms globally' => str_contains($footer, '<a href="/privacy.php">Privacy</a>')
+        && str_contains($footer, '<a href="/terms.php">Terms</a>'),
+    'legal pages have accessible responsive content design' => str_contains($legalCss, '.mg-legal-toc')
+        && str_contains($legalCss, 'position:sticky')
+        && str_contains($legalCss, '@media(max-width:900px)')
+        && str_contains($legalCss, '@media(max-width:620px)'),
 ];
 
 $failed = [];
@@ -123,4 +157,4 @@ if ($failed !== []) {
     exit(1);
 }
 
-echo "Public pricing and navigation contract passed at 10.0/10.\n";
+echo "Public pricing, navigation, and legal contract passed at 10.0/10.\n";
