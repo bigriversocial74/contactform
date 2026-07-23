@@ -5,6 +5,7 @@
   if (!deck) return;
 
   const scrollSection = deck.querySelector('.pitch-scroll');
+  const stage = deck.querySelector('.pitch-sticky');
   const scene = deck.querySelector('[data-pitch-scene]');
   const slides = [...deck.querySelectorAll('[data-pitch-slide]')];
   const navButtons = [...deck.querySelectorAll('[data-pitch-jump]')];
@@ -12,16 +13,14 @@
   const currentLabel = deck.querySelector('[data-pitch-current]');
   const nextButton = deck.querySelector('[data-pitch-next]');
   const orb = deck.querySelector('.pitch-landscape__orb');
+  const siteHeader = document.querySelector('.mg-site-header');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const desktopMode = window.matchMedia('(min-width: 901px)');
 
-  if (!scrollSection || !scene || slides.length === 0) return;
+  if (!scrollSection || !stage || !scene || slides.length === 0) return;
 
   const slideCount = slides.length;
   deck.style.setProperty('--pitch-slides', String(slideCount));
-
-  // Sticky positioning fails when an ancestor clips overflow. The deck only
-  // needs clipping inside its pinned scene, so keep the outer wrapper visible.
   deck.style.setProperty('overflow', 'visible', 'important');
   deck.classList.add('is-enhanced');
 
@@ -50,39 +49,80 @@
   let activeIndex = 0;
   let rafId = 0;
   let deckTop = 0;
-  let travel = 1;
+  let progressTravel = 1;
+  let stageTravel = 1;
+  let headerOffset = 72;
+  let stageHeight = Math.max(400, window.innerHeight - 72);
   let isDesktop = desktopMode.matches && !reducedMotion.matches;
 
   function formatSlide(index) {
     return String(index + 1).padStart(2, '0');
   }
 
+  function clearStagePosition() {
+    ['position', 'top', 'left', 'right', 'bottom', 'width', 'height', 'z-index']
+      .forEach(property => stage.style.removeProperty(property));
+  }
+
+  function positionStage() {
+    if (!isDesktop) return;
+
+    // Move an absolutely positioned stage through the tall scroll track.
+    // This produces the pinned presentation effect without relying on
+    // position:sticky, which can be disabled by any ancestor overflow rule.
+    const localTop = clamp(
+      window.scrollY - deckTop + headerOffset,
+      0,
+      stageTravel
+    );
+
+    stage.style.setProperty('position', 'absolute', 'important');
+    stage.style.setProperty('top', `${localTop.toFixed(2)}px`, 'important');
+    stage.style.setProperty('left', '0', 'important');
+    stage.style.setProperty('right', '0', 'important');
+    stage.style.setProperty('bottom', 'auto', 'important');
+    stage.style.setProperty('width', '100%', 'important');
+    stage.style.setProperty('height', `${stageHeight}px`, 'important');
+    stage.style.setProperty('z-index', '4');
+  }
+
+  function showStaticSlides() {
+    clearStagePosition();
+    slides.forEach(slide => {
+      slide.classList.add('is-active');
+      slide.setAttribute('aria-hidden', 'false');
+      slide.style.removeProperty('--slide-opacity');
+      slide.style.removeProperty('--slide-y');
+      slide.style.removeProperty('--slide-scale');
+      slide.style.removeProperty('--slide-blur');
+      slide.style.setProperty('--slide-local', '1');
+    });
+    revealGroups.flat().forEach(item => item.style.setProperty('--reveal', '1'));
+  }
+
   function updateMetrics() {
     isDesktop = desktopMode.matches && !reducedMotion.matches;
+    headerOffset = Math.max(0, Math.round(siteHeader?.getBoundingClientRect().height || 72));
+    stageHeight = Math.max(400, window.innerHeight - headerOffset);
+
     const rect = scrollSection.getBoundingClientRect();
     deckTop = window.scrollY + rect.top;
-    travel = Math.max(1, scrollSection.offsetHeight - window.innerHeight);
+    progressTravel = Math.max(1, scrollSection.offsetHeight - window.innerHeight);
+    stageTravel = Math.max(1, scrollSection.offsetHeight - stageHeight);
 
     if (!isDesktop) {
-      slides.forEach(slide => {
-        slide.classList.add('is-active');
-        slide.setAttribute('aria-hidden', 'false');
-        slide.style.removeProperty('--slide-opacity');
-        slide.style.removeProperty('--slide-y');
-        slide.style.removeProperty('--slide-scale');
-        slide.style.removeProperty('--slide-blur');
-        slide.style.setProperty('--slide-local', '1');
-      });
-      revealGroups.flat().forEach(item => item.style.setProperty('--reveal', '1'));
+      showStaticSlides();
       return;
     }
 
+    positionStage();
     measure();
   }
 
   function measure() {
     if (!isDesktop) return;
-    targetProgress = clamp((window.scrollY - deckTop) / travel);
+    targetProgress = clamp((window.scrollY - deckTop) / progressTravel);
+    positionStage();
     if (!rafId) rafId = requestAnimationFrame(render);
   }
 
@@ -104,8 +144,7 @@
     slide.classList.toggle('is-active', visibility);
     slide.setAttribute('aria-hidden', visibility ? 'false' : 'true');
 
-    const items = revealGroups[index];
-    items.forEach((item, itemIndex) => {
+    revealGroups[index].forEach((item, itemIndex) => {
       const stagger = itemIndex * .075;
       const reveal = smoothstep(clamp((local - stagger) / Math.max(.2, 1 - stagger)));
       item.style.setProperty('--reveal', reveal.toFixed(4));
@@ -145,6 +184,7 @@
   }
 
   function render() {
+    positionStage();
     currentProgress += (targetProgress - currentProgress) * .095;
     if (Math.abs(targetProgress - currentProgress) < .00015) currentProgress = targetProgress;
 
@@ -171,12 +211,12 @@
       return;
     }
     const ratio = slideCount > 1 ? safeIndex / (slideCount - 1) : 0;
-    window.scrollTo({ top: deckTop + travel * ratio, behavior });
+    window.scrollTo({ top: deckTop + progressTravel * ratio, behavior });
   }
 
   function deckIsInView() {
     const rect = scrollSection.getBoundingClientRect();
-    return rect.bottom > 0 && rect.top < window.innerHeight;
+    return rect.bottom > headerOffset && rect.top < window.innerHeight;
   }
 
   navButtons.forEach(button => {
@@ -210,6 +250,7 @@
 
   window.addEventListener('scroll', measure, { passive: true });
   window.addEventListener('resize', updateMetrics, { passive: true });
+  window.addEventListener('load', updateMetrics, { once: true });
   reducedMotion.addEventListener?.('change', updateMetrics);
   desktopMode.addEventListener?.('change', updateMetrics);
 
