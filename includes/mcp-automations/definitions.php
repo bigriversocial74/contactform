@@ -25,6 +25,15 @@ function mg_mcp_automation_single_target(mixed $value, string $label): ?string
     return $targets[0] ?? null;
 }
 
+function mg_mcp_automation_single_public_target(mixed $value, string $label): ?string
+{
+    $targets = mg_mcp_automation_target_public_ids($value, $label);
+    if (count($targets) > 1) {
+        throw new MgMcpAutomationGrantException($label . ' accepts one public ID.');
+    }
+    return $targets[0] ?? null;
+}
+
 function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input): array
 {
     if (!mg_mcp_automation_schema_ready($pdo)) {
@@ -49,7 +58,7 @@ function mg_mcp_automation_create_definition(PDO $pdo, array $user, array $input
     $proposedQuantity = mg_mcp_automation_optional_uint($input['proposed_quantity'] ?? null, 1000000, 'Proposed quantity');
     $targetContext = array_filter([
         'product_id' => mg_mcp_automation_single_target($input['product_id'] ?? '', 'Product target'),
-        'campaign_id' => mg_mcp_automation_single_target($input['campaign_id'] ?? '', 'Campaign target'),
+        'campaign_id' => mg_mcp_automation_single_public_target($input['campaign_id'] ?? '', 'Creator Campaign target'),
         'reward_template_id' => mg_mcp_automation_single_target($input['reward_template_id'] ?? '', 'Reward-template target'),
     ], static fn(mixed $value): bool => $value !== null);
     if (array_key_exists('recipient_is_existing_contact', $input)) {
