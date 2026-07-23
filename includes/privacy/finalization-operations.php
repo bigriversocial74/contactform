@@ -39,9 +39,9 @@ function mg_privacy_create_operational_handoffs(PDO $pdo, int $requestId, int $u
     if (!$isMerchant) return 0;
 
     $notes = 'Merchant ownership, balances, subscriptions, active campaigns, customer obligations, and workspace continuity require transfer or closure review before final erasure.';
-    $insert = $pdo->prepare('INSERT INTO privacy_merchant_handoffs (request_id,merchant_user_id,status,due_at,notes,created_at,updated_at) VALUES (?,? ,"pending",?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE notes=VALUES(notes),due_at=VALUES(due_at),updated_at=NOW()');
+    $insert = $pdo->prepare('INSERT INTO privacy_merchant_handoffs (request_id,merchant_user_id,handoff_type,status,due_at,notes,created_at,updated_at) VALUES (?,? ,"account_ownership","pending",?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE notes=VALUES(notes),due_at=VALUES(due_at),status=IF(status IN ("completed","not_applicable"),status,"pending"),updated_at=NOW()');
     $insert->execute([$requestId,$userId,$dueAt,$notes]);
-    mg_privacy_action($pdo,$requestId,'merchant_account_ownership_review','merchant_profiles','notify','pending',0,'Merchant account continuity must be resolved before final erasure.',['merchant_user_id'=>$userId]);
+    mg_privacy_action($pdo,$requestId,'merchant_account_ownership_review','merchant_profiles','notify','pending',0,'Merchant account continuity must be resolved before final erasure.',['merchant_user_id'=>$userId,'handoff_type'=>'account_ownership']);
     return 1;
 }
 
