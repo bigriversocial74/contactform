@@ -16,6 +16,7 @@ $header = $read('includes/header-components/public-header.php');
 $loggedInHeader = $read('includes/header-templates/logged-in.php');
 $footer = $read('includes/footer.php');
 $homepageJs = $read('assets/js/homepage-parallax-exact-v2.js');
+$homepageCoreJs = $read('assets/js/homepage-core-positioning-v1.js');
 $signin = $read('signin.php');
 $signup = $read('signup.php');
 $forgot = $read('forgot-password.php');
@@ -36,10 +37,11 @@ $checks = [
         && str_contains($packages, '\'ai_tokens_monthly_included\'')
         && str_contains($packages, '\'monthly_stamps_included\'')
         && str_contains($packages, '\'max_active_campaigns\''),
-    'pricing and homepage require shared renderer' => str_contains($pricing, "require_once __DIR__ . '/includes/pricing-cards.php'")
-        && str_contains($index, "require_once __DIR__ . '/includes/pricing-cards.php'"),
-    'pricing and homepage call identical renderer' => str_contains($pricing, 'mg_render_public_pricing_cards();')
-        && str_contains($index, 'mg_render_public_pricing_cards('),
+    'pricing page requires shared renderer' => str_contains($pricing, "require_once __DIR__ . '/includes/pricing-cards.php'"),
+    'homepage keeps pricing on dedicated page' => !str_contains($index, "require_once __DIR__ . '/includes/pricing-cards.php'")
+        && !str_contains($index, 'mg_render_public_pricing_cards(')
+        && !str_contains($index, '/assets/css/pricing-local-business-v1.css'),
+    'pricing page calls canonical renderer' => str_contains($pricing, 'mg_render_public_pricing_cards();'),
     'pricing page still uses package authority for comparison' => str_contains($pricing, '$plans = mg_public_pricing_packages()')
         && str_contains($pricing, '$plan[\'limits\'][$key]')
         && str_contains($pricing, 'Monthly AI Tokens'),
@@ -52,8 +54,7 @@ $checks = [
         && !str_contains($footer, 'mg-homepage-live-pricing')
         && !str_contains($footer, 'pricingGrid.replaceChildren')
         && !str_contains($footer, 'removedLinks'),
-    'pricing surfaces load canonical stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.2.0')
-        && str_contains($index, '/assets/css/pricing-local-business-v1.css?v=1.2.0'),
+    'pricing surface loads canonical stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.2.0'),
     'pricing CTA default is footer blue with white text' => str_contains($pricingCss, '.mg-pricing-v1 a.mg-price-plan-action,.mg-pricing-v1 a.mg-price-button')
         && str_contains($pricingCss, 'background:var(--price-blue)!important')
         && str_contains($pricingCss, 'color:#fff!important')
@@ -87,12 +88,18 @@ $checks = [
     'pricing responsive breakpoints remain' => str_contains($pricingCss, '@media(max-width:1120px)')
         && str_contains($pricingCss, '@media(max-width:760px)')
         && str_contains($pricingCss, '@media(max-width:430px)'),
-    'homepage animated and sticky sections remain wired' => str_contains($index, 'class="hero-scroll"')
+    'homepage social gifting and sticky sections remain wired' => str_contains($index, 'class="hero-scroll"')
         && str_contains($index, 'class="hero-sticky"')
-        && str_contains($index, 'class="story story-scroll"')
-        && str_contains($index, 'class="pppm-event"')
-        && str_contains($index, 'The Future of Gifting Has Arrived.')
-        && str_contains($homepageJs, 'requestAnimationFrame'),
+        && str_contains($index, 'data-homepage-core-v1')
+        && str_contains($index, 'data-core-chapter')
+        && str_contains($index, 'mg-core-chapter--sticky')
+        && str_contains($index, 'Microgifter Is the Future')
+        && str_contains($index, 'of Social Gifting.')
+        && str_contains($index, 'Turn Future Demand Into Real-Time Revenue.')
+        && str_contains($index, 'Increase Engagement. Grow Sales. Build Loyalty.')
+        && str_contains($index, '/assets/js/homepage-core-positioning-v1.js')
+        && str_contains($homepageJs, 'requestAnimationFrame')
+        && str_contains($homepageCoreJs, 'requestAnimationFrame'),
     'sign-in and registration contracts remain intact' => str_contains($signin, '/api/auth/login.php')
         && str_contains($signin, 'data-success-redirect="/agent.php"')
         && str_contains($signup, '/api/auth/register.php')
