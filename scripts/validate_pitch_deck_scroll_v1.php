@@ -17,7 +17,7 @@ $checks = [
     'versioned pitch deck assets are registered' => str_contains($page, '/assets/css/pitch-deck-scroll-v1.css?v=1.0.0')
         && str_contains($page, '/assets/css/pitch-deck-scroll-runtime-v2.css?v=2.1.0')
         && str_contains($page, '/assets/js/pitch-deck-scroll-v1.js?v=2.1.0'),
-    'pitch deck page revalidates changed asset versions' => str_contains($page, "Cache-Control: public, max-age=0, must-revalidate"),
+    'pitch deck page revalidates changed asset versions' => str_contains($page, 'Cache-Control: public, max-age=0, must-revalidate'),
     'page uses the shared public shell' => str_contains($page, "require __DIR__ . '/includes/header.php'")
         && str_contains($page, "require __DIR__ . '/includes/footer.php'"),
     'deck contains ten investor chapters' => substr_count($page, 'data-pitch-slide data-slide-label=') === 10
@@ -40,7 +40,7 @@ $checks = [
         && str_contains($js, '/assets/css/pitch-deck-scroll-runtime-v2.css?v=')
         && $runtimeCss !== '',
     'scroll track uses explicit pixel geometry' => str_contains($js, 'stepPixels * slideCount')
-        && str_contains($js, "scrollSection.style.setProperty('height', `${sectionHeight}px`, 'important')")
+        && str_contains($js, 'scrollSection.style.setProperty(\'height\', `${sectionHeight}px`, \'important\')')
         && str_contains($js, 'sectionHeight = minimumStageHeight + stepPixels * slideCount'),
     'stage uses stable fixed positioning while active' => str_contains($js, "setImportant('position', 'fixed')")
         && str_contains($js, "setStageState('before')")
@@ -49,9 +49,9 @@ $checks = [
     'header gap follows only visible header area' => str_contains($js, 'function readVisibleHeaderOffset()')
         && str_contains($js, 'rect.bottom <= 0')
         && str_contains($js, 'visibleHeaderOffset = readVisibleHeaderOffset()')
-        && str_contains($js, "setImportant('top', `${visibleHeaderOffset}px`)")
+        && str_contains($js, 'setImportant(\'top\', `${visibleHeaderOffset}px`)')
         && str_contains($js, 'activeStageHeight = Math.max(400, window.innerHeight - visibleHeaderOffset)')
-        && str_contains($js, "--pitch-header-visible"),
+        && str_contains($js, '--pitch-header-visible'),
     'slide fitting uses the minimum header-constrained viewport' => str_contains($js, 'minimumStageHeight - parseFloat(styles.paddingTop')
         && str_contains($js, 'startScroll = Math.max(0, sectionTop - headerHeight)'),
     'slides have deliberate hold and reveal phases' => str_contains($js, 'const HOLD_PORTION = 0.74')
@@ -79,7 +79,7 @@ $checks = [
         && str_contains($js, 'showStaticSlides'),
     'print output supports one slide per page' => str_contains($css, '@media print')
         && str_contains($css, 'break-after: page'),
-    'workflow covers the audited runtime stylesheet' => str_contains($workflow, "assets/css/pitch-deck-scroll-runtime-v2.css")
+    'workflow covers the audited runtime stylesheet' => str_contains($workflow, 'assets/css/pitch-deck-scroll-runtime-v2.css')
         && str_contains($workflow, 'node --check assets/js/pitch-deck-scroll-v1.js'),
     'investor calls to action are connected' => str_contains($page, 'href="/investors.php"')
         && str_contains($page, 'href="/learn-more.php"')
