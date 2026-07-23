@@ -35,6 +35,7 @@ $checks = [
     'scroll presentation uses a sticky full viewport stage' => str_contains($css, '.pitch-deck.is-enhanced .pitch-sticky')
         && str_contains($css, 'position: sticky')
         && str_contains($css, 'height: calc(100svh - 72px)'),
+    'sticky stage escapes clipped wrapper overflow' => str_contains($js, "deck.style.setProperty('overflow', 'visible', 'important')"),
     'slides support animated transition variables' => str_contains($css, '--slide-opacity')
         && str_contains($css, '--slide-y')
         && str_contains($css, '--slide-scale')
