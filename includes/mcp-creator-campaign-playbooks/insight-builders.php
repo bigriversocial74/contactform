@@ -39,8 +39,12 @@ function mg_mcp_creator_campaign_playbook_campaign_health(
     if (count($pendingSubmissions) > 0) {
         $riskFlags[] = ['severity' => 'medium', 'code' => 'pending_submissions', 'message' => count($pendingSubmissions) . ' submissions require attention.'];
     }
-    if (count((array)($disputes['items'] ?? [])) > 0) {
-        $riskFlags[] = ['severity' => 'high', 'code' => 'open_disputes', 'message' => 'Campaign has dispute records requiring owner review.'];
+    $openDisputes = array_values(array_filter(
+        (array)($disputes['items'] ?? []),
+        static fn(array $item): bool => empty($item['resolved_at'])
+    ));
+    if (count($openDisputes) > 0) {
+        $riskFlags[] = ['severity' => 'high', 'code' => 'open_disputes', 'message' => count($openDisputes) . ' unresolved dispute records require owner review.'];
     }
     $summary = is_array($analytics['summary'] ?? null) ? $analytics['summary'] : [];
     if ((int)($summary['unique_clicks'] ?? 0) > 0 && (int)($summary['conversion_rate_bps'] ?? 0) < 100) {
@@ -62,6 +66,7 @@ function mg_mcp_creator_campaign_playbook_campaign_health(
             'earnings' => count((array)($earnings['items'] ?? [])),
             'payouts' => count((array)($payouts['items'] ?? [])),
             'disputes' => count((array)($disputes['items'] ?? [])),
+            'open_disputes' => count($openDisputes),
         ],
         'risk_flags' => $riskFlags,
         'agent_notes' => mg_mcp_creator_campaign_playbook_text(
@@ -103,6 +108,10 @@ function mg_mcp_creator_campaign_playbook_earnings_review(
     $attributions = mg_mcp_creator_campaign_playbook_read($pdo, $context, 'creator_campaigns.attributions.list', ['campaign_id' => $campaignId, 'limit' => 100]);
     $payouts = mg_mcp_creator_campaign_playbook_read($pdo, $context, 'creator_campaigns.payouts.list', ['campaign_id' => $campaignId, 'limit' => 100]);
     $disputes = mg_mcp_creator_campaign_playbook_read($pdo, $context, 'creator_campaigns.disputes.list', ['campaign_id' => $campaignId, 'limit' => 100]);
+    $openDisputes = array_values(array_filter(
+        (array)($disputes['items'] ?? []),
+        static fn(array $item): bool => empty($item['resolved_at'])
+    ));
 
     $recommendation = strtolower(trim((string)($input['recommendation'] ?? 'hold')));
     if (!in_array($recommendation, ['approve', 'hold', 'reject', 'reverse'], true)) {
@@ -119,7 +128,7 @@ function mg_mcp_creator_campaign_playbook_earnings_review(
     ];
     $failedChecks = array_keys(array_filter($checks, static fn(bool $value): bool => !$value));
     $serverRecommendation = $failedChecks === [] ? $recommendation : 'hold';
-    if (count((array)($disputes['items'] ?? [])) > 0 && $serverRecommendation === 'approve') {
+    if (count($openDisputes) > 0 && $serverRecommendation === 'approve') {
         $serverRecommendation = 'hold';
         $failedChecks[] = 'open_dispute_review';
     }
@@ -131,6 +140,7 @@ function mg_mcp_creator_campaign_playbook_earnings_review(
             'attributions' => $attributions['items'] ?? [],
             'payouts' => $payouts['items'] ?? [],
             'disputes' => $disputes['items'] ?? [],
+            'open_disputes' => $openDisputes,
         ],
         'assessment' => [
             'agent_recommendation' => $recommendation,
