@@ -39,6 +39,7 @@ if ((string)($page_manifest['id'] ?? '') === 'index') {
     $late_styles[] = '/assets/css/pricing-local-business-v1.css?v=1.3.0';
     $late_styles[] = '/assets/css/homepage-mobile-stability-v1.css?v=1.1.0';
     $late_styles[] = '/assets/css/homepage-production-cleanup-v1.css?v=1.6.0';
+    $late_styles[] = '/assets/css/homepage-header-handoff-v1.css?v=1.0.0';
 }
 if ((string)($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
@@ -153,12 +154,15 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
   'use strict';
   const header = document.querySelector('[data-mg-universal-header][data-header-variant="logged-out"]');
   const hero = document.getElementById('hero');
-  if (!header || !hero) return;
+  const nextSection = document.getElementById('growth-system');
+  if (!header || !hero || !nextSection) return;
 
   let frame = 0;
   const update = () => {
     frame = 0;
-    header.classList.toggle('mg-home-header-past-hero', hero.getBoundingClientRect().bottom <= 0);
+    const heroComplete = hero.getBoundingClientRect().bottom <= 0
+      && nextSection.getBoundingClientRect().top <= 0;
+    header.classList.toggle('mg-home-header-past-hero', heroComplete);
   };
   const requestUpdate = () => {
     if (!frame) frame = window.requestAnimationFrame(update);
