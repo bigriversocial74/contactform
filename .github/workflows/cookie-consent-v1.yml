@@ -1,0 +1,52 @@
+name: Cookie Consent v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'cookies.php'
+      - 'privacy.php'
+      - 'terms.php'
+      - 'includes/cookie-consent.php'
+      - 'includes/footer.php'
+      - 'assets/css/cookie-consent.css'
+      - 'assets/js/cookie-consent.js'
+      - 'config/security-route-policy.php'
+      - 'docs/privacy/cookie-consent-integration-v1.md'
+      - 'scripts/validate_cookie_consent_v1.php'
+      - '.github/workflows/cookie-consent-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} cookie consent contract
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          php -l cookies.php
+          php -l includes/cookie-consent.php
+          php -l includes/footer.php
+          php -l config/security-route-policy.php
+          php -l scripts/validate_cookie_consent_v1.php
+
+      - name: Validate JavaScript syntax
+        run: node --check assets/js/cookie-consent.js
+
+      - name: Run cookie consent contract
+        run: php scripts/validate_cookie_consent_v1.php
