@@ -80,9 +80,9 @@
   max-width:650px;
   color:#0b2540;
   font-size:clamp(44px,5.7vw,76px);
-  line-height:.94;
-  letter-spacing:-.066em;
-  font-weight:880;
+  line-height:.99;
+  letter-spacing:-.055em;
+  font-weight:300;
   text-wrap:balance;
 }
 .mg-auth-page .mg-auth-aside p{
@@ -149,9 +149,9 @@
   margin:0 0 2px;
   color:#0b2540;
   font-size:clamp(31px,3vw,42px);
-  line-height:1;
+  line-height:.99;
   letter-spacing:-.055em;
-  font-weight:860;
+  font-weight:300;
 }
 .mg-auth-page .mg-auth-card .mg-auth-card-intro,
 .mg-auth-page .mg-auth-card .mg-form-intro{

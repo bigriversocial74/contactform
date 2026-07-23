@@ -21,7 +21,7 @@ body[data-authenticated="false"]{
   font-family:Inter,"Helvetica Neue",Arial,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
 }
 body[data-authenticated="false"]::selection{background:rgba(114,212,63,.28);color:var(--mg-public-navy)}
-body[data-authenticated="false"]:not([data-page-id="index"]) .mg-main{
+body[data-authenticated="false"]:not([data-page-id="index"]):not(.mg-auth-page) .mg-main{
   background:
     radial-gradient(circle at 8% 4%,rgba(114,212,63,.10),transparent 26%),
     linear-gradient(180deg,#fff 0%,#f7fbf8 58%,#fff 100%)!important;
@@ -118,5 +118,5 @@ body[data-authenticated="false"] .mg-public-mobile-search input{border-color:rgb
 body[data-authenticated="false"] .mg-public-mobile-search input::placeholder{color:rgba(255,255,255,.62)}
 
 @media(max-width:760px){
-  body[data-authenticated="false"]:not([data-page-id="index"]) .mg-main{background:linear-gradient(180deg,#fff,#f7fbf8 72%,#fff)!important}
+  body[data-authenticated="false"]:not([data-page-id="index"]):not(.mg-auth-page) .mg-main{background:linear-gradient(180deg,#fff,#f7fbf8 72%,#fff)!important}
 }
