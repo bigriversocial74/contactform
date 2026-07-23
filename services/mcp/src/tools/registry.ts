@@ -7,6 +7,7 @@ import type { ConnectionContext } from "../contracts.js";
 import type { InvocationReceipt, InvocationReceiptSink } from "../receipts.js";
 import { registerCreatorCampaignActionTools } from "./creatorCampaignActions.js";
 import { registerCreatorCampaignDraftTools } from "./creatorCampaignDrafts.js";
+import { registerCreatorCampaignPlaybookTools } from "./creatorCampaignPlaybooks.js";
 import { registerCreatorCampaignReadTools } from "./creatorCampaigns.js";
 import { registerDraftTools } from "./drafts.js";
 
@@ -47,7 +48,7 @@ async function recordReceipt(
 
 export function createInternalMcpServer(dependencies: ToolRegistryDependencies): McpServer {
   const server = new McpServer(
-    { name: "microgifter-mcp", version: "0.6.0", description: "Microgifter MCP read, proposal, and owner approval-gated action-request server" },
+    { name: "microgifter-mcp", version: "0.7.0", description: "Microgifter MCP read, proposal, bounded-playbook, and owner approval-gated action-request server" },
     { capabilities: { tools: { listChanged: false } } },
   );
 
@@ -224,6 +225,7 @@ export function createInternalMcpServer(dependencies: ToolRegistryDependencies):
 
   registerCreatorCampaignReadTools(server, dependencies);
   registerCreatorCampaignDraftTools(server, dependencies);
+  registerCreatorCampaignPlaybookTools(server, dependencies);
   registerCreatorCampaignActionTools(server, dependencies);
   registerDraftTools(server, dependencies);
   return server;
