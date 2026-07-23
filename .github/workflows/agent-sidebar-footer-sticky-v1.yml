@@ -1,0 +1,32 @@
+name: Agent Sidebar Footer Sticky v1
+
+on:
+  pull_request:
+    paths:
+      - 'assets/css/agent-sidebar-footer-sticky-v1.css'
+      - 'includes/personal-agent-sidebar.php'
+      - 'scripts/validate_agent_sidebar_footer_sticky_v1.php'
+      - '.github/workflows/agent-sidebar-footer-sticky-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+      - name: PHP syntax
+        run: |
+          php -l includes/personal-agent-sidebar.php
+          php -l scripts/validate_agent_sidebar_footer_sticky_v1.php
+      - name: Validate sticky sidebar footer
+        run: php scripts/validate_agent_sidebar_footer_sticky_v1.php

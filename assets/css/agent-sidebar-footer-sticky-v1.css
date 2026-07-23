@@ -1,0 +1,61 @@
+/* Agent sidebar bottom dock v1.
+   Keeps Suggestions and Personal/Merchant controls anchored to the viewport
+   while the agent/chat list owns the available scroll area. */
+
+.mg-app-page .mg-personal-chat-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.mg-app-page .mg-personal-chat-sidebar > .mg-app-sidebar-brand,
+.mg-app-page .mg-personal-chat-sidebar > .mg-personal-chat-actions,
+.mg-app-page .mg-personal-chat-sidebar > .mg-personal-chat-divider {
+  flex: 0 0 auto;
+}
+
+.mg-app-page .mg-personal-chat-sidebar > .mg-unified-agent-list,
+.mg-app-page .mg-personal-chat-sidebar > .mg-personal-chat-history {
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.mg-app-page .mg-personal-chat-sidebar > .mg-personal-chat-sidebar-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  padding: 10px 3px max(2px, env(safe-area-inset-bottom));
+  border-top: 1px solid #e2eaf3;
+  background: #fff;
+  box-shadow: 0 -14px 24px rgba(15, 23, 42, .045);
+}
+
+@media (min-width: 981px) {
+  .mg-app-page .mg-personal-chat-sidebar {
+    inset: 0 auto 0 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .mg-app-page .mg-personal-chat-sidebar {
+    top: var(--mg-app-header, 58px) !important;
+    bottom: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  .mg-app-page .mg-personal-chat-sidebar > .mg-personal-chat-sidebar-footer {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}

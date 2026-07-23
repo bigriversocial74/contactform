@@ -27,6 +27,7 @@ $sidebarAgents = $user && $isPersonalAgentMode ? mg_multi_agent_active_agents($u
 $sidebarTemplates = mg_multi_agent_templates();
 $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): string { return 'mg-personal-chat-action' . ($activeSidebarKey === $key ? ' is-active' : ''); };
 ?>
+<link rel="stylesheet" href="/assets/css/agent-sidebar-footer-sticky-v1.css?v=1.0.0">
 <aside class="mg-app-sidebar mg-universal-sidebar mg-utility-sidebar is-text-sidebar mg-personal-chat-sidebar" data-app-sidebar data-sidebar-variant="utility" data-personal-agent-chat-sidebar data-agent-sidebar-mode="<?= mg_e($agentSidebarMode) ?>">
   <div class="mg-app-sidebar-brand mg-universal-sidebar-brand"><a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a></div>
   <?php if ($user): ?>
