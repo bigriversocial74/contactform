@@ -72,12 +72,24 @@ $checks=[
         str_contains($source['adminJs'],"value.indexOf('sk_' + selected + '_')")
         && str_contains($source['adminJs'],"value.indexOf('rk_' + selected + '_')")
         && str_contains($source['adminJs'],'Test credentials are not required when saving Live.'),
-    'persistence client removes stale mode storage and performs a server read-back' =>
-        str_contains($source['persistenceJs'],"localStorage.removeItem(legacyModeKey)")
-        && str_contains($source['persistenceJs'],"searchParams.set('mode', selectedMode())")
-        && str_contains($source['persistenceJs'],'compareStorage')
+    'persistence client resolves authoritative mode before writing the URL' =>
+        str_contains($source['persistenceJs'],'function initializePersistence()')
+        && str_contains($source['persistenceJs'],"payment-settings.php?mode=auto&verify=")
+        && str_contains($source['persistenceJs'],'function responseMode(data)')
+        && str_contains($source['persistenceJs'],'mode.value = resolved')
+        && str_contains($source['persistenceJs'],'updateModeUrl(resolved)')
+        && !str_contains($source['persistenceJs'],"updateModeUrl();\n    window.setTimeout(function () { readBack(null);"),
+    'persistence client verifies the exact submitted mode and database record' =>
+        str_contains($source['persistenceJs'],"String(storage.mode || '') !== String(expected.mode || '')")
+        && str_contains($source['persistenceJs'],"mismatches.push('configuration mode')")
+        && str_contains($source['persistenceJs'],'verifyWhenSaveFinishes')
         && str_contains($source['persistenceJs'],'Save verification failed after reload')
         && str_contains($source['persistenceJs'],"Microgifter.get('/api/admin/payment-settings.php?mode='"),
+    'cross-mode storage warning is shown only for the selected record' =>
+        str_contains($source['persistenceJs'],'function syncModeWarning()')
+        && str_contains($source['persistenceJs'],'/stored in the (Test|Live) record/i')
+        && str_contains($source['persistenceJs'],'warningMode !== selectedMode()')
+        && str_contains($source['persistenceJs'],'MutationObserver(syncModeWarning)'),
     'persistence client explains write-only secret fields' =>
         str_contains($source['persistenceJs'],'Secret fields remain blank after reload by design')
         && str_contains($source['persistenceJs'],'API key saved securely.')

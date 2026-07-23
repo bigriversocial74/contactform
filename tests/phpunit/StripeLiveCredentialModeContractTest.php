@@ -93,19 +93,46 @@ final class StripeLiveCredentialModeContractTest extends TestCase
         self::assertStringContainsString('Test credentials are not required when saving Live.',$source);
     }
 
-    public function testPersistenceClientClearsStaleModeAndReadsBackSavedRecord(): void
+    public function testPersistenceClientResolvesAuthoritativeModeBeforeWritingUrl(): void
     {
         $source=$this->source('assets/js/admin-payments-persistence.js');
 
         foreach([
             'localStorage.removeItem(legacyModeKey)',
-            "searchParams.set('mode', selectedMode())",
+            'function initializePersistence()',
+            "payment-settings.php?mode=auto&verify=",
+            'function responseMode(data)',
+            'mode.value = resolved',
+            'updateModeUrl(resolved)',
             'compareStorage',
             'verifyWhenSaveFinishes',
             'Save verification failed after reload',
             "Microgifter.get('/api/admin/payment-settings.php?mode='",
             'Secret fields remain blank after reload by design',
             'API key saved securely.',
+        ] as $needle){
+            self::assertStringContainsString($needle,$source);
+        }
+
+        $initialize=strpos($source,'async function initializePersistence()');
+        $startup=strrpos($source,'initializePersistence();');
+        self::assertNotFalse($initialize);
+        self::assertNotFalse($startup);
+        self::assertGreaterThan($initialize,$startup);
+        self::assertStringNotContainsString("updateModeUrl();\n    window.setTimeout(function () { readBack(null);",$source);
+    }
+
+    public function testPersistenceWarningIsScopedToTheSelectedRecord(): void
+    {
+        $source=$this->source('assets/js/admin-payments-persistence.js');
+
+        foreach([
+            'function syncModeWarning()',
+            '/stored in the (Test|Live) record/i',
+            'warningMode !== selectedMode()',
+            'MutationObserver(syncModeWarning)',
+            "String(storage.mode || '') !== String(expected.mode || '')",
+            "mismatches.push('configuration mode')",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
