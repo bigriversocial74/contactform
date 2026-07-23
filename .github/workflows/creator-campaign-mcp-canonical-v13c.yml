@@ -82,8 +82,22 @@ jobs:
           php scripts/validate_creator_campaign_mcp_v13a.php
           php scripts/validate_creator_campaign_crm_v12.php
           vendor/bin/phpunit tests/phpunit/CreatorCampaignMcpDraftV13bContractTest.php tests/phpunit/CreatorCampaignMcpReadV13aContractTest.php tests/phpunit/CreatorCampaignCrmV12ContractTest.php
-      - name: MCP authority compatibility
-        run: vendor/bin/phpunit tests/phpunit/McpExternalAgentAuthorizationPhase2aV1ContractTest.php tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php tests/phpunit/McpAutomationSchedulesPhase4cV1ContractTest.php tests/phpunit/McpAutomationOperationsPhase4dV1ContractTest.php
+      - name: MCP Phase 2A authority compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpExternalAgentAuthorizationPhase2aV1ContractTest.php
+      - name: MCP Phase 3A draft compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php
+      - name: MCP Phase 3B conversion compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php
+      - name: MCP Phase 3C status compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php
+      - name: MCP Phase 4A grant compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php
+      - name: MCP Phase 4B definition compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php
+      - name: MCP Phase 4C schedule compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpAutomationSchedulesPhase4cV1ContractTest.php
+      - name: MCP Phase 4D operations compatibility
+        run: vendor/bin/phpunit tests/phpunit/McpAutomationOperationsPhase4dV1ContractTest.php
       - name: Migration compatibility
         run: php scripts/validate_migration_manifest.php
 
