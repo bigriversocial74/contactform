@@ -1,0 +1,241 @@
+/* Pitch deck runtime v2
+   Performance, viewport fitting, and fixed-stage corrections loaded by the
+   audited scroll controller. */
+
+.pitch-deck[data-pitch-runtime] {
+  overflow: visible !important;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-scroll {
+  position: relative !important;
+  min-height: 100vh;
+  overflow: visible !important;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-sticky {
+  margin: 0 !important;
+  overflow: hidden !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-scene {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-slide {
+  filter: none !important;
+  will-change: opacity, transform !important;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-slide__inner {
+  --pitch-fit: 1;
+  transform: scale(var(--pitch-fit));
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-slide:not(.is-active) .pitch-cover-ring,
+.pitch-deck[data-pitch-runtime] .pitch-slide:not(.is-active) .pitch-moat-rings i,
+.pitch-deck[data-pitch-runtime] .pitch-slide:not(.is-active) .pitch-vision-transfer i {
+  animation-play-state: paused !important;
+}
+
+/* Repeated full-card backdrop filters force expensive viewport repaints while
+   slides crossfade. The translucent backgrounds remain without live blur. */
+.pitch-deck[data-pitch-runtime] .pitch-problem-grid article,
+.pitch-deck[data-pitch-runtime] .pitch-platform-grid article,
+.pitch-deck[data-pitch-runtime] .pitch-business-card,
+.pitch-deck[data-pitch-runtime] .pitch-market-ladder,
+.pitch-deck[data-pitch-runtime] .pitch-gtm-roadmap article,
+.pitch-deck[data-pitch-runtime] .pitch-map-node,
+.pitch-deck[data-pitch-runtime] .pitch-moat-node,
+.pitch-deck[data-pitch-runtime] .pitch-vision-visual {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.pitch-deck[data-pitch-runtime] .pitch-progress button {
+  touch-action: manipulation;
+}
+
+@media (min-width: 901px) and (max-height: 900px) {
+  .pitch-deck[data-pitch-runtime] .pitch-slide {
+    padding-top: 76px;
+    padding-bottom: 50px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-copy h1 {
+    font-size: clamp(48px, 5.5vw, 78px);
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-copy h2 {
+    font-size: clamp(39px, 4.5vw, 62px);
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-eyebrow {
+    margin-bottom: 12px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-lede {
+    margin-top: 17px;
+    font-size: 15px;
+    line-height: 1.48;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-actions,
+  .pitch-deck[data-pitch-runtime] .pitch-founder {
+    margin-top: 22px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-problem-grid,
+  .pitch-deck[data-pitch-runtime] .pitch-business-grid,
+  .pitch-deck[data-pitch-runtime] .pitch-gtm-roadmap {
+    margin-top: 25px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-problem-grid article {
+    min-height: 218px;
+    padding: 22px 23px 38px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-problem-grid h3 {
+    margin-top: 35px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-lifecycle {
+    margin-top: 28px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-lifecycle article > div {
+    min-height: 190px;
+    margin-top: 14px;
+    padding: 18px 15px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-lifecycle h3 {
+    margin-top: 20px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-platform-grid article {
+    min-height: 145px;
+    padding: 18px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-platform-grid h3 {
+    margin-top: 20px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-business-card {
+    min-height: 180px;
+    padding: 20px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-business-card > strong {
+    margin-top: 27px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-business-card p {
+    margin-top: 15px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-unit-card {
+    padding: 14px 18px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-market-ladder {
+    height: 465px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-market-bars {
+    height: 350px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-gtm-roadmap article {
+    min-height: 245px;
+    padding: 20px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-gtm-roadmap article > div {
+    margin-top: 28px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-vision-visual {
+    min-height: 455px;
+    padding: 30px;
+    gap: 18px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-vision-label {
+    padding: 18px 20px;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 740px) {
+  .pitch-deck[data-pitch-runtime] .pitch-slide {
+    padding-top: 62px;
+    padding-bottom: 35px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-chrome {
+    top: 14px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-scroll-cue {
+    bottom: 12px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-copy h1 {
+    font-size: clamp(43px, 5vw, 65px);
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-copy h2 {
+    font-size: clamp(35px, 4vw, 52px);
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-lede {
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-problem-grid article,
+  .pitch-deck[data-pitch-runtime] .pitch-business-card,
+  .pitch-deck[data-pitch-runtime] .pitch-gtm-roadmap article {
+    min-height: 165px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-problem-grid h3,
+  .pitch-deck[data-pitch-runtime] .pitch-business-card > strong,
+  .pitch-deck[data-pitch-runtime] .pitch-gtm-roadmap article > div {
+    margin-top: 18px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-lifecycle article > div {
+    min-height: 145px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-market-ladder {
+    height: 390px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-market-bars {
+    height: 285px;
+  }
+
+  .pitch-deck[data-pitch-runtime] .pitch-vision-visual {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 900px), (prefers-reduced-motion: reduce) {
+  .pitch-deck[data-pitch-runtime] .pitch-slide__inner {
+    transform: none !important;
+  }
+}
