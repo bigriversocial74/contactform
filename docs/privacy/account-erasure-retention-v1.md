@@ -10,7 +10,7 @@ There is no universal rule that every account must remain stored for 30 days. Mi
 
 1. Deploy the integration code.
 2. Import `database/20260723_privacy_retention_account_erasure_v1_single_install.sql` once.
-3. Configure a stable secret named `MG_PRIVACY_HASH_KEY`. Do not rotate it casually; it protects deterministic suppression tombstones and completion receipts.
+3. Configure a stable secret named `MG_PRIVACY_HASH_KEY`. Do not rotate it casually; it protects deterministic suppression tombstones and completion receipts. See `config/privacy-retention-example.php` for a deploy-safe example.
 4. Run the validation workflow.
 5. Schedule the queue worker at least daily:
 
@@ -27,7 +27,7 @@ Use `--dry-run` to review due requests. `--request-id=123` limits processing to 
 3. **Controller routing** — Merchant CRM relationships create merchant handoffs because the merchant may be the controller for those customer records.
 4. **Review and holds** — Administrators can acknowledge, approve, deny, extend, place/release a legal hold, and mark merchant handoffs complete.
 5. **Finalization** — When due, private/ephemeral data is deleted, public identity and CRM history are anonymized, and minimum commerce/gift/audit evidence is retained under policy.
-6. **Receipt** — The request is unlinked from the anonymized user identity and receives a cryptographic completion receipt.
+6. **Receipt** — The request is unlinked from the active identity and receives a cryptographic completion receipt.
 
 ## Default operational deadlines
 
