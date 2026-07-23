@@ -87,7 +87,7 @@ $add('Manual adjustments and reversals return canonical events on retries',
     substr_count($compensation, "idempotent'=>true") >= 4
     && str_contains($compensation, 'WHERE campaign_id=? AND idempotency_hash=? LIMIT 1 FOR UPDATE')
     && str_contains($compensation, 'WHERE reversal_of_event_id=? OR (campaign_id=? AND idempotency_hash=?)')
-    && str_contains($compensation, "(string)$e->getCode()==='23000'"), 10);
+    && str_contains($compensation, '(string)$e->getCode()===\'23000\''), 10);
 
 $add('Phase 15 receipt identity is status-aware for clean and deployed databases',
     str_contains($phase15Sql, 'uq_creator_campaign_onboarding_receipt_snapshot (onboarding_id,receipt_type,snapshot_hash,status)')
