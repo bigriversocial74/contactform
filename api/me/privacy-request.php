@@ -41,8 +41,16 @@ try {
     $requestId = (int) ($request['id'] ?? 0);
     if ($requestId > 0) {
         $request = mg_privacy_request_by_id($pdo,$requestId,true) ?? $request;
+        if (empty($request['restricted_at'])) {
+            $pdo->prepare('UPDATE privacy_requests SET source="self_service",verification_method="account_password",identity_verified_at=COALESCE(identity_verified_at,NOW()),decision="approve",updated_at=NOW() WHERE id=?')->execute([$requestId]);
+            mg_privacy_event($pdo,$requestId,'self_service_request_verified',['account_restriction'=>true],$userId);
+            mg_privacy_restrict_account($pdo,$requestId,$userId);
+            $request = mg_privacy_request_by_id($pdo,$requestId,true) ?? $request;
+        }
         $dueAt = (string) ($request['extended_due_at'] ?: $request['response_due_at']);
         mg_privacy_create_operational_handoffs($pdo,$requestId,$userId,$dueAt);
+        $finalizationAt = (string) ($request['grace_ends_at'] ?: $request['response_due_at']);
+        $pdo->prepare('UPDATE users SET deletion_due_at=? WHERE id=?')->execute([$finalizationAt,$userId]);
         $request = mg_privacy_request_by_id($pdo,$requestId,true) ?? $request;
     }
     $pdo->commit();
