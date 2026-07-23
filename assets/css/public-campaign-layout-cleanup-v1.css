@@ -1,0 +1,95 @@
+/* Public campaign layout cleanup v1.
+   Aligns desktop participation panels, restores supporting-card spacing,
+   and removes decorative campaign background imagery across campaign pages. */
+
+.mg-rl-page {
+  background: #f2f5f8 !important;
+}
+
+/* Campaign artwork remains inside its content card; decorative page backgrounds are removed. */
+.mg-rl-page .mg-rl-bg {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+}
+
+.mg-rl-page .mg-rl-wrap {
+  align-items: start !important;
+}
+
+/* Restore a clear, consistent information-card rhythm below campaign canvases. */
+.mg-rl-page .mg-rl-bottom {
+  align-items: stretch !important;
+  gap: 18px !important;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: stretch !important;
+  height: auto !important;
+  min-height: 210px;
+  overflow: visible !important;
+  padding: 22px 24px !important;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card .mg-rl-eyebrow {
+  margin: 0 0 10px !important;
+  line-height: 1.35;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card h2,
+.mg-rl-page .mg-rl-bottom > .mg-rl-card h3 {
+  margin: 0 0 10px !important;
+  line-height: 1.25;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card > p {
+  margin: 0 0 8px !important;
+  line-height: 1.5 !important;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card .mg-rl-list {
+  margin: 4px 0 0 !important;
+  gap: 12px !important;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card .mg-rl-list li {
+  gap: 5px !important;
+  line-height: 1.45 !important;
+}
+
+.mg-rl-page .mg-rl-bottom > .mg-rl-card .mg-rl-pill {
+  margin-top: auto !important;
+  align-self: flex-start;
+}
+
+@media (min-width: 1181px) {
+  /* The old 98px rule pushed this column below the campaign canvas.
+     Keep the sticky behavior while matching the compact campaign top edge. */
+  .mg-rl-page .mg-rl-wrap > .mg-rl-join-desktop,
+  .mg-rl-page[data-public-campaign-page] .mg-rl-wrap > .mg-rl-join-desktop,
+  .mg-rl-page[data-public-campaign-page] .mg-rl-wrap:has(> .mg-rl-join-desktop .mg-campaign-user-details[open]) > .mg-rl-join-desktop {
+    align-self: start !important;
+    top: 72px !important;
+    bottom: auto !important;
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .mg-rl-page .mg-rl-bottom > .mg-rl-card {
+    min-height: 0;
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .mg-rl-page .mg-rl-bottom {
+    gap: 14px !important;
+  }
+
+  .mg-rl-page .mg-rl-bottom > .mg-rl-card {
+    padding: 18px !important;
+  }
+}
