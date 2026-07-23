@@ -19,7 +19,7 @@
 
   if (!scrollSection || !stage || !scene || slides.length === 0) return;
 
-  const RUNTIME_VERSION = '2.0.0';
+  const RUNTIME_VERSION = '2.1.0';
   const HOLD_PORTION = 0.74;
   const REVEAL_PORTION = 0.44;
   const MIN_STEP_PX = 980;
@@ -33,7 +33,7 @@
   deck.classList.add('is-enhanced');
 
   const runtimeCssHref = `/assets/css/pitch-deck-scroll-runtime-v2.css?v=${RUNTIME_VERSION}`;
-  let runtimeCss = document.querySelector('link[data-pitch-runtime-css]');
+  let runtimeCss = document.querySelector('link[href*="pitch-deck-scroll-runtime-v2.css"]');
   if (!runtimeCss) {
     runtimeCss = document.createElement('link');
     runtimeCss.rel = 'stylesheet';
@@ -65,10 +65,12 @@
   let rafId = 0;
   let activeIndex = 0;
   let isDesktop = desktopMode.matches && !reducedMotion.matches;
-  let headerOffset = 72;
-  let stageHeight = Math.max(400, window.innerHeight - headerOffset);
+  let headerHeight = 72;
+  let visibleHeaderOffset = 72;
+  let minimumStageHeight = Math.max(400, window.innerHeight - headerHeight);
+  let activeStageHeight = Math.max(400, window.innerHeight - visibleHeaderOffset);
   let sectionTop = 0;
-  let sectionHeight = stageHeight;
+  let sectionHeight = minimumStageHeight;
   let startScroll = 0;
   let endScroll = 1;
   let stepPixels = MIN_STEP_PX;
@@ -77,6 +79,25 @@
 
   function formatSlide(index) {
     return String(index + 1).padStart(2, '0');
+  }
+
+  function readHeaderHeight() {
+    if (!siteHeader) return 0;
+    const rect = siteHeader.getBoundingClientRect();
+    return Math.max(0, Math.round(rect.height));
+  }
+
+  function readVisibleHeaderOffset() {
+    if (!siteHeader) return 0;
+    const rect = siteHeader.getBoundingClientRect();
+    if (rect.height <= 0 || rect.bottom <= 0 || rect.top >= window.innerHeight) return 0;
+    return Math.round(clamp(rect.bottom, 0, Math.min(rect.height, window.innerHeight)));
+  }
+
+  function refreshVisibleHeaderGeometry() {
+    visibleHeaderOffset = readVisibleHeaderOffset();
+    activeStageHeight = Math.max(400, window.innerHeight - visibleHeaderOffset);
+    deck.style.setProperty('--pitch-header-visible', `${visibleHeaderOffset}px`);
   }
 
   function setImportant(property, value) {
@@ -104,7 +125,7 @@
         setImportant('left', '0');
         setImportant('right', '0');
         setImportant('width', '100%');
-        setImportant('height', `${stageHeight}px`);
+        setImportant('height', `${minimumStageHeight}px`);
         stage.style.setProperty('z-index', '4');
         stageState = 'before';
       }
@@ -119,20 +140,21 @@
         setImportant('left', '0');
         setImportant('right', '0');
         setImportant('width', '100%');
-        setImportant('height', `${stageHeight}px`);
+        setImportant('height', `${Math.max(400, window.innerHeight)}px`);
         stage.style.setProperty('z-index', '4');
         stageState = 'after';
       }
       return;
     }
 
+    refreshVisibleHeaderGeometry();
     setImportant('position', 'fixed');
-    setImportant('top', `${headerOffset}px`);
+    setImportant('top', `${visibleHeaderOffset}px`);
     setImportant('bottom', 'auto');
     setImportant('left', `${left}px`);
     setImportant('right', 'auto');
     setImportant('width', `${width}px`);
-    setImportant('height', `${stageHeight}px`);
+    setImportant('height', `${activeStageHeight}px`);
     stage.style.setProperty('z-index', '40');
     stageState = 'active';
   }
@@ -177,7 +199,7 @@
       const styles = window.getComputedStyle(slide);
       const availableHeight = Math.max(
         260,
-        stageHeight - parseFloat(styles.paddingTop || '0') - parseFloat(styles.paddingBottom || '0')
+        minimumStageHeight - parseFloat(styles.paddingTop || '0') - parseFloat(styles.paddingBottom || '0')
       );
       const contentHeight = Math.max(inner.scrollHeight, inner.getBoundingClientRect().height);
       const fit = clamp(availableHeight / Math.max(1, contentHeight), MIN_FIT_SCALE, 1);
@@ -190,8 +212,10 @@
 
   function updateMetrics() {
     isDesktop = desktopMode.matches && !reducedMotion.matches;
-    headerOffset = Math.max(0, Math.round(siteHeader?.getBoundingClientRect().height || 72));
-    stageHeight = Math.max(400, window.innerHeight - headerOffset);
+    headerHeight = readHeaderHeight();
+    visibleHeaderOffset = readVisibleHeaderOffset();
+    minimumStageHeight = Math.max(400, window.innerHeight - headerHeight);
+    activeStageHeight = Math.max(400, window.innerHeight - visibleHeaderOffset);
 
     if (!isDesktop) {
       showStaticSlides();
@@ -201,13 +225,15 @@
     const naturalRect = scrollSection.getBoundingClientRect();
     sectionTop = window.scrollY + naturalRect.top;
 
-    stepPixels = Math.max(MIN_STEP_PX, Math.round(stageHeight * STEP_HEIGHT_MULTIPLIER));
-    sectionHeight = stageHeight + stepPixels * slideCount;
+    stepPixels = Math.max(MIN_STEP_PX, Math.round(minimumStageHeight * STEP_HEIGHT_MULTIPLIER));
+    sectionHeight = minimumStageHeight + stepPixels * slideCount;
     scrollSection.style.setProperty('height', `${sectionHeight}px`, 'important');
 
-    startScroll = Math.max(0, sectionTop - headerOffset);
+    startScroll = Math.max(0, sectionTop - headerHeight);
     endScroll = Math.max(startScroll + 1, sectionTop + sectionHeight - window.innerHeight);
 
+    deck.style.setProperty('--pitch-header-height', `${headerHeight}px`);
+    deck.style.setProperty('--pitch-header-visible', `${visibleHeaderOffset}px`);
     updateStageState();
     fitSlides();
     scheduleRender();
@@ -321,7 +347,7 @@
 
   function deckIsInView() {
     const rect = scrollSection.getBoundingClientRect();
-    return rect.bottom > headerOffset && rect.top < window.innerHeight;
+    return rect.bottom > visibleHeaderOffset && rect.top < window.innerHeight;
   }
 
   function onScroll() {
@@ -363,7 +389,7 @@
   window.addEventListener('load', updateMetrics, { once: true });
   reducedMotion.addEventListener?.('change', updateMetrics);
   desktopMode.addEventListener?.('change', updateMetrics);
-  runtimeCss.addEventListener?.('load', updateMetrics, { once: true });
+  runtimeCss?.addEventListener?.('load', updateMetrics, { once: true });
 
   if (document.fonts?.ready) {
     document.fonts.ready.then(updateMetrics).catch(() => {});
