@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $root=dirname(__DIR__);$checks=0;$failures=[];
-$pass=static function(bool $condition,string $message)use(&$checks,&$failures):void{$checks++;if($condition){echo "[PASS] {$message}\n";return;}$failures[]=$message;echo "[FAIL] {$message}\n";};
+$pass=static function(bool $condition,string $message)use(&$checks,&$failures):void{$checks++;if($condition)return;$failures[]=$message;echo "[FAIL] {$message}\n";};
 $read=static function(string $path)use($root,$pass):string{$full=$root.'/'.$path;$pass(is_file($full),'Required file exists: '.$path);return is_file($full)?(string)file_get_contents($full):'';};
 
 $required=[
@@ -112,4 +112,4 @@ foreach([
 ] as $function)$pass(function_exists($function),'Loaded service exposes '.$function);
 $pass(mg_investment_readable_stage('funds_verified')==='Funds Verified','Closing stage labels remain deterministic.');
 
-if($failures!==[]){fwrite(STDERR,"\n".count($failures)." validation failure(s).\n");exit(1);}echo "\nInvestor Closing, Compliance & Post-Investment Relations v4: {$checks}/{$checks} checks passed.\n";
+if($failures!==[]){fwrite(STDERR,"\n".count($failures)." validation failure(s).\n");exit(1);}echo "Investor Closing, Compliance & Post-Investment Relations v4: {$checks}/{$checks} checks passed.\n";
