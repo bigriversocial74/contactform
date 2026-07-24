@@ -8,7 +8,7 @@ on:
       - '.github/workflows/open-public-donations-phase5-pr.yml'
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -18,14 +18,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Open pull request
+        with:
+          ref: feature/public-donations-recall-controls-v1
+          fetch-depth: 0
+      - name: Open pull request and record result
         run: |
           existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --head feature/public-donations-recall-controls-v1 --base integration-from-repair-20260628 --state open --json number --jq '.[0].number // empty')"
-          if [ -n "$existing" ]; then
-            echo "PR #$existing already exists."
-            exit 0
-          fi
-          cat > /tmp/phase5-pr.md <<'BODY'
+          if [ -z "$existing" ]; then
+            cat > /tmp/phase5-pr.md <<'BODY'
           ## Summary
 
           Implements partial recall controls for untouched Public Donations rewards that remain owned by the original Community recipient.
@@ -70,9 +70,21 @@ jobs:
 
           Closes #1320
           BODY
-          gh pr create \
-            --repo "$GITHUB_REPOSITORY" \
-            --base integration-from-repair-20260628 \
-            --head feature/public-donations-recall-controls-v1 \
-            --title "Public Donations Phase 5 recall controls" \
-            --body-file /tmp/phase5-pr.md
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base integration-from-repair-20260628 \
+              --head feature/public-donations-recall-controls-v1 \
+              --title "Public Donations Phase 5 recall controls" \
+              --body-file /tmp/phase5-pr.md
+            existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --head feature/public-donations-recall-controls-v1 --base integration-from-repair-20260628 --state open --json number --jq '.[0].number // empty')"
+          fi
+          if [ -z "$existing" ]; then
+            echo 'Unable to resolve created PR number.' >&2
+            exit 1
+          fi
+          printf 'PR_NUMBER=%s\nPR_URL=https://github.com/%s/pull/%s\n' "$existing" "$GITHUB_REPOSITORY" "$existing" > scripts/.public_donations_phase5_pr.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/.public_donations_phase5_pr.txt
+          git commit -m "Record Phase 5 PR #$existing"
+          git push origin HEAD:feature/public-donations-recall-controls-v1
