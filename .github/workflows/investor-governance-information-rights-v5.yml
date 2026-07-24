@@ -1,0 +1,83 @@
+name: Investor Governance Information Rights v5
+
+on:
+  pull_request:
+    paths:
+      - 'database/20260723_investor_governance_information_rights_v5_single_install.sql'
+      - 'includes/investment/investment-governance.php'
+      - 'includes/investment/investment-governance-documents.php'
+      - 'includes/investment/investment-portal-v5.php'
+      - 'includes/investment/investment-service.php'
+      - 'api/admin/investor-governance.php'
+      - 'api/investment/portal.php'
+      - 'admin/investor-governance.php'
+      - 'admin/investment-closing.php'
+      - 'investor-portal.php'
+      - 'assets/css/investor-governance-v5.css'
+      - 'assets/css/investor-portal-v5.css'
+      - 'assets/js/investor-governance-v5.js'
+      - 'assets/js/investor-portal-v5.js'
+      - 'scripts/validate_investor_pipeline_portal_publishing_v2.php'
+      - 'scripts/validate_investor_diligence_communications_v3.php'
+      - 'scripts/validate_investor_closing_compliance_relations_v4.php'
+      - 'scripts/validate_investor_governance_information_rights_v5.php'
+      - 'docs/investment/investor-governance-information-rights-v5.md'
+      - '.github/workflows/investor-governance-information-rights-v5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l includes/investment/investment-governance.php
+          php -l includes/investment/investment-governance-documents.php
+          php -l includes/investment/investment-portal-v5.php
+          php -l includes/investment/investment-service.php
+          php -l api/admin/investor-governance.php
+          php -l api/investment/portal.php
+          php -l admin/investor-governance.php
+          php -l admin/investment-closing.php
+          php -l investor-portal.php
+          php -l scripts/validate_investor_pipeline_portal_publishing_v2.php
+          php -l scripts/validate_investor_diligence_communications_v3.php
+          php -l scripts/validate_investor_closing_compliance_relations_v4.php
+          php -l scripts/validate_investor_governance_information_rights_v5.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/investor-governance-v5.js
+          node --check assets/js/investor-portal-v5.js
+      - name: Phase 5 contract
+        run: php scripts/validate_investor_governance_information_rights_v5.php
+      - name: Phase 2 compatibility contract
+        run: php scripts/validate_investor_pipeline_portal_publishing_v2.php
+      - name: Phase 3 compatibility contract
+        run: php scripts/validate_investor_diligence_communications_v3.php
+      - name: Phase 4 compatibility contract
+        run: php scripts/validate_investor_closing_compliance_relations_v4.php
+      - name: SQL additive contract
+        run: |
+          grep -q "CREATE TABLE IF NOT EXISTS investment_governance_participants" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_board_meetings" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_investor_rights" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_reporting_obligations" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_tax_document_versions" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_material_notice_recipients" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          ! grep -q "DROP TABLE" database/20260723_investor_governance_information_rights_v5_single_install.sql
+          ! grep -q "TRUNCATE TABLE" database/20260723_investor_governance_information_rights_v5_single_install.sql
