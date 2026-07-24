@@ -6,6 +6,10 @@
   const csrf = csrfRoot.dataset.csrfToken || '';
   const originalFetch = window.fetch.bind(window);
 
+  const style = document.createElement('style');
+  style.textContent = '.is-audit-readonly input{background:#f3f4f6!important;color:#4b5563!important;cursor:not-allowed}.mg-investment-help{margin:0;padding:.75rem 1rem;border:1px solid #d1d5db;border-radius:12px;background:#f9fafb;color:#374151;font-size:.9rem;line-height:1.45}[data-audit-provenance-warning]{margin:.75rem 0 1rem}';
+  document.head.appendChild(style);
+
   const parseBody = (body) => {
     if (typeof body !== 'string') return null;
     try { return JSON.parse(body); } catch { return null; }
@@ -61,8 +65,8 @@
   const hardenGovernance = async () => {
     const root = document.querySelector('[data-investor-governance]');
     if (!root || root.dataset.canPublish !== '1' || governanceBusy) return;
-    const rows = root.querySelectorAll('[data-consent-list] tr');
-    if (!rows.length || root.querySelector('[data-audit-consent-visibility]')) return;
+    const editButtons = root.querySelectorAll('[data-edit-consent]');
+    if (!editButtons.length) return;
     governanceBusy = true;
     try {
       const round = root.querySelector('[data-governance-round]')?.value || '';
@@ -70,10 +74,10 @@
       const payload = await response.json();
       if (!response.ok || !payload?.ok) return;
       const consents = new Map((payload.data?.consents || []).map((item) => [String(item.public_id), item]));
-      root.querySelectorAll('[data-edit-consent]').forEach((editButton) => {
+      editButtons.forEach((editButton) => {
         const id = String(editButton.dataset.editConsent || '');
         const consent = consents.get(id);
-        if (!consent || consent.status !== 'executed' || editButton.parentElement?.querySelector('[data-audit-consent-visibility]')) return;
+        if (!consent || consent.status !== 'executed' || editButton.parentElement?.querySelector(`[data-audit-consent-visibility="${CSS.escape(id)}"]`)) return;
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mg-btn mg-btn-soft';
@@ -102,21 +106,26 @@
     }
   };
 
-  let closingChecked = false;
+  let closingKey = '';
+  let closingBusy = false;
   const hardenClosing = async () => {
     const root = document.querySelector('[data-investment-closing]');
-    if (!root || closingChecked) return;
+    if (!root || closingBusy) return;
     const stats = root.querySelector('[data-closing-stats]');
     if (!stats || !stats.children.length) return;
-    closingChecked = true;
+    const round = root.querySelector('[data-closing-round]')?.value || '';
+    const renderedKey = `${round}:${stats.textContent}`;
+    if (renderedKey === closingKey) return;
+    closingKey = renderedKey;
+    closingBusy = true;
+    root.querySelector('[data-audit-provenance-warning]')?.remove();
     try {
-      const round = root.querySelector('[data-closing-round]')?.value || '';
       const response = await originalFetch(`/api/admin/investment-closing.php?${new URLSearchParams({ action: 'dashboard', round_id: round })}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const payload = await response.json();
       if (!response.ok || !payload?.ok) return;
       const summary = payload.data?.summary || {};
       const unproven = Number(summary.unproven_signed || 0) + Number(summary.unproven_funded || 0);
-      if (unproven > 0 && !root.querySelector('[data-audit-provenance-warning]')) {
+      if (unproven > 0) {
         const warning = document.createElement('div');
         warning.dataset.auditProvenanceWarning = '1';
         warning.className = 'mg-investment-notice';
@@ -125,6 +134,7 @@
         stats.after(warning);
       }
     } catch { /* The primary runtime owns error display. */ }
+    finally { closingBusy = false; }
   };
 
   const run = () => {
