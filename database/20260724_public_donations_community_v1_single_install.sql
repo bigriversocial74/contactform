@@ -67,9 +67,11 @@ BEGIN
             '` MODIFY COLUMN `', REPLACE(p_column_name, '`', '``'),
             '` ', v_column_type, ' ', v_null_clause, v_default_clause, v_extra_clause
         );
-        PREPARE mg_public_donations_stmt FROM v_sql;
+        SET @mg_public_donations_sql = v_sql;
+        PREPARE mg_public_donations_stmt FROM @mg_public_donations_sql;
         EXECUTE mg_public_donations_stmt;
         DEALLOCATE PREPARE mg_public_donations_stmt;
+        SET @mg_public_donations_sql = NULL;
     END IF;
 END$$
 DELIMITER ;
