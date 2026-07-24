@@ -10,9 +10,7 @@ function mg_investment_portal_round_relation(PDO $pdo,int $roundId,int $userId):
 function mg_investment_portal_log_v3(PDO $pdo,int $userId,int $roundId,string $eventType,string $subjectPublicId,array $metadata=[]): void
 {
     if(!in_array($eventType,['communication_view','qa_view'],true))return;
-    $stmt=$pdo->prepare('INSERT INTO investment_portal_events (public_id,investor_user_id,round_id,event_type,subject_public_id,metadata_json,created_at) VALUES (?,?,?,?,?,?,NOW())');
-    $stmt->execute([mg_investment_uuid(),$userId,$roundId,$eventType,$subjectPublicId,$metadata?mg_investment_json_encode($metadata):null]);
-    mg_investment_pipeline_activity($pdo,$userId,$roundId,'portal_view',$eventType==='communication_view'?'Investor viewed a communication':'Investor reviewed a Q&A entry','',null,$metadata);
+    mg_investment_pipeline_activity($pdo,$userId,$roundId,'portal_view',$eventType==='communication_view'?'Investor viewed a communication':'Investor reviewed a Q&A entry','',null,$metadata+['subject_public_id'=>$subjectPublicId,'event_type'=>$eventType]);
 }
 
 function mg_investment_portal_data_v3(PDO $pdo,array $user): array
