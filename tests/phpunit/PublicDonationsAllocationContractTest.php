@@ -113,6 +113,9 @@ final class PublicDonationsAllocationContractTest extends TestCase
         self::assertStringContainsString('rollBack()', $engine);
         self::assertStringContainsString("'allow_self' => true", $engine);
         self::assertStringContainsString("'public_purchase' => false", $endpoint);
+        self::assertStringContainsString('$completedReplay = mg_public_donations_allocation_operation', $endpoint);
+        self::assertStringContainsString('mg_public_donations_allocation_request_hash', $endpoint);
+        self::assertStringContainsString('if ($result === null)', $endpoint);
         self::assertDoesNotMatchRegularExpression('/\b(?:payment_intent|charge_customer|checkout_session)\b/i', $engine . "\n" . $endpoint);
     }
 
