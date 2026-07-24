@@ -1,0 +1,71 @@
+name: Investor Diligence Communications v3
+
+on:
+  pull_request:
+    paths:
+      - 'database/20260723_investor_diligence_communications_v3_single_install.sql'
+      - 'includes/investment/investment-diligence.php'
+      - 'includes/investment/investment-communications.php'
+      - 'includes/investment/investment-engagement.php'
+      - 'includes/investment/investment-portal-v3.php'
+      - 'includes/investment/investment-service.php'
+      - 'api/admin/investor-diligence.php'
+      - 'api/investment/portal.php'
+      - 'admin/investor-diligence.php'
+      - 'admin/investor-pipeline.php'
+      - 'investor-portal.php'
+      - 'assets/css/investor-diligence-v3.css'
+      - 'assets/css/investor-portal-v3.css'
+      - 'assets/js/investor-diligence-v3.js'
+      - 'assets/js/investor-portal-v3.js'
+      - 'scripts/validate_investor_diligence_communications_v3.php'
+      - 'docs/investment/investor-diligence-communications-v3.md'
+      - '.github/workflows/investor-diligence-communications-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l includes/investment/investment-diligence.php
+          php -l includes/investment/investment-communications.php
+          php -l includes/investment/investment-engagement.php
+          php -l includes/investment/investment-portal-v3.php
+          php -l includes/investment/investment-service.php
+          php -l api/admin/investor-diligence.php
+          php -l api/investment/portal.php
+          php -l admin/investor-diligence.php
+          php -l admin/investor-pipeline.php
+          php -l investor-portal.php
+          php -l scripts/validate_investor_diligence_communications_v3.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/investor-diligence-v3.js
+          node --check assets/js/investor-portal-v3.js
+      - name: Phase 3 contract
+        run: php scripts/validate_investor_diligence_communications_v3.php
+      - name: SQL additive contract
+        run: |
+          grep -q "CREATE TABLE IF NOT EXISTS investment_dataroom_folders" database/20260723_investor_diligence_communications_v3_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investor_diligence_requests" database/20260723_investor_diligence_communications_v3_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investor_communications" database/20260723_investor_diligence_communications_v3_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investor_engagement_snapshots" database/20260723_investor_diligence_communications_v3_single_install.sql
+          ! grep -q "DROP TABLE" database/20260723_investor_diligence_communications_v3_single_install.sql
+          ! grep -q "TRUNCATE TABLE" database/20260723_investor_diligence_communications_v3_single_install.sql

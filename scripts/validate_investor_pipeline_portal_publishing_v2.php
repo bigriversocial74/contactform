@@ -30,7 +30,18 @@ $pass(str_contains($publishing,'status="published"'),'Portal documents require p
 $api=$read('api/admin/investor-pipeline.php');
 foreach(['mg_require_api_user()','mg_investment_require_permission','mg_require_csrf_for_write','mg_rate_limit','save_record','add_activity','save_task','complete_task','save_interest','set_access','save_publication','refresh_metrics','ai_draft'] as $needle)$pass(str_contains($api,$needle),'Admin API contains '.$needle);
 $portalApi=$read('api/investment/portal.php');
-foreach(['mg_require_api_user()','mg_require_csrf_for_write','mg_investment_portal_data_v2','mg_investment_portal_event_v2'] as $needle)$pass(str_contains($portalApi,$needle),'Portal API contains '.$needle);
+foreach(['mg_require_api_user()','mg_require_csrf_for_write'] as $needle)$pass(str_contains($portalApi,$needle),'Portal API contains '.$needle);
+$usesV2Data=str_contains($portalApi,'mg_investment_portal_data_v2');
+$usesV3Data=str_contains($portalApi,'mg_investment_portal_data_v3');
+$usesV2Events=str_contains($portalApi,'mg_investment_portal_event_v2');
+$usesV3Events=str_contains($portalApi,'mg_investment_portal_event_v3');
+$pass($usesV2Data||$usesV3Data,'Portal API uses the Phase 2 portal authority or a backward-compatible extension.');
+$pass($usesV2Events||$usesV3Events,'Portal API uses the Phase 2 event authority or a backward-compatible extension.');
+if($usesV3Data||$usesV3Events){
+    $portalV3=$read('includes/investment/investment-portal-v3.php');
+    $pass(str_contains($portalV3,'mg_investment_portal_data_v2'),'Phase 3 portal data extends the Phase 2 portal authority.');
+    $pass(str_contains($portalV3,'mg_investment_portal_event_v2'),'Phase 3 standard portal events delegate to the Phase 2 event authority.');
+}
 
 $page=$read('admin/investor-pipeline.php');
 foreach(['mg-app-shell','admin-sidebar.php','mg-app-workspace','data-investor-pipeline','data-tab-panel="pipeline"','data-tab-panel="publishing"','data-tab-panel="metrics"','data-pipeline-drawer-layer'] as $needle)$pass(str_contains($page,$needle),'Admin workspace contains '.$needle);
