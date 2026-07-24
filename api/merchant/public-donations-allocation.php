@@ -83,39 +83,73 @@ $templateRef = strtolower(trim((string)($input['reward_template_id'] ?? '')));
 $recipients = mg_public_donations_allocation_recipients($input['recipients'] ?? null);
 $message = mg_public_donations_allocation_text($input['message'] ?? null, 1000, 'Recipient message');
 $internalNote = mg_public_donations_allocation_text($input['internal_note'] ?? null, 2000, 'Internal note');
+$idempotencyKey = $action === 'allocate'
+    ? mg_public_donations_allocation_idempotency_key($input['idempotency_key'] ?? null)
+    : null;
+$result = null;
 
-$preflight = mg_public_donations_allocation_preflight(
-    $pdo,
-    $merchantId,
-    $campaignRef,
-    $templateRef,
-    $recipients,
-    $message,
-    $internalNote
-);
-
-if ($action === 'preflight') {
-    mg_ok([
-        'preflight' => $preflight,
-        'inventory_reserved' => false,
-        'reward_inventory_changed' => false,
-    ], 'Allocation preview ready. Inventory has not been reserved.');
+// Resolve a completed retry before mutable campaign, template, assignment, or
+// inventory validation. A completed operation is immutable and must remain
+// safely replayable without issuing another reward lifecycle.
+if ($idempotencyKey !== null) {
+    $requestHash = mg_public_donations_allocation_request_hash(
+        $campaignRef,
+        $templateRef,
+        $recipients,
+        $message,
+        $internalNote
+    );
+    $completedReplay = mg_public_donations_allocation_operation($pdo, $merchantId, $idempotencyKey, false);
+    if ($completedReplay) {
+        if (!hash_equals((string)$completedReplay['request_hash'], $requestHash)) {
+            mg_fail('This idempotency key belongs to a different allocation request.', 409);
+        }
+        if ((string)$completedReplay['status'] === 'completed') {
+            $result = mg_public_donations_allocation_tracking(
+                $pdo,
+                $merchantId,
+                (string)$completedReplay['public_id']
+            );
+            $result['duplicate'] = true;
+        } elseif ((string)$completedReplay['status'] === 'processing') {
+            mg_fail('This allocation request is already processing.', 409);
+        }
+    }
 }
 
-$idempotencyKey = mg_public_donations_allocation_idempotency_key($input['idempotency_key'] ?? null);
-$confirmLarge = filter_var($input['confirm_large_operation'] ?? false, FILTER_VALIDATE_BOOLEAN);
-$result = mg_public_donations_allocation_execute(
-    $pdo,
-    $merchantId,
-    $actorId,
-    $campaignRef,
-    $templateRef,
-    $recipients,
-    $idempotencyKey,
-    $message,
-    $internalNote,
-    $confirmLarge
-);
+if ($result === null) {
+    $preflight = mg_public_donations_allocation_preflight(
+        $pdo,
+        $merchantId,
+        $campaignRef,
+        $templateRef,
+        $recipients,
+        $message,
+        $internalNote
+    );
+
+    if ($action === 'preflight') {
+        mg_ok([
+            'preflight' => $preflight,
+            'inventory_reserved' => false,
+            'reward_inventory_changed' => false,
+        ], 'Allocation preview ready. Inventory has not been reserved.');
+    }
+
+    $confirmLarge = filter_var($input['confirm_large_operation'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $result = mg_public_donations_allocation_execute(
+        $pdo,
+        $merchantId,
+        $actorId,
+        $campaignRef,
+        $templateRef,
+        $recipients,
+        (string)$idempotencyKey,
+        $message,
+        $internalNote,
+        $confirmLarge
+    );
+}
 
 if (function_exists('mg_audit')) {
     mg_audit('merchant.public_donations.allocate', 'campaign', [
