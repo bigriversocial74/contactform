@@ -19,6 +19,7 @@ on:
       - 'database/20260724_investor_module_audit_hardening_v1.sql'
       - 'scripts/validate_investor_module_audit_10of10.php'
       - 'scripts/validate_investor_module_publication_v12.php'
+      - 'scripts/validate_investor_module_exact_approval_v13.php'
       - 'docs/investment/investor-module-audit-10of10.md'
       - '.github/workflows/investor-module-audit-10of10.yml'
   workflow_dispatch:
@@ -69,8 +70,10 @@ jobs:
           php -l includes/investment/investment-audit-hardening-v10.php
           php -l includes/investment/investment-audit-hardening-v11.php
           php -l includes/investment/investment-audit-hardening-v12.php
+          php -l includes/investment/investment-audit-hardening-v13.php
           php -l scripts/validate_investor_module_audit_10of10.php
           php -l scripts/validate_investor_module_publication_v12.php
+          php -l scripts/validate_investor_module_exact_approval_v13.php
 
       - name: JavaScript syntax
         run: |
@@ -87,6 +90,9 @@ jobs:
 
       - name: Approved publication contract
         run: php scripts/validate_investor_module_publication_v12.php
+
+      - name: Exact approval publication contract
+        run: php scripts/validate_investor_module_exact_approval_v13.php
 
       - name: Phase 1 compatibility contract
         run: php scripts/validate_investor_role_investment_wizard_v1.php
@@ -115,6 +121,9 @@ jobs:
           grep -q "Generic financial adjustments are not allowed" includes/investment/investment-audit-hardening-v11.php
           grep -q "Approve the exact investment document version" includes/investment/investment-audit-hardening-v12.php
           grep -q "Approve the exact tax-document version" includes/investment/investment-audit-hardening-v12.php
+          grep -q "Approve the exact board packet document" includes/investment/investment-audit-hardening-v13.php
+          grep -q "Approve the exact reporting obligation" includes/investment/investment-audit-hardening-v13.php
           grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v11.php
+          grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v13.php
           ! grep -q "DROP TABLE" database/20260724_investor_module_audit_hardening_v1.sql
           ! grep -q "TRUNCATE TABLE" database/20260724_investor_module_audit_hardening_v1.sql
