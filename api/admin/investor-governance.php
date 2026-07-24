@@ -40,7 +40,7 @@ try {
         'complete_obligation'=>mg_investment_governance_complete_obligation($pdo,$actor,$input),
         'refresh_holdings'=>mg_investment_governance_refresh_holdings($pdo,$actor,$input),
         'save_tax_document'=>mg_investment_governance_save_tax_document_audited($pdo,$actor,$input),
-        'save_notice'=>mg_investment_governance_save_notice_audited($pdo,$actor,$input),
+        'save_notice'=>mg_investment_governance_save_notice_audited_v2($pdo,$actor,$input),
         'ai_draft'=>mg_investment_governance_ai_draft($pdo,$actor,$input),
         default=>throw new MgInvestmentException('Invalid investor governance action.'),
     };
