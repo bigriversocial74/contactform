@@ -396,7 +396,7 @@ function mg_public_donations_recall_execute(
               idempotency_key,request_hash,recipient_count,requested_quantity,completed_quantity,
               inventory_before,inventory_after,total_stated_value_cents,currency,confirmation_level,
               message,internal_note,created_by_user_id,created_at,updated_at)
-             VALUES (?,?,?,?,'recall','partial_recall','processing',?,?,?,?,0,?,?,?,?,?,'standard',?,?,?,NOW(),NOW())"
+             VALUES (?,?,?,?,'recall','partial_recall','processing',?,?,?,?,0,?,?,?,?,'standard',?,?,?,NOW(),NOW())"
         )->execute([
             $operationPublicId,$merchantId,(int)$batch['campaign_id'],(int)$batch['reward_template_id'],
             $idempotencyKey,$requestHash,1,$quantity,$inventoryBefore,$inventoryAfter,
