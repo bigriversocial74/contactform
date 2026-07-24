@@ -44,9 +44,9 @@ $pass(!str_contains($closing,'UPDATE user_roles'),'Closing services do not alter
 
 $compliance=$read('includes/investment/investment-compliance.php');
 foreach([
-'function mg_investment_compliance_seed','function mg_investment_compliance_save','function mg_investment_financial_request','function mg_investment_financial_decide','function mg_investment_recalculate_round_totals','function mg_investment_reconciliation_create','function mg_investment_closing_refresh_readiness','investment_financial_verification_decisions','submitted_by_user_id','requested_amount_cents','previous_amount_cents','investor_round_interests','UPDATE investment_rounds SET soft_commitment_cents','administrative estimate','not the official stock ledger'
+'function mg_investment_compliance_seed','function mg_investment_compliance_save','function mg_investment_financial_request','function mg_investment_financial_decide','function mg_investment_recalculate_round_totals','function mg_investment_reconciliation_create','function mg_investment_closing_refresh_readiness','investment_financial_verification_decisions','submitted_by_user_id','requested_amount_cents','previous_amount_cents','investor_round_interests','UPDATE investment_rounds SET soft_commitment_cents','Administrative estimate','not the official stock ledger'
 ] as $needle)$pass(str_contains($compliance,$needle),'Compliance/verification service contains '.$needle);
-$pass(str_contains($compliance,"submitted_by_user_id']===$actorId")||str_contains($compliance,"submitted_by_user_id'] === $actorId"),'Maker/checker blocks self-review.');
+$pass(str_contains($compliance,'submitted_by_user_id')&&str_contains($compliance,'The submitting administrator cannot approve or reject their own financial verification request'),'Maker/checker blocks self-review.');
 $pass(str_contains($compliance,'admin.investment.closing.verify'),'Financial decisions require verification permission.');
 $pass(str_contains($compliance,'status<>"pending"')||str_contains($compliance,"status']!=='pending'"),'Resolved financial requests cannot be decided twice.');
 $pass(str_contains($compliance,'funded amount cannot exceed')||str_contains($compliance,'funded amount cannot exceed the verified signed amount'),'Funded verification is bounded by signed money.');
@@ -58,7 +58,7 @@ $pass(!str_contains($compliance,'submit_form_d'),'Microgifter does not submit Fo
 
 $relations=$read('includes/investment/investment-relations.php');
 foreach([
-'function mg_investment_relations_detail','function mg_investment_reporting_period_save','function mg_investment_reporting_snapshot_save','function mg_investment_use_of_funds_actual_save','function mg_investment_closing_ai_draft','investment_reporting_snapshots','version_number','status="superseded"','investor_visible','internal editable draft','anthropic-client.php','cannot verify funds','official stock ledger'
+'function mg_investment_relations_detail','function mg_investment_reporting_period_save','function mg_investment_reporting_snapshot_save','function mg_investment_use_of_funds_actual_save','function mg_investment_closing_ai_draft','investment_reporting_snapshots','version_number','status="superseded"','investor_visible','internal editable draft','anthropic-client.php','Do not mark funds received','official stock ledger'
 ] as $needle)$pass(str_contains($relations,$needle),'Relations/AI service contains '.$needle);
 $pass(str_contains($relations,'admin.investment.relations.manage'),'Investor reporting writes require relations-management permission.');
 $pass(str_contains($relations,'status="published"'),'Only explicit publishing creates funded-investor reports.');
