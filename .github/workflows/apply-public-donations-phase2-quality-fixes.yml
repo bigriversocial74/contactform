@@ -1,0 +1,44 @@
+name: Apply Public Donations Phase 2 Quality Fixes
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'scripts/apply_public_donations_phase2_quality_fixes.php'
+      - '.github/workflows/apply-public-donations-phase2-quality-fixes.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  quality-fixes:
+    if: ${{ github.event.pull_request.head.ref == 'feature/public-donations-campaign-foundation-v1' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/public-donations-campaign-foundation-v1
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Apply quality fixes
+        run: php scripts/apply_public_donations_phase2_quality_fixes.php
+      - name: Validate fixed source
+        run: |
+          php -l profile.php
+          php -l includes/public-campaign-page.php
+          php -l scripts/validate_public_donations_campaign_foundation_v1.php
+          php -l tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
+          php scripts/validate_public_donations_campaign_foundation_v1.php
+      - name: Commit quality fixes
+        run: |
+          git config user.name 'Microgifter Phase Builder'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'Harden Public Donations campaign presentation [phase2-quality]'
+          git push origin HEAD:feature/public-donations-campaign-foundation-v1
