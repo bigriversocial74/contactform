@@ -12,7 +12,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-investor-pipeline-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/investment-system-v1.css?v=1.0.0','/assets/css/investor-pipeline-v2.css?v=2.0.0'];
-$page_scripts = ['/assets/js/investor-pipeline-v2.js?v=2.0.0'];
+$page_scripts = ['/assets/js/investor-pipeline-v2.js?v=2.0.0','/assets/js/investor-module-audit-v1.js?v=1.0.0'];
 $adminActive = 'investor-pipeline';
 $csrfToken = mg_csrf_token();
 require dirname(__DIR__) . '/includes/header.php';
