@@ -32,6 +32,7 @@ shell_files=()
 frontend_changed=false
 action_center_changed=false
 migration_changed=false
+homeserver_changed=false
 declare -A test_map=()
 
 add_test() {
@@ -87,6 +88,12 @@ for file in "${changed_files[@]}"; do
       migration_changed=true
       ;;
   esac
+
+  case "$file" in
+    api/homeserver/*|database/20260724_homeserver_cloud_pairing_sync_v1.sql|scripts/validate_homeserver_pairing_sync_v1.php)
+      homeserver_changed=true
+      ;;
+  esac
 done
 
 if [ "${#php_files[@]}" -gt 0 ]; then
@@ -116,6 +123,11 @@ if [ "$migration_changed" = true ]; then
   temp_upgrade="$(mktemp -t microgifter-upgrade-XXXXXX.sql)"
   php scripts/build_full_upgrade_sql.php "$temp_upgrade"
   rm -f "$temp_upgrade" "${temp_upgrade%.sql}.manifest.json"
+fi
+
+if [ "$homeserver_changed" = true ]; then
+  echo "Validating HomeServer pairing and synchronization protocol..."
+  php scripts/validate_homeserver_pairing_sync_v1.php
 fi
 
 if [ "$frontend_changed" = true ]; then
