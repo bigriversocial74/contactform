@@ -19,6 +19,16 @@ function mg_investment_portal_data_v4(PDO $pdo,array $user): array
     unset($portalRound);return $base;
 }
 
+function mg_investment_portal_submit_diligence_v4(PDO $pdo,array $user,array $input): array
+{
+    mg_investment_portal_submit_diligence($pdo,$user,$input);return mg_investment_portal_data_v4($pdo,$user);
+}
+
+function mg_investment_portal_submit_interest_v4(PDO $pdo,array $user,array $input): array
+{
+    mg_investment_portal_submit_interest($pdo,$user,$input);return mg_investment_portal_data_v4($pdo,$user);
+}
+
 function mg_investment_portal_event_v4(PDO $pdo,array $user,array $input): array
 {
     $event=(string)($input['event_type']??'');if(!in_array($event,['report_view','closing_document_open'],true))return mg_investment_portal_event_v3($pdo,$user,$input);$round=mg_investment_closing_round($pdo,mg_investment_text($input['round_id']??'',36,36,'Round identifier'));$subjectId=mg_investment_text($input['subject_id']??'',36,36,'Subject identifier');$userId=(int)$user['id'];$funded=$pdo->prepare('SELECT COUNT(*) FROM investor_closing_records WHERE round_id=? AND investor_user_id=? AND verified_funded_cents>0');$funded->execute([(int)$round['id'],$userId]);if((int)$funded->fetchColumn()<1)throw new MgInvestmentException('Funded-investor access is required.',403);
