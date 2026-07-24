@@ -129,6 +129,7 @@ function mg_public_donations_reconcile_attribution_rows(PDO $pdo, array $filters
                 pppm.id AS pppm_exists,pppm.owner_user_id AS pppm_owner,pppm.status AS pppm_status,
                 microgift.id AS microgift_exists,microgift.owner_user_id AS microgift_owner,
                 microgift.status AS microgift_status,microgift.pppm_item_id AS microgift_pppm_item_id,
+                COALESCE(inbox.inbox_count,0) AS inbox_count,
                 COALESCE(inbox.active_inbox_count,0) AS active_inbox_count,
                 COALESCE(inbox.nonrevoked_inbox_count,0) AS nonrevoked_inbox_count
             FROM campaign_donation_rewards reward
@@ -141,6 +142,7 @@ function mg_public_donations_reconcile_attribution_rows(PDO $pdo, array $filters
             LEFT JOIN microgift_instances microgift ON microgift.id=reward.microgift_instance_id
             LEFT JOIN (
                 SELECT instance_id,
+                       COUNT(*) AS inbox_count,
                        SUM(archived_at IS NULL) AS active_inbox_count,
                        SUM(state<>'revoked' OR archived_at IS NULL) AS nonrevoked_inbox_count
                   FROM microgift_inbox_items
@@ -327,7 +329,7 @@ function mg_public_donations_reconcile_detect(PDO $pdo, array $options): array
         if (empty($row['wallet_exists'])) $missing[] = 'wallet';
         if (empty($row['pppm_exists'])) $missing[] = 'pppm';
         if (empty($row['microgift_exists'])) $missing[] = 'microgift';
-        if ((int)$row['active_inbox_count'] === 0 && (string)$row['status'] !== 'recalled') $missing[] = 'inbox';
+        if ((int)$row['inbox_count'] === 0) $missing[] = 'inbox';
         if ($missing !== []) {
             $issues['missing_links'][] = [
                 'attribution_id' => (string)$row['public_id'],
