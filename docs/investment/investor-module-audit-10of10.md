@@ -21,7 +21,7 @@ This audit covers the complete Microgifter investor module from Investor Access 
 | Initial architecture review | 8.3/10 | Strong phased structure, but several inherited controls were inconsistent across phases. |
 | Financial-integrity discovery | 7.9/10 | Pipeline and official-round editors could bypass Phase 4 maker/checker signed/funded authority. |
 | First repair pass | 9.1/10 | Read/write separation, portal privacy and initial publication controls repaired. |
-| Full backend hardening | 9.7/10 | Provenance, immutability, audience validation and versioning added; operator clarity and full regression proof remained. |
+| Full backend hardening | 9.7/10 | Provenance, immutability, audience validation and versioning added; exact approval and regression proof remained. |
 | Final audited build | 10.0/10 target | Requires 100/100 audit contract plus Phase 1–5, PHP 8.2/8.3, JavaScript, SQL and app-layout validation. |
 
 ## Critical findings and fixes
@@ -76,7 +76,7 @@ This audit covers the complete Microgifter investor module from Investor Access 
 
 - Data-room, Q&A and communication publication require the dedicated diligence publish permission.
 - Legal-review records must first reach approved status.
-- Investor relations now has a separate `admin.investment.relations.publish` permission.
+- Investor relations has a separate `admin.investment.relations.publish` permission.
 - Published reports must exactly match a previously approved immutable version.
 
 ### 7. Published records could be silently rewritten
@@ -127,6 +127,22 @@ This audit covers the complete Microgifter investor module from Investor Access 
 - Closing and round state-machine validation
 - Evidence/reference requirements for financial, compliance and investor-visible records
 
+### 12. Approved content could change during publication
+
+**Finding:** Several endpoints accepted an approved record and allowed investor-visible fields or approval metadata to change in the same request that published, activated or executed it. The tax wrapper also queried a nonexistent version column, and board packet documents lacked an operator path for publishing a specific approved version.
+
+**Fix:**
+
+- Official documents, tax documents, data-room documents, Q&A, communications and reports must exactly match approved content.
+- Board meeting summaries must preserve approved public content, meeting status and counsel status.
+- Board packet publication locks and publishes the exact approved version row atomically.
+- Written consent execution preserves the exact consent terms approved for external execution.
+- Material notices preserve approved content, audience and counsel status.
+- Active or investor-visible rights preserve counsel-approved terms.
+- Reporting obligations preserve approved content, status and counsel-review requirements.
+- Tax publication validates only real schema columns and freezes title, provider, investor, type, year, URL and external reference.
+- The packet creation form no longer offers direct publication; an explicit **Publish Approved Packet** control publishes the selected approved version.
+
 ## New migration
 
 Import once after the Phase 1–5 migrations:
@@ -165,11 +181,16 @@ Do not reimport the Phase 1–5 migrations.
 - Legacy reported money does not unlock funded sections.
 - Maker and checker must be different administrators.
 - Approved funded decision updates provenance and official totals.
-- Published data-room records require publish permission and approved legal review where required.
+- Financial reversals reconcile the overall Pipeline stage.
+- Published data-room records require publish permission and exact approved content.
 - Published Q&A, communications, notices, consents and reports cannot be rewritten.
 - Executed consents remain private until explicitly shown in the portal.
 - Investor Portal rejects inaccessible document, metric, communication and governance events.
 - Published report must match its approved version.
+- Tax publication must match the approved version and canonical metadata.
+- Board packet creation cannot publish directly.
+- An approved funded-investor packet version can be published through its exact version action.
+- Meeting, notice and obligation approval metadata cannot change during publication.
 - Publication and document changes create immutable versions with reasons.
 
 ## 10/10 acceptance standard
@@ -177,6 +198,8 @@ Do not reimport the Phase 1–5 migrations.
 The investor module receives a final 10/10 only when all of the following are true:
 
 - Weighted audit validator: **100/100**
+- Approved publication v12 contract: pass on PHP 8.2 and 8.3
+- Exact approval v13/v14 contract: pass on PHP 8.2 and 8.3
 - Phase 1 contract: pass on PHP 8.2 and 8.3
 - Phase 2 contract: pass on PHP 8.2 and 8.3
 - Phase 3 contract: pass on PHP 8.2 and 8.3
