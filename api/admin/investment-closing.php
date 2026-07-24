@@ -44,7 +44,7 @@ try {
         'seed_compliance'=>mg_investment_compliance_seed($pdo,$actor,$input),
         'save_compliance'=>mg_investment_compliance_save_audited($pdo,$actor,$input),
         'request_verification'=>mg_investment_financial_request_audited($pdo,$actor,$input),
-        'decide_verification'=>mg_investment_financial_decide_audited_v2($pdo,$actor,$input),
+        'decide_verification'=>mg_investment_financial_decide_audited_v3($pdo,$actor,$input),
         'create_reconciliation'=>mg_investment_reconciliation_create($pdo,$actor,$input),
         'refresh_readiness'=>mg_investment_closing_refresh_readiness($pdo,$actor,$input),
         'save_period'=>mg_investment_reporting_period_save_audited($pdo,$actor,$input),
