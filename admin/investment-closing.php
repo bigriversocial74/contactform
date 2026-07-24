@@ -10,7 +10,7 @@ $canRelations=mg_admin_page_user_has_permission($user,'admin.investment.relation
 $canAi=mg_admin_page_user_has_permission($user,'admin.investment.ai');
 $page_title='Investment Closing | Microgifter';$page_section='account';$header_mode='account';$page_body_class='mg-admin-investment-closing-page';
 $page_styles=['/assets/css/admin-shell.css','/assets/css/investment-system-v1.css?v=1.0.0','/assets/css/investment-closing-v4.css?v=4.0.0'];
-$page_scripts=['/assets/js/investment-closing-v4.js?v=4.0.0'];$adminActive='investment-closing';$csrfToken=mg_csrf_token();
+$page_scripts=['/assets/js/investment-closing-v4.js?v=4.0.0','/assets/js/investor-module-audit-v1.js?v=1.0.0'];$adminActive='investment-closing';$csrfToken=mg_csrf_token();
 require dirname(__DIR__) . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-admin-app">
@@ -56,7 +56,7 @@ require dirname(__DIR__) . '/includes/header.php';
 
       <section data-closing-panel="reconciliation" hidden><div class="mg-closing-split"><section class="mg-investment-panel"><header><div><span>Scenario versus actual</span><h2>Capitalization reconciliation</h2><p>Administrative estimates only; not the official corporate stock ledger.</p></div><?php if($canManage): ?><button class="mg-btn mg-btn-primary" type="button" data-create-reconciliation>Create snapshot</button><?php endif; ?></header><div data-reconciliation-list><p>Select a round to load reconciliation history.</p></div></section><section class="mg-investment-panel"><header><div><span>Draft-only support</span><h2>Claude Closing Assistant</h2><p>Creates internal drafts and cannot verify funds, approve documents, file notices, sign agreements, or issue securities.</p></div></header><div data-closing-ai></div></section></div></section>
 
-      <section data-closing-panel="reports" hidden><div class="mg-closing-split"><section class="mg-investment-panel"><header><div><span>Funded-investor reporting</span><h2>Reporting periods</h2><p>Publish immutable report versions to funded investors.</p></div><?php if($canRelations): ?><button class="mg-btn mg-btn-primary" type="button" data-create-period>Create period</button><?php endif; ?></header><div data-report-period-list></div></section><section class="mg-investment-panel"><header><div><span>Actual versus plan</span><h2>Use-of-funds actuals</h2><p>Only explicitly investor-visible records appear in the Investor Portal.</p></div><?php if($canRelations): ?><button class="mg-btn mg-btn-soft" type="button" data-create-actual>Add actual</button><?php endif; ?></header><div data-use-actual-list></div></section></div></section>
+      <section data-closing-panel="reports" hidden><div class="mg-closing-split"><section class="mg-investment-panel"><header><div><span>Funded-investor reporting</span><h2>Reporting periods</h2><p>Publish immutable report versions to maker/checker verified funded investors.</p></div><?php if($canRelations): ?><button class="mg-btn mg-btn-primary" type="button" data-create-period>Create period</button><?php endif; ?></header><div data-report-period-list></div></section><section class="mg-investment-panel"><header><div><span>Actual versus plan</span><h2>Use-of-funds actuals</h2><p>Only explicitly investor-visible, evidence-backed records appear in the Investor Portal.</p></div><?php if($canRelations): ?><button class="mg-btn mg-btn-soft" type="button" data-create-actual>Add actual</button><?php endif; ?></header><div data-use-actual-list></div></section></div></section>
     </section>
   </main>
 </section>
