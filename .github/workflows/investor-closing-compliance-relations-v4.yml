@@ -1,0 +1,81 @@
+name: Investor Closing Compliance Relations v4
+
+on:
+  pull_request:
+    paths:
+      - 'database/20260724_investor_closing_compliance_relations_v4_single_install.sql'
+      - 'includes/investment/investment-closing.php'
+      - 'includes/investment/investment-compliance.php'
+      - 'includes/investment/investment-relations.php'
+      - 'includes/investment/investment-portal-v4.php'
+      - 'includes/investment/investment-service.php'
+      - 'api/admin/investment-closing.php'
+      - 'api/investment/portal.php'
+      - 'admin/investment-closing.php'
+      - 'admin/investor-pipeline.php'
+      - 'admin/investor-diligence.php'
+      - 'investor-portal.php'
+      - 'assets/css/investment-closing-v4.css'
+      - 'assets/css/investor-portal-v4.css'
+      - 'assets/js/investment-closing-v4.js'
+      - 'assets/js/investor-portal-v4.js'
+      - 'scripts/validate_investor_pipeline_portal_publishing_v2.php'
+      - 'scripts/validate_investor_diligence_communications_v3.php'
+      - 'scripts/validate_investor_closing_compliance_relations_v4.php'
+      - 'docs/investment/investor-closing-compliance-relations-v4.md'
+      - '.github/workflows/investor-closing-compliance-relations-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l includes/investment/investment-closing.php
+          php -l includes/investment/investment-compliance.php
+          php -l includes/investment/investment-relations.php
+          php -l includes/investment/investment-portal-v4.php
+          php -l includes/investment/investment-service.php
+          php -l api/admin/investment-closing.php
+          php -l api/investment/portal.php
+          php -l admin/investment-closing.php
+          php -l admin/investor-pipeline.php
+          php -l admin/investor-diligence.php
+          php -l investor-portal.php
+          php -l scripts/validate_investor_pipeline_portal_publishing_v2.php
+          php -l scripts/validate_investor_diligence_communications_v3.php
+          php -l scripts/validate_investor_closing_compliance_relations_v4.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/investment-closing-v4.js
+          node --check assets/js/investor-portal-v4.js
+      - name: Phase 2 compatibility contract
+        run: php scripts/validate_investor_pipeline_portal_publishing_v2.php
+      - name: Phase 3 compatibility contract
+        run: php scripts/validate_investor_diligence_communications_v3.php
+      - name: Phase 4 contract
+        run: php scripts/validate_investor_closing_compliance_relations_v4.php
+      - name: SQL additive contract
+        run: |
+          grep -q "CREATE TABLE IF NOT EXISTS investment_closing_profiles" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investor_closing_records" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_financial_verification_requests" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_reporting_snapshots" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
+          ! grep -q "DROP TABLE" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
+          ! grep -q "TRUNCATE TABLE" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
