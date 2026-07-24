@@ -20,6 +20,8 @@ on:
       - 'includes/public-donations-public-view.php'
       - 'database/20260724_public_donations_community_v1_single_install.sql'
       - 'scripts/validate_public_donations_governance_v1.php'
+      - 'scripts/validate_public_donations_community_assignment_v1.php'
+      - 'scripts/validate_public_donations_recall_v1.php'
       - 'scripts/test_public_donations_governance_mysql.php'
       - 'tests/phpunit/PublicDonationsGovernanceContractTest.php'
       - '.github/workflows/public-donations-governance-v1.yml'
@@ -75,10 +77,15 @@ jobs:
           php -l includes/merchant-navigation.php
           php -l merchant-community-support.php
           php -l scripts/validate_public_donations_governance_v1.php
+          php -l scripts/validate_public_donations_community_assignment_v1.php
+          php -l scripts/validate_public_donations_recall_v1.php
           php -l scripts/test_public_donations_governance_mysql.php
           php -l tests/phpunit/PublicDonationsGovernanceContractTest.php
       - name: PHP 8.2 focused governance contracts
-        run: php scripts/validate_public_donations_governance_v1.php
+        run: |
+          php scripts/validate_public_donations_governance_v1.php
+          php scripts/validate_public_donations_community_assignment_v1.php
+          php scripts/validate_public_donations_recall_v1.php
       - name: PHP 8.2 PHPUnit governance contracts
         run: phpunit tests/phpunit/PublicDonationsGovernanceContractTest.php
       - name: PHP 8.2 governance MySQL lifecycle
@@ -109,10 +116,15 @@ jobs:
           php -l includes/merchant-navigation.php
           php -l merchant-community-support.php
           php -l scripts/validate_public_donations_governance_v1.php
+          php -l scripts/validate_public_donations_community_assignment_v1.php
+          php -l scripts/validate_public_donations_recall_v1.php
           php -l scripts/test_public_donations_governance_mysql.php
           php -l tests/phpunit/PublicDonationsGovernanceContractTest.php
       - name: PHP 8.3 focused governance contracts
-        run: php scripts/validate_public_donations_governance_v1.php
+        run: |
+          php scripts/validate_public_donations_governance_v1.php
+          php scripts/validate_public_donations_community_assignment_v1.php
+          php scripts/validate_public_donations_recall_v1.php
       - name: PHP 8.3 PHPUnit governance contracts
         run: phpunit tests/phpunit/PublicDonationsGovernanceContractTest.php
       - name: PHP 8.3 governance MySQL lifecycle
