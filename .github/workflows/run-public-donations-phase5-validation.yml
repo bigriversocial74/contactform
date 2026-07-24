@@ -120,3 +120,5 @@ jobs:
           git commit -m "Record Phase 5 validation $RESULT"
           git push origin HEAD:feature/public-donations-recall-controls-v1
           if [ "$RESULT" != 'success' ]; then exit 1; fi
+
+# rerun after validation and API fixes
