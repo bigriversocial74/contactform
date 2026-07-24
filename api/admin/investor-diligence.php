@@ -32,11 +32,11 @@ try {
 
     $result=match($action) {
         'save_folder'=>mg_investment_dataroom_save_folder($pdo,$actor,$input),
-        'save_document'=>mg_investment_dataroom_save_document_audited($pdo,$actor,$input),
+        'save_document'=>mg_investment_dataroom_save_document_audited_v2($pdo,$actor,$input),
         'save_request'=>mg_investment_diligence_admin_save_request_audited($pdo,$actor,$input),
-        'save_qa'=>mg_investment_qa_save_audited($pdo,$actor,$input),
+        'save_qa'=>mg_investment_qa_save_audited_v2($pdo,$actor,$input),
         'save_meeting'=>mg_investment_meeting_save_audited($pdo,$actor,$input),
-        'save_communication'=>mg_investment_communication_save_audited_v2($pdo,$actor,$input),
+        'save_communication'=>mg_investment_communication_save_audited_v3($pdo,$actor,$input),
         'review_interest'=>mg_investment_interest_review($pdo,$actor,$input),
         'refresh_engagement'=>mg_investment_engagement_refresh($pdo,$actor,$input),
         'ai_draft'=>mg_investment_diligence_ai_draft($pdo,$actor,$input),
