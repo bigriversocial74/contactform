@@ -8,7 +8,8 @@
     "ext-json": "*",
     "ext-pdo": "*",
     "ext-curl": "*",
-    "ext-mbstring": "*"
+    "ext-mbstring": "*",
+    "ext-sodium": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^10.5"
@@ -21,6 +22,7 @@
     "test-money-behavior": "php scripts/validate_money_behavior.php",
     "test-microgift-behavior": "php scripts/validate_microgift_behavior.php",
     "test-pppm-resend-behavior": "php scripts/validate_pppm_resend_behavior.php",
+    "test-homeserver-protocol": "php scripts/validate_homeserver_pairing_sync_v1.php",
     "audit-product-pppm-golden-path": "bash -o pipefail -c 'mkdir -p build && php scripts/audit_product_pppm_golden_path.php | tee build/product_pppm_golden_path_audit.json'",
     "audit-product-pppm-golden-path-gate": "bash -o pipefail -c 'mkdir -p build && php scripts/validate_product_pppm_golden_path_gate.php | tee build/product_pppm_golden_path_audit.json'",
     "audit-dependencies": "composer audit --locked --no-interaction",
