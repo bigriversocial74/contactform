@@ -10,7 +10,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-investment-page mg-investment-wizard-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/investment-system-v1.css?v=1.0.0'];
-$page_scripts = ['/assets/js/investment-wizard-v1.js?v=1.0.0'];
+$page_scripts = ['/investment-wizard-runtime.php?v=1.0.0'];
 $adminActive = 'investment-wizard';
 $csrfToken = mg_csrf_token();
 require dirname(__DIR__) . '/includes/header.php';
