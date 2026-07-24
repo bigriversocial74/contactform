@@ -77,7 +77,7 @@ require __DIR__ . '/includes/header.php';
             <li>Rejecting non-essential technologies is presented as clearly and directly as accepting them.</li>
             <li>Core services remain available when optional technologies are rejected, although an optional feature may remain unavailable when it depends on a third-party service.</li>
             <li>Choices are stored for up to 180 days, unless browser storage is cleared or a new policy version requires another decision.</li>
-            <li>Choices can be changed or withdrawn at any time through Cookie Settings in the footer.</li>
+            <li>Choices can be changed or withdrawn at any time through the Cookie Settings controls on this page.</li>
           </ul>
           <button class="mg-btn mg-btn-primary" type="button" data-mg-cookie-settings>Open Cookie Settings</button>
         </section>
@@ -158,7 +158,7 @@ require __DIR__ . '/includes/header.php';
 
         <section class="mg-legal-section" id="manage">
           <h2>7. Manage or withdraw consent</h2>
-          <p>Use the Cookie Settings control below or in the site footer to review and change optional categories. Withdrawing a previously enabled category removes known first-party optional identifiers where technically possible and reloads the page so the new restriction takes effect.</p>
+          <p>Use the Cookie Settings control below to review and change optional categories. Withdrawing a previously enabled category removes known first-party optional identifiers where technically possible and reloads the page so the new restriction takes effect.</p>
           <p>Browser settings can also block or delete cookies and storage. Blocking strictly necessary technologies may prevent sign-in, account security, carts, claims, checkout, redemption, or other requested services from functioning correctly.</p>
           <button class="mg-btn mg-btn-primary" type="button" data-mg-cookie-settings>Manage Cookie Preferences</button>
         </section>
