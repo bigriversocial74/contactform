@@ -18,6 +18,7 @@ on:
       - 'assets/js/investor-module-audit-v1.js'
       - 'database/20260724_investor_module_audit_hardening_v1.sql'
       - 'scripts/validate_investor_module_audit_10of10.php'
+      - 'scripts/validate_investor_module_publication_v12.php'
       - 'docs/investment/investor-module-audit-10of10.md'
       - '.github/workflows/investor-module-audit-10of10.yml'
   workflow_dispatch:
@@ -69,6 +70,7 @@ jobs:
           php -l includes/investment/investment-audit-hardening-v11.php
           php -l includes/investment/investment-audit-hardening-v12.php
           php -l scripts/validate_investor_module_audit_10of10.php
+          php -l scripts/validate_investor_module_publication_v12.php
 
       - name: JavaScript syntax
         run: |
@@ -82,6 +84,9 @@ jobs:
 
       - name: Weighted investor audit score
         run: php scripts/validate_investor_module_audit_10of10.php
+
+      - name: Approved publication contract
+        run: php scripts/validate_investor_module_publication_v12.php
 
       - name: Phase 1 compatibility contract
         run: php scripts/validate_investor_role_investment_wizard_v1.php
