@@ -19,6 +19,7 @@ $cli = $read('scripts/reconcile_public_donations.php');
 $fixture = $read('scripts/test_public_donations_production_qa_mysql.php');
 $runbook = $read('docs/production/public-donations-production-runbook.md');
 $installer = $read('database/20260724_public_donations_community_v1_single_install.sql');
+$feature = $read('includes/public-donations-feature.php');
 $governance = $read('includes/public-donations-governance.php');
 
 $must($core, [
@@ -94,8 +95,12 @@ $must($installer, [
     "'merchant.public_donations.recall'",
     "'merchant.public_donations.report'",
 ], 'single installer');
-$must($governance, [
+$must($feature, [
     "['disabled', 'admin_only', 'selected_merchants', 'enabled']",
+    'MG_PUBLIC_DONATIONS_FEATURE_STATE',
+    'MG_PUBLIC_DONATIONS_MERCHANT_IDS',
+], 'feature rollout contract');
+$must($governance, [
     'merchant-funded promotional rewards',
     'not cash donations or tax-deductible charitable contributions',
 ], 'governance release contract');
