@@ -35,8 +35,8 @@ $must($domain, [
     'campaign_community_assignments',
 ], 'assignment domain');
 $must($endpoint, [
-    "merchant.campaigns.view",
-    "merchant.campaigns.manage",
+    'merchant.campaigns.view',
+    'merchant.campaigns.manage',
     'mg_require_csrf_for_write',
     'mg_public_donations_is_enabled_for',
     "'public_identity_only' => true",
@@ -70,7 +70,7 @@ if (str_contains($ui, '.innerHTML')) throw new RuntimeException('Community UI mu
 if (preg_match('/\b(?:email|phone|exact_address|private_notes)\b/i', $endpoint) === 1) {
     throw new RuntimeException('Community endpoint exposes a forbidden private field contract.');
 }
-if (!str_contains($domain, "if ($currentStatus !== 'active')")) {
+if (!str_contains($domain, 'if ($currentStatus !== \'active\')')) {
     throw new RuntimeException('Duplicate active assignments must remain idempotent.');
 }
 
