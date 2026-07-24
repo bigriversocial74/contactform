@@ -15,7 +15,7 @@ try {
         mg_rate_limit('admin.investor_pipeline.read','user:'.$actorId,300,60);
         $action=strtolower(trim((string)($_GET['action']??'dashboard')));
         $result=match($action) {
-            'dashboard'=>mg_investment_pipeline_dashboard_v2($pdo,$_GET),
+            'dashboard'=>mg_investment_pipeline_dashboard_audited($pdo,$_GET),
             'detail'=>mg_investment_pipeline_detail($pdo,mg_investment_text($_GET['investor_id']??'',36,36,'Investor identifier')),
             'publication_preview'=>mg_investment_publication_preview($pdo,mg_investment_text($_GET['round_id']??'',36,36,'Round identifier')),
             'metric_adapters'=>['adapters'=>mg_investment_metric_adapters($pdo),'history'=>!empty($_GET['workspace_id'])?mg_investment_metric_history_v2($pdo,mg_investment_text($_GET['workspace_id'],36,36,'Workspace identifier')):[]],
@@ -34,10 +34,10 @@ try {
     $action=strtolower(trim((string)($input['action']??'')));
 
     $result=match($action) {
-        'sync_profiles'=>['synced'=>mg_investment_pipeline_sync_profiles($pdo,$actorId),'dashboard'=>mg_investment_pipeline_dashboard_v2($pdo)],
-        'save_record'=>mg_investment_pipeline_save_record_v2($pdo,$actor,$input),
+        'sync_profiles'=>['synced'=>mg_investment_pipeline_sync_profiles($pdo,$actorId),'dashboard'=>mg_investment_pipeline_dashboard_audited($pdo)],
+        'save_record'=>mg_investment_pipeline_save_record_v2_audited($pdo,$actor,$input),
         'add_activity'=>mg_investment_pipeline_add_activity($pdo,$actor,$input),
-        'save_task'=>mg_investment_pipeline_save_task($pdo,$actor,$input),
+        'save_task'=>mg_investment_pipeline_save_task_audited($pdo,$actor,$input),
         'complete_task'=>mg_investment_pipeline_complete_task($pdo,$actor,$input),
         'save_interest'=>mg_investment_pipeline_save_interest_audited($pdo,$actor,$input),
         'set_access'=>mg_investment_pipeline_set_access($pdo,$actor,$input),
