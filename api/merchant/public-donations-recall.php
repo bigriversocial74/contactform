@@ -106,5 +106,10 @@ try {
             'error' => mb_substr($error->getMessage(), 0, 500),
         ], $actorId);
     }
-    throw $error;
+    $status = (int)$error->getCode();
+    if ($status < 400 || $status > 499) $status = 500;
+    mg_fail(
+        $status === 500 ? 'Unable to recall Public Donations rewards.' : $error->getMessage(),
+        $status
+    );
 }
