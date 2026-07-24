@@ -65,8 +65,29 @@ jobs:
         run: |
           node --check assets/js/investment-closing-v4.js
           node --check assets/js/investor-portal-v4.js
-      - name: Phase 4 contract
-        run: php scripts/validate_investor_closing_compliance_relations_v4.php
+      - name: Capture Phase 4 contract
+        id: phase4
+        shell: bash
+        run: |
+          set +e
+          php scripts/validate_investor_closing_compliance_relations_v4.php > phase4-validator-${{ matrix.php-version }}.log 2>&1
+          status=$?
+          cat phase4-validator-${{ matrix.php-version }}.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload Phase 4 validator diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-validator-${{ matrix.php-version }}
+          path: phase4-validator-${{ matrix.php-version }}.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Enforce Phase 4 contract
+        if: steps.phase4.outputs.status != '0'
+        run: |
+          cat phase4-validator-${{ matrix.php-version }}.log
+          exit 1
       - name: Phase 2 compatibility contract
         run: php scripts/validate_investor_pipeline_portal_publishing_v2.php
       - name: Phase 3 compatibility contract
