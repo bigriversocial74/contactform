@@ -8,8 +8,7 @@
     "ext-json": "*",
     "ext-pdo": "*",
     "ext-curl": "*",
-    "ext-mbstring": "*",
-    "ext-sodium": "*"
+    "ext-mbstring": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^10.5"
