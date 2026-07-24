@@ -7,6 +7,7 @@ const MG_HOMESERVER_PAIRING_TTL_SECONDS = 600;
 const MG_HOMESERVER_SIGNATURE_WINDOW_SECONDS = 300;
 const MG_HOMESERVER_NONCE_TTL_SECONDS = 900;
 const MG_HOMESERVER_MAX_SYNC_OPERATIONS = 50;
+const MG_HOMESERVER_MAX_BODY_BYTES = 524288;
 
 function mg_homeserver_base64url_encode(string $bytes): string
 {
@@ -23,7 +24,10 @@ function mg_homeserver_base64url_decode(string $value): string|false
 function mg_homeserver_raw_body(): string
 {
     static $body = null;
-    if ($body === null) $body = (string)(file_get_contents('php://input') ?: '');
+    if ($body === null) {
+        $body = (string)(file_get_contents('php://input') ?: '');
+        if (strlen($body) > MG_HOMESERVER_MAX_BODY_BYTES) mg_fail('HomeServer request body is too large.', 413);
+    }
     return $body;
 }
 
@@ -54,7 +58,8 @@ function mg_homeserver_request_path(): string
 function mg_homeserver_require_secure_transport(): void
 {
     $https = strtolower((string)($_SERVER['HTTPS'] ?? ''));
-    $forwarded = strtolower(trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0] ?? ''));
+    $forwardedValues = explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $forwarded = strtolower(trim((string)($forwardedValues[0] ?? '')));
     $host = strtolower(preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')) ?? '');
     $local = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     $allowLocal = in_array(strtolower((string)getenv('MG_HOMESERVER_ALLOW_INSECURE_LOCAL')), ['1', 'true', 'yes', 'on'], true);
@@ -127,10 +132,24 @@ function mg_homeserver_device_payload(array $device): array
     ];
 }
 
+function mg_homeserver_authorization_header(): string
+{
+    $authorization = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+    if ($authorization !== '') return $authorization;
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $name => $value) {
+                if (strcasecmp((string)$name, 'Authorization') === 0) return trim((string)$value);
+            }
+        }
+    }
+    return '';
+}
+
 function mg_homeserver_bearer_token(): string
 {
-    $authorization = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
-    if (preg_match('/^Bearer\s+([A-Za-z0-9_-]{32,200})$/i', $authorization, $matches) !== 1) {
+    if (preg_match('/^Bearer\s+([A-Za-z0-9_-]{32,200})$/i', mg_homeserver_authorization_header(), $matches) !== 1) {
         mg_fail('HomeServer device authentication is required.', 401);
     }
     return $matches[1];
@@ -179,10 +198,10 @@ function mg_homeserver_require_device(string $requiredScope): array
 
     try {
         $pdo->beginTransaction();
-        $pdo->prepare('DELETE FROM homeserver_request_nonces WHERE expires_at < NOW()')->execute();
-        $pdo->prepare('INSERT INTO homeserver_request_nonces (device_id,nonce,requested_at,expires_at,created_at) VALUES (?,?,FROM_UNIXTIME(?),DATE_ADD(NOW(),INTERVAL ? SECOND),NOW())')
+        $pdo->prepare('DELETE FROM homeserver_request_nonces WHERE expires_at < UTC_TIMESTAMP()')->execute();
+        $pdo->prepare('INSERT INTO homeserver_request_nonces (device_id,nonce,requested_at,expires_at,created_at) VALUES (?,?,FROM_UNIXTIME(?),DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? SECOND),UTC_TIMESTAMP())')
             ->execute([(int)$device['id'], $nonce, $timestamp, MG_HOMESERVER_NONCE_TTL_SECONDS]);
-        $pdo->prepare('UPDATE homeserver_devices SET last_seen_at=NOW(),version=COALESCE(NULLIF(?,\'\'),version),updated_at=NOW() WHERE id=?')
+        $pdo->prepare('UPDATE homeserver_devices SET last_seen_at=UTC_TIMESTAMP(),version=COALESCE(NULLIF(?,\'\'),version),updated_at=UTC_TIMESTAMP() WHERE id=?')
             ->execute([$version, (int)$device['id']]);
         $pdo->commit();
     } catch (PDOException $error) {
