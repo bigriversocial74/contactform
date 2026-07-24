@@ -49,7 +49,12 @@
     warning.className = 'mg-community-role-warning';
     warning.dataset.communityRoleRemovalWarning = '1';
     warning.setAttribute('role', 'note');
-    warning.innerHTML = '<strong>Community role removal</strong><span>Removing Community preserves every unrelated role and existing account record. Future Community campaign relationships may require review or may prevent removal. The badge is role status only and is not verification or endorsement.</span>';
+
+    const title = document.createElement('strong');
+    title.textContent = 'Community role removal';
+    const copy = document.createElement('span');
+    copy.textContent = 'Removing Community preserves every unrelated role and existing account record. Future Community campaign relationships may require review or may prevent removal. The badge is role status only and is not verification or endorsement.';
+    warning.append(title, copy);
 
     const stack = section.querySelector('.mg-admin-management-stack');
     section.insertBefore(warning, stack || null);
@@ -99,6 +104,9 @@
   function init() {
     decorateAdminRoleNodes();
     observer.observe(document.body, { childList: true, subtree: true });
+    if (window.Microgifter?.publicProfileData) {
+      renderPublicBadge(window.Microgifter.publicProfileData);
+    }
   }
 
   window.MicrogifterRoleBadges = Object.freeze({
