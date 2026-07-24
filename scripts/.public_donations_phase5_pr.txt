@@ -1,6 +1,0 @@
-RESULT=failure
-PR_NUMBER=
-COMMAND_EXIT=1
-OUTPUT=pull request create failed: GraphQL: GitHub Actions is not permitted to create or approve pull requests (createPullRequest)
-ERROR_LOG_BEGIN
-ERROR_LOG_END
