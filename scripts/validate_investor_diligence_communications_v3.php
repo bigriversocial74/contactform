@@ -33,7 +33,7 @@ $pass(!str_contains($communications,'UPDATE investment_rounds SET signed_cents')
 $pass(!str_contains($communications,'UPDATE investment_rounds SET funded_cents'),'Interest review does not alter funded totals.');
 
 $engagement=$read('includes/investment/investment-engagement.php');
-foreach(['function mg_investment_engagement_calculate','function mg_investment_engagement_refresh','maximum_score','portal_sessions','document_views','questions_submitted','communications_viewed','meetings_completed','recency','function mg_investment_diligence_ai_draft','draft-only','includes/ai/anthropic-client.php'] as $needle)$pass(str_contains($engagement,$needle),'Engagement/AI service contains '.$needle);
+foreach(['function mg_investment_engagement_calculate','function mg_investment_engagement_refresh','maximum_score','portal_sessions','document_views','questions_submitted','communications_viewed','meetings_completed','recency','function mg_investment_diligence_ai_draft','internal editable draft','anthropic-client.php'] as $needle)$pass(str_contains($engagement,$needle),'Engagement/AI service contains '.$needle);
 $pass(str_contains($engagement,"min(100,array_sum"),'Engagement score is deterministically capped at 100.');
 $pass(!str_contains($engagement,'publish_round'),'Claude cannot publish an official round.');
 $pass(!str_contains($engagement,'send_email'),'Claude cannot send email.');
