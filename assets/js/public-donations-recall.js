@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var box = node('div', 'mg-donation-recall-preview-box');
     var summary = node('div', 'mg-donation-recall-preview-title');
     summary.appendChild(node('strong', '', (preview.community && preview.community.display_name) || 'Community account'));
-    summary.appendChild(node('span', '', ((preview.reward_template && preview.reward_template.title) || 'Reward') + ' · batch ' + ((preview.batch && preview.batch.id) || ''));
+    summary.appendChild(node('span', '', ((preview.reward_template && preview.reward_template.title) || 'Reward') + ' · batch ' + ((preview.batch && preview.batch.id) || '')));
     box.appendChild(summary);
 
     var counts = preview.counts || {};

@@ -25,7 +25,7 @@ $projection = $read('api/microgifts/_action_center_projection.php');
 
 $must($core, [
     'mg_public_donations_recall_classify',
-    "return 'recallable'",
+    "? 'recallable' : 'unavailable'",
     "return 'regifted'",
     "return 'claimed'",
     "return 'redeemed'",
