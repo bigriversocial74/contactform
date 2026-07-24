@@ -82,21 +82,31 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install MySQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mysql-client
-
       - name: Install and reimport master migration
+        shell: bash
         run: |
-          mysql -h127.0.0.1 -uroot -proot < tests/sql/public_donations_community_v1_fixture.sql
-          mysql -h127.0.0.1 -uroot -proot microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
-          mysql -h127.0.0.1 -uroot -proot microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
+          set -euo pipefail
+          mysql8() {
+            docker run --rm -i --network host mysql:8.0 \
+              mysql --protocol=tcp -h127.0.0.1 -uroot -proot --show-warnings "$@"
+          }
+          echo 'Importing isolated schema fixture'
+          mysql8 < tests/sql/public_donations_community_v1_fixture.sql
+          echo 'Importing master migration: pass 1'
+          mysql8 microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
+          echo 'Importing master migration: pass 2'
+          mysql8 microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
 
       - name: Verify role, enums, tables, indexes, and foreign keys
+        shell: bash
         run: |
-          test "$(mysql -N -h127.0.0.1 -uroot -proot microgifter_community_test -e "SELECT COUNT(*) FROM roles WHERE slug='community' AND name='Community'")" = "1"
-          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" = "4"
-          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='microgifter_community_test' AND ((TABLE_NAME='campaigns' AND COLUMN_NAME='campaign_type') OR (TABLE_NAME='wallet_items' AND COLUMN_NAME='source_type')) AND COLUMN_TYPE LIKE '%public_donation%'")" = "2"
-          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='microgifter_community_test' AND INDEX_NAME='uq_campaign_donation_operations_idempotency'")" = "2"
-          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" -ge "20"
+          set -euo pipefail
+          mysql8() {
+            docker run --rm --network host mysql:8.0 \
+              mysql --protocol=tcp -N -h127.0.0.1 -uroot -proot "$@"
+          }
+          test "$(mysql8 microgifter_community_test -e "SELECT COUNT(*) FROM roles WHERE slug='community' AND name='Community'")" = "1"
+          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" = "4"
+          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='microgifter_community_test' AND ((TABLE_NAME='campaigns' AND COLUMN_NAME='campaign_type') OR (TABLE_NAME='wallet_items' AND COLUMN_NAME='source_type')) AND COLUMN_TYPE LIKE '%public_donation%'")" = "2"
+          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='microgifter_community_test' AND INDEX_NAME='uq_campaign_donation_operations_idempotency'")" = "2"
+          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" -ge "20"
