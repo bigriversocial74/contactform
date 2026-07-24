@@ -22,11 +22,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: public-donations-community-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   contracts:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         php: ['8.2', '8.3']
     steps:
@@ -64,49 +69,51 @@ jobs:
           php scripts/validate_migration_manifest.php
           phpunit tests/phpunit/CommunityRoleFoundationContractTest.php
 
-  mysql8:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=12
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Install and reimport master migration
+      - name: MySQL 8 clean install and reimport
+        if: matrix.php == '8.3'
         shell: bash
         run: |
           set -euo pipefail
-          mysql8() {
-            docker run --rm -i --network host mysql:8.0 \
-              mysql --protocol=tcp -h127.0.0.1 -uroot -proot --show-warnings "$@"
-          }
+          container='mg-public-donations-mysql'
+          docker run --detach --name "$container" --publish 3306:3306 \
+            --env MYSQL_ROOT_PASSWORD=root mysql:8.0
+
+          ready=0
+          for attempt in {1..60}; do
+            if docker exec "$container" mysqladmin ping -h127.0.0.1 -uroot -proot --silent; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker logs "$container"
+            exit 1
+          fi
+
           echo 'Importing isolated schema fixture'
-          mysql8 < tests/sql/public_donations_community_v1_fixture.sql
+          docker exec -i "$container" mysql -uroot -proot --show-warnings \
+            < tests/sql/public_donations_community_v1_fixture.sql
           echo 'Importing master migration: pass 1'
-          mysql8 microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
+          docker exec -i "$container" mysql -uroot -proot --show-warnings microgifter_community_test \
+            < database/20260724_public_donations_community_v1_single_install.sql
           echo 'Importing master migration: pass 2'
-          mysql8 microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
+          docker exec -i "$container" mysql -uroot -proot --show-warnings microgifter_community_test \
+            < database/20260724_public_donations_community_v1_single_install.sql
 
-      - name: Verify role, enums, tables, indexes, and foreign keys
-        shell: bash
-        run: |
-          set -euo pipefail
-          mysql8() {
-            docker run --rm --network host mysql:8.0 \
-              mysql --protocol=tcp -N -h127.0.0.1 -uroot -proot "$@"
+          query() {
+            docker exec "$container" mysql -N -uroot -proot "$@"
           }
-          test "$(mysql8 microgifter_community_test -e "SELECT COUNT(*) FROM roles WHERE slug='community' AND name='Community'")" = "1"
-          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" = "4"
-          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='microgifter_community_test' AND ((TABLE_NAME='campaigns' AND COLUMN_NAME='campaign_type') OR (TABLE_NAME='wallet_items' AND COLUMN_NAME='source_type')) AND COLUMN_TYPE LIKE '%public_donation%'")" = "2"
-          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='microgifter_community_test' AND INDEX_NAME='uq_campaign_donation_operations_idempotency'")" = "2"
-          test "$(mysql8 -e "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" -ge "20"
+          test "$(query microgifter_community_test -e "SELECT COUNT(*) FROM roles WHERE slug='community' AND name='Community'")" = "1"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" = "4"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='microgifter_community_test' AND ((TABLE_NAME='campaigns' AND COLUMN_NAME='campaign_type') OR (TABLE_NAME='wallet_items' AND COLUMN_NAME='source_type')) AND COLUMN_TYPE LIKE '%public_donation%'")" = "2"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='microgifter_community_test' AND INDEX_NAME='uq_campaign_donation_operations_idempotency'")" = "2"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" -ge "20"
+
+      - name: MySQL diagnostics
+        if: failure() && matrix.php == '8.3'
+        run: docker logs mg-public-donations-mysql || true
+
+      - name: Stop MySQL
+        if: always() && matrix.php == '8.3'
+        run: docker rm --force mg-public-donations-mysql || true
