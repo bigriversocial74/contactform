@@ -5,6 +5,7 @@ require_once __DIR__ . '/_homeserver.php';
 
 mg_require_method('POST');
 mg_homeserver_require_secure_transport();
+if (!function_exists('sodium_crypto_sign_verify_detached')) mg_fail('HomeServer pairing verification is unavailable.', 503);
 $input = mg_homeserver_input();
 
 $pairingCode = trim((string)($input['pairing_code'] ?? ''));
@@ -28,7 +29,7 @@ $status = 201;
 
 try {
     $pdo->beginTransaction();
-    $codeStmt = $pdo->prepare('SELECT * FROM homeserver_pairing_codes WHERE code_hash=? AND consumed_at IS NULL AND expires_at>NOW() LIMIT 1 FOR UPDATE');
+    $codeStmt = $pdo->prepare('SELECT * FROM homeserver_pairing_codes WHERE code_hash=? AND consumed_at IS NULL AND expires_at>UTC_TIMESTAMP() LIMIT 1 FOR UPDATE');
     $codeStmt->execute([hash('sha256', $pairingCode)]);
     $pairing = $codeStmt->fetch(PDO::FETCH_ASSOC);
     if (!$pairing) {
@@ -47,19 +48,19 @@ try {
     }
 
     if ($device) {
-        $pdo->prepare("UPDATE homeserver_devices SET server_name=?,version=?,public_key_base64=?,token_hash=?,token_last_four=?,scopes_json=?,status='active',paired_at=NOW(),last_seen_at=NULL,revoked_at=NULL,updated_at=NOW() WHERE id=?")
+        $pdo->prepare("UPDATE homeserver_devices SET server_name=?,version=?,public_key_base64=?,token_hash=?,token_last_four=?,scopes_json=?,status='active',paired_at=UTC_TIMESTAMP(),last_seen_at=NULL,revoked_at=NULL,updated_at=UTC_TIMESTAMP() WHERE id=?")
             ->execute([$serverName, $version, $publicKeyEncoded, $tokenHash, $tokenLastFour, mg_homeserver_json($scopes), (int)$device['id']]);
         $deviceId = (int)$device['id'];
         $publicId = (string)$device['public_id'];
         $status = 200;
     } else {
         $publicId = mg_homeserver_public_uuid();
-        $pdo->prepare("INSERT INTO homeserver_devices (public_id,owner_user_id,installation_id,server_name,version,public_key_base64,token_hash,token_last_four,scopes_json,status,paired_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,'active',NOW(),NOW(),NOW())")
+        $pdo->prepare("INSERT INTO homeserver_devices (public_id,owner_user_id,installation_id,server_name,version,public_key_base64,token_hash,token_last_four,scopes_json,status,paired_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,'active',UTC_TIMESTAMP(),UTC_TIMESTAMP(),UTC_TIMESTAMP())")
             ->execute([$publicId, $ownerUserId, $installationId, $serverName, $version, $publicKeyEncoded, $tokenHash, $tokenLastFour, mg_homeserver_json($scopes)]);
         $deviceId = (int)$pdo->lastInsertId();
     }
 
-    $pdo->prepare('UPDATE homeserver_pairing_codes SET consumed_at=NOW(),consumed_device_id=? WHERE id=? AND consumed_at IS NULL')
+    $pdo->prepare('UPDATE homeserver_pairing_codes SET consumed_at=UTC_TIMESTAMP(),consumed_device_id=? WHERE id=? AND consumed_at IS NULL')
         ->execute([$deviceId, (int)$pairing['id']]);
     $pdo->commit();
 } catch (Throwable $error) {
