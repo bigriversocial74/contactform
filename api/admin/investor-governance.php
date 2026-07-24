@@ -36,7 +36,7 @@ try {
         'record_consent_response'=>mg_investment_governance_record_consent_response_audited($pdo,$actor,$input),
         'set_consent_visibility'=>mg_investment_governance_set_consent_visibility_audited($pdo,$actor,$input),
         'save_right'=>mg_investment_governance_save_right_audited_v2($pdo,$actor,$input),
-        'save_obligation'=>mg_investment_governance_save_obligation($pdo,$actor,$input),
+        'save_obligation'=>mg_investment_governance_save_obligation_audited($pdo,$actor,$input),
         'complete_obligation'=>mg_investment_governance_complete_obligation($pdo,$actor,$input),
         'refresh_holdings'=>mg_investment_governance_refresh_holdings_audited($pdo,$actor,$input),
         'save_tax_document'=>mg_investment_governance_save_tax_document_audited_v2($pdo,$actor,$input),
