@@ -26,6 +26,7 @@ $page_styles = [
     '/assets/css/public-profile-content-first.css?v=1.0.0',
     '/assets/css/community-role-badges-v1.css?v=1.0.0',
     '/assets/css/public-donations-campaign-v1.css?v=1.0.0',
+    '/assets/css/public-profile-community-v1.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/public-profile-runtime.js',
@@ -33,6 +34,7 @@ $page_scripts = [
     '/assets/js/public-profile-storefront.js',
     '/assets/js/public-profile-engagement.js',
     '/assets/js/public-profile-investment.js?v=2.0.0',
+    '/assets/js/public-profile-community-v1.js?v=1.0.0',
     '/assets/js/public-profile-posts-fix.js',
     '/assets/js/profile-story-action-dock.js',
     '/assets/js/community-role-badges-v1.js?v=1.0.0',
@@ -146,6 +148,7 @@ require __DIR__ . '/includes/header.php';
         <button type="button" data-invest-tab="stories">Stories</button>
         <button type="button" data-invest-tab="posts">Posts</button>
         <button type="button" data-invest-tab="campaigns">Campaigns</button>
+        <button type="button" class="mg-hidden" data-invest-tab="community" data-profile-community-tab>Community</button>
       </nav>
 
       <div class="mg-invest-content-grid">
@@ -211,6 +214,33 @@ require __DIR__ . '/includes/header.php';
               <div class="mg-invest-campaign-list mg-profile-campaign-list-full" data-invest-campaigns-list-full></div>
               <div class="mg-invest-empty-state mg-hidden" data-invest-campaigns-empty-full>No campaigns are available yet.</div>
             </article>
+          </section>
+
+          <section class="mg-invest-tab-panel mg-profile-community-panel" data-invest-panel="community" data-profile-community-panel hidden>
+            <div class="mg-profile-community-loading" data-profile-community-loading>
+              <strong>Loading Community support</strong>
+              <span>Reconciling Public Donations campaign impact.</span>
+            </div>
+            <div class="mg-profile-community-content mg-hidden" data-profile-community-content>
+              <header class="mg-profile-community-hero">
+                <div>
+                  <span class="mg-profile-section-kicker">Public Donations</span>
+                  <h2>Community Support</h2>
+                  <p>Merchant-funded promotional rewards allocated to Community accounts across active and completed campaigns.</p>
+                </div>
+                <span class="mg-profile-community-rule">Informational · no public transaction</span>
+              </header>
+              <div class="mg-profile-community-summary" data-profile-community-summary></div>
+              <section class="mg-profile-community-section">
+                <header><div><span>Campaign history</span><h3>Public Donations campaigns</h3></div><p>Active, paused, and completed campaign impact.</p></header>
+                <div class="mg-profile-community-campaigns" data-profile-community-campaigns></div>
+              </section>
+              <section class="mg-profile-community-section">
+                <header><div><span>Supported accounts</span><h3>Community profiles</h3></div><p>Each eligible account appears once across campaigns.</p></header>
+                <div class="mg-profile-community-accounts" data-profile-community-accounts></div>
+              </section>
+              <aside class="mg-profile-community-privacy" data-profile-community-privacy></aside>
+            </div>
           </section>
 
           <section class="mg-invest-tab-panel mg-hidden" data-profile-storefront-section data-invest-panel="storefront" hidden></section>
