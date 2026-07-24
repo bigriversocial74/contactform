@@ -1,0 +1,97 @@
+name: Public Profile Community Phase 8
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/public-profile-community.php'
+      - 'api/public/profile-investment.php'
+      - 'profile.php'
+      - 'assets/js/public-profile-community-v1.js'
+      - 'assets/css/public-profile-community-v1.css'
+      - 'scripts/validate_public_profile_community_v1.php'
+      - 'scripts/test_public_profile_community_mysql.php'
+      - 'tests/phpunit/PublicProfileCommunityContractTest.php'
+      - '.github/workflows/public-profile-community-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-profile-community-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_phase8
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: microgifter_phase8
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: JavaScript syntax
+        run: node --check assets/js/public-profile-community-v1.js
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.2 syntax
+        run: |
+          php -l includes/public-profile-community.php
+          php -l api/public/profile-investment.php
+          php -l profile.php
+          php -l scripts/validate_public_profile_community_v1.php
+          php -l scripts/test_public_profile_community_mysql.php
+          php -l tests/phpunit/PublicProfileCommunityContractTest.php
+      - name: PHP 8.2 focused contracts
+        run: php scripts/validate_public_profile_community_v1.php
+      - name: PHP 8.2 PHPUnit
+        run: phpunit tests/phpunit/PublicProfileCommunityContractTest.php
+      - name: PHP 8.2 MySQL lifecycle
+        run: php scripts/test_public_profile_community_mysql.php
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.3 syntax
+        run: |
+          php -l includes/public-profile-community.php
+          php -l api/public/profile-investment.php
+          php -l profile.php
+          php -l scripts/validate_public_profile_community_v1.php
+          php -l scripts/test_public_profile_community_mysql.php
+          php -l tests/phpunit/PublicProfileCommunityContractTest.php
+      - name: PHP 8.3 focused contracts
+        run: php scripts/validate_public_profile_community_v1.php
+      - name: PHP 8.3 PHPUnit
+        run: phpunit tests/phpunit/PublicProfileCommunityContractTest.php
+      - name: PHP 8.3 MySQL lifecycle
+        run: php scripts/test_public_profile_community_mysql.php
