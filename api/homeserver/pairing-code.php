@@ -15,11 +15,11 @@ $expiresAt = gmdate('Y-m-d H:i:s', time() + MG_HOMESERVER_PAIRING_TTL_SECONDS);
 
 try {
     $pdo->beginTransaction();
-    $pdo->prepare('DELETE FROM homeserver_pairing_codes WHERE owner_user_id=? AND consumed_at IS NULL AND expires_at < NOW()')
+    $pdo->prepare('DELETE FROM homeserver_pairing_codes WHERE owner_user_id=? AND consumed_at IS NULL AND expires_at < UTC_TIMESTAMP()')
         ->execute([$ownerUserId]);
-    $pdo->prepare('UPDATE homeserver_pairing_codes SET expires_at=NOW() WHERE owner_user_id=? AND consumed_at IS NULL AND expires_at>NOW()')
+    $pdo->prepare('UPDATE homeserver_pairing_codes SET expires_at=UTC_TIMESTAMP() WHERE owner_user_id=? AND consumed_at IS NULL AND expires_at>UTC_TIMESTAMP()')
         ->execute([$ownerUserId]);
-    $pdo->prepare('INSERT INTO homeserver_pairing_codes (public_id,owner_user_id,code_hash,expires_at,created_at) VALUES (?,?,?,?,NOW())')
+    $pdo->prepare('INSERT INTO homeserver_pairing_codes (public_id,owner_user_id,code_hash,expires_at,created_at) VALUES (?,?,?,?,UTC_TIMESTAMP())')
         ->execute([mg_homeserver_public_uuid(), $ownerUserId, hash('sha256', $code), $expiresAt]);
     $pdo->commit();
 } catch (Throwable $error) {
