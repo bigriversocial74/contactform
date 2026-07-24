@@ -10,27 +10,39 @@ $operations = $input['operations'] ?? null;
 if (!is_array($operations) || $operations === []) mg_fail('At least one synchronization operation is required.', 422);
 if (count($operations) > MG_HOMESERVER_MAX_SYNC_OPERATIONS) mg_fail('Synchronization batch is too large.', 422);
 
+$validated = [];
+foreach ($operations as $index => $operation) {
+    if (!is_array($operation)) mg_fail('Synchronization operation is invalid.', 422, ['index' => $index]);
+    $idempotencyKey = trim((string)($operation['idempotency_key'] ?? ''));
+    $operationType = strtolower(trim((string)($operation['operation_type'] ?? '')));
+    $payload = is_array($operation['payload'] ?? null) ? $operation['payload'] : [];
+    if ($idempotencyKey === '' || mb_strlen($idempotencyKey) > 190 || preg_match('/^[A-Za-z0-9_.:-]+$/', $idempotencyKey) !== 1) {
+        mg_fail('Synchronization idempotency key is invalid.', 422, ['index' => $index]);
+    }
+    if ($operationType === '' || mb_strlen($operationType) > 100 || preg_match('/^[a-z0-9_.-]+$/', $operationType) !== 1) {
+        mg_fail('Synchronization operation type is invalid.', 422, ['index' => $index]);
+    }
+    $validated[] = [
+        'idempotency_key' => $idempotencyKey,
+        'operation_type' => $operationType,
+        'payload' => $payload,
+        'request_hash' => hash('sha256', mg_homeserver_json([
+            'operation_type' => $operationType,
+            'payload' => $payload,
+        ])),
+    ];
+}
+
 $pdo = mg_db();
 $receipts = [];
 
 try {
     $pdo->beginTransaction();
-    foreach ($operations as $index => $operation) {
-        if (!is_array($operation)) mg_fail('Synchronization operation is invalid.', 422, ['index' => $index]);
-        $idempotencyKey = trim((string)($operation['idempotency_key'] ?? ''));
-        $operationType = strtolower(trim((string)($operation['operation_type'] ?? '')));
-        $payload = is_array($operation['payload'] ?? null) ? $operation['payload'] : [];
-        if ($idempotencyKey === '' || mb_strlen($idempotencyKey) > 190 || preg_match('/^[A-Za-z0-9_.:-]+$/', $idempotencyKey) !== 1) {
-            mg_fail('Synchronization idempotency key is invalid.', 422, ['index' => $index]);
-        }
-        if ($operationType === '' || mb_strlen($operationType) > 100 || preg_match('/^[a-z0-9_.-]+$/', $operationType) !== 1) {
-            mg_fail('Synchronization operation type is invalid.', 422, ['index' => $index]);
-        }
-
-        $requestHash = hash('sha256', mg_homeserver_json([
-            'operation_type' => $operationType,
-            'payload' => $payload,
-        ]));
+    foreach ($validated as $operation) {
+        $idempotencyKey = $operation['idempotency_key'];
+        $operationType = $operation['operation_type'];
+        $payload = $operation['payload'];
+        $requestHash = $operation['request_hash'];
         $existingStmt = $pdo->prepare('SELECT * FROM homeserver_sync_receipts WHERE device_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE');
         $existingStmt->execute([(int)$device['id'], $idempotencyKey]);
         $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
@@ -61,7 +73,7 @@ try {
 
         $result = mg_homeserver_sync_disposition($operationType, $payload);
         $receiptId = mg_homeserver_public_uuid();
-        $pdo->prepare('INSERT INTO homeserver_sync_receipts (public_id,device_id,idempotency_key,operation_type,request_hash,disposition,reason_code,response_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,NOW(),NOW())')
+        $pdo->prepare('INSERT INTO homeserver_sync_receipts (public_id,device_id,idempotency_key,operation_type,request_hash,disposition,reason_code,response_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,UTC_TIMESTAMP(),UTC_TIMESTAMP())')
             ->execute([
                 $receiptId,
                 (int)$device['id'],
@@ -90,7 +102,7 @@ try {
 
 mg_audit('homeserver.sync_batch_processed', 'homeserver_device', [
     'device_id' => (string)$device['public_id'],
-    'operation_count' => count($operations),
+    'operation_count' => count($validated),
     'receipt_count' => count($receipts),
 ], (int)$device['owner_user_id']);
 
