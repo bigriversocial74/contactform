@@ -1,0 +1,73 @@
+name: HomeServer Cloud Pairing and Sync v1
+
+on:
+  pull_request:
+    paths:
+      - 'api/homeserver/**'
+      - 'database/20260724_homeserver_cloud_pairing_sync_v1.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_homeserver_pairing_sync_v1.php'
+      - 'scripts/preflight.sh'
+      - 'composer.json'
+      - '.github/workflows/homeserver-cloud-pairing-sync-v1.yml'
+  push:
+    branches:
+      - 'feature/homeserver-cloud-pairing-sync-v1-20260724'
+    paths:
+      - 'api/homeserver/**'
+      - 'database/20260724_homeserver_cloud_pairing_sync_v1.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_homeserver_pairing_sync_v1.php'
+      - 'scripts/preflight.sh'
+      - 'composer.json'
+      - '.github/workflows/homeserver-cloud-pairing-sync-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homeserver-cloud-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: json, mbstring, pdo, sodium
+          coverage: none
+
+      - name: Validate Composer metadata and dependencies
+        run: |
+          composer validate --strict
+          composer audit --locked --no-interaction
+          composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint HomeServer PHP surface
+        run: |
+          find api/homeserver -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l config/migrations.php
+          php -l scripts/validate_homeserver_pairing_sync_v1.php
+
+      - name: Validate HomeServer protocol
+        run: php scripts/validate_homeserver_pairing_sync_v1.php
+
+      - name: Validate canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Build canonical full upgrade SQL
+        run: |
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+          test -s build/microgifter_full_upgrade.sql
+
+      - name: Run scoped branch preflight
+        run: bash scripts/preflight.sh "${{ github.event.pull_request.base.sha || 'origin/integration-from-repair-20260628' }}"
