@@ -1,0 +1,101 @@
+name: Public Donations Recall Phase 5
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/public-donations-recall.php'
+      - 'api/merchant/public-donations-recall.php'
+      - 'assets/js/public-donations-recall.js'
+      - 'assets/css/public-donations-recall.css'
+      - 'merchant-campaigns.php'
+      - 'scripts/validate_public_donations_recall_v1.php'
+      - 'scripts/test_public_donations_recall_mysql.php'
+      - 'tests/phpunit/PublicDonationsRecallContractTest.php'
+      - 'database/20260724_public_donations_community_v1_single_install.sql'
+      - 'api/microgifts/_lifecycle.php'
+      - 'api/microgifts/_action_center_projection.php'
+      - 'api/pppm/transition.php'
+      - '.github/workflows/public-donations-recall-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-donations-recall-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_phase5
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: microgifter_phase5
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: JavaScript syntax
+        run: node --check assets/js/public-donations-recall.js
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.2 syntax
+        run: |
+          php -l includes/public-donations-recall.php
+          php -l api/merchant/public-donations-recall.php
+          php -l merchant-campaigns.php
+          php -l scripts/validate_public_donations_recall_v1.php
+          php -l scripts/test_public_donations_recall_mysql.php
+          php -l tests/phpunit/PublicDonationsRecallContractTest.php
+      - name: PHP 8.2 focused contracts
+        run: php scripts/validate_public_donations_recall_v1.php
+      - name: PHP 8.2 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsRecallContractTest.php
+      - name: PHP 8.2 MySQL lifecycle
+        run: php scripts/test_public_donations_recall_mysql.php
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.3 syntax
+        run: |
+          php -l includes/public-donations-recall.php
+          php -l api/merchant/public-donations-recall.php
+          php -l merchant-campaigns.php
+          php -l scripts/validate_public_donations_recall_v1.php
+          php -l scripts/test_public_donations_recall_mysql.php
+          php -l tests/phpunit/PublicDonationsRecallContractTest.php
+      - name: PHP 8.3 focused contracts
+        run: php scripts/validate_public_donations_recall_v1.php
+      - name: PHP 8.3 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsRecallContractTest.php
+      - name: PHP 8.3 MySQL lifecycle
+        run: php scripts/test_public_donations_recall_mysql.php
