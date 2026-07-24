@@ -85,6 +85,7 @@ final class PublicDonationsCommunityAssignmentContractTest extends TestCase
         self::assertStringContainsString("SET status='paused',paused_at=NOW()", $source);
         self::assertStringContainsString("SET status='removed',removed_at=NOW()", $source);
         self::assertStringContainsString('mg_create_notification(', $source);
+        self::assertStringContainsString("'allow_self' => true", $source);
     }
 
     public function testSourceNeverMutatesRewardInventory(): void

@@ -33,6 +33,7 @@ $must($domain, [
     "SET status='removed',removed_at=NOW()",
     'mg_create_notification(',
     'public_donations.community_added',
+    "'allow_self' => true",
     'campaign_community_assignments',
 ], 'assignment domain');
 $must($endpoint, [

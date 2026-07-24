@@ -319,6 +319,7 @@ function mg_public_donations_assignment_notification(PDO $pdo, array $campaign, 
         '/public-donations.php?campaign=' . rawurlencode($ref),
         [
             'actor_user_id' => $actorId,
+            'allow_self' => true,
             'merchant_user_id' => (int)($campaign['merchant_user_id'] ?? 0),
             'campaign_public_id' => (string)$campaign['public_id'],
             'assignment_public_id' => $assignmentPublicId,
