@@ -15,3 +15,7 @@ require_once __DIR__ . '/investment-diligence.php';
 require_once __DIR__ . '/investment-communications.php';
 require_once __DIR__ . '/investment-engagement.php';
 require_once __DIR__ . '/investment-portal-v3.php';
+require_once __DIR__ . '/investment-closing.php';
+require_once __DIR__ . '/investment-compliance.php';
+require_once __DIR__ . '/investment-relations.php';
+require_once __DIR__ . '/investment-portal-v4.php';

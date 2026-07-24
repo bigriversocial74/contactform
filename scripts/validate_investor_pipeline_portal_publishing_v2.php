@@ -33,14 +33,21 @@ $portalApi=$read('api/investment/portal.php');
 foreach(['mg_require_api_user()','mg_require_csrf_for_write'] as $needle)$pass(str_contains($portalApi,$needle),'Portal API contains '.$needle);
 $usesV2Data=str_contains($portalApi,'mg_investment_portal_data_v2');
 $usesV3Data=str_contains($portalApi,'mg_investment_portal_data_v3');
+$usesV4Data=str_contains($portalApi,'mg_investment_portal_data_v4');
 $usesV2Events=str_contains($portalApi,'mg_investment_portal_event_v2');
 $usesV3Events=str_contains($portalApi,'mg_investment_portal_event_v3');
-$pass($usesV2Data||$usesV3Data,'Portal API uses the Phase 2 portal authority or a backward-compatible extension.');
-$pass($usesV2Events||$usesV3Events,'Portal API uses the Phase 2 event authority or a backward-compatible extension.');
-if($usesV3Data||$usesV3Events){
+$usesV4Events=str_contains($portalApi,'mg_investment_portal_event_v4');
+$pass($usesV2Data||$usesV3Data||$usesV4Data,'Portal API uses the Phase 2 portal authority or a verified backward-compatible extension.');
+$pass($usesV2Events||$usesV3Events||$usesV4Events,'Portal API uses the Phase 2 event authority or a verified backward-compatible extension.');
+if($usesV3Data||$usesV3Events||$usesV4Data||$usesV4Events){
     $portalV3=$read('includes/investment/investment-portal-v3.php');
     $pass(str_contains($portalV3,'mg_investment_portal_data_v2'),'Phase 3 portal data extends the Phase 2 portal authority.');
     $pass(str_contains($portalV3,'mg_investment_portal_event_v2'),'Phase 3 standard portal events delegate to the Phase 2 event authority.');
+}
+if($usesV4Data||$usesV4Events){
+    $portalV4=$read('includes/investment/investment-portal-v4.php');
+    $pass(str_contains($portalV4,'mg_investment_portal_data_v3'),'Phase 4 portal data extends the Phase 3 and Phase 2 portal authorities.');
+    $pass(str_contains($portalV4,'mg_investment_portal_event_v3'),'Phase 4 standard portal events delegate through the Phase 3 and Phase 2 authorities.');
 }
 
 $page=$read('admin/investor-pipeline.php');

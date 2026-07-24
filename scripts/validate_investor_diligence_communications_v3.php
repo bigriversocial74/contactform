@@ -48,17 +48,37 @@ $pass(!str_contains($portal,'funded_cents='),'Portal submissions cannot change f
 $adminApi=$read('api/admin/investor-diligence.php');
 foreach(['mg_require_api_user()','mg_investment_require_permission','mg_require_csrf_for_write','mg_rate_limit','save_folder','save_document','save_request','save_qa','save_meeting','save_communication','review_interest','refresh_engagement','ai_draft'] as $needle)$pass(str_contains($adminApi,$needle),'Admin API contains '.$needle);
 $portalApi=$read('api/investment/portal.php');
-foreach(['mg_require_api_user()','mg_require_csrf_for_write','mg_rate_limit','mg_investment_portal_data_v3','submit_diligence','submit_interest','mg_investment_portal_event_v3'] as $needle)$pass(str_contains($portalApi,$needle),'Portal API contains '.$needle);
+foreach(['mg_require_api_user()','mg_require_csrf_for_write','mg_rate_limit','submit_diligence','submit_interest'] as $needle)$pass(str_contains($portalApi,$needle),'Portal API contains '.$needle);
+$usesV3Data=str_contains($portalApi,'mg_investment_portal_data_v3');
+$usesV4Data=str_contains($portalApi,'mg_investment_portal_data_v4');
+$usesV3Events=str_contains($portalApi,'mg_investment_portal_event_v3');
+$usesV4Events=str_contains($portalApi,'mg_investment_portal_event_v4');
+$pass($usesV3Data||$usesV4Data,'Portal API uses the Phase 3 portal authority or a verified Phase 4 extension.');
+$pass($usesV3Events||$usesV4Events,'Portal API uses the Phase 3 event authority or a verified Phase 4 extension.');
+if($usesV4Data||$usesV4Events){
+    $portalV4=$read('includes/investment/investment-portal-v4.php');
+    $pass(str_contains($portalV4,'mg_investment_portal_data_v3'),'Phase 4 portal data extends the Phase 3 portal authority.');
+    $pass(str_contains($portalV4,'mg_investment_portal_event_v3'),'Phase 4 standard portal events delegate to the Phase 3 event authority.');
+    $pass(str_contains($portalV4,'mg_investment_portal_submit_diligence'),'Phase 4 diligence submissions preserve the Phase 3 submission authority.');
+    $pass(str_contains($portalV4,'mg_investment_portal_submit_interest'),'Phase 4 interest submissions preserve the Phase 3 submission authority.');
+}
 
 $page=$read('admin/investor-diligence.php');
 foreach(['mg-app-shell','admin-sidebar.php','mg-app-workspace','data-investor-diligence','data-diligence-panel="dataroom"','data-diligence-panel="requests"','data-diligence-panel="qa"','data-diligence-panel="meetings"','data-diligence-panel="communications"','data-diligence-panel="interest"','data-diligence-panel="engagement"','data-diligence-drawer-layer'] as $needle)$pass(str_contains($page,$needle),'Admin diligence workspace contains '.$needle);
 $portalPage=$read('investor-portal.php');
-foreach(['mg-app-shell','account-sidebar.php','mg-app-workspace','data-investor-portal','data-csrf-token','investor-portal-v3.js','investor-portal-v3.css'] as $needle)$pass(str_contains($portalPage,$needle),'Investor Portal page contains '.$needle);
+foreach(['mg-app-shell','account-sidebar.php','mg-app-workspace','data-investor-portal','data-csrf-token','investor-portal-v3.css'] as $needle)$pass(str_contains($portalPage,$needle),'Investor Portal page contains '.$needle);
+$usesV3Runtime=str_contains($portalPage,'investor-portal-v3.js');
+$usesV4Runtime=str_contains($portalPage,'investor-portal-v4.js');
+$pass($usesV3Runtime||$usesV4Runtime,'Investor Portal page loads the Phase 3 runtime or a verified Phase 4 extension.');
 
 $adminJs=$read('assets/js/investor-diligence-v3.js');
 foreach(['save_folder','save_document','save_request','save_qa','save_meeting','save_communication','review_interest','refresh_engagement','ai_draft','data-document-id','data-request-id','data-interest-id'] as $needle)$pass(str_contains($adminJs,$needle),'Admin diligence runtime contains '.$needle);
 $portalJs=$read('assets/js/investor-portal-v3.js');
 foreach(['Data Room','Ask a Question','submit_diligence','submit_interest','document_open','communication_view','qa_view','non-binding indication of interest','data-diligence-form','data-interest-form'] as $needle)$pass(str_contains($portalJs,$needle),'Investor Portal runtime contains '.$needle);
+if($usesV4Runtime){
+    $portalJsV4=$read('assets/js/investor-portal-v4.js');
+    foreach(['Data Room','Ask a Question','submit_diligence','submit_interest','document_open','communication_view','qa_view','non-binding indication of interest','data-diligence-form','data-interest-form'] as $needle)$pass(str_contains($portalJsV4,$needle),'Phase 4 Investor Portal preserves Phase 3 runtime behavior: '.$needle);
+}
 
 require_once $root.'/includes/investment/investment-service.php';
 foreach(['mg_investment_diligence_dashboard','mg_investment_dataroom_save_document','mg_investment_communication_save','mg_investment_engagement_calculate','mg_investment_portal_data_v3'] as $function)$pass(function_exists($function),'Loaded service exposes '.$function);

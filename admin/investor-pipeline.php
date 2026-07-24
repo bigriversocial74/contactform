@@ -37,6 +37,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-btn mg-btn-ghost" href="/admin/investor-access-requests.php">Access requests</a>
           <a class="mg-btn mg-btn-soft" href="/admin/investment-wizard.php">Investment Wizard</a>
           <a class="mg-btn mg-btn-soft" href="/admin/investor-diligence.php">Due Diligence</a>
+          <a class="mg-btn mg-btn-soft" href="/admin/investment-closing.php">Closing</a>
           <?php if ($canManage): ?><button class="mg-btn mg-btn-primary" type="button" data-sync-profiles>Sync approved investors</button><?php endif; ?>
         </div>
       </header>
