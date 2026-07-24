@@ -1,0 +1,68 @@
+name: Investor Pipeline Portal Publishing v2
+
+on:
+  pull_request:
+    paths:
+      - 'database/20260723_investor_pipeline_portal_publishing_v2_single_install.sql'
+      - 'includes/investment/investment-pipeline*.php'
+      - 'includes/investment/investment-publishing.php'
+      - 'includes/investment/investment-portal-v2.php'
+      - 'includes/investment/investment-service.php'
+      - 'api/admin/investor-pipeline.php'
+      - 'api/investment/portal.php'
+      - 'admin/investor-pipeline.php'
+      - 'admin/investment-wizard.php'
+      - 'admin/investor-access-requests.php'
+      - 'investor-portal.php'
+      - 'assets/css/investor-pipeline-v2.css'
+      - 'assets/js/investor-pipeline-v2.js'
+      - 'assets/js/investor-portal-v2.js'
+      - 'scripts/validate_investor_pipeline_portal_publishing_v2.php'
+      - 'docs/investment/investor-pipeline-portal-publishing-v2.md'
+      - '.github/workflows/investor-pipeline-portal-publishing-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: PHP syntax
+        run: |
+          php -l includes/investment/investment-pipeline.php
+          php -l includes/investment/investment-pipeline-queries.php
+          php -l includes/investment/investment-publishing.php
+          php -l includes/investment/investment-portal-v2.php
+          php -l api/admin/investor-pipeline.php
+          php -l api/investment/portal.php
+          php -l admin/investor-pipeline.php
+          php -l admin/investment-wizard.php
+          php -l admin/investor-access-requests.php
+          php -l investor-portal.php
+          php -l scripts/validate_investor_pipeline_portal_publishing_v2.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/investor-pipeline-v2.js
+          node --check assets/js/investor-portal-v2.js
+      - name: Phase 2 contract
+        run: php scripts/validate_investor_pipeline_portal_publishing_v2.php
+      - name: SQL additive contract
+        run: |
+          grep -q "CREATE TABLE IF NOT EXISTS investor_pipeline_records" database/20260723_investor_pipeline_portal_publishing_v2_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_round_publication" database/20260723_investor_pipeline_portal_publishing_v2_single_install.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_metric_adapters" database/20260723_investor_pipeline_portal_publishing_v2_single_install.sql
+          ! grep -q "DROP TABLE" database/20260723_investor_pipeline_portal_publishing_v2_single_install.sql
