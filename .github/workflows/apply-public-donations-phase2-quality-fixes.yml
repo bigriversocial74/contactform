@@ -12,6 +12,10 @@ permissions:
   contents: write
   pull-requests: read
 
+concurrency:
+  group: public-donations-phase2-quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   quality-fixes:
     if: ${{ github.event.pull_request.head.ref == 'feature/public-donations-campaign-foundation-v1' }}
@@ -35,10 +39,19 @@ jobs:
           php -l scripts/validate_public_donations_campaign_foundation_v1.php
           php -l tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
           php scripts/validate_public_donations_campaign_foundation_v1.php
-      - name: Commit quality fixes
+      - name: Commit validated quality fixes
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name 'Microgifter Phase Builder'
           git config user.email 'actions@users.noreply.github.com'
+          git status --short
           git add -A
           git commit -m 'Harden Public Donations campaign presentation [phase2-quality]'
+      - name: Reconcile and push quality fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin feature/public-donations-campaign-foundation-v1
+          git rebase origin/feature/public-donations-campaign-foundation-v1
           git push origin HEAD:feature/public-donations-campaign-foundation-v1
