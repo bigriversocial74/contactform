@@ -137,6 +137,7 @@ function mg_public_campaign_render_join_form(array $context): void
         <h3>Merchant-directed Community support</h3>
         <p>This campaign highlights rewards allocated directly by the merchant to Community accounts. These rewards are not available for public purchase or request.</p>
         <p class="mg-public-donations-info__notice">No purchase, join, request, checkout, claim, quantity, or contact-submission action is available on this page.</p>
+        <?php if ($closed): ?><div class="mg-public-campaign-result is-visible" data-campaign-closed-state="<?= mg_e((string)($state['code'] ?? 'closed')) ?>"><strong><?= mg_e((string)($state['message'] ?? 'This campaign is currently closed.')) ?></strong></div><?php endif; ?>
       </div>
       <?php return; endif; ?>
 
