@@ -9,7 +9,7 @@ try{
   if($method==='GET'){
     mg_rate_limit('admin.investor_pipeline.read','user:'.$actorId,300,60);$action=strtolower(trim((string)($_GET['action']??'dashboard')));
     $result=match($action){
-      'dashboard'=>mg_investment_pipeline_dashboard($pdo,$_GET),
+      'dashboard'=>mg_investment_pipeline_dashboard_v2($pdo,$_GET),
       'detail'=>mg_investment_pipeline_detail($pdo,mg_investment_text($_GET['investor_id']??'',36,36,'Investor identifier')),
       'publication_preview'=>mg_investment_publication_preview($pdo,mg_investment_text($_GET['round_id']??'',36,36,'Round identifier')),
       'metric_adapters'=>['adapters'=>mg_investment_metric_adapters($pdo),'history'=>!empty($_GET['workspace_id'])?mg_investment_metric_history($pdo,mg_investment_text($_GET['workspace_id'],36,36,'Workspace identifier')):[]],
@@ -20,8 +20,8 @@ try{
   if($method!=='POST')mg_fail('Method not allowed.',405);
   mg_investment_require_permission($actor,'admin.investor_pipeline.manage');mg_rate_limit('admin.investor_pipeline.write','user:'.$actorId,180,60);$input=mg_input();mg_require_csrf_for_write($input);$action=strtolower(trim((string)($input['action']??'')));
   $result=match($action){
-    'sync_profiles'=>['synced'=>mg_investment_pipeline_sync_profiles($pdo,$actorId),'dashboard'=>mg_investment_pipeline_dashboard($pdo)],
-    'save_record'=>mg_investment_pipeline_save_record($pdo,$actor,$input),
+    'sync_profiles'=>['synced'=>mg_investment_pipeline_sync_profiles($pdo,$actorId),'dashboard'=>mg_investment_pipeline_dashboard_v2($pdo)],
+    'save_record'=>mg_investment_pipeline_save_record_v2($pdo,$actor,$input),
     'add_activity'=>mg_investment_pipeline_add_activity($pdo,$actor,$input),
     'save_task'=>mg_investment_pipeline_save_task($pdo,$actor,$input),
     'complete_task'=>mg_investment_pipeline_complete_task($pdo,$actor,$input),
