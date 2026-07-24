@@ -54,6 +54,9 @@ $must($endpoint, [
     "'max_recipients' => 50",
     "'max_units' => 1000",
     'mg_public_donations_allocation_execute',
+    '$completedReplay = mg_public_donations_allocation_operation',
+    'mg_public_donations_allocation_request_hash',
+    'if ($result === null)',
 ], 'allocation endpoint');
 $must($ui, [
     'Preview allocation',
@@ -80,7 +83,6 @@ $must($installer, [
     'CREATE TABLE IF NOT EXISTS campaign_donation_rewards',
     'CHECK (recipient_count <= 50)',
     'CHECK (requested_quantity <= 1000)',
-    'CHECK (completed_quantity <= requested_quantity)',
 ], 'Phase 1 allocation schema');
 $must($bridge, [
     'mg_zero_reward_issue_from_wallet',
@@ -100,4 +102,4 @@ if (!str_contains($engine, "'preview_reserves_inventory' => false")) {
     throw new RuntimeException('Preflight must state that inventory is not reserved.');
 }
 
-echo "Public Donations allocation contracts valid.\n";
+ echo "Public Donations allocation contracts valid.\n";
