@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/campaign-landing-foundation.php';
 require_once __DIR__ . '/campaign-user-details.php';
+require_once __DIR__ . '/public-donations-feature.php';
 
 $mgCampaignExpectedType = $mgCampaignExpectedType ?? null;
 $mgCampaignPageLabel = $mgCampaignPageLabel ?? 'Microgifter campaign';
@@ -18,8 +19,7 @@ function mg_public_campaign_type_label(string $type): string
 
 function mg_public_campaign_endpoint(string $type): string
 {
-    $endpoint = mg_campaign_type_submit_endpoint($type);
-    return $endpoint !== '' ? $endpoint : '/api/public/campaigns/engage.php';
+    return mg_campaign_type_submit_endpoint($type);
 }
 
 function mg_public_campaign_submit_label(string $type): string
@@ -44,12 +44,20 @@ function mg_public_campaign_outcome_copy(string $type): array
         'referral_reward' => ['Referral reward', 'Referral activity and rewards stay connected to the Inbox / PPPM system.'],
         'birthday_vip' => ['Birthday VIP', 'Join the VIP list and receive future merchant rewards in your Inbox.'],
         'agent_offer' => ['Offer interest', 'Your request is captured for merchant follow-up and reward routing.'],
+        'public_donation' => ['Community reward support', 'The merchant allocates rewards directly to selected Community accounts and publishes aggregate impact.'],
         default => ['Campaign reward', 'Submit once and Microgifter routes eligible rewards into the Inbox flow.'],
     };
 }
 
 function mg_public_campaign_steps(string $type): array
 {
+    if ($type === 'public_donation') {
+        return [
+            ['title' => 'Merchant allocates', 'copy' => 'The merchant selects eligible Community accounts and controls reward quantities.'],
+            ['title' => 'Community receives', 'copy' => 'Allocated rewards enter each Community account through the existing Inbox and PPPM lifecycle.'],
+            ['title' => 'Impact is reported', 'copy' => 'The public page shows aggregate campaign impact without exposing private allocation records.'],
+        ];
+    }
     $verb = match ($type) {
         'contest_giveaway' => 'Enter',
         'qr_reward_drop' => 'Claim',
@@ -123,7 +131,16 @@ function mg_public_campaign_render_join_form(array $context): void
 
     mg_campaign_landing_render_profile($profile);
 
-    if ($closed): ?>
+    if (!mg_campaign_type_public_transactional($campaignType)): ?>
+      <div class="mg-public-donations-info" data-public-donations-informational>
+        <span class="mg-public-donations-info__badge">Public Donations</span>
+        <h3>Merchant-directed Community support</h3>
+        <p>This campaign highlights rewards allocated directly by the merchant to Community accounts. These rewards are not available for public purchase or request.</p>
+        <p class="mg-public-donations-info__notice">No purchase, join, request, checkout, claim, quantity, or contact-submission action is available on this page.</p>
+      </div>
+      <?php return; endif; ?>
+
+    <?php if ($closed): ?>
       <div class="mg-public-campaign-result is-visible" data-campaign-closed-state="<?= mg_e((string)($state['code'] ?? 'closed')) ?>">
         <strong><?= mg_e((string)($state['message'] ?? 'This campaign is currently closed.')) ?></strong>
       </div>
@@ -180,6 +197,10 @@ if (empty($campaignState['available']) || !is_array($mgCampaign ?? null)) {
 }
 
 $campaignType = (string)$mgCampaign['campaign_type'];
+if ($campaignType === 'public_donation' && !mg_public_donations_is_enabled_for((int)($mgCampaign['merchant_user_id'] ?? 0), function_exists('mg_current_user') ? mg_current_user() : null)) {
+    mg_campaign_landing_render_unavailable((string)$mgCampaignPageLabel, (string)$mgCampaignPageIntro);
+    return;
+}
 $typeLabel = mg_public_campaign_type_label($campaignType);
 [$outcomeTitle, $outcomeCopy] = mg_public_campaign_outcome_copy($campaignType);
 $campaignSteps = mg_public_campaign_steps($campaignType);
@@ -226,7 +247,7 @@ $campaignClass = 'mg-rl-simple-' . preg_replace('/[^a-z0-9_-]+/', '-', strtolowe
       <header class="mg-rl-hero">
         <h1><?= mg_e($headline) ?></h1>
         <p><?= mg_e($description) ?></p>
-        <div class="mg-public-campaign-trust-row"><span><?= mg_e($typeLabel) ?></span><span>Reward sent to Inbox</span><span>PPPM tracked</span></div>
+        <div class="mg-public-campaign-trust-row"><span><?= mg_e($typeLabel) ?></span><?php if ($campaignType === 'public_donation'): ?><span>Merchant allocated</span><span>Aggregate impact</span><?php else: ?><span>Reward sent to Inbox</span><span>PPPM tracked</span><?php endif; ?></div>
       </header>
       <section class="mg-rl-player mg-rl-simple-reward-canvas" aria-label="<?= mg_e($typeLabel) ?> reward canvas">
         <div class="mg-rl-track">

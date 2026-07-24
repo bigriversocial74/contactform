@@ -89,6 +89,9 @@ function mg_campaign_specialized_enrich_row(array $campaign): array
 function mg_campaign_specialized_prepare_response(array $data): array
 {
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $merchantId = (int)($GLOBALS['merchantId'] ?? 0);
+    $actor = is_array($GLOBALS['user'] ?? null) ? $GLOBALS['user'] : null;
+    $data['public_donations_feature'] = mg_public_donations_feature_context($merchantId > 0 ? $merchantId : null, $actor);
 
     if ($method === 'GET' && is_array($data['campaigns'] ?? null)) {
         $data['campaigns'] = array_map('mg_campaign_specialized_enrich_row', $data['campaigns']);

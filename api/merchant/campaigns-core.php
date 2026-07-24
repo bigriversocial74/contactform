@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/public/campaigns/_merchant_notifications.php';
 require_once dirname(__DIR__, 2) . '/includes/campaign-types.php';
+require_once dirname(__DIR__, 2) . '/includes/public-donations-feature.php';
 
 function mg_campaign_slug(string $title): string
 {
@@ -294,6 +295,13 @@ function mg_campaign_build_rules(PDO $pdo, int $merchantId, string $campaignType
             'milestones' => mg_campaign_listen_milestones($input, $required),
             'spotify_note' => 'Spotify links are embedded/listen-intent rewards; uploaded audio supports true percent listened milestones.',
         ] + $image;
+    } elseif ($campaignType === 'public_donation') {
+        $rules += [
+            'mode' => 'merchant_initiated_bulk',
+            'public_mode' => 'informational',
+            'public_transactional' => false,
+            'entry_reward_enabled' => false,
+        ];
     } else {
         $rules += [
             'mode' => (string)($definition['rules_schema']['mode'] ?? 'instant_reward'),
@@ -319,6 +327,8 @@ function mg_campaign_row(array $row): array
         'campaign_type_label' => (string)($typeDefinition['label'] ?? mg_campaign_type_label($type)),
         'campaign_type_category' => (string)($typeDefinition['category'] ?? 'campaign'),
         'public_enabled' => !empty($typeDefinition['public_enabled']),
+        'public_transactional' => mg_campaign_type_public_transactional($type),
+        'public_mode' => mg_campaign_type_public_mode($type),
         'internal_only' => !empty($typeDefinition['internal_only']),
         'title' => (string)$row['title'],
         'description' => (string)($row['description'] ?? ''),
@@ -407,7 +417,7 @@ if ($method === 'GET') {
         $campaigns = array_map('mg_campaign_row', $stmt->fetchAll());
         mg_ok([
             'campaigns' => $campaigns,
-            'campaign_types' => mg_campaign_type_options(true),
+            'campaign_types' => mg_public_donations_campaign_type_options($merchantId, $user, true),
             'schema_ready' => true,
             'package' => mg_merchant_package_context($pdo, $user),
         ]);
@@ -417,7 +427,7 @@ if ($method === 'GET') {
         ], $merchantId);
         mg_ok([
             'campaigns' => [],
-            'campaign_types' => mg_campaign_type_options(true),
+            'campaign_types' => mg_public_donations_campaign_type_options($merchantId, $user, true),
             'schema_ready' => false,
         ], 'Campaigns unavailable until the Stage 12 schema is installed.');
     }
@@ -448,6 +458,10 @@ if (($campaignId !== '' && (strlen($campaignId) !== 36 || !preg_match('/^[a-f0-9
     || !mg_campaign_type_is_valid($campaignType, true)
     || !in_array($status, ['draft', 'active', 'paused', 'ended', 'archived'], true)) {
     mg_fail('Invalid campaign.', 422);
+}
+
+if ($campaignType === 'public_donation' && !mg_public_donations_is_enabled_for($merchantId, $user)) {
+    mg_fail('Public Donations campaigns are not enabled for this merchant.', 403);
 }
 
 if ($campaignType === 'watch_video_reward' && $status === 'active') {
