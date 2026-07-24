@@ -55,7 +55,7 @@
   const number = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
 
   const money = (cents, currency) => {
-    if (!currency) return 'Mixed currencies';
+    if (!currency) return Number(cents || 0) === 0 ? '$0.00' : 'Mixed currencies';
     try {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -67,22 +67,17 @@
     }
   };
 
-  const parseDate = (value) => {
-    if (!value) return null;
-    const text = String(value);
-    const parsed = new Date(text.includes('T') ? text : text.replace(' ', 'T'));
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  };
-
   const date = (value) => {
-    const parsed = parseDate(value);
-    if (!parsed) return value ? String(value) : '—';
+    if (!value) return '—';
+    const parsed = new Date(String(value).replace(' ', 'T') + (String(value).includes('Z') ? '' : 'Z'));
+    if (Number.isNaN(parsed.getTime())) return String(value);
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(parsed);
   };
 
   const dateTime = (value) => {
-    const parsed = parseDate(value);
-    if (!parsed) return value ? String(value) : '—';
+    if (!value) return '—';
+    const parsed = new Date(String(value).replace(' ', 'T') + (String(value).includes('Z') ? '' : 'Z'));
+    if (Number.isNaN(parsed.getTime())) return String(value);
     return new Intl.DateTimeFormat('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
     }).format(parsed);
@@ -306,6 +301,7 @@
 
       const actionsCell = document.createElement('td');
       actionsCell.appendChild(safeLink('Open batch', batch.batch_url, 'mg-btn mg-btn-soft'));
+      actionsCell.appendChild(safeLink('Assignment', batch.community.assignment_url, 'mg-btn mg-btn-ghost'));
       if (batch.community.public_profile_url) actionsCell.appendChild(safeLink('Profile', batch.community.public_profile_url, 'mg-btn mg-btn-ghost'));
 
       append(row, batchCell, accountCell, campaignCell, grossCell, recalledCell, lifecycleCell, valueCell, actionsCell);
