@@ -89,7 +89,7 @@ final class PublicDonationsProductionQaContractTest extends TestCase
             'rollBack()',
             'GET_LOCK(?,10)',
             'RELEASE_LOCK(?)',
-            "'public_donations.reconcile'",
+            'public_donations.reconcile',
             "'checksum'",
             "if (empty(\$issue['repairable'])) continue;",
         ] as $contract) {
