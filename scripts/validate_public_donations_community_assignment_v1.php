@@ -64,7 +64,7 @@ $must($page, [
 ], 'campaign page assets');
 $must($installer, [
     'CREATE TABLE IF NOT EXISTS campaign_community_assignments',
-    'UNIQUE KEY uq_campaign_community_assignment (campaign_id, community_user_id)',
+    'UNIQUE KEY uq_campaign_community_assignments_campaign_user (campaign_id, community_user_id)',
 ], 'Phase 1 assignment schema');
 
 if (preg_match('/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:wallet_items|reward_templates|campaign_donation_rewards|campaign_donation_reward_events)\b/i', $domain . "\n" . $endpoint) === 1) {
