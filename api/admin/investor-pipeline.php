@@ -12,7 +12,7 @@ try{
       'dashboard'=>mg_investment_pipeline_dashboard_v2($pdo,$_GET),
       'detail'=>mg_investment_pipeline_detail($pdo,mg_investment_text($_GET['investor_id']??'',36,36,'Investor identifier')),
       'publication_preview'=>mg_investment_publication_preview($pdo,mg_investment_text($_GET['round_id']??'',36,36,'Round identifier')),
-      'metric_adapters'=>['adapters'=>mg_investment_metric_adapters($pdo),'history'=>!empty($_GET['workspace_id'])?mg_investment_metric_history($pdo,mg_investment_text($_GET['workspace_id'],36,36,'Workspace identifier')):[]],
+      'metric_adapters'=>['adapters'=>mg_investment_metric_adapters($pdo),'history'=>!empty($_GET['workspace_id'])?mg_investment_metric_history_v2($pdo,mg_investment_text($_GET['workspace_id'],36,36,'Workspace identifier')):[]],
       default=>throw new MgInvestmentException('Invalid Investor Pipeline read action.'),
     };
     header('Cache-Control: private, no-store, max-age=0');mg_ok($result,'Investor Pipeline data loaded.');
