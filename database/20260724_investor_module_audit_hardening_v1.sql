@@ -1,7 +1,7 @@
 -- Microgifter Investor Module Audit Hardening v1
 -- Additive migration applied after Investor Governance v5.
 -- Adds explicit consent visibility, maker/checker financial provenance,
--- publication revision history, and separate investor-relations publishing authority.
+-- publication/document revision history, and separate investor-relations publishing authority.
 
 SET @mg_schema := DATABASE();
 
@@ -57,6 +57,13 @@ SET @mg_sql := IF(
 );
 PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;
 
+SET @mg_sql := IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@mg_schema AND TABLE_NAME='investment_documents' AND COLUMN_NAME='current_version_number') = 0,
+  'ALTER TABLE investment_documents ADD COLUMN current_version_number INT UNSIGNED NOT NULL DEFAULT 0 AFTER visibility',
+  'SELECT 1'
+);
+PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;
+
 CREATE TABLE IF NOT EXISTS investment_round_publication_versions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
@@ -77,7 +84,27 @@ CREATE TABLE IF NOT EXISTS investment_round_publication_versions (
   CONSTRAINT fk_investment_round_publication_version_creator FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Seed one immutable baseline version for existing publication records.
+CREATE TABLE IF NOT EXISTS investment_document_versions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  document_id BIGINT UNSIGNED NOT NULL,
+  version_number INT UNSIGNED NOT NULL,
+  title VARCHAR(180) NOT NULL,
+  status ENUM('missing','draft','internal_review','counsel_review','approved','published','superseded','archived') NOT NULL,
+  external_url VARCHAR(500) NULL,
+  visibility ENUM('super_admin','approved_investors','selected_investors','funded_investors','public_summary') NOT NULL,
+  change_reason VARCHAR(500) NOT NULL,
+  created_by_user_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_investment_document_version_public (public_id),
+  UNIQUE KEY uq_investment_document_version (document_id,version_number),
+  KEY idx_investment_document_version_status (document_id,status,created_at),
+  CONSTRAINT fk_investment_document_version_document FOREIGN KEY (document_id) REFERENCES investment_documents(id) ON DELETE CASCADE,
+  CONSTRAINT fk_investment_document_version_creator FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed immutable baselines for existing publication and document records.
 INSERT INTO investment_round_publication_versions
 (public_id,round_id,version_number,publication_status,sections_json,founder_update,important_notice,change_reason,created_by_user_id,created_at)
 SELECT UUID(),p.round_id,1,p.publication_status,p.sections_json,p.founder_update,p.important_notice,'Audit baseline of existing publication state',p.updated_by_user_id,COALESCE(p.updated_at,NOW())
@@ -88,6 +115,17 @@ WHERE v.id IS NULL;
 UPDATE investment_round_publication p
 SET p.current_version_number=(SELECT COALESCE(MAX(v.version_number),0) FROM investment_round_publication_versions v WHERE v.round_id=p.round_id)
 WHERE p.current_version_number=0;
+
+INSERT INTO investment_document_versions
+(public_id,document_id,version_number,title,status,external_url,visibility,change_reason,created_by_user_id,created_at)
+SELECT UUID(),d.id,1,d.title,d.status,d.external_url,d.visibility,'Audit baseline of existing document state',d.created_by_user_id,COALESCE(d.updated_at,NOW())
+FROM investment_documents d
+LEFT JOIN investment_document_versions v ON v.document_id=d.id
+WHERE v.id IS NULL;
+
+UPDATE investment_documents d
+SET d.current_version_number=(SELECT COALESCE(MAX(v.version_number),0) FROM investment_document_versions v WHERE v.document_id=d.id)
+WHERE d.current_version_number=0;
 
 -- Backfill financial provenance only when an approved maker/checker decision exists.
 UPDATE investor_closing_records cr
@@ -110,6 +148,6 @@ SET r.signed_cents=(SELECT COALESCE(SUM(cr.signed_amount_cents),0) FROM investor
 INSERT IGNORE INTO schema_migrations (migration_key,description,applied_at)
 VALUES (
   '20260724_investor_module_audit_hardening_v1',
-  'Adds consent visibility, maker-checker signed/funded provenance, publication versions, relations publish separation, and investor module 10/10 audit hardening support.',
+  'Adds consent visibility, maker-checker signed/funded provenance, publication/document versions, relations publish separation, and investor module 10/10 audit hardening support.',
   NOW()
 );
