@@ -12,7 +12,7 @@ try {
     if ($method==='GET') {
         mg_rate_limit('investment.portal.read','user:'.$userId,180,60);
         header('Cache-Control: private, no-store, max-age=0');
-        mg_ok(mg_investment_portal_data_v5_final2($pdo,$user),'Investor Portal loaded.');
+        mg_ok(mg_investment_portal_data_v5_final3($pdo,$user),'Investor Portal loaded.');
     }
 
     if ($method!=='POST') mg_fail('Method not allowed.',405);
@@ -23,10 +23,10 @@ try {
     $action=strtolower(trim((string)($input['action']??'event')));
 
     $result=match($action) {
-        'submit_diligence'=>mg_investment_portal_submit_diligence_v5_final2($pdo,$user,$input),
-        'submit_interest'=>mg_investment_portal_submit_interest_v5_final2($pdo,$user,$input),
-        'acknowledge_notice'=>mg_investment_portal_acknowledge_notice_v5_final2($pdo,$user,$input),
-        'event'=>mg_investment_portal_event_final2($pdo,$user,$input),
+        'submit_diligence'=>mg_investment_portal_submit_diligence_v5_final3($pdo,$user,$input),
+        'submit_interest'=>mg_investment_portal_submit_interest_v5_final3($pdo,$user,$input),
+        'acknowledge_notice'=>mg_investment_portal_acknowledge_notice_v5_final3($pdo,$user,$input),
+        'event'=>mg_investment_portal_event_v5_final3($pdo,$user,$input),
         default=>throw new MgInvestmentException('Invalid Investor Portal action.'),
     };
 
