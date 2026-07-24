@@ -286,7 +286,12 @@ function mg_community_support_accounts(PDO $pdo, int $merchantId): array
                 MAX(assignment.last_allocated_at) AS last_allocated_at,
                 MAX(assignment.updated_at) AS last_assignment_activity_at,
                 GROUP_CONCAT(DISTINCT campaign.title ORDER BY campaign.title SEPARATOR ' • ') AS campaign_titles,
-                MAX(community_role.id IS NOT NULL) AS has_community_role
+                MAX(EXISTS (
+                    SELECT 1
+                      FROM user_roles role_link
+                      INNER JOIN roles role ON role.id=role_link.role_id AND role.slug='community'
+                     WHERE role_link.user_id=user.id
+                )) AS has_community_role
            FROM campaign_community_assignments assignment
            INNER JOIN campaigns campaign
                    ON campaign.id=assignment.campaign_id
@@ -294,10 +299,8 @@ function mg_community_support_accounts(PDO $pdo, int $merchantId): array
                   AND campaign.campaign_type='public_donation'
            INNER JOIN users user ON user.id=assignment.community_user_id
            INNER JOIN public_profiles profile ON profile.user_id=user.id
-           LEFT JOIN user_roles community_link ON community_link.user_id=user.id
-           LEFT JOIN roles community_role ON community_role.id=community_link.role_id AND community_role.slug='community'
           WHERE assignment.merchant_user_id=?
-          GROUP BY assignment.community_user_id,profile.public_id,profile.display_name,user.display_name,user.full_name,
+          GROUP BY assignment.community_user_id,user.id,profile.public_id,profile.display_name,user.display_name,user.full_name,
                    profile.slug,profile.status,profile.visibility,user.status
           ORDER BY last_assignment_activity_at DESC,display_name ASC
           LIMIT 500"
@@ -390,6 +393,8 @@ function mg_community_support_batches(PDO $pdo, int $merchantId): array
                 'display_name' => mg_community_support_display_name($row),
                 'assignment_id' => (string)$row['assignment_public_id'],
                 'public_profile_url' => mg_community_support_safe_profile_url($row),
+                'assignment_url' => '/merchant-campaigns.php?campaign_id=' . rawurlencode((string)$row['campaign_public_id'])
+                    . '&community_assignment=' . rawurlencode((string)$row['assignment_public_id']),
             ],
             'metrics' => $metrics,
             'batch_url' => '/merchant-campaigns.php?donation_batch=' . rawurlencode((string)$row['public_id']),
