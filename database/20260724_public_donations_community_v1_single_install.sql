@@ -9,6 +9,30 @@ INSERT INTO roles (slug, name, created_at)
 VALUES ('community', 'Community', NOW())
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
+-- Granular Public Donations permissions. Direct merchant owners and workspace
+-- owners/managers are also protected by the application governance matrix.
+INSERT INTO permissions (slug, name, created_at) VALUES
+('merchant.public_donations.view', 'View Public Donations campaigns and assignments', NOW()),
+('merchant.public_donations.manage', 'Manage Public Donations campaign settings', NOW()),
+('merchant.public_donations.assign', 'Manage Public Donations Community assignments', NOW()),
+('merchant.public_donations.allocate', 'Allocate Public Donations rewards', NOW()),
+('merchant.public_donations.recall', 'Recall eligible Public Donations rewards', NOW()),
+('merchant.public_donations.report', 'View Public Donations reporting', NOW())
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT IGNORE INTO role_permissions (role_id, permission_id, created_at)
+SELECT role.id, permission.id, NOW()
+FROM roles role
+INNER JOIN permissions permission ON permission.slug IN (
+  'merchant.public_donations.view',
+  'merchant.public_donations.manage',
+  'merchant.public_donations.assign',
+  'merchant.public_donations.allocate',
+  'merchant.public_donations.recall',
+  'merchant.public_donations.report'
+)
+WHERE role.slug IN ('merchant','admin','super_admin');
+
 -- Community is an additional role on the canonical account. Copy the current
 -- Customer baseline so a Community-only account keeps ordinary account,
 -- wallet, Inbox, send, and claim access without gaining merchant/admin powers.
