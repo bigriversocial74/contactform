@@ -20,7 +20,7 @@ $runtime = $read('assets/js/public-profile-investment.js');
 $profileApi = $read('api/public/profile.php');
 
 $checks = [
-    'content-first stylesheet is loaded last and cache-bumped' =>
+    'content-first stylesheet remains loaded after the legacy profile stack' =>
         str_contains($page, '/assets/css/public-profile-content-first.css?v=1.0.0')
         && strpos($page, 'public-profile-content-first.css?v=1.0.0') > strpos($page, 'public-profile-realtime.css'),
     'page declares the content-first body authority' =>
@@ -58,19 +58,25 @@ $checks = [
         && !str_contains($page, 'Merchant Score')
         && !str_contains($page, 'Public analytics are not displayed.')
         && !str_contains($page, 'data-invest-panel="analytics"'),
-    'five content tabs remain without Analytics' =>
-        substr_count($page, 'data-invest-tab=') === 5
+    'six content tabs remain without Analytics' =>
+        substr_count($page, 'data-invest-tab=') === 6
         && str_contains($page, 'data-invest-tab="overview"')
         && str_contains($page, 'data-invest-tab="products"')
         && str_contains($page, 'data-invest-tab="stories"')
         && str_contains($page, 'data-invest-tab="posts"')
         && str_contains($page, 'data-invest-tab="campaigns"')
+        && str_contains($page, 'data-invest-tab="community"')
         && !str_contains($page, 'data-invest-tab="analytics"'),
     'overview focuses on products and campaigns' =>
         str_contains($page, 'Featured Experiences')
         && str_contains($page, 'data-profile-products-grid')
         && str_contains($page, 'Active Campaigns')
         && str_contains($page, 'data-invest-campaigns-list'),
+    'Community remains a content surface rather than an analytics dashboard' =>
+        str_contains($page, 'data-profile-community-summary')
+        && str_contains($page, 'data-profile-community-campaigns')
+        && str_contains($page, 'data-profile-community-accounts')
+        && !str_contains($page, 'data-invest-analytics-grid'),
     'legacy required profile data hooks remain safely hidden' =>
         str_contains($page, 'class="mg-profile-data-bridge"')
         && str_contains($page, 'data-profile-followers')
