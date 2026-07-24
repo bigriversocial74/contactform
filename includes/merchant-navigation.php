@@ -24,6 +24,7 @@ if (!function_exists('mg_merchant_navigation_items')) {
             'reviews' => ['My Customer Reviews', 'Replies and customer follow-up', '/merchant-reviews.php', 'Insights & Records'],
             'pppm' => ['Microgift Totals', 'Items and lifecycle', '/merchant-pppm.php', 'Insights & Records'],
             'merchant_crm' => ['Merchant CRM', 'Customers and campaign history', '/merchant-crm.php', 'Insights & Records'],
+            'community_support' => ['Community Support', 'Public Donations lifecycle', '/merchant-community-support.php', 'Insights & Records'],
 
             // Section 3: Storefront & Distribution
             'storefront' => ['Storefront', 'Public merchant page', '/merchant-storefront.php', 'Storefront & Distribution'],
@@ -76,6 +77,7 @@ if (!function_exists('mg_merchant_navigation_active_key')) {
             'merchant-pppm-item' => 'pppm',
             'merchant-pppm' => 'pppm',
             'merchant-crm' => 'merchant_crm',
+            'merchant-community-support' => 'community_support',
             'merchant-reviews' => 'reviews',
             'customer-reviews' => 'reviews',
             'merchant-campaigns' => 'campaigns',
