@@ -34,7 +34,7 @@ try {
         'save_budget'=>mg_investment_replace_budget_audited($pdo,$actor,$input),
         'save_goals'=>mg_investment_replace_goals_audited($pdo,$actor,$input),
         'save_metrics'=>mg_investment_save_metrics($pdo,$actor,$input),
-        'save_documents'=>mg_investment_save_documents_audited($pdo,$actor,$input),
+        'save_documents'=>mg_investment_save_documents_audited_v2($pdo,$actor,$input),
         'adopt_round'=>mg_investment_adopt_round($pdo,$actor,$input),
         'update_round'=>mg_investment_update_round_audited($pdo,$actor,$input),
         'run_ai_analysis'=>mg_investment_run_claude_analysis($pdo,$actor,$input),
