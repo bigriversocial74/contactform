@@ -36,6 +36,9 @@ $must($core, [
     "'recalled_visible'",
     "'assignment_role_removed'",
     "'repairable' => false",
+    'COUNT(*) AS inbox_count',
+    'COALESCE(inbox.inbox_count,0) AS inbox_count',
+    "if ((int)\$row['inbox_count'] === 0) \$missing[] = 'inbox';",
     'GET_LOCK(?,10)',
     'RELEASE_LOCK(?)',
     'beginTransaction()',
@@ -118,5 +121,5 @@ if (str_contains($runbook, 'Deployment confirmed') || str_contains($runbook, 'de
     throw new RuntimeException('Runbook must not claim deployment before separate confirmation.');
 }
 
-$checks = 10;
+$checks = 11;
 echo "Public Donations production QA contracts valid: {$checks}/{$checks}.\n";
