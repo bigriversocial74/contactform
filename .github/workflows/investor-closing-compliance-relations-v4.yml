@@ -65,12 +65,12 @@ jobs:
         run: |
           node --check assets/js/investment-closing-v4.js
           node --check assets/js/investor-portal-v4.js
+      - name: Phase 4 contract
+        run: php scripts/validate_investor_closing_compliance_relations_v4.php
       - name: Phase 2 compatibility contract
         run: php scripts/validate_investor_pipeline_portal_publishing_v2.php
       - name: Phase 3 compatibility contract
         run: php scripts/validate_investor_diligence_communications_v3.php
-      - name: Phase 4 contract
-        run: php scripts/validate_investor_closing_compliance_relations_v4.php
       - name: SQL additive contract
         run: |
           grep -q "CREATE TABLE IF NOT EXISTS investment_closing_profiles" database/20260724_investor_closing_compliance_relations_v4_single_install.sql
