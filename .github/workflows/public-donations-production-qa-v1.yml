@@ -1,0 +1,115 @@
+name: Public Donations Production QA Phase 10
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/public-donations-reconciliation.php'
+      - 'scripts/reconcile_public_donations.php'
+      - 'scripts/test_public_donations_production_qa_mysql.php'
+      - 'scripts/validate_public_donations_production_qa_v1.php'
+      - 'tests/phpunit/PublicDonationsProductionQaContractTest.php'
+      - 'docs/production/public-donations-production-runbook.md'
+      - '.github/workflows/public-donations-production-qa-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-donations-production-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_phase10
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: microgifter_phase10
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MG_PUBLIC_DONATIONS_FEATURE_STATE: enabled
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/public-donations-community-assignments.js
+          node --check assets/js/public-donations-allocation.js
+          node --check assets/js/public-donations-recall.js
+          node --check assets/js/merchant-community-support.js
+          node --check assets/js/public-profile-community-v1.js
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.2 syntax
+        run: |
+          php -l includes/public-donations-reconciliation.php
+          php -l scripts/reconcile_public_donations.php
+          php -l scripts/test_public_donations_production_qa_mysql.php
+          php -l scripts/validate_public_donations_production_qa_v1.php
+          php -l tests/phpunit/PublicDonationsProductionQaContractTest.php
+      - name: PHP 8.2 production QA contracts
+        run: php scripts/validate_public_donations_production_qa_v1.php
+      - name: PHP 8.2 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsProductionQaContractTest.php
+      - name: PHP 8.2 exact acceptance fixture
+        run: php scripts/test_public_donations_production_qa_mysql.php
+      - name: PHP 8.2 Public Donations regressions
+        run: |
+          php scripts/test_public_donations_governance_mysql.php
+          php scripts/test_public_donations_community_assignment_mysql.php
+          php scripts/test_public_donations_allocation_mysql.php
+          php scripts/test_public_donations_recall_mysql.php
+          php scripts/test_merchant_community_support_mysql.php
+          php scripts/test_public_donations_public_campaign_mysql.php
+          php scripts/test_public_profile_community_mysql.php
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.3 syntax
+        run: |
+          php -l includes/public-donations-reconciliation.php
+          php -l scripts/reconcile_public_donations.php
+          php -l scripts/test_public_donations_production_qa_mysql.php
+          php -l scripts/validate_public_donations_production_qa_v1.php
+          php -l tests/phpunit/PublicDonationsProductionQaContractTest.php
+      - name: PHP 8.3 production QA contracts
+        run: php scripts/validate_public_donations_production_qa_v1.php
+      - name: PHP 8.3 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsProductionQaContractTest.php
+      - name: PHP 8.3 exact acceptance fixture
+        run: php scripts/test_public_donations_production_qa_mysql.php
+      - name: PHP 8.3 Public Donations regressions
+        run: |
+          php scripts/test_public_donations_governance_mysql.php
+          php scripts/test_public_donations_community_assignment_mysql.php
+          php scripts/test_public_donations_allocation_mysql.php
+          php scripts/test_public_donations_recall_mysql.php
+          php scripts/test_merchant_community_support_mysql.php
+          php scripts/test_public_donations_public_campaign_mysql.php
+          php scripts/test_public_profile_community_mysql.php
