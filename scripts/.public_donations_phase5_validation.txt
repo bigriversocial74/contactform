@@ -1,15 +1,6 @@
 Public Donations Phase 5 validation receipt
-Commit: e2811e3facbeeb7432f6bb7ba8ee12d28f498093
-/home/runner/work/contactform/contactform/assets/js/public-donations-recall.js:172
-    summary.appendChild(node('span', '', ((preview.reward_template && preview.reward_template.title) || 'Reward') + ' · batch ' + ((preview.batch && preview.batch.id) || ''));
-                                                                                                                                                                             ^
-
-SyntaxError: missing ) after argument list
-    at wrapSafe (node:internal/modules/cjs/loader:1804:18)
-    at checkSyntax (node:internal/main/check_syntax:76:3)
-
-Node.js v24.18.0
-JavaScript syntax: FAIL
+Commit: 100603f630233f59bff1bed411559b58c5d7a05a
+JavaScript syntax: PASS
 --- PHP 8.2: php -l includes/public-donations-recall.php
 No syntax errors detected in includes/public-donations-recall.php
 PHP 8.2 [php -l includes/public-donations-recall.php]: PASS
@@ -29,12 +20,8 @@ PHP 8.2 [php -l scripts/test_public_donations_recall_mysql.php]: PASS
 No syntax errors detected in tests/phpunit/PublicDonationsRecallContractTest.php
 PHP 8.2 [php -l tests/phpunit/PublicDonationsRecallContractTest.php]: PASS
 --- PHP 8.2: php scripts/validate_public_donations_recall_v1.php
-PHP Fatal error:  Uncaught RuntimeException: recall core missing contract: return 'recallable' in /home/runner/work/contactform/contactform/scripts/validate_public_donations_recall_v1.php:13
-Stack trace:
-#0 /home/runner/work/contactform/contactform/scripts/validate_public_donations_recall_v1.php(26): {closure}()
-#1 {main}
-  thrown in /home/runner/work/contactform/contactform/scripts/validate_public_donations_recall_v1.php on line 13
-PHP 8.2 [php scripts/validate_public_donations_recall_v1.php]: FAIL
+Public Donations recall contracts valid.
+PHP 8.2 [php scripts/validate_public_donations_recall_v1.php]: PASS
 --- PHP 8.2: phpunit tests/phpunit/PublicDonationsRecallContractTest.php
 PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
 
@@ -69,12 +56,8 @@ PHP 8.3 [php -l scripts/test_public_donations_recall_mysql.php]: PASS
 No syntax errors detected in tests/phpunit/PublicDonationsRecallContractTest.php
 PHP 8.3 [php -l tests/phpunit/PublicDonationsRecallContractTest.php]: PASS
 --- PHP 8.3: php scripts/validate_public_donations_recall_v1.php
-PHP Fatal error:  Uncaught RuntimeException: recall core missing contract: return 'recallable' in /home/runner/work/contactform/contactform/scripts/validate_public_donations_recall_v1.php:13
-Stack trace:
-#0 /home/runner/work/contactform/contactform/scripts/validate_public_donations_recall_v1.php(26): {closure}()
-#1 {main}
-  thrown in /home/runner/work/contactform/contactform/scripts/validate_public_donations_recall_v1.php on line 13
-PHP 8.3 [php scripts/validate_public_donations_recall_v1.php]: FAIL
+Public Donations recall contracts valid.
+PHP 8.3 [php scripts/validate_public_donations_recall_v1.php]: PASS
 --- PHP 8.3: phpunit tests/phpunit/PublicDonationsRecallContractTest.php
 PHPUnit 12.5.31 by Sebastian Bergmann and contributors.
 
@@ -83,7 +66,7 @@ Configuration: /home/runner/work/contactform/contactform/phpunit.xml.dist
 
 .......                                                             7 / 7 (100%)
 
-Time: 00:00.002, Memory: 25.98 MB
+Time: 00:00.001, Memory: 25.98 MB
 
 [30;42mOK (7 tests, 35 assertions)[0m
 PHP 8.3 [phpunit tests/phpunit/PublicDonationsRecallContractTest.php]: PASS
@@ -91,4 +74,4 @@ PHP 8.3 [phpunit tests/phpunit/PublicDonationsRecallContractTest.php]: PASS
 Public Donations recall MySQL lifecycle valid.
 PHP 8.3 [php scripts/test_public_donations_recall_mysql.php]: PASS
 
-Overall: failure
+Overall: success
