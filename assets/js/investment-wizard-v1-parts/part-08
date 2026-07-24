@@ -1,0 +1,4 @@
+}).catch(()=>{});}} };
+  root.querySelector('[data-create-workspace]')?.addEventListener('click',createWorkspace);root.querySelector('[data-refresh-workspaces]').addEventListener('click',loadList);root.querySelector('[data-save-current]').addEventListener('click',saveCurrent);root.querySelector('[data-save-next]').addEventListener('click',saveNext);
+  loadList();
+})();
