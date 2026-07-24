@@ -78,8 +78,9 @@ $must($installer, [
     'CREATE TABLE IF NOT EXISTS campaign_donation_operations',
     'CREATE TABLE IF NOT EXISTS campaign_donation_batches',
     'CREATE TABLE IF NOT EXISTS campaign_donation_rewards',
-    'CHECK (recipient_count BETWEEN 1 AND 50)',
-    'CHECK (requested_quantity BETWEEN 1 AND 1000)',
+    'CHECK (recipient_count <= 50)',
+    'CHECK (requested_quantity <= 1000)',
+    'CHECK (completed_quantity <= requested_quantity)',
 ], 'Phase 1 allocation schema');
 $must($bridge, [
     'mg_zero_reward_issue_from_wallet',
