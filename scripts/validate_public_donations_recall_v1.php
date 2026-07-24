@@ -16,6 +16,8 @@ $must = static function(string $content, array $needles, string $label): void {
 
 $core = $read('includes/public-donations-recall.php');
 $endpoint = $read('api/merchant/public-donations-recall.php');
+$governance = $read('includes/public-donations-governance.php');
+$locks = $read('includes/public-donations-governance-locks.php');
 $ui = $read('assets/js/public-donations-recall.js');
 $styles = $read('assets/css/public-donations-recall.css');
 $page = $read('merchant-campaigns.php');
@@ -53,12 +55,22 @@ $must($endpoint, [
     'merchant.campaigns.view',
     'merchant.campaigns.manage',
     'mg_require_csrf_for_write',
+    "mg_public_donations_governance_context(\$pdo, \$user, \$method === 'GET' ? 'view' : 'recall')",
+    "mg_public_donations_governance_rate_limit('recall'",
     'mg_public_donations_recall_preview',
     'mg_public_donations_recall_execute',
+    'mg_public_donations_governance_admit_operation',
     "'downstream_recipients_affected' => false",
-    'mg_audit',
+    "'existing_nonrecallable_rewards_preserved' => true",
+    "mg_public_donations_governance_log_success('recall'",
     'mg_security_log',
 ], 'recall endpoint');
+$must($governance, [
+    "'recall' => 'merchant.public_donations.recall'",
+    'mg_public_donations_governance_assert_hourly_budget',
+    "'final_recipient_identity_exposed' => false",
+], 'Phase 9 governance');
+$must($locks, ['GET_LOCK(?, 8)', 'RELEASE_LOCK(?)'], 'Phase 9 concurrency locks');
 $must($ui, [
     'Recall untouched Community rewards',
     'Refresh preview',
@@ -87,6 +99,7 @@ $must($installer, [
     'recalled_at',
     'recalled_by_user_id',
     'recall_reason',
+    "'merchant.public_donations.recall'",
 ], 'Phase 1 recall schema');
 $must($lifecycle, ["'cancel'=>'cancelled'", 'microgift_lifecycle_actions'], 'canonical Microgift lifecycle');
 $must($projection, ["return 'revoked'", 'mg_action_center_project_lifecycle'], 'Action Center lifecycle projection');
@@ -97,6 +110,11 @@ if (preg_match('/\b(?:purchase|checkout|payment_intent|charge_customer)\s*\(/i',
 }
 if (!str_contains($core, 'batch/campaign/template -> rewards -> idempotency operation')) {
     throw new RuntimeException('Recall lock order must remain documented.');
+}
+$replay = strpos($endpoint, '$replay = mg_public_donations_recall_operation');
+$admission = strpos($endpoint, 'mg_public_donations_governance_admit_operation');
+if ($replay === false || $admission === false || $replay >= $admission) {
+    throw new RuntimeException('Completed recall replay must precede concurrency and hourly-budget admission.');
 }
 
 echo "Public Donations recall contracts valid.\n";
