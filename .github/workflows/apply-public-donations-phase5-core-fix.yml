@@ -1,24 +1,22 @@
 name: Apply Public Donations Phase 5 Core Fix
 
 on:
-  pull_request:
+  push:
     branches:
-      - integration-from-repair-20260628
+      - feature/public-donations-recall-controls-v1
     paths:
       - '.github/workflows/apply-public-donations-phase5-core-fix.yml'
 
 permissions:
   contents: write
-  pull-requests: read
 
 jobs:
   apply:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: feature/public-donations-recall-controls-v1
           fetch-depth: 0
       - uses: shivammathur/setup-php@v2
         with:
@@ -50,4 +48,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add includes/public-donations-recall.php
           git commit -m 'Correct Phase 5 recall operation insert'
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:feature/public-donations-recall-controls-v1
