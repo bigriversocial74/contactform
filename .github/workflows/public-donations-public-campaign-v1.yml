@@ -1,0 +1,94 @@
+name: Public Donations Campaign Landing Phase 7
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'public-donations.php'
+      - 'includes/public-donations-public.php'
+      - 'includes/public-donations-public-view.php'
+      - 'api/public/public-donations.php'
+      - 'assets/css/public-donations-public-v1.css'
+      - 'scripts/validate_public_donations_public_campaign_v1.php'
+      - 'scripts/test_public_donations_public_campaign_mysql.php'
+      - 'tests/phpunit/PublicDonationsPublicCampaignContractTest.php'
+      - '.github/workflows/public-donations-public-campaign-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-donations-public-campaign-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_phase7
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: microgifter_phase7
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.2 syntax
+        run: |
+          php -l public-donations.php
+          php -l includes/public-donations-public.php
+          php -l includes/public-donations-public-view.php
+          php -l api/public/public-donations.php
+          php -l scripts/validate_public_donations_public_campaign_v1.php
+          php -l scripts/test_public_donations_public_campaign_mysql.php
+          php -l tests/phpunit/PublicDonationsPublicCampaignContractTest.php
+      - name: PHP 8.2 focused contracts
+        run: php scripts/validate_public_donations_public_campaign_v1.php
+      - name: PHP 8.2 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsPublicCampaignContractTest.php
+      - name: PHP 8.2 MySQL public lifecycle
+        run: php scripts/test_public_donations_public_campaign_mysql.php
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.3 syntax
+        run: |
+          php -l public-donations.php
+          php -l includes/public-donations-public.php
+          php -l includes/public-donations-public-view.php
+          php -l api/public/public-donations.php
+          php -l scripts/validate_public_donations_public_campaign_v1.php
+          php -l scripts/test_public_donations_public_campaign_mysql.php
+          php -l tests/phpunit/PublicDonationsPublicCampaignContractTest.php
+      - name: PHP 8.3 focused contracts
+        run: php scripts/validate_public_donations_public_campaign_v1.php
+      - name: PHP 8.3 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsPublicCampaignContractTest.php
+      - name: PHP 8.3 MySQL public lifecycle
+        run: php scripts/test_public_donations_public_campaign_mysql.php
