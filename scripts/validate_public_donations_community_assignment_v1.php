@@ -16,6 +16,7 @@ $must = static function(string $content, array $needles, string $label): void {
 
 $domain = $read('includes/public-donations-community-assignments.php');
 $endpoint = $read('api/merchant/public-donations-community.php');
+$governance = $read('includes/public-donations-governance.php');
 $ui = $read('assets/js/public-donations-community-assignments.js');
 $styles = $read('assets/css/public-donations-community-assignments.css');
 $page = $read('merchant-campaigns.php');
@@ -40,12 +41,22 @@ $must($endpoint, [
     'merchant.campaigns.view',
     'merchant.campaigns.manage',
     'mg_require_csrf_for_write',
-    'mg_public_donations_is_enabled_for',
+    "mg_public_donations_governance_context(\$pdo, \$user, \$method === 'GET' ? 'view' : 'assign')",
+    "mg_public_donations_governance_rate_limit('assign'",
     "'public_identity_only' => true",
     "'exact_location_excluded' => true",
     "'private_contact_fields_excluded' => true",
     "'reward_inventory_changed' => false",
+    "'existing_rewards_preserved' => true",
+    "mg_public_donations_governance_log_success('assign'",
 ], 'merchant endpoint');
+$must($governance, [
+    "'assign' => 'merchant.public_donations.assign'",
+    'mg_public_donations_is_enabled_for',
+    "'actor_inactive'",
+    "'feature_disabled'",
+    "'permission_denied'",
+], 'Phase 9 governance');
 $must($ui, [
     'data-community-assignment-tab',
     'data-community-campaign-select',
@@ -66,6 +77,7 @@ $must($page, [
 $must($installer, [
     'CREATE TABLE IF NOT EXISTS campaign_community_assignments',
     'UNIQUE KEY uq_campaign_community_assignments_campaign_user (campaign_id, community_user_id)',
+    "'merchant.public_donations.assign'",
 ], 'Phase 1 assignment schema');
 
 if (preg_match('/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:wallet_items|reward_templates|campaign_donation_rewards|campaign_donation_reward_events)\b/i', $domain . "\n" . $endpoint) === 1) {

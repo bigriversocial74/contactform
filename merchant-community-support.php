@@ -16,6 +16,7 @@ require_once __DIR__ . '/includes/merchant-navigation.php';
 $user = mg_current_user();
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, $user);
 $canMerchantAccess = (bool)($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
+$canCommunitySupport = $canMerchantAccess && mg_merchant_navigation_public_donations_visible();
 $appSidebarNav = $canMerchantAccess
     ? mg_merchant_navigation_sidebar($merchantView)
     : ['subscriptions' => ['section' => 'Merchant', 'label' => 'Upgrade', 'detail' => 'Unlock merchant tools', 'href' => '/pricing.php', 'visible' => true]];
@@ -34,6 +35,15 @@ $appSidebarCompact = true;
       <section class="mg-app-panel"><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
     <?php elseif (!$canMerchantAccess): ?>
       <section class="mg-app-panel"><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/pricing.php">View packages</a></div></section>
+    <?php elseif (!$canCommunitySupport): ?>
+      <section class="mg-app-panel">
+        <div class="mg-app-panel-body">
+          <span class="mg-kicker">Public Donations</span>
+          <h1>Community Support is not available</h1>
+          <p>This workspace is outside the current rollout or your team role does not include Public Donations reporting.</p>
+          <a class="mg-btn" href="/merchant-campaigns.php">Back to Campaigns</a>
+        </div>
+      </section>
     <?php else: ?>
       <?php require __DIR__ . '/includes/merchant-community-support-view.php'; ?>
     <?php endif; ?>

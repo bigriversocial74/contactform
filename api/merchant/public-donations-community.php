@@ -3,20 +3,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
-require_once dirname(__DIR__, 2) . '/includes/public-donations-feature.php';
 require_once dirname(__DIR__, 2) . '/includes/public-donations-community-assignments.php';
+require_once dirname(__DIR__, 2) . '/includes/public-donations-governance.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = $method === 'GET'
     ? mg_merchant_require_permission('merchant.campaigns.view')
     : mg_merchant_require_permission('merchant.campaigns.manage');
-$merchantId = (int)($user['id'] ?? 0);
 $pdo = mg_db();
-mg_merchant_ensure_workspace($pdo, $user);
-
-if (!mg_public_donations_is_enabled_for($merchantId, $user)) {
-    mg_fail('Public Donations Community assignments are not enabled for this merchant.', 403);
-}
+$governance = mg_public_donations_governance_context($pdo, $user, $method === 'GET' ? 'view' : 'assign');
+$merchantId = (int)$governance['merchant_user_id'];
+$actorId = (int)$governance['actor_user_id'];
 
 $schemaReady = mg_public_donations_assignment_schema_ready($pdo);
 $campaigns = mg_public_donations_assignment_campaigns($pdo, $merchantId);
@@ -54,7 +51,12 @@ if ($method === 'GET') {
 
     mg_ok([
         'schema_ready' => $schemaReady,
-        'feature' => mg_public_donations_feature_context($merchantId, $user),
+        'feature' => $governance['feature'],
+        'governance' => [
+            'permission' => $governance['permission'],
+            'workspace_role' => $governance['workspace_role'],
+            'merchant_scoped_to_workspace_owner' => true,
+        ],
         'campaigns' => $campaigns,
         'selected_campaign' => $selectedCampaign ? [
             'id' => (string)$selectedCampaign['public_id'],
@@ -65,11 +67,15 @@ if ($method === 'GET') {
         'summary' => $summary,
         'assigned' => $assigned,
         'search' => $search,
-        'privacy' => [
-            'public_identity_only' => true,
-            'exact_location_excluded' => true,
-            'private_contact_fields_excluded' => true,
-        ],
+        'privacy' => array_merge(
+            mg_public_donations_governance_privacy_contract(),
+            [
+                'public_identity_only' => true,
+                'exact_location_excluded' => true,
+                'private_contact_fields_excluded' => true,
+            ]
+        ),
+        'operational_copy' => mg_public_donations_governance_operational_copy(),
         'reward_inventory_changed' => false,
     ], $schemaReady ? 'Community assignment workspace loaded.' : 'Import the Phase 1 Public Donations installer to enable Community assignments.');
 }
@@ -77,6 +83,7 @@ if ($method === 'GET') {
 if ($method !== 'POST') mg_fail('Method not allowed.', 405);
 if (!$schemaReady) mg_fail('Community assignment schema is unavailable. Import the Phase 1 Public Donations installer.', 503);
 
+mg_public_donations_governance_rate_limit('assign', $merchantId, $actorId);
 $input = mg_input();
 mg_require_csrf_for_write($input);
 $campaignRef = strtolower(trim((string)($input['campaign_id'] ?? '')));
@@ -87,7 +94,7 @@ $assignmentPublicId = strtolower(trim((string)($input['assignment_id'] ?? '')));
 $result = mg_public_donations_assignment_mutate(
     $pdo,
     $merchantId,
-    (int)$user['id'],
+    $actorId,
     $campaignRef,
     $action,
     $communityAccountId,
@@ -104,9 +111,18 @@ $message = match ($action) {
     default => !empty($result['changed']) ? 'Community account added to the campaign.' : 'Community account was already assigned.',
 };
 
+mg_public_donations_governance_log_success('assign', $merchantId, $actorId, [
+    'campaign_id' => (string)$campaign['public_id'],
+    'assignment_id' => (string)($result['assignment']['id'] ?? $assignmentPublicId),
+    'assignment_action' => $action !== '' ? $action : 'add',
+    'changed' => !empty($result['changed']),
+]);
+
 mg_ok([
     'result' => $result,
     'summary' => $summary,
     'assigned' => $assigned,
     'reward_inventory_changed' => false,
+    'existing_rewards_preserved' => true,
+    'operational_copy' => mg_public_donations_governance_operational_copy(),
 ], $message);
