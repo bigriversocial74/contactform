@@ -39,7 +39,7 @@ try {
         'add_activity'=>mg_investment_pipeline_add_activity($pdo,$actor,$input),
         'save_task'=>mg_investment_pipeline_save_task_audited($pdo,$actor,$input),
         'complete_task'=>mg_investment_pipeline_complete_task($pdo,$actor,$input),
-        'save_interest'=>mg_investment_pipeline_save_interest_audited($pdo,$actor,$input),
+        'save_interest'=>mg_investment_pipeline_save_interest_audited_v2($pdo,$actor,$input),
         'set_access'=>mg_investment_pipeline_set_access($pdo,$actor,$input),
         'save_publication'=>mg_investment_publication_save_audited($pdo,$actor,$input),
         'refresh_metrics'=>mg_investment_metrics_refresh($pdo,$actor,$input),
