@@ -1,0 +1,136 @@
+name: Investor Module Full Audit 10 of 10
+
+on:
+  pull_request:
+    paths:
+      - 'api/investment/access-request.php'
+      - 'api/investment/portal.php'
+      - 'api/admin/investment-wizard.php'
+      - 'api/admin/investor-pipeline.php'
+      - 'api/admin/investor-diligence.php'
+      - 'api/admin/investment-closing.php'
+      - 'api/admin/investor-governance.php'
+      - 'includes/investment/**'
+      - 'admin/investment-wizard.php'
+      - 'admin/investor-pipeline.php'
+      - 'admin/investment-closing.php'
+      - 'admin/investor-governance.php'
+      - 'assets/js/investor-module-audit-v1.js'
+      - 'database/20260724_investor_module_audit_hardening_v1.sql'
+      - 'scripts/validate_investor_module_audit_10of10.php'
+      - 'scripts/validate_investor_module_publication_v12.php'
+      - 'scripts/validate_investor_module_exact_approval_v13.php'
+      - 'docs/investment/investor-module-audit-10of10.md'
+      - '.github/workflows/investor-module-audit-10of10.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP syntax
+        run: |
+          php -l api/investment/access-request.php
+          php -l api/investment/portal.php
+          php -l api/admin/investment-wizard.php
+          php -l api/admin/investor-pipeline.php
+          php -l api/admin/investor-diligence.php
+          php -l api/admin/investment-closing.php
+          php -l api/admin/investor-governance.php
+          php -l admin/investment-wizard.php
+          php -l admin/investor-pipeline.php
+          php -l admin/investment-closing.php
+          php -l admin/investor-governance.php
+          php -l includes/investment/investment-service.php
+          php -l includes/investment/investment-audit-hardening.php
+          php -l includes/investment/investment-audit-hardening-v2.php
+          php -l includes/investment/investment-audit-hardening-v3.php
+          php -l includes/investment/investment-audit-hardening-v4.php
+          php -l includes/investment/investment-audit-hardening-v5.php
+          php -l includes/investment/investment-audit-hardening-v6.php
+          php -l includes/investment/investment-audit-hardening-v7.php
+          php -l includes/investment/investment-audit-hardening-v8.php
+          php -l includes/investment/investment-audit-hardening-v9.php
+          php -l includes/investment/investment-audit-hardening-v10.php
+          php -l includes/investment/investment-audit-hardening-v11.php
+          php -l includes/investment/investment-audit-hardening-v12.php
+          php -l includes/investment/investment-audit-hardening-v13.php
+          php -l includes/investment/investment-audit-hardening-v14.php
+          php -l includes/investment/investment-audit-hardening-v15.php
+          php -l scripts/validate_investor_module_audit_10of10.php
+          php -l scripts/validate_investor_module_publication_v12.php
+          php -l scripts/validate_investor_module_exact_approval_v13.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/investor-module-audit-v1.js
+          node --check assets/js/investor-pipeline-v2.js
+          node --check assets/js/investor-diligence-v3.js
+          node --check assets/js/investment-closing-v4.js
+          node --check assets/js/investor-governance-v5.js
+          node --check assets/js/investor-portal-v4.js
+          node --check assets/js/investor-portal-v5.js
+
+      - name: Weighted investor audit score
+        run: php scripts/validate_investor_module_audit_10of10.php
+
+      - name: Approved publication contract
+        run: php scripts/validate_investor_module_publication_v12.php
+
+      - name: Serialized exact approval contract
+        run: php scripts/validate_investor_module_exact_approval_v13.php
+
+      - name: Phase 1 compatibility contract
+        run: php scripts/validate_investor_role_investment_wizard_v1.php
+
+      - name: Phase 2 compatibility contract
+        run: php scripts/validate_investor_pipeline_portal_publishing_v2.php
+
+      - name: Phase 3 compatibility contract
+        run: php scripts/validate_investor_diligence_communications_v3.php
+
+      - name: Phase 4 compatibility contract
+        run: php scripts/validate_investor_closing_compliance_relations_v4.php
+
+      - name: Phase 5 compatibility contract
+        run: php scripts/validate_investor_governance_information_rights_v5.php
+
+      - name: Additive SQL and financial authority contract
+        run: |
+          grep -q "admin.investment.relations.publish" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "signed_verification_source" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "funding_verification_source" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_round_publication_versions" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "CREATE TABLE IF NOT EXISTS investment_document_versions" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "investor_visible" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "schema_migrations" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "Generic financial adjustments are not allowed" includes/investment/investment-audit-hardening-v11.php
+          grep -q "Approve the exact investment document version" includes/investment/investment-audit-hardening-v12.php
+          grep -q "The published tax document must exactly match" includes/investment/investment-audit-hardening-v12.php
+          grep -q "Approve the exact board packet document" includes/investment/investment-audit-hardening-v13.php
+          grep -q "Approve the exact reporting obligation" includes/investment/investment-audit-hardening-v13.php
+          grep -q "Published meeting status and counsel authority must exactly match" includes/investment/investment-audit-hardening-v14.php
+          grep -q "Published notice counsel authority must exactly match" includes/investment/investment-audit-hardening-v14.php
+          grep -q "Published obligation status and counsel-review requirement must exactly match" includes/investment/investment-audit-hardening-v14.php
+          grep -q "SELECT GET_LOCK(?,5)" includes/investment/investment-audit-hardening-v15.php
+          grep -q "SELECT RELEASE_LOCK(?)" includes/investment/investment-audit-hardening-v15.php
+          grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v11.php
+          grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v13.php
+          ! grep -q "DROP TABLE" database/20260724_investor_module_audit_hardening_v1.sql
+          ! grep -q "TRUNCATE TABLE" database/20260724_investor_module_audit_hardening_v1.sql
