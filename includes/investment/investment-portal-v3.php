@@ -7,6 +7,14 @@ function mg_investment_portal_round_relation(PDO $pdo,int $roundId,int $userId):
     $q->execute([$roundId,$userId,$roundId,$userId]);$row=$q->fetch(PDO::FETCH_ASSOC)?:[];return ['selected'=>(bool)($row['selected_access']??false),'funded'=>(bool)($row['funded_access']??false)];
 }
 
+function mg_investment_portal_log_v3(PDO $pdo,int $userId,int $roundId,string $eventType,string $subjectPublicId,array $metadata=[]): void
+{
+    if(!in_array($eventType,['communication_view','qa_view'],true))return;
+    $stmt=$pdo->prepare('INSERT INTO investment_portal_events (public_id,investor_user_id,round_id,event_type,subject_public_id,metadata_json,created_at) VALUES (?,?,?,?,?,?,NOW())');
+    $stmt->execute([mg_investment_uuid(),$userId,$roundId,$eventType,$subjectPublicId,$metadata?mg_investment_json_encode($metadata):null]);
+    mg_investment_pipeline_activity($pdo,$userId,$roundId,'portal_view',$eventType==='communication_view'?'Investor viewed a communication':'Investor reviewed a Q&A entry','',null,$metadata);
+}
+
 function mg_investment_portal_data_v3(PDO $pdo,array $user): array
 {
     $base=mg_investment_portal_data_v2($pdo,$user);$userId=(int)$user['id'];
@@ -41,5 +49,5 @@ function mg_investment_portal_event_v3(PDO $pdo,array $user,array $input): array
 {
     $event=(string)($input['event_type']??'');if(in_array($event,['document_open','metric_view','round_view'],true))return mg_investment_portal_event_v2($pdo,$user,$input);if(!in_array($event,['communication_view','qa_view'],true))throw new MgInvestmentException('Invalid portal event.');$round=mg_investment_diligence_round($pdo,mg_investment_text($input['round_id']??'',36,36,'Round identifier'));$subjectId=mg_investment_text($input['subject_id']??'',36,36,'Subject identifier');
     if($event==='communication_view'){$q=$pdo->prepare('SELECT c.id FROM investor_communications c INNER JOIN investor_communication_recipients cr ON cr.communication_id=c.id WHERE c.public_id=? AND c.round_id=? AND cr.investor_user_id=? AND c.status="published" LIMIT 1');$q->execute([$subjectId,(int)$round['id'],(int)$user['id']]);$communicationId=(int)$q->fetchColumn();if($communicationId<1)throw new MgInvestmentException('Communication is not available.',404);$pdo->prepare('UPDATE investor_communication_recipients SET status="viewed",first_viewed_at=COALESCE(first_viewed_at,NOW()),last_viewed_at=NOW(),view_count=view_count+1 WHERE communication_id=? AND investor_user_id=?')->execute([$communicationId,(int)$user['id']]);}
-    mg_investment_portal_log($pdo,(int)$user['id'],(int)$round['id'],$event,$subjectId,['title'=>mg_investment_text($input['title']??'',220)]);return ['recorded'=>true];
+    mg_investment_portal_log_v3($pdo,(int)$user['id'],(int)$round['id'],$event,$subjectId,['title'=>mg_investment_text($input['title']??'',220)]);return ['recorded'=>true];
 }
