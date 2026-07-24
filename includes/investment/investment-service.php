@@ -7,3 +7,7 @@ require_once __DIR__ . '/investment-scenarios.php';
 require_once __DIR__ . '/investment-content.php';
 require_once __DIR__ . '/investment-rounds.php';
 require_once __DIR__ . '/investment-reporting.php';
+require_once __DIR__ . '/investment-pipeline.php';
+require_once __DIR__ . '/investment-pipeline-queries.php';
+require_once __DIR__ . '/investment-publishing.php';
+require_once __DIR__ . '/investment-portal-v2.php';
