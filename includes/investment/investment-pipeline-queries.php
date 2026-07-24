@@ -40,12 +40,20 @@ function mg_investment_pipeline_save_record_v2(PDO $pdo,array $actor,array $inpu
         $record=mg_investment_pipeline_record($pdo,$publicId,true);$oldStage=(string)$record['stage'];
         $stmt=$pdo->prepare('UPDATE investor_pipeline_records SET stage=?,priority=?,qualification_score=?,source=?,capacity_range=?,assigned_user_id=?,tags_json=?,internal_notes=?,last_contact_at=?,next_follow_up_at=?,archived_at=IF(?="archived",COALESCE(archived_at,NOW()),NULL),updated_by_user_id=?,updated_at=NOW() WHERE id=?');
         $stmt->execute([$stage,$priority,$score,mg_investment_text($input['source']??'',180)?:null,mg_investment_text($input['capacity_range']??'',80)?:null,$assigned,mg_investment_json_encode($tags),mg_investment_long_text($input['internal_notes']??'',12000)?:null,mg_investment_date($input['last_contact_at']??null),mg_investment_date($input['next_follow_up_at']??null),$stage,$actorId,(int)$record['id']]);
-        if($oldStage!==$stage)mg_investment_pipeline_activity($pdo,(int)$record['investor_user_id'],null,'status_change','Pipeline stage changed',readable_stage($oldStage).' → '.readable_stage($stage),$actorId,['from'=>$oldStage,'to'=>$stage]);
+        if($oldStage!==$stage)mg_investment_pipeline_activity($pdo,(int)$record['investor_user_id'],null,'status_change','Pipeline stage changed',mg_investment_readable_stage($oldStage).' → '.mg_investment_readable_stage($stage),$actorId,['from'=>$oldStage,'to'=>$stage]);
         $pdo->commit();mg_audit('investor_pipeline_saved','investor_pipeline',['investor_id'=>$publicId,'stage'=>$stage],$actorId);return mg_investment_pipeline_detail($pdo,$publicId);
     }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
 
-function readable_stage(string $value): string
+function mg_investment_readable_stage(string $value): string
 {
     return ucwords(str_replace('_',' ',$value));
+}
+
+function mg_investment_metric_history_v2(PDO $pdo,string $workspacePublicId): array
+{
+    $workspace=mg_investment_workspace_by_public_id($pdo,$workspacePublicId);
+    $stmt=$pdo->prepare('SELECT m.public_id,m.metric_key,m.name,m.unit,m.current_value,m.confidence,s.snapshot_type,s.value,s.snapshot_at,r.public_name AS round_name,g.baseline_value,g.target_value,g.target_date,CASE WHEN g.target_value IS NULL OR s.value IS NULL THEN NULL ELSE s.value-g.target_value END AS variance_to_target FROM investment_metrics m LEFT JOIN investment_metric_snapshots s ON s.metric_id=m.id LEFT JOIN investment_rounds r ON r.id=s.round_id LEFT JOIN investment_scenario_goals g ON g.scenario_id=r.adopted_scenario_id AND g.metric_key=m.metric_key WHERE m.workspace_id=? ORDER BY m.name,s.snapshot_at DESC');
+    $stmt->execute([(int)$workspace['id']]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC)?:[];
 }
