@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/communications/_communications.php';
 require_once dirname(__DIR__) . '/rewards/_wallet_pppm_bridge.php';
 require_once dirname(__DIR__, 2) . '/includes/public-donations-community-assignments.php';
 require_once dirname(__DIR__, 2) . '/includes/public-donations-governance.php';
+require_once dirname(__DIR__, 2) . '/includes/public-donations-governance-locks.php';
 require_once dirname(__DIR__, 2) . '/includes/public-donations-allocation.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
@@ -39,6 +40,7 @@ if ($method === 'GET') {
             'workspace_role' => $governance['workspace_role'],
             'merchant_scoped_to_workspace_owner' => true,
             'hourly_allocation_units' => mg_public_donations_governance_hourly_limit('allocation'),
+            'concurrent_operations_serialized' => true,
         ],
         'campaigns' => mg_public_donations_assignment_campaigns($pdo, $merchantId),
         'selected_campaign' => $campaign ? [
@@ -95,11 +97,12 @@ $idempotencyKey = $action === 'allocate'
     ? mg_public_donations_allocation_idempotency_key($input['idempotency_key'] ?? null)
     : null;
 $result = null;
+$operationLock = null;
 
 try {
     // Resolve a completed retry before mutable campaign, template, assignment,
-    // inventory, or hourly-budget validation. A replay never issues or budgets
-    // another reward lifecycle.
+    // inventory, concurrency, or hourly-budget validation. A replay never issues
+    // or budgets another reward lifecycle.
     if ($idempotencyKey !== null) {
         $requestHash = mg_public_donations_allocation_request_hash(
             $campaignRef,
@@ -146,19 +149,30 @@ try {
             ], 'Allocation preview ready. Inventory has not been reserved.');
         }
 
-        $confirmLarge = filter_var($input['confirm_large_operation'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $result = mg_public_donations_allocation_execute(
+        $operationLock = mg_public_donations_governance_admit_operation(
             $pdo,
             $merchantId,
-            $actorId,
-            $campaignRef,
-            $templateRef,
-            $recipients,
-            (string)$idempotencyKey,
-            $message,
-            $internalNote,
-            $confirmLarge
+            'allocation',
+            (int)$preflight['requested_quantity']
         );
+        try {
+            $confirmLarge = filter_var($input['confirm_large_operation'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $result = mg_public_donations_allocation_execute(
+                $pdo,
+                $merchantId,
+                $actorId,
+                $campaignRef,
+                $templateRef,
+                $recipients,
+                (string)$idempotencyKey,
+                $message,
+                $internalNote,
+                $confirmLarge
+            );
+        } finally {
+            mg_public_donations_governance_release_operation_lock($pdo, $operationLock);
+            $operationLock = null;
+        }
     }
 
     mg_public_donations_governance_log_success('allocate', $merchantId, $actorId, [
@@ -179,6 +193,9 @@ try {
         ? 'This allocation was already completed; no duplicate rewards were issued.'
         : 'Rewards were allocated through Wallet, PPPM, Microgift, and Inbox.');
 } catch (Throwable $error) {
+    if ($operationLock !== null) {
+        mg_public_donations_governance_release_operation_lock($pdo, $operationLock);
+    }
     if (function_exists('mg_security_log')) {
         mg_security_log('warning', 'public_donations.allocation_failed', 'Public Donations allocation failed.', [
             'merchant_user_id' => $merchantId,
@@ -194,7 +211,7 @@ try {
     $publicMessage = match ($status) {
         403 => 'You are not authorized to allocate Public Donations rewards.',
         404 => 'The selected campaign, reward, or Community assignment was not found.',
-        409 => 'The allocation state changed. Refresh the preview and try again.',
+        409 => 'The allocation state changed or another operation is running. Refresh and try again.',
         422 => 'The allocation request is invalid or no longer eligible.',
         429 => 'The Public Donations operation limit has been reached. Try again later.',
         default => 'Unable to allocate Public Donations rewards.',
