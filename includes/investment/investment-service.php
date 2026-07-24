@@ -28,3 +28,4 @@ require_once __DIR__ . '/investment-audit-hardening-v3.php';
 require_once __DIR__ . '/investment-audit-hardening-v4.php';
 require_once __DIR__ . '/investment-audit-hardening-v5.php';
 require_once __DIR__ . '/investment-audit-hardening-v6.php';
+require_once __DIR__ . '/investment-audit-hardening-v7.php';
