@@ -6,6 +6,7 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'scripts/apply_public_donations_phase2_patch.php'
+      - 'scripts/fix_public_donations_phase2_patch.php'
       - '.github/workflows/apply-public-donations-phase2-patch.yml'
       - 'includes/public-donations-campaign-type.php'
       - 'includes/public-donations-feature.php'
@@ -35,6 +36,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Correct patch assertions
+        run: |
+          rm -f phase2-patch-error.txt
+          php scripts/fix_public_donations_phase2_patch.php
       - name: Apply assertion-checked patches
         shell: bash
         run: |
@@ -63,6 +68,7 @@ jobs:
           node --check assets/js/public-profile-investment.js
       - name: Commit patched source
         run: |
+          rm -f scripts/fix_public_donations_phase2_patch.php phase2-patch-error.txt
           git config user.name 'Microgifter Phase Builder'
           git config user.email 'actions@users.noreply.github.com'
           git add -A
