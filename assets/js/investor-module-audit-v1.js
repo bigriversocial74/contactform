@@ -7,7 +7,7 @@
   const originalFetch = window.fetch.bind(window);
 
   const style = document.createElement('style');
-  style.textContent = '.is-audit-readonly input{background:#f3f4f6!important;color:#4b5563!important;cursor:not-allowed}.mg-investment-help{margin:0;padding:.75rem 1rem;border:1px solid #d1d5db;border-radius:12px;background:#f9fafb;color:#374151;font-size:.9rem;line-height:1.45}[data-audit-provenance-warning]{margin:.75rem 0 1rem}';
+  style.textContent = '.is-audit-readonly input{background:#f3f4f6!important;color:#4b5563!important;cursor:not-allowed}.mg-investment-help{margin:0;padding:.75rem 1rem;border:1px solid #d1d5db;border-radius:12px;background:#f9fafb;color:#374151;font-size:.9rem;line-height:1.45}[data-audit-provenance-warning]{margin:.75rem 0 1rem}[data-audit-packet-publish]{white-space:nowrap}';
   document.head.appendChild(style);
 
   const parseBody = (body) => {
@@ -61,18 +61,52 @@
     });
   };
 
+  const governancePost = async (payload) => {
+    const response = await originalFetch('/api/admin/investor-governance.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.ok) throw new Error(data?.message || 'Unable to save governance publication.');
+    return data.data;
+  };
+
+  const hardenPacketForms = () => {
+    document.querySelectorAll('[data-governance-form][data-action="save_packet_document"]').forEach((form) => {
+      const status = form.querySelector('[name="status"]');
+      status?.querySelector('option[value="published"]')?.remove();
+      if (form.querySelector('[data-audit-packet-note]')) return;
+      const note = document.createElement('p');
+      note.dataset.auditPacketNote = '1';
+      note.className = 'is-wide mg-investment-help';
+      note.textContent = 'Save the packet version as Approved first. Publish that exact approved version from its meeting row.';
+      form.querySelector('.mg-governance-form-actions')?.before(note);
+    });
+  };
+
   let governanceBusy = false;
+  let governanceKey = '';
   const hardenGovernance = async () => {
     const root = document.querySelector('[data-investor-governance]');
-    if (!root || root.dataset.canPublish !== '1' || governanceBusy) return;
+    if (!root) return;
+    hardenPacketForms();
+    if (root.dataset.canPublish !== '1' || governanceBusy) return;
+
     const editButtons = root.querySelectorAll('[data-edit-consent]');
-    if (!editButtons.length) return;
+    const packetButtons = root.querySelectorAll('[data-add-packet]');
+    if (!editButtons.length && !packetButtons.length) return;
+    const round = root.querySelector('[data-governance-round]')?.value || '';
+    const key = `${round}:${editButtons.length}:${packetButtons.length}:${root.querySelector('[data-meeting-list]')?.textContent || ''}`;
+    if (key === governanceKey) return;
+    governanceKey = key;
     governanceBusy = true;
+
     try {
-      const round = root.querySelector('[data-governance-round]')?.value || '';
       const response = await originalFetch(`/api/admin/investor-governance.php?${new URLSearchParams({ round_id: round })}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const payload = await response.json();
       if (!response.ok || !payload?.ok) return;
+
       const consents = new Map((payload.data?.consents || []).map((item) => [String(item.public_id), item]));
       editButtons.forEach((editButton) => {
         const id = String(editButton.dataset.editConsent || '');
@@ -86,13 +120,7 @@
         button.addEventListener('click', async () => {
           button.disabled = true;
           try {
-            const result = await originalFetch('/api/admin/investor-governance.php', {
-              method: 'POST', credentials: 'same-origin',
-              headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-              body: JSON.stringify({ action: 'set_consent_visibility', round_id: round, consent_id: id, investor_visible: Number(consent.investor_visible) !== 1 }),
-            });
-            const data = await result.json();
-            if (!result.ok || !data?.ok) throw new Error(data?.message || 'Unable to change consent visibility.');
+            await governancePost({ action: 'set_consent_visibility', round_id: round, consent_id: id, investor_visible: Number(consent.investor_visible) !== 1 });
             location.reload();
           } catch (error) {
             button.disabled = false;
@@ -100,6 +128,46 @@
           }
         });
         editButton.parentElement?.appendChild(button);
+      });
+
+      const packets = (payload.data?.packet_documents || []).filter((item) => item.status === 'approved'
+        && item.confidentiality === 'funded_investors'
+        && ['approved', 'not_applicable'].includes(item.counsel_status)
+        && item.external_url);
+      packetButtons.forEach((addButton) => {
+        const meetingId = String(addButton.dataset.addPacket || '');
+        const available = packets.filter((item) => String(item.meeting_public_id) === meetingId);
+        const parent = addButton.parentElement;
+        if (!available.length || parent?.querySelector(`[data-audit-packet-publish="${CSS.escape(meetingId)}"]`)) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'mg-btn mg-btn-soft';
+        button.dataset.auditPacketPublish = meetingId;
+        button.textContent = available.length === 1 ? 'Publish Approved Packet' : `Publish Approved Packet (${available.length})`;
+        button.addEventListener('click', async () => {
+          let packet = available[0];
+          if (available.length > 1) {
+            const menu = available.map((item, index) => `${index + 1}. ${item.title} v${item.version_number}`).join('\n');
+            const selected = Number(window.prompt(`Choose the approved packet version to publish:\n${menu}`, '1')) - 1;
+            if (!Number.isInteger(selected) || selected < 0 || selected >= available.length) return;
+            packet = available[selected];
+          }
+          button.disabled = true;
+          try {
+            await governancePost({
+              action: 'save_packet_document', round_id: round, meeting_id: meetingId,
+              document_id: packet.public_id, document_type: packet.document_type,
+              title: packet.title, external_url: packet.external_url,
+              confidentiality: packet.confidentiality, counsel_status: packet.counsel_status,
+              status: 'published',
+            });
+            location.reload();
+          } catch (error) {
+            button.disabled = false;
+            window.alert(error.message);
+          }
+        });
+        parent?.appendChild(button);
       });
     } finally {
       governanceBusy = false;
