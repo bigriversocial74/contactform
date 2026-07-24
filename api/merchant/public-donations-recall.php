@@ -106,10 +106,20 @@ try {
             'error' => mb_substr($error->getMessage(), 0, 500),
         ], $actorId);
     }
+
     $status = (int)$error->getCode();
-    if ($status < 400 || $status > 499) $status = 500;
-    mg_fail(
-        $status === 500 ? 'Unable to recall Public Donations rewards.' : $error->getMessage(),
-        $status
-    );
+    if ($status < 400 || $status > 499) {
+        $status = 500;
+    }
+
+    $publicMessage = match ($status) {
+        403 => 'You are not authorized to recall this donation batch.',
+        404 => 'The requested donation batch or recall operation was not found.',
+        409 => 'The recall could not be completed because the donation state changed. Refresh and try again.',
+        422 => 'The recall request is no longer eligible. Refresh the preview and adjust the quantity.',
+        429 => 'Too many recall requests. Try again shortly.',
+        default => 'Unable to recall Public Donations rewards.',
+    };
+
+    mg_fail($publicMessage, $status);
 }
