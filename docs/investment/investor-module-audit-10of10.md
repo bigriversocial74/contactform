@@ -129,7 +129,7 @@ This audit covers the complete Microgifter investor module from Investor Access 
 
 ### 12. Approved content could change during publication
 
-**Finding:** Several endpoints accepted an approved record and allowed investor-visible fields or approval metadata to change in the same request that published, activated or executed it. The tax wrapper also queried a nonexistent version column, and board packet documents lacked an operator path for publishing a specific approved version.
+**Finding:** Several endpoints accepted an approved record and allowed investor-visible fields or approval metadata to change in the same request that published, activated or executed it. The tax wrapper also queried a nonexistent version column, board packet documents lacked an operator path for publishing a specific approved version, and concurrent admin writes could race between the approval check and the underlying transaction.
 
 **Fix:**
 
@@ -142,6 +142,7 @@ This audit covers the complete Microgifter investor module from Investor Access 
 - Reporting obligations preserve approved content, status and counsel-review requirements.
 - Tax publication validates only real schema columns and freezes title, provider, investor, type, year, URL and external reference.
 - The packet creation form no longer offers direct publication; an explicit **Publish Approved Packet** control publishes the selected approved version.
+- Existing official, diligence, governance and tax records use per-record database advisory locks, serializing approval and publication against concurrent administrator edits.
 
 ## New migration
 
@@ -191,6 +192,7 @@ Do not reimport the Phase 1–5 migrations.
 - Board packet creation cannot publish directly.
 - An approved funded-investor packet version can be published through its exact version action.
 - Meeting, notice and obligation approval metadata cannot change during publication.
+- Concurrent administrator edits to the same approval/publication record are serialized or rejected with a conflict.
 - Publication and document changes create immutable versions with reasons.
 
 ## 10/10 acceptance standard
@@ -198,8 +200,8 @@ Do not reimport the Phase 1–5 migrations.
 The investor module receives a final 10/10 only when all of the following are true:
 
 - Weighted audit validator: **100/100**
-- Approved publication v12 contract: pass on PHP 8.2 and 8.3
-- Exact approval v13/v14 contract: pass on PHP 8.2 and 8.3
+- Approved publication v12/v15 contract: pass on PHP 8.2 and 8.3
+- Serialized exact approval v13–v15 contract: pass on PHP 8.2 and 8.3
 - Phase 1 contract: pass on PHP 8.2 and 8.3
 - Phase 2 contract: pass on PHP 8.2 and 8.3
 - Phase 3 contract: pass on PHP 8.2 and 8.3
