@@ -12,9 +12,12 @@ try {
     if ($method === 'GET') {
         mg_rate_limit('investment.access.read', 'user:' . $userId, 120, 60);
         $request = mg_investment_find_access_request($pdo, $userId);
-        mg_ok(['request' => $request ? mg_investment_access_public($request) : null], 'Investor-access status loaded.');
+        header('Cache-Control: private, no-store, max-age=0');
+        mg_ok(['request' => $request ? mg_investment_access_public_audited($request) : null], 'Investor-access status loaded.');
     }
+
     if ($method !== 'POST') mg_fail('Method not allowed.', 405);
+
     mg_rate_limit('investment.access.write', 'user:' . $userId, 8, 3600);
     $input = mg_input();
     mg_require_csrf_for_write($input);
@@ -24,8 +27,9 @@ try {
         'withdraw' => mg_investment_withdraw_access_request($pdo, $user),
         default => throw new MgInvestmentException('Invalid investor-access action.'),
     };
+
     header('Cache-Control: private, no-store, max-age=0');
-    mg_ok(['request' => $result], 'Investor-access request updated.');
+    mg_ok(['request' => mg_investment_access_result_public_audited($result)], 'Investor-access request updated.');
 } catch (MgInvestmentException $error) {
     mg_fail($error->getMessage(), $error->httpStatus());
 } catch (Throwable $error) {
