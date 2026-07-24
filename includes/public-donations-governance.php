@@ -217,16 +217,22 @@ function mg_public_donations_governance_assert_hourly_budget(
     $requestedQuantity = max(1, $requestedQuantity);
     $limit = mg_public_donations_governance_hourly_limit($kind);
     $stmt = $pdo->prepare(
-        "SELECT COALESCE(SUM(CASE WHEN status='completed' THEN completed_quantity ELSE requested_quantity END),0)
+        "SELECT status,requested_quantity,completed_quantity
            FROM campaign_donation_operations
           WHERE merchant_user_id=?
             AND operation_kind=?
             AND status IN ('processing','completed')
             AND created_at>=DATE_SUB(NOW(),INTERVAL 1 HOUR)
+          ORDER BY id ASC
           FOR UPDATE"
     );
     $stmt->execute([$merchantId, $kind]);
-    $used = (int)$stmt->fetchColumn();
+    $used = 0;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $used += (string)$row['status'] === 'completed'
+            ? (int)$row['completed_quantity']
+            : (int)$row['requested_quantity'];
+    }
     if (($used + $requestedQuantity) > $limit) {
         if (function_exists('mg_security_log')) {
             mg_security_log('warning', 'public_donations.hourly_budget_blocked', 'Public Donations hourly unit budget blocked an operation.', [
