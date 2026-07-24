@@ -76,7 +76,11 @@ $mustContain($badgeJs, [
     'mg:public-profile:data',
     'Community role removal',
     'Future Community campaign relationships may require review or may prevent removal.',
+    'window.Microgifter?.publicProfileData',
 ], 'Badge renderer');
+if (str_contains($badgeJs, 'innerHTML')) {
+    throw new RuntimeException('Badge renderer must use safe DOM construction instead of innerHTML.');
+}
 
 $mustContain($profile, [
     '/assets/css/community-role-badges-v1.css',
@@ -87,6 +91,8 @@ $mustContain($sql, [
     "VALUES ('community', 'Community', NOW())",
     "CALL mg_public_donations_append_enum_value('campaigns', 'campaign_type', 'public_donation')",
     "CALL mg_public_donations_append_enum_value('wallet_items', 'source_type', 'public_donation')",
+    'SET @mg_public_donations_sql = v_sql',
+    'PREPARE mg_public_donations_stmt FROM @mg_public_donations_sql',
     'CREATE TABLE IF NOT EXISTS campaign_community_assignments',
     'CREATE TABLE IF NOT EXISTS campaign_donation_operations',
     'CREATE TABLE IF NOT EXISTS campaign_donation_batches',
@@ -95,6 +101,9 @@ $mustContain($sql, [
     'UNIQUE KEY uq_campaign_donation_rewards_wallet_item',
     'public_display_status ENUM',
 ], 'Community migration');
+if (str_contains($sql, 'PREPARE mg_public_donations_stmt FROM v_sql')) {
+    throw new RuntimeException('Dynamic MySQL statements must be prepared from a session variable.');
+}
 
 foreach (['DROP TABLE ', 'TRUNCATE TABLE ', 'REPLACE INTO users', 'DELETE FROM users'] as $destructive) {
     if (stripos($sql, $destructive) !== false) {
