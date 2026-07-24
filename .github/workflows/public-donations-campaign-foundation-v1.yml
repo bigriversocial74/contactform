@@ -1,5 +1,6 @@
 name: Public Donations Campaign Foundation Phase 2
 
+# Final validation runs only after the canonical patch commit is present.
 on:
   pull_request:
     branches:
