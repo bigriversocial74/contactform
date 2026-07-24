@@ -22,6 +22,7 @@ $page_styles = [
     '/assets/css/admin-user-detail-drawer.css?v=20260702-user-actions',
     '/assets/css/admin-user-management.css?v=20260702-user-actions',
     '/assets/css/admin-ai-user-access.css?v=1.0.0',
+    '/assets/css/community-role-badges-v1.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/admin-users.js',
@@ -30,6 +31,7 @@ $page_scripts = [
     '/assets/js/admin-user-management.js?v=20260702-user-actions',
     '/assets/js/admin-ai-user-limits.js?v=2.0.0',
     '/assets/js/admin-create-user.js',
+    '/assets/js/community-role-badges-v1.js?v=1.0.0',
 ];
 $adminActive = 'users';
 
@@ -83,6 +85,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <select name="role">
               <option value="">All roles</option>
               <option value="customer">Customer</option>
+              <option value="community">Community</option>
               <option value="merchant">Merchant</option>
               <option value="admin">Admin</option>
               <option value="super_admin">Super admin</option>
@@ -192,6 +195,7 @@ require dirname(__DIR__) . '/includes/header.php';
                 <fieldset class="mg-admin-user-create-roles">
                   <legend>Initial roles</legend>
                   <label><input type="checkbox" name="roles[]" value="customer" checked> Customer</label>
+                  <label><input type="checkbox" name="roles[]" value="community"> Community</label>
                   <label><input type="checkbox" name="roles[]" value="merchant"> Merchant</label>
                   <label><input type="checkbox" name="roles[]" value="admin"> Admin</label>
                   <label><input type="checkbox" name="roles[]" value="super_admin"> Super admin</label>

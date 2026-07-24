@@ -1,0 +1,119 @@
+name: Public Donations Community Phase 1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/users.php'
+      - 'profile.php'
+      - 'api/admin/_user_management.php'
+      - 'api/public/profile-role-badges.php'
+      - 'includes/role-badges.php'
+      - 'assets/css/community-role-badges-v1.css'
+      - 'assets/js/community-role-badges-v1.js'
+      - 'database/20260724_public_donations_community_v1_single_install.sql'
+      - 'docs/public-donations-community-v1/**'
+      - 'scripts/validate_public_donations_community_v1.php'
+      - 'tests/phpunit/CommunityRoleFoundationContractTest.php'
+      - 'tests/sql/public_donations_community_v1_fixture.sql'
+      - '.github/workflows/public-donations-community-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-donations-community-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: phpunit
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP syntax
+        run: |
+          php -l admin/users.php
+          php -l profile.php
+          php -l api/admin/_user_management.php
+          php -l api/public/profile-role-badges.php
+          php -l includes/role-badges.php
+          php -l scripts/validate_public_donations_community_v1.php
+          php -l tests/phpunit/CommunityRoleFoundationContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/community-role-badges-v1.js
+
+      - name: Focused contract validation
+        run: |
+          php scripts/validate_public_donations_community_v1.php
+          php scripts/validate_migration_manifest.php
+          phpunit tests/phpunit/CommunityRoleFoundationContractTest.php
+
+      - name: MySQL 8 clean install and reimport
+        if: matrix.php == '8.3'
+        shell: bash
+        run: |
+          set -euo pipefail
+          container='mg-public-donations-mysql'
+          docker run --detach --name "$container" --publish 3306:3306 \
+            --env MYSQL_ROOT_PASSWORD=root mysql:8.0
+
+          ready=0
+          for attempt in {1..60}; do
+            if docker exec "$container" mysqladmin ping -h127.0.0.1 -uroot -proot --silent; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker logs "$container"
+            exit 1
+          fi
+
+          echo 'Importing isolated schema fixture'
+          docker exec -i "$container" mysql -uroot -proot --show-warnings \
+            < tests/sql/public_donations_community_v1_fixture.sql
+          echo 'Importing master migration: pass 1'
+          docker exec -i "$container" mysql -uroot -proot --show-warnings microgifter_community_test \
+            < database/20260724_public_donations_community_v1_single_install.sql
+          echo 'Importing master migration: pass 2'
+          docker exec -i "$container" mysql -uroot -proot --show-warnings microgifter_community_test \
+            < database/20260724_public_donations_community_v1_single_install.sql
+
+          query() {
+            docker exec "$container" mysql -N -uroot -proot "$@"
+          }
+          test "$(query microgifter_community_test -e "SELECT COUNT(*) FROM roles WHERE slug='community' AND name='Community'")" = "1"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" = "4"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='microgifter_community_test' AND ((TABLE_NAME='campaigns' AND COLUMN_NAME='campaign_type') OR (TABLE_NAME='wallet_items' AND COLUMN_NAME='source_type')) AND COLUMN_TYPE LIKE '%public_donation%'")" = "2"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='microgifter_community_test' AND INDEX_NAME='uq_campaign_donation_operations_idempotency'")" = "2"
+          test "$(query -e "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" -ge "20"
+
+      - name: MySQL diagnostics
+        if: failure() && matrix.php == '8.3'
+        run: docker logs mg-public-donations-mysql || true
+
+      - name: Stop MySQL
+        if: always() && matrix.php == '8.3'
+        run: docker rm --force mg-public-donations-mysql || true

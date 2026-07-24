@@ -195,7 +195,7 @@ function mg_admin_account_change_role(PDO $pdo, array $actor, int $targetUserId,
     $role = mg_admin_account_role($pdo, $roleSlug);
     $super = mg_admin_account_actor_is_super($actor);
 
-    if (!$super && !in_array($roleSlug, ['customer', 'merchant'], true)) {
+    if (!$super && !in_array($roleSlug, ['customer', 'community', 'merchant'], true)) {
         throw new MgAdminAccountException('Only a super administrator can manage elevated roles.', 403);
     }
     if (in_array($roleSlug, ['admin', 'super_admin'], true) && !$super) {
@@ -337,7 +337,7 @@ function mg_admin_account_available_roles(PDO $pdo, array $actor): array
     if (mg_admin_account_actor_is_super($actor)) {
         $stmt = $pdo->query('SELECT slug, name FROM roles ORDER BY slug');
     } else {
-        $stmt = $pdo->query('SELECT slug, name FROM roles WHERE slug IN ("customer", "merchant") ORDER BY slug');
+        $stmt = $pdo->query('SELECT slug, name FROM roles WHERE slug IN ("customer", "community", "merchant") ORDER BY slug');
     }
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
