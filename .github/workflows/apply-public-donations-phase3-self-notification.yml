@@ -1,0 +1,76 @@
+name: Apply Public Donations Phase 3 Self Notification Fix
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - '.github/workflows/apply-public-donations-phase3-self-notification.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: apply-public-donations-phase3-self-notification-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Apply exact guarded replacements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path('includes/public-donations-community-assignments.php'): (
+                  "            'actor_user_id' => $actorId,\n            'merchant_user_id' =>",
+                  "            'actor_user_id' => $actorId,\n            'allow_self' => true,\n            'merchant_user_id' =>",
+              ),
+              Path('scripts/validate_public_donations_community_assignment_v1.php'): (
+                  "    'public_donations.community_added',\n    'campaign_community_assignments',",
+                  "    'public_donations.community_added',\n    \"'allow_self' => true\",\n    'campaign_community_assignments',",
+              ),
+              Path('tests/phpunit/PublicDonationsCommunityAssignmentContractTest.php'): (
+                  "        self::assertStringContainsString('mg_create_notification(', $source);",
+                  "        self::assertStringContainsString('mg_create_notification(', $source);\n        self::assertStringContainsString(\"'allow_self' => true\", $source);",
+              ),
+          }
+
+          for path, (old, new) in replacements.items():
+              text = path.read_text()
+              if new in text:
+                  continue
+              matches = text.count(old)
+              if matches != 1:
+                  raise SystemExit(f'{path}: expected exactly one guarded match, found {matches}')
+              path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Validate patched source
+        run: |
+          php -l includes/public-donations-community-assignments.php
+          php -l scripts/validate_public_donations_community_assignment_v1.php
+          php -l tests/phpunit/PublicDonationsCommunityAssignmentContractTest.php
+          php scripts/validate_public_donations_community_assignment_v1.php
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo 'Patch already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add includes/public-donations-community-assignments.php scripts/validate_public_donations_community_assignment_v1.php tests/phpunit/PublicDonationsCommunityAssignmentContractTest.php
+          git commit -m 'Allow required Community self-assignment notifications'
+          git push origin HEAD:${{ github.head_ref }}
