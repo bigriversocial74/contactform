@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'database/20260723_investor_role_investment_wizard_v1_single_install.sql'
-      - 'includes/investment/investment-service.php'
+      - 'includes/investment/**'
       - 'api/investment/**'
       - 'api/admin/investor-access.php'
       - 'api/admin/investment-wizard.php'
@@ -15,7 +15,8 @@ on:
       - 'assets/css/investment-system-v1.css'
       - 'assets/js/investor-access-v1.js'
       - 'assets/js/admin-investor-access-v1.js'
-      - 'assets/js/investment-wizard-v1.js'
+      - 'assets/js/investment-wizard-v1-parts/**'
+      - 'investment-wizard-runtime.php'
       - 'assets/js/investor-portal-v1.js'
       - 'scripts/validate_investor_role_investment_wizard_v1.php'
       - 'docs/investment/investment-wizard-v1.md'
@@ -44,7 +45,7 @@ jobs:
           node-version: '20'
       - name: PHP syntax
         run: |
-          php -l includes/investment/investment-service.php
+          find includes/investment -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l api/investment/access-request.php
           php -l api/investment/portal.php
           php -l api/admin/investor-access.php
@@ -53,13 +54,14 @@ jobs:
           php -l investor-portal.php
           php -l admin/investor-access-requests.php
           php -l admin/investment-wizard.php
+          php -l investment-wizard-runtime.php
           php -l scripts/validate_investor_role_investment_wizard_v1.php
           php -l includes/account-sidebar.php
       - name: JavaScript syntax
         run: |
           node --check assets/js/investor-access-v1.js
           node --check assets/js/admin-investor-access-v1.js
-          node --check assets/js/investment-wizard-v1.js
+          cat assets/js/investment-wizard-v1-parts/part-* | node --check
           node --check assets/js/investor-portal-v1.js
       - name: Investment system contract
         run: php scripts/validate_investor_role_investment_wizard_v1.php
