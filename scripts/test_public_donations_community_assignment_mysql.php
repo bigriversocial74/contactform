@@ -115,18 +115,20 @@ $pdo->exec("INSERT INTO users(id,full_name,display_name,status) VALUES
     (2,'Community One','Community One','active'),
     (3,'Community Multi','Community Multi','active'),
     (4,'Disabled Community','Disabled Community','disabled'),
-    (5,'Regular Customer','Regular Customer','active')");
+    (5,'Regular Customer','Regular Customer','active'),
+    (6,'Private Community User','Private Community User','active')");
 $pdo->exec("INSERT INTO public_profiles(public_id,user_id,slug,display_name,avatar_url,location_label,visibility,status) VALUES
     ('pp_merchant',1,'merchant-owner','Merchant Owner',NULL,'Phoenix area','public','active'),
     ('pp_community_one',2,'community-one','Community One','/avatars/one.jpg','Phoenix area','public','active'),
     ('pp_community_multi',3,'community-multi','Community Multi','/avatars/multi.jpg','Tempe area','unlisted','active'),
     ('pp_disabled',4,'disabled-community','Disabled Community',NULL,'Mesa area','public','active'),
-    ('pp_customer',5,'regular-customer','Regular Customer',NULL,'Scottsdale area','public','active')");
+    ('pp_customer',5,'regular-customer','Regular Customer',NULL,'Scottsdale area','public','active'),
+    ('pp_private',6,'hidden-community-alias','Secret Community Alias','/avatars/private.jpg','Secret exact place','private','active')");
 $pdo->exec("INSERT INTO roles(id,slug,name) VALUES
     (1,'merchant','Merchant'),(2,'community','Community'),(3,'customer','Customer'),
     (4,'creator','Creator'),(5,'admin','Admin'),(6,'super_admin','Super Admin')");
 $pdo->exec("INSERT INTO user_roles(user_id,role_id) VALUES
-    (1,1),(2,2),(2,3),(3,2),(3,1),(3,4),(3,5),(4,2),(5,3)");
+    (1,1),(2,2),(2,3),(3,2),(3,1),(3,4),(3,5),(4,2),(5,3),(6,2),(6,3)");
 $pdo->exec("INSERT INTO campaigns(id,public_id,merchant_user_id,public_slug,title,campaign_type,status)
     VALUES (10,'123e4567-e89b-42d3-a456-426614174010',1,'community-impact','Community Impact','public_donation','active')");
 
@@ -135,14 +137,23 @@ $campaign = mg_public_donations_assignment_campaign($pdo, 1, 'community-impact')
 phase3_assert((int)$campaign['id'] === 10, 'Campaign lookup failed.');
 
 $search = mg_public_donations_assignment_search($pdo, 1, 10, '', 50);
-phase3_assert(count($search) === 2, 'Search must return exactly the two active Community users.');
+phase3_assert(count($search) === 3, 'Search must return exactly the three active Community users.');
 $keys = array_column($search, 'community_account_id');
 sort($keys);
-phase3_assert($keys === ['pp_community_multi', 'pp_community_one'], 'Disabled and non-Community users must not appear.');
+phase3_assert($keys === ['pp_community_multi', 'pp_community_one', 'pp_private'], 'Disabled and non-Community users must not appear.');
 $multi = array_values(array_filter($search, static fn(array $row): bool => $row['community_account_id'] === 'pp_community_multi'))[0] ?? null;
 phase3_assert(is_array($multi), 'Multi-role Community account missing.');
 phase3_assert($multi['other_roles'] === ['Creator', 'Merchant'], 'Administrative roles must be filtered from public identity.');
 phase3_assert($multi['community_badge'] === true, 'Community badge missing.');
+$private = array_values(array_filter($search, static fn(array $row): bool => $row['community_account_id'] === 'pp_private'))[0] ?? null;
+phase3_assert(is_array($private), 'Private-profile Community account missing.');
+phase3_assert($private['display_name'] === 'Private Community User', 'Private profile alias must not replace normal user identity.');
+phase3_assert($private['username'] === null && $private['public_profile_url'] === null, 'Private profile slug/link must be suppressed.');
+phase3_assert($private['avatar_url'] === null && $private['general_location'] === null, 'Private profile media/location must be suppressed.');
+phase3_assert(mg_public_donations_assignment_search($pdo, 1, 10, 'Secret exact place', 50) === [], 'Private location must not influence search matching.');
+phase3_assert(mg_public_donations_assignment_search($pdo, 1, 10, 'hidden-community-alias', 50) === [], 'Private slug must not influence search matching.');
+$privateByName = mg_public_donations_assignment_search($pdo, 1, 10, 'Private Community User', 50);
+phase3_assert(count($privateByName) === 1 && $privateByName[0]['community_account_id'] === 'pp_private', 'Normal user identity should remain searchable.');
 
 $added = mg_public_donations_assignment_mutate($pdo, 1, 1, 'community-impact', 'add', 'pp_community_one');
 phase3_assert($added['changed'] === true, 'First add must change state.');
@@ -173,6 +184,10 @@ phase3_assert($summary === ['total' => 1, 'active' => 1, 'paused' => 0, 'removed
 $list = mg_public_donations_assignment_list($pdo, 1, 10, 'active', 100);
 phase3_assert(count($list) === 1 && $list[0]['assignment']['status'] === 'active', 'Active assignment list is incorrect.');
 phase3_assert((int)$pdo->query('SELECT COUNT(*) FROM wallet_items')->fetchColumn() === 0, 'Assignment lifecycle must not create wallet inventory.');
+
+$pdo->exec('DELETE FROM user_roles WHERE user_id=2 AND role_id=2');
+phase3_assert(mg_public_donations_assignment_summary($pdo, 1, 10) === ['total' => 0, 'active' => 0, 'paused' => 0, 'removed' => 0], 'Users no longer holding Community must not count in assignment summaries.');
+phase3_assert(mg_public_donations_assignment_list($pdo, 1, 10, 'all', 100) === [], 'Users no longer holding Community must not appear in assignment lists.');
 
 $pdo->exec("UPDATE campaigns SET status='ended' WHERE id=10");
 $endedRejected = false;
