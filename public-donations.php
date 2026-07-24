@@ -26,12 +26,14 @@ try {
     $publicDonationsUnavailable = 'Public Donations campaign not available.';
 }
 
+$seo = is_array($publicDonationsPayload['seo'] ?? null) ? $publicDonationsPayload['seo'] : [];
 if (!$publicDonationsPayload) {
     http_response_code(404);
     header('X-Robots-Tag: noindex, nofollow');
+} elseif ((string)($seo['robots'] ?? '') === 'noindex,nofollow') {
+    header('X-Robots-Tag: noindex, nofollow');
 }
 
-$seo = is_array($publicDonationsPayload['seo'] ?? null) ? $publicDonationsPayload['seo'] : [];
 $page_title = (string)($seo['title'] ?? 'Public Donations | Microgifter');
 $page_section = 'campaign';
 $header_mode = 'public';
