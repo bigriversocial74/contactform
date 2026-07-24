@@ -80,7 +80,7 @@ final class PublicDonationsCommunityAssignmentContractTest extends TestCase
         self::assertStringContainsString("community_role.slug='community'", $source);
         self::assertStringContainsString("u.status='active'", $source);
         self::assertStringContainsString('GROUP_CONCAT(DISTINCT role_all.slug', $source);
-        self::assertStringContainsString("if ($currentStatus !== 'active')", $source);
+        self::assertStringContainsString('if ($currentStatus !== \'active\')', $source);
         self::assertStringContainsString("SET status='active',reactivated_at=NOW()", $source);
         self::assertStringContainsString("SET status='paused',paused_at=NOW()", $source);
         self::assertStringContainsString("SET status='removed',removed_at=NOW()", $source);
