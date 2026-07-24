@@ -1,0 +1,122 @@
+name: Run Public Donations Phase 5 Validation Receipt
+
+on:
+  push:
+    branches:
+      - feature/public-donations-recall-controls-v1
+    paths:
+      - '.github/workflows/run-public-donations-phase5-validation.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_phase5
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: microgifter_phase5
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/public-donations-recall-controls-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Initialize receipt
+        run: |
+          : > /tmp/phase5-validation.log
+          echo 'Public Donations Phase 5 validation receipt' >> /tmp/phase5-validation.log
+          echo "Commit: $(git rev-parse HEAD)" >> /tmp/phase5-validation.log
+          echo 'RESULT=success' > /tmp/phase5-validation.env
+      - name: JavaScript syntax
+        run: |
+          set +e
+          node --check assets/js/public-donations-recall.js >> /tmp/phase5-validation.log 2>&1
+          code=$?
+          echo "JavaScript syntax: $([ $code -eq 0 ] && echo PASS || echo FAIL)" >> /tmp/phase5-validation.log
+          if [ $code -ne 0 ]; then echo 'RESULT=failure' > /tmp/phase5-validation.env; fi
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: Validate PHP 8.2
+        run: |
+          set +e
+          checks=(
+            "php -l includes/public-donations-recall.php"
+            "php -l api/merchant/public-donations-recall.php"
+            "php -l merchant-campaigns.php"
+            "php -l scripts/validate_public_donations_recall_v1.php"
+            "php -l scripts/test_public_donations_recall_mysql.php"
+            "php -l tests/phpunit/PublicDonationsRecallContractTest.php"
+            "php scripts/validate_public_donations_recall_v1.php"
+            "phpunit tests/phpunit/PublicDonationsRecallContractTest.php"
+            "php scripts/test_public_donations_recall_mysql.php"
+          )
+          for check in "${checks[@]}"; do
+            echo "--- PHP 8.2: $check" >> /tmp/phase5-validation.log
+            bash -lc "$check" >> /tmp/phase5-validation.log 2>&1
+            code=$?
+            echo "PHP 8.2 [$check]: $([ $code -eq 0 ] && echo PASS || echo FAIL)" >> /tmp/phase5-validation.log
+            if [ $code -ne 0 ]; then echo 'RESULT=failure' > /tmp/phase5-validation.env; fi
+          done
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: Validate PHP 8.3
+        run: |
+          set +e
+          checks=(
+            "php -l includes/public-donations-recall.php"
+            "php -l api/merchant/public-donations-recall.php"
+            "php -l merchant-campaigns.php"
+            "php -l scripts/validate_public_donations_recall_v1.php"
+            "php -l scripts/test_public_donations_recall_mysql.php"
+            "php -l tests/phpunit/PublicDonationsRecallContractTest.php"
+            "php scripts/validate_public_donations_recall_v1.php"
+            "phpunit tests/phpunit/PublicDonationsRecallContractTest.php"
+            "php scripts/test_public_donations_recall_mysql.php"
+          )
+          for check in "${checks[@]}"; do
+            echo "--- PHP 8.3: $check" >> /tmp/phase5-validation.log
+            bash -lc "$check" >> /tmp/phase5-validation.log 2>&1
+            code=$?
+            echo "PHP 8.3 [$check]: $([ $code -eq 0 ] && echo PASS || echo FAIL)" >> /tmp/phase5-validation.log
+            if [ $code -ne 0 ]; then echo 'RESULT=failure' > /tmp/phase5-validation.env; fi
+          done
+      - name: Commit validation receipt
+        run: |
+          source /tmp/phase5-validation.env
+          printf '\nOverall: %s\n' "$RESULT" >> /tmp/phase5-validation.log
+          cp /tmp/phase5-validation.log scripts/.public_donations_phase5_validation.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/.public_donations_phase5_validation.txt
+          git commit -m "Record Phase 5 validation $RESULT"
+          git push origin HEAD:feature/public-donations-recall-controls-v1
+          if [ "$RESULT" != 'success' ]; then exit 1; fi
