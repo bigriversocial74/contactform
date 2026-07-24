@@ -9,7 +9,7 @@ on:
       - '.github/workflows/apply-public-donations-phase2-quality-fixes.yml'
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 concurrency:
@@ -25,7 +25,6 @@ jobs:
         with:
           ref: feature/public-donations-campaign-foundation-v1
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -39,19 +38,17 @@ jobs:
           php -l scripts/validate_public_donations_campaign_foundation_v1.php
           php -l tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
           php scripts/validate_public_donations_campaign_foundation_v1.php
-      - name: Commit validated quality fixes
-        shell: bash
+      - name: Stage validated artifact
         run: |
-          set -euo pipefail
-          git config user.name 'Microgifter Phase Builder'
-          git config user.email 'actions@users.noreply.github.com'
-          git status --short
-          git add -A
-          git commit -m 'Harden Public Donations campaign presentation [phase2-quality]'
-      - name: Reconcile and push quality fixes
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin feature/public-donations-campaign-foundation-v1
-          git rebase origin/feature/public-donations-campaign-foundation-v1
-          git push origin HEAD:feature/public-donations-campaign-foundation-v1
+          mkdir -p /tmp/phase2-quality/includes /tmp/phase2-quality/scripts /tmp/phase2-quality/tests/phpunit /tmp/phase2-quality/.github/workflows
+          cp profile.php /tmp/phase2-quality/profile.php
+          cp includes/public-campaign-page.php /tmp/phase2-quality/includes/public-campaign-page.php
+          cp scripts/validate_public_donations_campaign_foundation_v1.php /tmp/phase2-quality/scripts/validate_public_donations_campaign_foundation_v1.php
+          cp tests/phpunit/PublicDonationsCampaignFoundationContractTest.php /tmp/phase2-quality/tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
+          cp .github/workflows/public-donations-campaign-foundation-v1.yml /tmp/phase2-quality/.github/workflows/public-donations-campaign-foundation-v1.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase2-quality-files
+          path: /tmp/phase2-quality
+          if-no-files-found: error
+          retention-days: 1
