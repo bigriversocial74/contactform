@@ -251,7 +251,7 @@ $assert($summary['recalled'] === 2, 'Recalled quantity should remain distinct.')
 $assert($summary['net_allocated'] === 6, 'Net allocated should be gross minus recalled.');
 $assert($summary['available'] === 4, 'Available is a current lifecycle metric and may overlap regifted.');
 $assert($summary['regifted'] === 1, 'Regifted should be detected by canonical owner mismatch.');
-$assert($summary['claimed'] === 1, 'Claimed should be cumulative.');
+$assert($summary['claimed'] === 2, 'Claimed should be cumulative and may overlap redeemed.');
 $assert($summary['redeemed'] === 1, 'Redeemed should be cumulative.');
 $assert($summary['remaining_inventory'] === 12, 'Remaining limited campaign inventory should reconcile.');
 $assert(($summary['stated_value_by_currency'][0]['net_cents'] ?? null) === 6000, 'Net stated value should exclude recalled units.');
