@@ -157,12 +157,20 @@ function mg_public_donations_assignment_search(PDO $pdo, int $merchantId, int $c
     $filter = '';
     if ($query !== '') {
         $like = '%' . $query . '%';
-        $filter = " AND (pp.display_name LIKE ? OR pp.slug LIKE ? OR u.display_name LIKE ? OR u.full_name LIKE ? OR pp.location_label LIKE ?)";
+        $filter = " AND (
+            u.display_name LIKE ? OR u.full_name LIKE ?
+            OR ((pp.status='active' AND pp.visibility IN ('public','unlisted'))
+                AND (pp.display_name LIKE ? OR pp.slug LIKE ? OR pp.location_label LIKE ?))
+        )";
         array_push($params, $like, $like, $like, $like, $like);
     }
 
     $sql = "SELECT pp.public_id AS community_account_id,
-                   COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name) AS display_name,
+                   CASE
+                       WHEN pp.status='active' AND pp.visibility IN ('public','unlisted')
+                           THEN COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name)
+                       ELSE COALESCE(NULLIF(u.display_name,''),u.full_name)
+                   END AS display_name,
                    pp.slug AS profile_slug,pp.status AS profile_status,pp.visibility AS profile_visibility,
                    pp.avatar_url,pp.location_label,
                    GROUP_CONCAT(DISTINCT role_all.slug ORDER BY role_all.slug SEPARATOR ',') AS role_slugs,
@@ -190,11 +198,17 @@ function mg_public_donations_assignment_summary(PDO $pdo, int $merchantId, int $
 {
     $stmt = $pdo->prepare(
         "SELECT COUNT(*) AS total,
-                COALESCE(SUM(status='active'),0) AS active,
-                COALESCE(SUM(status='paused'),0) AS paused,
-                COALESCE(SUM(status='removed'),0) AS removed
-           FROM campaign_community_assignments
-          WHERE merchant_user_id=? AND campaign_id=?"
+                COALESCE(SUM(assignment.status='active'),0) AS active,
+                COALESCE(SUM(assignment.status='paused'),0) AS paused,
+                COALESCE(SUM(assignment.status='removed'),0) AS removed
+           FROM campaign_community_assignments assignment
+           INNER JOIN users u ON u.id=assignment.community_user_id AND u.status='active'
+          WHERE assignment.merchant_user_id=? AND assignment.campaign_id=?
+            AND EXISTS (
+                SELECT 1 FROM user_roles community_link
+                INNER JOIN roles community_role ON community_role.id=community_link.role_id
+                WHERE community_link.user_id=assignment.community_user_id AND community_role.slug='community'
+            )"
     );
     $stmt->execute([$merchantId, $campaignId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -221,13 +235,19 @@ function mg_public_donations_assignment_list(PDO $pdo, int $merchantId, int $cam
         "SELECT assignment.public_id AS assignment_public_id,assignment.status AS assignment_status,
                 assignment.added_at,assignment.reactivated_at,assignment.paused_at,assignment.removed_at,assignment.last_allocated_at,
                 pp.public_id AS community_account_id,
-                COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name) AS display_name,
+                CASE
+                    WHEN pp.status='active' AND pp.visibility IN ('public','unlisted')
+                        THEN COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name)
+                    ELSE COALESCE(NULLIF(u.display_name,''),u.full_name)
+                END AS display_name,
                 pp.slug AS profile_slug,pp.status AS profile_status,pp.visibility AS profile_visibility,
                 pp.avatar_url,pp.location_label,
                 GROUP_CONCAT(DISTINCT role_all.slug ORDER BY role_all.slug SEPARATOR ',') AS role_slugs
            FROM campaign_community_assignments assignment
            INNER JOIN users u ON u.id=assignment.community_user_id AND u.status='active'
            INNER JOIN public_profiles pp ON pp.user_id=u.id
+           INNER JOIN user_roles community_link ON community_link.user_id=u.id
+           INNER JOIN roles community_role ON community_role.id=community_link.role_id AND community_role.slug='community'
            LEFT JOIN user_roles role_link ON role_link.user_id=u.id
            LEFT JOIN roles role_all ON role_all.id=role_link.role_id
           WHERE assignment.merchant_user_id=? AND assignment.campaign_id=?{$filter}
@@ -264,7 +284,11 @@ function mg_public_donations_assignment_target(PDO $pdo, string $communityAccoun
     }
     $stmt = $pdo->prepare(
         "SELECT u.id,pp.public_id,
-                COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name) AS display_name
+                CASE
+                    WHEN pp.status='active' AND pp.visibility IN ('public','unlisted')
+                        THEN COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name)
+                    ELSE COALESCE(NULLIF(u.display_name,''),u.full_name)
+                END AS display_name
            FROM users u
            INNER JOIN public_profiles pp ON pp.user_id=u.id
           WHERE pp.public_id=? AND u.status='active'
@@ -334,7 +358,11 @@ function mg_public_donations_assignment_mutate(
         if ($assignmentPublicId !== '') {
             $stmt = $pdo->prepare(
                 "SELECT assignment.*,pp.public_id AS community_account_id,
-                        COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name) AS display_name
+                        CASE
+                            WHEN pp.status='active' AND pp.visibility IN ('public','unlisted')
+                                THEN COALESCE(NULLIF(pp.display_name,''),NULLIF(u.display_name,''),u.full_name)
+                            ELSE COALESCE(NULLIF(u.display_name,''),u.full_name)
+                        END AS display_name
                    FROM campaign_community_assignments assignment
                    INNER JOIN users u ON u.id=assignment.community_user_id
                    INNER JOIN public_profiles pp ON pp.user_id=u.id
