@@ -1,0 +1,45 @@
+name: Apply Public Donations Phase 2 Patch
+
+on:
+  push:
+    branches:
+      - feature/public-donations-campaign-foundation-v1
+    paths:
+      - 'scripts/apply_public_donations_phase2_patch.php'
+      - '.github/workflows/apply-public-donations-phase2-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[phase2-patched]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/public-donations-campaign-foundation-v1
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Apply assertion-checked patches
+        run: php scripts/apply_public_donations_phase2_patch.php
+      - name: Validate patched syntax
+        run: |
+          php -l includes/campaign-types.php
+          php -l api/merchant/campaigns-core.php
+          php -l api/merchant/campaigns.php
+          php -l includes/merchant-campaigns-view.php
+          php -l includes/public-campaign-page.php
+          php -l api/public/campaigns/detail.php
+          php -l includes/market/merchant-market-engine.php
+          node --check assets/js/public-profile-investment.js
+      - name: Commit patched source
+        run: |
+          git config user.name 'Microgifter Phase Builder'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'Wire Public Donations campaign foundation [phase2-patched]'
+          git push origin HEAD:feature/public-donations-campaign-foundation-v1

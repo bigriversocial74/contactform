@@ -1,0 +1,76 @@
+name: Public Donations Campaign Foundation Phase 2
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/campaign-types.php'
+      - 'includes/public-donations-campaign-type.php'
+      - 'includes/public-donations-feature.php'
+      - 'includes/public-campaign-page.php'
+      - 'includes/merchant-campaigns-view.php'
+      - 'includes/market/merchant-market-engine.php'
+      - 'api/merchant/campaigns.php'
+      - 'api/merchant/campaigns-core.php'
+      - 'api/public/campaigns/detail.php'
+      - 'api/public/campaigns/engage.php'
+      - 'api/public/campaigns/engage-core.php'
+      - 'public-donations.php'
+      - 'assets/css/public-donations-campaign-v1.css'
+      - 'assets/js/public-profile-investment.js'
+      - 'scripts/validate_public_donations_campaign_foundation_v1.php'
+      - 'tests/phpunit/PublicDonationsCampaignFoundationContractTest.php'
+      - '.github/workflows/public-donations-campaign-foundation-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-donations-campaign-foundation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: phpunit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l includes/campaign-types.php
+          php -l includes/public-donations-campaign-type.php
+          php -l includes/public-donations-feature.php
+          php -l includes/public-campaign-page.php
+          php -l includes/merchant-campaigns-view.php
+          php -l includes/market/merchant-market-engine.php
+          php -l api/merchant/campaigns.php
+          php -l api/merchant/campaigns-core.php
+          php -l api/public/campaigns/detail.php
+          php -l api/public/campaigns/engage.php
+          php -l api/public/campaigns/engage-core.php
+          php -l public-donations.php
+          php -l scripts/validate_public_donations_campaign_foundation_v1.php
+          php -l tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/public-profile-investment.js
+      - name: Focused contracts
+        run: |
+          php scripts/validate_public_donations_campaign_foundation_v1.php
+          phpunit tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
+      - name: Existing campaign registry regression
+        run: |
+          php scripts/validate_campaign_type_registry_v2.php
+          php scripts/validate_public_campaign_landing_foundation.php
