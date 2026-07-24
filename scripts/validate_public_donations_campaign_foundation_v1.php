@@ -19,6 +19,12 @@ $market = $read('includes/market/merchant-market-engine.php');
 $profileJs = $read('assets/js/public-profile-investment.js');
 $route = $read('public-donations.php');
 $profilePage = $read('profile.php');
+$dedicatedCore = is_file($root . '/includes/public-donations-public.php')
+    ? $read('includes/public-donations-public.php')
+    : '';
+$dedicatedView = is_file($root . '/includes/public-donations-public-view.php')
+    ? $read('includes/public-donations-public-view.php')
+    : '';
 
 $must = static function(string $text, array $needles, string $label): void {
     foreach ($needles as $needle) if (!str_contains($text, $needle)) throw new RuntimeException($label . ' missing: ' . $needle);
@@ -27,13 +33,29 @@ $must($definition, ["'key' => 'public_donation'", "'label' => 'Public Donations'
 $must($registry, ['mg_public_donations_campaign_definition()', 'mg_campaign_type_public_transactional', 'mg_campaign_type_public_mode'], 'registry');
 $must($feature, ['disabled', 'admin_only', 'selected_merchants', 'enabled', 'MG_PUBLIC_DONATIONS_FEATURE_STATE', 'MG_PUBLIC_DONATIONS_MERCHANT_IDS'], 'feature gate');
 $must($merchant, ["\$campaignType === 'public_donation'", 'mg_public_donations_is_enabled_for', 'mg_public_donations_campaign_type_options'], 'merchant API');
-$must($publicPage, ['mg_campaign_type_public_transactional', 'mg-public-donations-info', 'These rewards are not available for public purchase or request.'], 'public renderer');
+$must($publicPage, ['mg_campaign_type_public_transactional', 'mg-public-donations-info', 'These rewards are not available for public purchase or request.'], 'generic public renderer');
 $must($detail, ["'public_transactional'", "'public_mode'", 'mg_public_donations_is_enabled_for'], 'public detail');
 $must($engage, ['engage-core.php', 'does not accept public requests', 'mg_campaign_type_public_transactional'], 'engagement guard');
 $must($market, ['community_accounts_supported', 'rewards_allocated', "'card_variant'=>\$campaignType === 'public_donation' ? 'public_donation' : 'standard'"], 'profile campaign data');
 $must($profileJs, ['mg-profile-campaign-badge', 'Community accounts supported', 'View Campaign'], 'profile card renderer');
-$must($route, ["\$mgCampaignExpectedType = 'public_donation'", '/assets/css/public-donations-campaign-v1.css'], 'public route');
 $must($profilePage, ['/assets/css/public-donations-campaign-v1.css'], 'public profile styles');
 $must($publicPage, ['data-campaign-closed-state', "\$state['message']"], 'informational campaign state');
+
+$legacyRoute = str_contains($route, "\$mgCampaignExpectedType = 'public_donation'")
+    && str_contains($route, '/assets/css/public-donations-campaign-v1.css');
+$dedicatedRoute = str_contains($route, 'public-donations-public.php')
+    && str_contains($route, 'public-donations-public-view.php')
+    && str_contains($route, '/assets/css/public-donations-public-v1.css');
+if (!$legacyRoute && !$dedicatedRoute) {
+    throw new RuntimeException('Public route must use the canonical generic or dedicated informational implementation.');
+}
+
+if ($dedicatedRoute) {
+    $must($dedicatedCore, ["'public_transactional' => false", "'public_mode' => 'informational'", "'public_purchase_available' => false", "'public_request_available' => false"], 'dedicated public contract');
+    if (preg_match('/<(form|input|textarea|select|button)\b/i', $dedicatedView)) {
+        throw new RuntimeException('Dedicated Public Donations page must not render transaction or contact controls.');
+    }
+}
+
 if (str_contains($publicPage, 'data-campaign-form data-public-donations')) throw new RuntimeException('Public Donations must not render a public form.');
 echo "Public Donations campaign foundation contract valid.\n";
