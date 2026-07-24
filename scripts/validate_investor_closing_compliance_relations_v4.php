@@ -83,7 +83,22 @@ foreach([
 ] as $needle)$pass(str_contains($adminApi,$needle),'Closing admin API contains '.$needle);
 
 $portalApi=$read('api/investment/portal.php');
-foreach(['mg_require_api_user()','mg_require_csrf_for_write','mg_rate_limit','mg_investment_portal_data_v4','mg_investment_portal_submit_diligence_v4','mg_investment_portal_submit_interest_v4','mg_investment_portal_event_v4'] as $needle)$pass(str_contains($portalApi,$needle),'Investor Portal API contains '.$needle);
+foreach(['mg_require_api_user()','mg_require_csrf_for_write','mg_rate_limit'] as $needle)$pass(str_contains($portalApi,$needle),'Investor Portal API contains '.$needle);
+$usesV4Data=str_contains($portalApi,'mg_investment_portal_data_v4');$usesV5Data=str_contains($portalApi,'mg_investment_portal_data_v5');
+$usesV4Diligence=str_contains($portalApi,'mg_investment_portal_submit_diligence_v4');$usesV5Diligence=str_contains($portalApi,'mg_investment_portal_submit_diligence_v5');
+$usesV4Interest=str_contains($portalApi,'mg_investment_portal_submit_interest_v4');$usesV5Interest=str_contains($portalApi,'mg_investment_portal_submit_interest_v5');
+$usesV4Events=str_contains($portalApi,'mg_investment_portal_event_v4');$usesV5Events=str_contains($portalApi,'mg_investment_portal_event_v5');
+$pass($usesV4Data||$usesV5Data,'Investor Portal API uses Phase 4 data or a verified Phase 5 extension.');
+$pass($usesV4Diligence||$usesV5Diligence,'Investor Portal API preserves Phase 4 diligence submissions.');
+$pass($usesV4Interest||$usesV5Interest,'Investor Portal API preserves Phase 4 interest submissions.');
+$pass($usesV4Events||$usesV5Events,'Investor Portal API uses Phase 4 events or a verified Phase 5 extension.');
+if($usesV5Data||$usesV5Diligence||$usesV5Interest||$usesV5Events){
+    $portalV5=$read('includes/investment/investment-portal-v5.php');
+    $pass(str_contains($portalV5,'mg_investment_portal_data_v4'),'Phase 5 portal data extends the Phase 4 portal authority.');
+    $pass(str_contains($portalV5,'mg_investment_portal_event_v4'),'Phase 5 standard portal events delegate to the Phase 4 authority.');
+    $pass(str_contains($portalV5,'mg_investment_portal_submit_diligence_v4'),'Phase 5 diligence submissions preserve the Phase 4 authority.');
+    $pass(str_contains($portalV5,'mg_investment_portal_submit_interest_v4'),'Phase 5 interest submissions preserve the Phase 4 authority.');
+}
 
 $page=$read('admin/investment-closing.php');
 foreach([
