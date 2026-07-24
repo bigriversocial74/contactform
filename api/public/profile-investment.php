@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/includes/market/merchant-market-engine.php';
+require_once dirname(__DIR__, 2) . '/includes/public-profile-community.php';
 
 mg_require_method('GET');
 
@@ -16,6 +17,15 @@ try {
         'viewer_id' => $viewerId,
         'preview' => !empty($_GET['preview']),
     ]);
+    $community = mg_public_profile_community_build($pdo, $slug);
+    $payload['community_support'] = $community;
+    if (isset($payload['campaigns']['items']) && is_array($payload['campaigns']['items'])) {
+        $payload['campaigns']['items'] = mg_public_profile_community_enrich_campaign_items(
+            $payload['campaigns']['items'],
+            $community
+        );
+        $payload['campaigns']['has_data'] = $payload['campaigns']['items'] !== [];
+    }
 } catch (Throwable) {
     mg_fail('Profile not found.', 404);
 }
