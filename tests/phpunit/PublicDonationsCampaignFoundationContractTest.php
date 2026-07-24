@@ -40,6 +40,9 @@ final class PublicDonationsCampaignFoundationContractTest extends TestCase
         self::assertStringContainsString("'public_transactional'", $detail);
         self::assertStringContainsString('does not accept public requests', $engage);
         self::assertStringContainsString("require __DIR__ . '/engage-core.php'", $engage);
+        self::assertStringContainsString('data-campaign-closed-state', $page);
+        $profilePage = (string)file_get_contents($this->root . '/profile.php');
+        self::assertStringContainsString('/assets/css/public-donations-campaign-v1.css', $profilePage);
     }
 
     public function testMerchantAndProfileSurfacesUseCanonicalContracts(): void
