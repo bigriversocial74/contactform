@@ -66,6 +66,7 @@ jobs:
           php -l includes/investment/investment-audit-hardening-v8.php
           php -l includes/investment/investment-audit-hardening-v9.php
           php -l includes/investment/investment-audit-hardening-v10.php
+          php -l includes/investment/investment-audit-hardening-v11.php
           php -l scripts/validate_investor_module_audit_10of10.php
 
       - name: JavaScript syntax
@@ -96,7 +97,7 @@ jobs:
       - name: Phase 5 compatibility contract
         run: php scripts/validate_investor_governance_information_rights_v5.php
 
-      - name: Additive SQL contract
+      - name: Additive SQL and financial authority contract
         run: |
           grep -q "admin.investment.relations.publish" database/20260724_investor_module_audit_hardening_v1.sql
           grep -q "signed_verification_source" database/20260724_investor_module_audit_hardening_v1.sql
@@ -105,5 +106,7 @@ jobs:
           grep -q "CREATE TABLE IF NOT EXISTS investment_document_versions" database/20260724_investor_module_audit_hardening_v1.sql
           grep -q "investor_visible" database/20260724_investor_module_audit_hardening_v1.sql
           grep -q "schema_migrations" database/20260724_investor_module_audit_hardening_v1.sql
+          grep -q "Generic financial adjustments are not allowed" includes/investment/investment-audit-hardening-v11.php
+          grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v11.php
           ! grep -q "DROP TABLE" database/20260724_investor_module_audit_hardening_v1.sql
           ! grep -q "TRUNCATE TABLE" database/20260724_investor_module_audit_hardening_v1.sql
