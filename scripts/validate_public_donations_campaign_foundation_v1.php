@@ -18,6 +18,7 @@ $engage = $read('api/public/campaigns/engage.php');
 $market = $read('includes/market/merchant-market-engine.php');
 $profileJs = $read('assets/js/public-profile-investment.js');
 $route = $read('public-donations.php');
+$profilePage = $read('profile.php');
 
 $must = static function(string $text, array $needles, string $label): void {
     foreach ($needles as $needle) if (!str_contains($text, $needle)) throw new RuntimeException($label . ' missing: ' . $needle);
@@ -32,5 +33,7 @@ $must($engage, ['engage-core.php', 'does not accept public requests', 'mg_campai
 $must($market, ['community_accounts_supported', 'rewards_allocated', "'card_variant'=>\$campaignType === 'public_donation' ? 'public_donation' : 'standard'"], 'profile campaign data');
 $must($profileJs, ['mg-profile-campaign-badge', 'Community accounts supported', 'View Campaign'], 'profile card renderer');
 $must($route, ["\$mgCampaignExpectedType = 'public_donation'", '/assets/css/public-donations-campaign-v1.css'], 'public route');
+$must($profilePage, ['/assets/css/public-donations-campaign-v1.css'], 'public profile styles');
+$must($publicPage, ['data-campaign-closed-state', "\$state['message']"], 'informational campaign state');
 if (str_contains($publicPage, 'data-campaign-form data-public-donations')) throw new RuntimeException('Public Donations must not render a public form.');
 echo "Public Donations campaign foundation contract valid.\n";
