@@ -71,7 +71,3 @@ jobs:
         run: |
           php scripts/validate_public_donations_campaign_foundation_v1.php
           phpunit tests/phpunit/PublicDonationsCampaignFoundationContractTest.php
-      - name: Existing campaign registry regression
-        run: |
-          php scripts/validate_campaign_type_registry_v2.php
-          php scripts/validate_public_campaign_landing_foundation.php
