@@ -36,7 +36,21 @@ jobs:
         with:
           node-version: '24'
       - name: Apply assertion-checked patches
-        run: php scripts/apply_public_donations_phase2_patch.php
+        shell: bash
+        run: |
+          set +e
+          php scripts/apply_public_donations_phase2_patch.php > /tmp/phase2-patch.log 2>&1
+          code=$?
+          cat /tmp/phase2-patch.log
+          if [ "$code" -ne 0 ]; then
+            cp /tmp/phase2-patch.log phase2-patch-error.txt
+            git config user.name 'Microgifter Phase Builder'
+            git config user.email 'actions@users.noreply.github.com'
+            git add phase2-patch-error.txt
+            git commit -m 'Capture Phase 2 patch assertion failure'
+            git push origin HEAD:feature/public-donations-campaign-foundation-v1
+            exit "$code"
+          fi
       - name: Validate patched syntax
         run: |
           php -l includes/campaign-types.php
