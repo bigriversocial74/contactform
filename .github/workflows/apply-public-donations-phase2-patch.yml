@@ -1,29 +1,40 @@
 name: Apply Public Donations Phase 2 Patch
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/public-donations-campaign-foundation-v1
+      - integration-from-repair-20260628
     paths:
       - 'scripts/apply_public_donations_phase2_patch.php'
       - '.github/workflows/apply-public-donations-phase2-patch.yml'
+      - 'includes/public-donations-campaign-type.php'
+      - 'includes/public-donations-feature.php'
 
 permissions:
   contents: write
+  pull-requests: read
+
+concurrency:
+  group: public-donations-phase2-patch-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[phase2-patched]') }}
+    if: ${{ github.event.pull_request.head.ref == 'feature/public-donations-campaign-foundation-v1' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feature/public-donations-campaign-foundation-v1
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Apply assertion-checked patches
         run: php scripts/apply_public_donations_phase2_patch.php
       - name: Validate patched syntax
