@@ -36,6 +36,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <div class="mg-pipeline-hero-actions">
           <a class="mg-btn mg-btn-ghost" href="/admin/investor-access-requests.php">Access requests</a>
           <a class="mg-btn mg-btn-soft" href="/admin/investment-wizard.php">Investment Wizard</a>
+          <a class="mg-btn mg-btn-soft" href="/admin/investor-diligence.php">Due Diligence</a>
           <?php if ($canManage): ?><button class="mg-btn mg-btn-primary" type="button" data-sync-profiles>Sync approved investors</button><?php endif; ?>
         </div>
       </header>
@@ -72,7 +73,7 @@ require dirname(__DIR__) . '/includes/header.php';
 
       <section data-tab-panel="metrics" hidden>
         <div class="mg-evidence-toolbar">
-          <div><span class="mg-eyebrow">Governed evidence adapters</span><h2>Live Evidence & Snapshots</h2><p>Refresh supported canonical Microgifter measures and create dated, traceable investment snapshots.</p></div>
+          <div><span class="mg-eyebrow">Governed evidence adapters</span><h2>Live Evidence &amp; Snapshots</h2><p>Refresh supported canonical Microgifter measures and create dated, traceable investment snapshots.</p></div>
           <?php if ($canRefreshMetrics): ?><button class="mg-btn mg-btn-primary" type="button" data-refresh-metrics>Refresh selected metrics</button><?php endif; ?>
         </div>
         <div class="mg-evidence-layout">
