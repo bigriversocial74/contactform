@@ -47,7 +47,9 @@ foreach (['commerce.', 'payment.', 'claim.', 'redemption.', 'ownership.'] as $au
 }
 
 $sync = $read('api/homeserver/sync.php');
-$check(strpos($sync, '$validated = [];') < strpos($sync, '$pdo->beginTransaction();'), 'Sync validation must finish before the transaction starts.');
+$validationPosition = strpos($sync, '$validated = [];');
+$transactionPosition = strpos($sync, '$pdo->beginTransaction();');
+$check($validationPosition !== false && $transactionPosition !== false && $validationPosition < $transactionPosition, 'Sync validation must finish before the transaction starts.');
 $check(str_contains($sync, 'FOR UPDATE'), 'Sync receipt replays must be transactionally locked.');
 $check(str_contains($sync, 'hash_equals'), 'Sync idempotency request hashes must use constant-time comparison.');
 
@@ -55,6 +57,11 @@ $pairing = $read('api/homeserver/pair.php');
 $check(str_contains($pairing, "function_exists('sodium_crypto_sign_verify_detached')"), 'Pairing must fail closed when sodium is unavailable.');
 $check(str_contains($pairing, "status='active'"), 'Owner-approved re-pairing must rotate and reactivate scoped credentials.');
 $check(str_contains($pairing, 'consumed_at=UTC_TIMESTAMP()'), 'Pairing codes must be consumed exactly once in UTC.');
+
+$revocation = $read('api/homeserver/revoke.php');
+$check(str_contains($revocation, "status='revoked'"), 'Device revocation must persist a terminal cloud status.');
+$check(str_contains($revocation, 'revoked_at=UTC_TIMESTAMP()'), 'Device revocation must be recorded in UTC.');
+$check(str_contains($revocation, 'token_hash=?'), 'Device revocation must invalidate the stored token hash.');
 
 $requiredEndpoints = [
     'api/homeserver/pairing-code.php',
