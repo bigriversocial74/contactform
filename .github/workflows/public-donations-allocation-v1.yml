@@ -61,7 +61,7 @@ jobs:
           coverage: none
           extensions: pdo_mysql,mbstring
           tools: phpunit
-      - name: Validate PHP 8.2
+      - name: PHP 8.2 syntax
         run: |
           php -l includes/public-donations-allocation.php
           php -l api/merchant/public-donations-allocation.php
@@ -69,9 +69,12 @@ jobs:
           php -l scripts/validate_public_donations_allocation_v1.php
           php -l scripts/test_public_donations_allocation_mysql.php
           php -l tests/phpunit/PublicDonationsAllocationContractTest.php
-          php scripts/validate_public_donations_allocation_v1.php
-          phpunit tests/phpunit/PublicDonationsAllocationContractTest.php
-          php scripts/test_public_donations_allocation_mysql.php
+      - name: PHP 8.2 focused contracts
+        run: php scripts/validate_public_donations_allocation_v1.php
+      - name: PHP 8.2 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsAllocationContractTest.php
+      - name: PHP 8.2 MySQL lifecycle
+        run: php scripts/test_public_donations_allocation_mysql.php
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -80,7 +83,7 @@ jobs:
           coverage: none
           extensions: pdo_mysql,mbstring
           tools: phpunit
-      - name: Validate PHP 8.3
+      - name: PHP 8.3 syntax
         run: |
           php -l includes/public-donations-allocation.php
           php -l api/merchant/public-donations-allocation.php
@@ -88,6 +91,9 @@ jobs:
           php -l scripts/validate_public_donations_allocation_v1.php
           php -l scripts/test_public_donations_allocation_mysql.php
           php -l tests/phpunit/PublicDonationsAllocationContractTest.php
-          php scripts/validate_public_donations_allocation_v1.php
-          phpunit tests/phpunit/PublicDonationsAllocationContractTest.php
-          php scripts/test_public_donations_allocation_mysql.php
+      - name: PHP 8.3 focused contracts
+        run: php scripts/validate_public_donations_allocation_v1.php
+      - name: PHP 8.3 PHPUnit
+        run: phpunit tests/phpunit/PublicDonationsAllocationContractTest.php
+      - name: PHP 8.3 MySQL lifecycle
+        run: php scripts/test_public_donations_allocation_mysql.php
