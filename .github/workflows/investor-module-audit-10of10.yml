@@ -71,6 +71,7 @@ jobs:
           php -l includes/investment/investment-audit-hardening-v11.php
           php -l includes/investment/investment-audit-hardening-v12.php
           php -l includes/investment/investment-audit-hardening-v13.php
+          php -l includes/investment/investment-audit-hardening-v14.php
           php -l scripts/validate_investor_module_audit_10of10.php
           php -l scripts/validate_investor_module_publication_v12.php
           php -l scripts/validate_investor_module_exact_approval_v13.php
@@ -120,9 +121,12 @@ jobs:
           grep -q "schema_migrations" database/20260724_investor_module_audit_hardening_v1.sql
           grep -q "Generic financial adjustments are not allowed" includes/investment/investment-audit-hardening-v11.php
           grep -q "Approve the exact investment document version" includes/investment/investment-audit-hardening-v12.php
-          grep -q "Approve the exact tax-document version" includes/investment/investment-audit-hardening-v12.php
+          grep -q "The published tax document must exactly match" includes/investment/investment-audit-hardening-v12.php
           grep -q "Approve the exact board packet document" includes/investment/investment-audit-hardening-v13.php
           grep -q "Approve the exact reporting obligation" includes/investment/investment-audit-hardening-v13.php
+          grep -q "Published meeting status and counsel authority must exactly match" includes/investment/investment-audit-hardening-v14.php
+          grep -q "Published notice counsel authority must exactly match" includes/investment/investment-audit-hardening-v14.php
+          grep -q "Published obligation status and counsel-review requirement must exactly match" includes/investment/investment-audit-hardening-v14.php
           grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v11.php
           grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v13.php
           ! grep -q "DROP TABLE" database/20260724_investor_module_audit_hardening_v1.sql
