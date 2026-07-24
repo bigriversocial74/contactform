@@ -18,7 +18,7 @@ if (!$device) mg_fail('HomeServer device was not found.', 404);
 if ((string)$device['status'] === 'revoked') mg_ok(['device' => mg_homeserver_device_payload($device)], 'HomeServer device was already revoked.');
 
 $invalidatedHash = hash('sha256', random_bytes(64));
-$pdo->prepare("UPDATE homeserver_devices SET status='revoked',token_hash=?,revoked_at=NOW(),updated_at=NOW() WHERE id=?")
+$pdo->prepare("UPDATE homeserver_devices SET status='revoked',token_hash=?,revoked_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() WHERE id=?")
     ->execute([$invalidatedHash, (int)$device['id']]);
 $device['status'] = 'revoked';
 $device['revoked_at'] = gmdate('Y-m-d H:i:s');
