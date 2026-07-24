@@ -25,6 +25,7 @@ $page_styles = [
     '/assets/css/public-profile-realtime.css',
     '/assets/css/public-profile-content-first.css?v=1.0.0',
     '/assets/css/community-role-badges-v1.css?v=1.0.0',
+    '/assets/css/public-donations-campaign-v1.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/public-profile-runtime.js',

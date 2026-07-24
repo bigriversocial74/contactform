@@ -2,11 +2,13 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/api/profiles/_public_profile.php';
+require_once dirname(__DIR__) . '/campaign-types.php';
+require_once dirname(__DIR__) . '/public-donations-feature.php';
 
 function mg_market_table(PDO $pdo, string $table): bool
 {
     static $cache = [];
-    $allowed = ['public_profiles','catalog_products','catalog_product_versions','campaigns','campaign_contacts','campaign_events','wallet_items','feed_posts','social_follows','social_mutation_requests','reward_templates','distribution_programs','distribution_source_connections','distribution_source_events','distribution_allocations','account_stamp_balances','stamp_ledger_entries','merchant_market_snapshots'];
+    $allowed = ['public_profiles','catalog_products','catalog_product_versions','campaigns','campaign_contacts','campaign_events','wallet_items','feed_posts','social_follows','social_mutation_requests','reward_templates','distribution_programs','distribution_source_connections','distribution_source_events','distribution_allocations','account_stamp_balances','stamp_ledger_entries','merchant_market_snapshots','campaign_community_assignments'];
     if (!in_array($table, $allowed, true)) return false;
     if (array_key_exists($table, $cache)) return $cache[$table];
     try {
@@ -26,7 +28,7 @@ function mg_market_pct(?float $value, int $places = 0): string { return $value =
 function mg_market_metric(string $display, int|float|string|null $raw = null, bool $hasData = true, ?string $detail = null): array { return ['display'=>$display,'raw'=>$raw,'has_data'=>$hasData,'detail'=>$detail]; }
 function mg_market_rating(int $score): string { return $score >= 85 ? 'Premium Demand' : ($score >= 70 ? 'High Demand' : ($score >= 50 ? 'Building Demand' : ($score >= 25 ? 'Early Demand' : 'No Market Signal'))); }
 function mg_market_symbol(string $name, string $slug): string { $symbol = preg_replace('/[^A-Z0-9]/', '', strtoupper($slug)); if ($symbol === '') { foreach (preg_split('/\s+/', trim($name)) ?: [] as $part) $symbol .= substr(preg_replace('/[^A-Z0-9]/', '', strtoupper($part)), 0, 1); } return substr($symbol !== '' ? $symbol : 'MGFT', 0, 5); }
-function mg_market_campaign_url(array $row): ?string { $slug = trim((string)($row['public_slug'] ?? '')); if ($slug === '') return null; $page = match ((string)($row['campaign_type'] ?? '')) { 'newsletter_signup'=>'/newsletter-signup.php','contest_giveaway'=>'/contest.php','qr_reward_drop'=>'/qr-reward.php','referral_reward'=>'/referral-reward.php','birthday_vip'=>'/birthday-vip.php','agent_offer'=>'/agent-offer.php', default=>'/campaign.php' }; return $page . '?campaign=' . rawurlencode($slug); }
+function mg_market_campaign_url(array $row): ?string { $slug = trim((string)($row['public_slug'] ?? '')); if ($slug === '') return null; $page = mg_campaign_type_public_path((string)($row['campaign_type'] ?? '')); if ($page === '') return null; return $page . '?campaign=' . rawurlencode($slug); }
 function mg_market_campaign_progress(array $row): ?int { $limit = (int)($row['quantity_limit'] ?? 0); $issued = (int)($row['issued_count'] ?? 0); if ($limit > 0) return max(0, min(100, (int)round(($issued / $limit) * 100))); $starts = !empty($row['starts_at']) ? strtotime((string)$row['starts_at']) : false; $ends = !empty($row['ends_at']) ? strtotime((string)$row['ends_at']) : false; return $starts !== false && $ends !== false && $ends > $starts ? max(0, min(100, (int)round(((time() - $starts) / ($ends - $starts)) * 100))) : null; }
 function mg_market_source_key(string $source): ?string
 {
@@ -81,7 +83,25 @@ function mg_merchant_market_build(PDO $pdo, string $slug, array $options = []): 
         $row = mg_market_row($pdo, "SELECT COUNT(*) total_campaigns,SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) active_campaigns,COALESCE(SUM(issued_count),0) issued,COALESCE(SUM(quantity_limit),0) capacity,COALESCE(SUM(CASE WHEN agent_discoverable=1 AND status='active' THEN 1 ELSE 0 END),0) agent_items FROM campaigns WHERE merchant_user_id=? AND status NOT IN ('archived')", [$ownerId]);
         $totalCampaigns = (int)($row['total_campaigns'] ?? 0); $activeCampaigns = (int)($row['active_campaigns'] ?? 0); $campaignIssued = (int)($row['issued'] ?? 0); $campaignCapacity = (int)($row['capacity'] ?? 0); $agentDiscoverable += (int)($row['agent_items'] ?? 0);
         foreach (mg_market_rows($pdo, "SELECT public_id,campaign_type,title,description,status,starts_at,ends_at,quantity_limit,issued_count,public_slug,updated_at FROM campaigns WHERE merchant_user_id=? AND status IN ('active','paused') ORDER BY CASE WHEN status='active' THEN 0 ELSE 1 END,COALESCE(starts_at,updated_at) DESC,public_id DESC LIMIT 8", [$ownerId]) as $row) {
-            $campaignItems[] = ['id'=>(string)$row['public_id'],'type'=>(string)$row['campaign_type'],'title'=>(string)$row['title'],'description'=>$row['description'] !== null ? (string)$row['description'] : null,'status'=>(string)$row['status'],'progress'=>mg_market_campaign_progress($row),'issued_count'=>(int)($row['issued_count'] ?? 0),'quantity_limit'=>$row['quantity_limit'] !== null ? (int)$row['quantity_limit'] : null,'url'=>mg_market_campaign_url($row)];
+            $campaignType = (string)$row['campaign_type'];
+            if ($campaignType === 'public_donation' && !mg_public_donations_is_enabled_for($ownerId, null)) continue;
+            $supported = 0;
+            if ($campaignType === 'public_donation' && mg_market_table($pdo, 'campaign_community_assignments')) {
+                $supported = (int)(mg_market_row($pdo, "SELECT COUNT(*) total FROM campaign_community_assignments WHERE campaign_id=(SELECT id FROM campaigns WHERE public_id=? AND merchant_user_id=? LIMIT 1) AND status='active'", [(string)$row['public_id'], $ownerId])['total'] ?? 0);
+            }
+            $campaignItems[] = [
+                'id'=>(string)$row['public_id'], 'type'=>$campaignType, 'campaign_type'=>$campaignType,
+                'title'=>(string)$row['title'], 'description'=>$row['description'] !== null ? (string)$row['description'] : null,
+                'status'=>(string)$row['status'], 'progress'=>mg_market_campaign_progress($row),
+                'issued_count'=>(int)($row['issued_count'] ?? 0), 'rewards_allocated'=>(int)($row['issued_count'] ?? 0),
+                'community_accounts_supported'=>$supported,
+                'quantity_limit'=>$row['quantity_limit'] !== null ? (int)$row['quantity_limit'] : null,
+                'url'=>mg_market_campaign_url($row), 'action_label'=>'View Campaign',
+                'card_variant'=>$campaignType === 'public_donation' ? 'public_donation' : 'standard',
+                'badge'=>$campaignType === 'public_donation' ? 'Public Donations' : null,
+                'public_transactional'=>mg_campaign_type_public_transactional($campaignType),
+                'public_mode'=>mg_campaign_type_public_mode($campaignType),
+            ];
         }
     }
     if (mg_market_table($pdo, 'reward_templates')) $agentDiscoverable += (int)(mg_market_row($pdo, "SELECT COUNT(*) total FROM reward_templates WHERE merchant_user_id=? AND status='active' AND agent_discoverable=1", [$ownerId])['total'] ?? 0);

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/loyalty-quest-campaign-type.php';
+require_once __DIR__ . '/public-donations-campaign-type.php';
 
 /**
  * Microgifter Campaign Type Registry v2.1
@@ -510,6 +511,7 @@ function mg_campaign_type_registry(): array
         ],
     ];
     $registry['loyalty_quest'] = mg_loyalty_quest_campaign_definition();
+    $registry['public_donation'] = mg_public_donations_campaign_definition();
     return $registry;
 }
 
@@ -547,9 +549,25 @@ function mg_campaign_type_public_enabled(string $type): bool
     return !empty(mg_campaign_type_get($type)['public_enabled']);
 }
 
+function mg_campaign_type_public_transactional(string $type): bool
+{
+    $definition = mg_campaign_type_get($type);
+    if (!is_array($definition) || empty($definition['public_enabled'])) return false;
+    return !array_key_exists('public_transactional', $definition) || !empty($definition['public_transactional']);
+}
+
+function mg_campaign_type_public_mode(string $type): string
+{
+    $definition = mg_campaign_type_get($type);
+    if (!is_array($definition) || empty($definition['public_enabled'])) return 'internal';
+    return (string)($definition['public_mode'] ?? (mg_campaign_type_public_transactional($type) ? 'transactional' : 'informational'));
+}
+
 function mg_campaign_type_submit_endpoint(string $type): string
 {
-    return (string)(mg_campaign_type_get($type)['submit_endpoint'] ?? '/api/public/campaigns/engage.php');
+    if (!mg_campaign_type_public_transactional($type)) return '';
+    $endpoint = trim((string)(mg_campaign_type_get($type)['submit_endpoint'] ?? ''));
+    return $endpoint !== '' ? $endpoint : '/api/public/campaigns/engage.php';
 }
 
 function mg_campaign_type_source(string $type): string
@@ -578,6 +596,8 @@ function mg_campaign_type_options(bool $includeInternal = false): array
             'description' => $definition['description'],
             'internal_only' => !empty($definition['internal_only']),
             'public_enabled' => !empty($definition['public_enabled']),
+            'public_transactional' => mg_campaign_type_public_transactional((string)$definition['key']),
+            'public_mode' => mg_campaign_type_public_mode((string)$definition['key']),
         ],
         array_filter(
             mg_campaign_type_registry(),
@@ -600,6 +620,8 @@ function mg_campaign_type_client_registry(bool $includeInternal = false): array
             'default_copy' => $definition['default_copy'],
             'internal_only' => !empty($definition['internal_only']),
             'public_enabled' => !empty($definition['public_enabled']),
+            'public_transactional' => mg_campaign_type_public_transactional((string)$definition['key']),
+            'public_mode' => mg_campaign_type_public_mode((string)$definition['key']),
         ],
         array_filter(
             mg_campaign_type_registry(),

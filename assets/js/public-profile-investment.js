@@ -103,6 +103,7 @@
     if (value.includes('stamp') || value.includes('check')) return '◎';
     if (value.includes('newsletter') || value.includes('email') || value.includes('signup')) return '✉';
     if (value.includes('referral')) return '↗';
+    if (value.includes('public_donation') || value.includes('public donation')) return '★';
     return '•';
   }
 
@@ -113,7 +114,8 @@
     box.replaceChildren();
 
     (Array.isArray(items) ? items : []).forEach(function(item){
-      var card = el('article', 'mg-profile-campaign-card');
+      var isPublicDonation = String(item.card_variant || item.campaign_type || item.type || '') === 'public_donation';
+      var card = el('article', 'mg-profile-campaign-card' + (isPublicDonation ? ' is-public-donation' : ''));
       var icon = el('span', 'mg-profile-campaign-icon', campaignIcon(item));
       icon.setAttribute('aria-hidden', 'true');
 
@@ -122,7 +124,17 @@
         ? el('a', 'mg-profile-campaign-title', item.title || 'Campaign')
         : el('strong', 'mg-profile-campaign-title', item.title || 'Campaign');
       if (item.url) title.href = href(item.url, '/campaign.php');
+      if (isPublicDonation) copy.appendChild(el('span', 'mg-profile-campaign-badge', 'Public Donations'));
       copy.append(title, el('p', '', item.description || 'Open this campaign to learn more.'));
+      if (isPublicDonation) {
+        var impact = el('div', 'mg-profile-campaign-impact');
+        impact.append(
+          el('span', '', String(Number(item.community_accounts_supported || 0).toLocaleString()) + ' Community accounts supported'),
+          el('span', '', String(Number(item.rewards_allocated || item.issued_count || 0).toLocaleString()) + ' rewards allocated')
+        );
+        copy.appendChild(impact);
+        if (item.url) { var action = el('a', 'mg-profile-campaign-action', 'View Campaign'); action.href = href(item.url, '/public-donations.php'); copy.appendChild(action); }
+      }
 
       var chevron = item.url ? el('a', 'mg-profile-campaign-chevron', '›') : el('span', 'mg-profile-campaign-chevron', '›');
       if (item.url) {
