@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/public-donations-governance.php';
+
 if (!function_exists('mg_merchant_navigation_items')) {
     function mg_merchant_navigation_items(): array
     {
@@ -44,6 +46,21 @@ if (!function_exists('mg_merchant_navigation_items')) {
             'agent_chat' => ['Agent Chat', 'Merchant agent feed', '/merchant-agent-chat.php', 'Business Operations'],
             'settings' => ['Settings', 'Business configuration', '/merchant-settings.php', 'Business Operations'],
         ];
+    }
+}
+
+if (!function_exists('mg_merchant_navigation_public_donations_visible')) {
+    function mg_merchant_navigation_public_donations_visible(): bool
+    {
+        $user = function_exists('mg_current_user') ? mg_current_user() : null;
+        if (!is_array($user) || empty($user['id'])) return false;
+        $context = function_exists('mg_user_package_context') ? mg_user_package_context(null, $user) : [];
+        $merchantId = (int)($context['workspace_owner_user_id'] ?? $context['entitlement_user_id'] ?? $user['id']);
+        if ($merchantId < 1 || !mg_public_donations_is_enabled_for($merchantId, $user)) return false;
+        if (mg_public_donations_actor_is_admin($user) || (int)$user['id'] === $merchantId) return true;
+        if (function_exists('mg_api_user_has_permission')
+            && mg_api_user_has_permission($user, mg_public_donations_governance_permission('report'))) return true;
+        return mg_public_donations_governance_workspace_allows($context, 'report');
     }
 }
 
@@ -137,6 +154,7 @@ if (!function_exists('mg_merchant_navigation_sidebar')) {
     {
         $activeKey = mg_merchant_navigation_active_key($active);
         $sidebar = [];
+        $publicDonationsVisible = mg_merchant_navigation_public_donations_visible();
 
         foreach (mg_merchant_navigation_items() as $key => $item) {
             $sidebar[$key] = [
@@ -144,7 +162,7 @@ if (!function_exists('mg_merchant_navigation_sidebar')) {
                 'label' => $item[0] ?? $key,
                 'detail' => $item[1] ?? '',
                 'href' => $item[2] ?? '#',
-                'visible' => true,
+                'visible' => $key !== 'community_support' || $publicDonationsVisible,
                 'active' => $activeKey === $key,
             ];
         }
