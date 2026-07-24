@@ -72,6 +72,7 @@ jobs:
           php -l includes/investment/investment-audit-hardening-v12.php
           php -l includes/investment/investment-audit-hardening-v13.php
           php -l includes/investment/investment-audit-hardening-v14.php
+          php -l includes/investment/investment-audit-hardening-v15.php
           php -l scripts/validate_investor_module_audit_10of10.php
           php -l scripts/validate_investor_module_publication_v12.php
           php -l scripts/validate_investor_module_exact_approval_v13.php
@@ -92,7 +93,7 @@ jobs:
       - name: Approved publication contract
         run: php scripts/validate_investor_module_publication_v12.php
 
-      - name: Exact approval publication contract
+      - name: Serialized exact approval contract
         run: php scripts/validate_investor_module_exact_approval_v13.php
 
       - name: Phase 1 compatibility contract
@@ -127,6 +128,8 @@ jobs:
           grep -q "Published meeting status and counsel authority must exactly match" includes/investment/investment-audit-hardening-v14.php
           grep -q "Published notice counsel authority must exactly match" includes/investment/investment-audit-hardening-v14.php
           grep -q "Published obligation status and counsel-review requirement must exactly match" includes/investment/investment-audit-hardening-v14.php
+          grep -q "SELECT GET_LOCK(?,5)" includes/investment/investment-audit-hardening-v15.php
+          grep -q "SELECT RELEASE_LOCK(?)" includes/investment/investment-audit-hardening-v15.php
           grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v11.php
           grep -q "FOR UPDATE" includes/investment/investment-audit-hardening-v13.php
           ! grep -q "DROP TABLE" database/20260724_investor_module_audit_hardening_v1.sql
