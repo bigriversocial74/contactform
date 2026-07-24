@@ -28,7 +28,7 @@ final class CommunityRoleFoundationContractTest extends TestCase
         self::assertStringContainsString('value="community"', $admin);
     }
 
-    public function testCommunityBadgeIsRoleOnlyAndPubliclyEligibilityGated(): void
+    public function testCommunityBadgeIsRoleOnlyPubliclyGatedAndRaceSafe(): void
     {
         $helper = (string) file_get_contents($this->root . '/includes/role-badges.php');
         $api = (string) file_get_contents($this->root . '/api/public/profile-role-badges.php');
@@ -40,6 +40,8 @@ final class CommunityRoleFoundationContractTest extends TestCase
         self::assertStringContainsString("pp.visibility IN ('public','unlisted')", $api);
         self::assertStringContainsString("renderedLabel: '★ Community'", $javascript);
         self::assertStringContainsString('not identity, nonprofit, charity, campaign, financial, government', $javascript);
+        self::assertStringContainsString('window.Microgifter?.publicProfileData', $javascript);
+        self::assertStringNotContainsString('innerHTML', $javascript);
     }
 
     public function testMasterMigrationProvidesIdempotentFoundation(): void
@@ -48,12 +50,15 @@ final class CommunityRoleFoundationContractTest extends TestCase
 
         self::assertStringContainsString("ON DUPLICATE KEY UPDATE name = VALUES(name)", $sql);
         self::assertStringContainsString('INSERT IGNORE INTO role_permissions', $sql);
+        self::assertStringContainsString('SET @mg_public_donations_sql = v_sql', $sql);
+        self::assertStringContainsString('PREPARE mg_public_donations_stmt FROM @mg_public_donations_sql', $sql);
+        self::assertStringNotContainsString('PREPARE mg_public_donations_stmt FROM v_sql', $sql);
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS campaign_community_assignments', $sql);
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS campaign_donation_operations', $sql);
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS campaign_donation_batches', $sql);
         self::assertStringContainsString('CREATE TABLE IF NOT EXISTS campaign_donation_rewards', $sql);
         self::assertStringContainsString('uq_campaign_donation_operations_idempotency', $sql);
-        self::assertStringContainsString('public_display_status', $sql);
+        self::assertStringContainsString("public_display_status ENUM('pending','approved','declined','revoked') NOT NULL DEFAULT 'pending'", $sql);
         self::assertStringNotContainsString('DROP TABLE ', $sql);
         self::assertStringNotContainsString('TRUNCATE TABLE ', $sql);
     }
