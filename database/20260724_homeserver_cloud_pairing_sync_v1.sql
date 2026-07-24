@@ -1,22 +1,6 @@
 -- Microgifter HomeServer cloud pairing and synchronization v1
 -- Additive MySQL 8 migration. Cloud remains authoritative for all commerce state.
 
-CREATE TABLE IF NOT EXISTS homeserver_pairing_codes (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  public_id CHAR(36) NOT NULL,
-  owner_user_id BIGINT UNSIGNED NOT NULL,
-  code_hash CHAR(64) NOT NULL,
-  expires_at DATETIME NOT NULL,
-  consumed_at DATETIME NULL,
-  consumed_device_id BIGINT UNSIGNED NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_homeserver_pairing_codes_public (public_id),
-  UNIQUE KEY uq_homeserver_pairing_codes_hash (code_hash),
-  KEY idx_homeserver_pairing_codes_owner (owner_user_id, expires_at),
-  CONSTRAINT fk_homeserver_pairing_codes_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS homeserver_devices (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
@@ -43,9 +27,22 @@ CREATE TABLE IF NOT EXISTS homeserver_devices (
   CONSTRAINT fk_homeserver_devices_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE homeserver_pairing_codes
-  ADD CONSTRAINT fk_homeserver_pairing_codes_device
-  FOREIGN KEY (consumed_device_id) REFERENCES homeserver_devices(id) ON DELETE SET NULL;
+CREATE TABLE IF NOT EXISTS homeserver_pairing_codes (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  owner_user_id BIGINT UNSIGNED NOT NULL,
+  code_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  consumed_at DATETIME NULL,
+  consumed_device_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_homeserver_pairing_codes_public (public_id),
+  UNIQUE KEY uq_homeserver_pairing_codes_hash (code_hash),
+  KEY idx_homeserver_pairing_codes_owner (owner_user_id, expires_at),
+  CONSTRAINT fk_homeserver_pairing_codes_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_homeserver_pairing_codes_device FOREIGN KEY (consumed_device_id) REFERENCES homeserver_devices(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS homeserver_request_nonces (
   device_id BIGINT UNSIGNED NOT NULL,
