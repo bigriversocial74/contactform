@@ -1,0 +1,101 @@
+name: Merchant Community Support Phase 6
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-community-support.php'
+      - 'includes/merchant-community-support.php'
+      - 'includes/merchant-community-support-view.php'
+      - 'includes/merchant-navigation.php'
+      - 'api/merchant/community-support.php'
+      - 'assets/js/merchant-community-support.js'
+      - 'assets/css/merchant-community-support.css'
+      - 'scripts/validate_merchant_community_support_v1.php'
+      - 'scripts/test_merchant_community_support_mysql.php'
+      - 'tests/phpunit/MerchantCommunitySupportContractTest.php'
+      - '.github/workflows/merchant-community-support-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: merchant-community-support-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_phase6
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: microgifter_phase6
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-community-support.js
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.2 syntax
+        run: |
+          php -l merchant-community-support.php
+          php -l includes/merchant-community-support.php
+          php -l includes/merchant-community-support-view.php
+          php -l api/merchant/community-support.php
+          php -l scripts/validate_merchant_community_support_v1.php
+          php -l scripts/test_merchant_community_support_mysql.php
+          php -l tests/phpunit/MerchantCommunitySupportContractTest.php
+      - name: PHP 8.2 focused contracts
+        run: php scripts/validate_merchant_community_support_v1.php
+      - name: PHP 8.2 PHPUnit
+        run: phpunit tests/phpunit/MerchantCommunitySupportContractTest.php
+      - name: PHP 8.2 MySQL lifecycle
+        run: php scripts/test_merchant_community_support_mysql.php
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - name: PHP 8.3 syntax
+        run: |
+          php -l merchant-community-support.php
+          php -l includes/merchant-community-support.php
+          php -l includes/merchant-community-support-view.php
+          php -l api/merchant/community-support.php
+          php -l scripts/validate_merchant_community_support_v1.php
+          php -l scripts/test_merchant_community_support_mysql.php
+          php -l tests/phpunit/MerchantCommunitySupportContractTest.php
+      - name: PHP 8.3 focused contracts
+        run: php scripts/validate_merchant_community_support_v1.php
+      - name: PHP 8.3 PHPUnit
+        run: phpunit tests/phpunit/MerchantCommunitySupportContractTest.php
+      - name: PHP 8.3 MySQL lifecycle
+        run: php scripts/test_merchant_community_support_mysql.php
