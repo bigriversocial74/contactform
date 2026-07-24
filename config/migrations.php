@@ -256,5 +256,6 @@ return [
         'stage_19_design_studio_qr_library.sql' => 'Manual Stage 19 Design Studio import.',
         'stage_19_design_studio_campaign_links_import_fix.sql' => 'Manual Stage 19 recovery import.',
         'world_canvas_remaining_22_26_consolidated.sql' => 'Manual World Canvas Stage 22-26 bundle for already-partial installs.',
+        '20260724_investor_module_audit_hardening_v1.sql' => 'Manual additive Investor Module audit migration; apply only after Investor Phases 1-5.',
     ],
 ];

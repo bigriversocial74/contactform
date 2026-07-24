@@ -25,7 +25,7 @@ declare(strict_types=1);
         <div>
           <p class="mg-cookie-consent__eyebrow">Cookie preferences</p>
           <h2 id="mg-cookie-dialog-title">Control optional technologies.</h2>
-          <p>Choose each purpose independently. You can change or withdraw your choices at any time through Cookie Settings in the footer.</p>
+          <p>Choose each purpose independently. You can change or withdraw your choices at any time from the Cookie Policy page.</p>
         </div>
         <button class="mg-cookie-consent__close" type="button" data-mg-consent-action="close" aria-label="Close cookie preferences">×</button>
       </header>
@@ -108,3 +108,4 @@ declare(strict_types=1);
 
   <div class="mg-cookie-consent__status" data-mg-cookie-status role="status" aria-live="polite" aria-atomic="true"></div>
 </div>
+<script src="/assets/js/footer-public-links-v1.js?v=1.0.0" defer></script>
