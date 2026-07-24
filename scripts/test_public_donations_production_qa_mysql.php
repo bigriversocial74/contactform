@@ -197,13 +197,14 @@ $pdo->prepare('INSERT INTO campaign_community_assignments VALUES (?,?,?,?,?,?,NU
     ->execute([4,$uuid(104),1,1,5,'active']);
 
 $sequence = 0;
+$recalledSequences = [8,9,28,29,54,55];
 foreach ($assignments as [$batchId,$communityId,$quantity]) {
     for ($unit = 1; $unit <= $quantity; $unit++) {
         $sequence++;
         $isRegifted = $sequence <= 4;
         $isClaimed = in_array($sequence, [5,6], true);
         $isRedeemed = $sequence === 7;
-        $isRecalled = $sequence >= 50;
+        $isRecalled = in_array($sequence, $recalledSequences, true);
         $owner = $isRegifted ? 19 + $sequence : $communityId;
         $walletStatus = $isRecalled ? 'cancelled' : ($isRedeemed ? 'redeemed' : ($isClaimed ? 'claimed' : 'issued'));
         $pppmStatus = $isRecalled ? 'cancelled' : ($isRedeemed ? 'redeemed' : ($isClaimed ? 'claim_pending' : 'assigned'));
