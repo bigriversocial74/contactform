@@ -51,10 +51,13 @@ function mg_investment_financial_decide_audited_v3(PDO $pdo,array $actor,array $
             $aggregate=$pdo->prepare('SELECT COALESCE(SUM(CASE WHEN funding_verification_source="maker_checker" THEN verified_funded_cents ELSE 0 END),0) AS funded,COALESCE(SUM(CASE WHEN signed_verification_source="maker_checker" THEN signed_amount_cents ELSE 0 END),0) AS signed FROM investor_closing_records WHERE investor_user_id=? AND status NOT IN ("withdrawn","declined")');
             $aggregate->execute([(int)$request['investor_user_id']]);
             $money=$aggregate->fetch(PDO::FETCH_ASSOC)?:['funded'=>0,'signed'=>0];
-            $pipelineStage=(int)$money['funded']>0?'funded':((int)$money['signed']>0?'signed':null);
-            if($pipelineStage!==null)$pdo->prepare('UPDATE investor_pipeline_records SET stage=?,updated_by_user_id=?,updated_at=NOW() WHERE investor_user_id=? AND stage NOT IN ("passed","declined","archived")')->execute([$pipelineStage,$actorId,(int)$request['investor_user_id']]);
+            $softQ=$pdo->prepare('SELECT COALESCE(SUM(soft_commitment_cents),0) FROM investor_round_interests WHERE investor_user_id=? AND status NOT IN ("passed","declined","archived")');
+            $softQ->execute([(int)$request['investor_user_id']]);
+            $soft=(int)$softQ->fetchColumn();
+            $pipelineStage=(int)$money['funded']>0?'funded':((int)$money['signed']>0?'signed':($soft>0?'soft_committed':'interested'));
+            $pdo->prepare('UPDATE investor_pipeline_records SET stage=?,updated_by_user_id=?,updated_at=NOW() WHERE investor_user_id=? AND stage NOT IN ("passed","declined","archived")')->execute([$pipelineStage,$actorId,(int)$request['investor_user_id']]);
 
-            mg_investment_pipeline_activity($pdo,(int)$request['investor_user_id'],(int)$request['round_id'],'commitment_update','Financial verification approved',$notes,$actorId,['request_id'=>$requestPublicId,'type'=>$type,'amount_cents'=>$amount,'round_totals'=>$totals,'verification_source'=>'maker_checker']);
+            mg_investment_pipeline_activity($pdo,(int)$request['investor_user_id'],(int)$request['round_id'],'commitment_update','Financial verification approved',$notes,$actorId,['request_id'=>$requestPublicId,'type'=>$type,'amount_cents'=>$amount,'round_totals'=>$totals,'verification_source'=>'maker_checker','pipeline_stage'=>$pipelineStage]);
         }else{
             mg_investment_pipeline_activity($pdo,(int)$request['investor_user_id'],(int)$request['round_id'],'commitment_update','Financial verification rejected',$notes,$actorId,['request_id'=>$requestPublicId,'type'=>$type]);
         }
