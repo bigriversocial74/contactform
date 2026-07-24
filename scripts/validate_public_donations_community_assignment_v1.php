@@ -24,6 +24,7 @@ $installer = $read('database/20260724_public_donations_community_v1_single_insta
 $must($domain, [
     "community_role.slug='community'",
     "u.status='active'",
+    "pp.status='active' AND pp.visibility IN ('public','unlisted')",
     'GROUP_CONCAT(DISTINCT role_all.slug',
     "['community', 'admin', 'super_admin']",
     "['add', 'pause', 'remove', 'reactivate']",
@@ -49,7 +50,10 @@ $must($ui, [
     'data-community-campaign-select',
     'data-community-search-results',
     'data-community-assigned-results',
-    "['all', 'active', 'paused', 'removed']",
+    'data-community-status-filter',
+    "['active', 'Active']",
+    "['paused', 'Paused']",
+    "['removed', 'Removed']",
     "Microgifter.post('/api/merchant/public-donations-community.php'",
     'View public profile',
 ], 'merchant UI');
