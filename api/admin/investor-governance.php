@@ -27,7 +27,7 @@ try {
     $result=match($action) {
         'save_participant'=>mg_investment_governance_save_participant($pdo,$actor,$input),
         'save_appointment'=>mg_investment_governance_save_appointment($pdo,$actor,$input),
-        'save_meeting'=>mg_investment_governance_save_meeting_audited_v2($pdo,$actor,$input),
+        'save_meeting'=>mg_investment_governance_save_meeting_audited_v3($pdo,$actor,$input),
         'save_attendee'=>mg_investment_governance_save_attendee($pdo,$actor,$input),
         'save_agenda'=>mg_investment_governance_save_agenda($pdo,$actor,$input),
         'save_packet_document'=>mg_investment_governance_save_packet_document_audited_v2($pdo,$actor,$input),
@@ -36,11 +36,11 @@ try {
         'record_consent_response'=>mg_investment_governance_record_consent_response_audited($pdo,$actor,$input),
         'set_consent_visibility'=>mg_investment_governance_set_consent_visibility_audited($pdo,$actor,$input),
         'save_right'=>mg_investment_governance_save_right_audited_v3($pdo,$actor,$input),
-        'save_obligation'=>mg_investment_governance_save_obligation_audited_v2($pdo,$actor,$input),
+        'save_obligation'=>mg_investment_governance_save_obligation_audited_v3($pdo,$actor,$input),
         'complete_obligation'=>mg_investment_governance_complete_obligation($pdo,$actor,$input),
         'refresh_holdings'=>mg_investment_governance_refresh_holdings_audited($pdo,$actor,$input),
         'save_tax_document'=>mg_investment_governance_save_tax_document_audited_v3($pdo,$actor,$input),
-        'save_notice'=>mg_investment_governance_save_notice_audited_v4($pdo,$actor,$input),
+        'save_notice'=>mg_investment_governance_save_notice_audited_v5($pdo,$actor,$input),
         'ai_draft'=>mg_investment_governance_ai_draft($pdo,$actor,$input),
         default=>throw new MgInvestmentException('Invalid investor governance action.'),
     };
