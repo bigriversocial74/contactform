@@ -133,3 +133,5 @@ $hashConflict = false;
           git add includes/public-donations-allocation.php scripts/test_public_donations_allocation_mysql.php tests/phpunit/PublicDonationsAllocationContractTest.php
           git commit -m 'Preserve completed allocation idempotency replays'
           git push origin HEAD:${{ github.head_ref }}
+
+# retrigger guarded application
