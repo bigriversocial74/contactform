@@ -1,0 +1,135 @@
+name: Apply Public Donations Phase 4 Idempotency Replay Fix
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - '.github/workflows/apply-public-donations-phase4-idempotency-replay.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: apply-public-donations-phase4-idempotency-replay-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Apply exact guarded replacements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          core = Path('includes/public-donations-allocation.php')
+          text = core.read_text()
+          old = """    $pdo->beginTransaction();
+    try {
+        // Deterministic lock order: campaign -> reward template -> assignments -> idempotency operation.
+"""
+          new = """    // A completed idempotent replay must remain readable even if mutable campaign,
+    // template, assignment, or inventory state changed after the original commit.
+    $completedReplay = mg_public_donations_allocation_operation($pdo, $merchantId, $idempotencyKey, false);
+    if ($completedReplay) {
+        if (!hash_equals((string)$completedReplay['request_hash'], $requestHash)) {
+            mg_public_donations_allocation_fail('This idempotency key belongs to a different allocation request.', 409);
+        }
+        if ((string)$completedReplay['status'] === 'completed') {
+            $result = mg_public_donations_allocation_tracking($pdo, $merchantId, (string)$completedReplay['public_id']);
+            $result['duplicate'] = true;
+            return $result;
+        }
+        if ((string)$completedReplay['status'] === 'processing') {
+            mg_public_donations_allocation_fail('This allocation request is already processing.', 409);
+        }
+    }
+
+    $pdo->beginTransaction();
+    try {
+        // Deterministic lock order: campaign -> reward template -> assignments -> idempotency operation.
+"""
+          if new not in text:
+              matches = text.count(old)
+              if matches != 1:
+                  raise SystemExit(f'core replay insertion expected one match, found {matches}')
+              core.write_text(text.replace(old, new, 1))
+
+          mysql = Path('scripts/test_public_donations_allocation_mysql.php')
+          text = mysql.read_text()
+          old = """phase4_assert(count($GLOBALS['phase4_notifications']) === 2, 'Duplicate retry created notifications.');
+
+$hashConflict = false;
+"""
+          new = """phase4_assert(count($GLOBALS['phase4_notifications']) === 2, 'Duplicate retry created notifications.');
+
+$pdo->exec(\"UPDATE campaigns SET status='ended' WHERE id=10\");
+$pdo->exec(\"UPDATE reward_templates SET status='archived' WHERE id=20\");
+$pdo->exec(\"UPDATE campaign_community_assignments SET status='paused' WHERE id IN (30,31)\");
+$duplicateAfterMutation = mg_public_donations_allocation_execute(
+    $pdo,1,1,'community-impact','123e4567-e89b-42d3-a456-426614174020',$recipients,
+    $idempotency,'Thank you','Internal batch note',false
+);
+phase4_assert($duplicateAfterMutation['duplicate'] === true, 'Completed retry must survive later mutable-state changes.');
+phase4_assert(phase4_count($pdo, 'wallet_items') === $counts['wallet'], 'Mutable-state replay created wallet items.');
+phase4_assert(count($GLOBALS['phase4_notifications']) === 2, 'Mutable-state replay created notifications.');
+$pdo->exec(\"UPDATE campaigns SET status='active' WHERE id=10\");
+$pdo->exec(\"UPDATE reward_templates SET status='active' WHERE id=20\");
+$pdo->exec(\"UPDATE campaign_community_assignments SET status='active' WHERE id IN (30,31)\");
+
+$hashConflict = false;
+"""
+          if new not in text:
+              matches = text.count(old)
+              if matches != 1:
+                  raise SystemExit(f'mysql replay test expected one match, found {matches}')
+              mysql.write_text(text.replace(old, new, 1))
+
+          contract = Path('tests/phpunit/PublicDonationsAllocationContractTest.php')
+          text = contract.read_text()
+          old = """        self::assertStringContainsString('hash_equals', $engine);
+"""
+          if old not in text:
+              old = """        self::assertStringContainsString('FOR UPDATE', $engine);
+"""
+              new = """        self::assertStringContainsString('FOR UPDATE', $engine);
+        self::assertStringContainsString('$completedReplay = mg_public_donations_allocation_operation', $engine);
+"""
+          else:
+              new = """        self::assertStringContainsString('hash_equals', $engine);
+        self::assertStringContainsString('$completedReplay = mg_public_donations_allocation_operation', $engine);
+"""
+          if new not in text:
+              matches = text.count(old)
+              if matches != 1:
+                  raise SystemExit(f'phpunit replay contract expected one match, found {matches}')
+              contract.write_text(text.replace(old, new, 1))
+          PY
+      - name: Validate patched source
+        run: |
+          php -l includes/public-donations-allocation.php
+          php -l scripts/test_public_donations_allocation_mysql.php
+          php -l tests/phpunit/PublicDonationsAllocationContractTest.php
+          php scripts/validate_public_donations_allocation_v1.php
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo 'Patch already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add includes/public-donations-allocation.php scripts/test_public_donations_allocation_mysql.php tests/phpunit/PublicDonationsAllocationContractTest.php
+          git commit -m 'Preserve completed allocation idempotency replays'
+          git push origin HEAD:${{ github.head_ref }}
