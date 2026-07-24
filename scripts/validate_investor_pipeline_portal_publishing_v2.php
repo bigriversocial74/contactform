@@ -35,9 +35,9 @@ foreach(['mg_require_api_user()','mg_require_csrf_for_write','mg_investment_port
 $page=$read('admin/investor-pipeline.php');
 foreach(['mg-app-shell','admin-sidebar.php','mg-app-workspace','data-investor-pipeline','data-tab-panel="pipeline"','data-tab-panel="publishing"','data-tab-panel="metrics"','data-pipeline-drawer-layer'] as $needle)$pass(str_contains($page,$needle),'Admin workspace contains '.$needle);
 $js=$read('assets/js/investor-pipeline-v2.js');
-foreach(['save_record','add_activity','save_task','complete_task','save_interest','set_access','save_publication','refresh_metrics','ai_draft','Investor View Preview','data-document-id'] as $needle)$pass(str_contains($js,$needle),'Pipeline runtime contains '.$needle);
+foreach(['save_record','add_activity','save_task','complete_task','save_interest','set_access','save_publication','refresh_metrics','ai_draft','Investor View Preview'] as $needle)$pass(str_contains($js,$needle),'Pipeline runtime contains '.$needle);
 $portalJs=$read('assets/js/investor-portal-v2.js');
-foreach(['founder_update','important_notice','round_terms','raise_progress','use_of_funds','evidence_metrics','documents','document_open','metric_view'] as $needle)$pass(str_contains($portalJs,$needle),'Investor Portal runtime contains '.$needle);
+foreach(['founder_update','important_notice','round_terms','raise_progress','use_of_funds','evidence_metrics','documents','document_open','metric_view','data-document-id'] as $needle)$pass(str_contains($portalJs,$needle),'Investor Portal runtime contains '.$needle);
 
 require_once $root.'/includes/investment/investment-service.php';
 $sections=mg_investment_publication_default_sections();
