@@ -1,0 +1,52 @@
+<?php
+declare(strict_types=1);
+function mg_investment_workspace_detail(PDO $pdo,string $publicId): array
+{
+    $workspace=mg_investment_workspace_by_public_id($pdo,$publicId);$workspaceId=(int)$workspace['id'];
+    $sc=$pdo->prepare('SELECT * FROM investment_scenarios WHERE workspace_id=? ORDER BY FIELD(status,"preferred","approved","under_review","draft","illustrative","archived"),target_raise_cents,id');$sc->execute([$workspaceId]);$scenarios=[];
+    foreach($sc->fetchAll(PDO::FETCH_ASSOC) as $row){$budget=$pdo->prepare('SELECT id,category,description,amount_cents,priority,investor_visible,sort_order FROM investment_scenario_budgets WHERE scenario_id=? ORDER BY sort_order,id');$budget->execute([(int)$row['id']]);$goals=$pdo->prepare('SELECT public_id,title,rationale,metric_key,baseline_value,target_value,unit,budget_cents,target_date,status,investor_visible,public_description,internal_notes,sort_order FROM investment_scenario_goals WHERE scenario_id=? ORDER BY sort_order,id');$goals->execute([(int)$row['id']]);$row['assumptions']=mg_investment_json($row['assumptions_json']);$row['stress_tests']=mg_investment_json($row['stress_tests_json']);$row['calculations']=mg_investment_json($row['calculations_json']);$row['projection']=mg_investment_json($row['projection_json']);unset($row['assumptions_json'],$row['stress_tests_json'],$row['calculations_json'],$row['projection_json']);$row['budgets']=$budget->fetchAll(PDO::FETCH_ASSOC);$row['goals']=$goals->fetchAll(PDO::FETCH_ASSOC);$scenarios[]=$row;}
+    $metrics=$pdo->prepare('SELECT * FROM investment_metrics WHERE workspace_id=? ORDER BY investor_visible DESC,name');$metrics->execute([$workspaceId]);$docs=$pdo->prepare('SELECT * FROM investment_documents WHERE workspace_id=? ORDER BY status,title');$docs->execute([$workspaceId]);$rounds=$pdo->prepare('SELECT * FROM investment_rounds WHERE workspace_id=? ORDER BY id DESC');$rounds->execute([$workspaceId]);$analyses=$pdo->prepare('SELECT public_id,scenario_id,round_id,provider,model,analysis_type,response_text,structured_json,status,error_message,input_tokens,output_tokens,created_at,completed_at FROM investment_ai_analyses WHERE workspace_id=? ORDER BY id DESC LIMIT 25');$analyses->execute([$workspaceId]);
+    return ['workspace'=>['id'=>$workspace['public_id'],'name'=>$workspace['name'],'status'=>$workspace['status'],'active_step'=>$workspace['active_step'],'company'=>mg_investment_json($workspace['company_json']),'capitalization'=>mg_investment_json($workspace['capitalization_json']),'operating_plan'=>mg_investment_json($workspace['operating_plan_json']),'assumptions'=>mg_investment_json($workspace['assumptions_json'],mg_investment_default_assumptions()),'notes'=>$workspace['notes'],'preferred_scenario_id'=>$workspace['preferred_scenario_id'],'updated_at'=>$workspace['updated_at']],'scenarios'=>$scenarios,'metrics'=>$metrics->fetchAll(PDO::FETCH_ASSOC),'documents'=>$docs->fetchAll(PDO::FETCH_ASSOC),'rounds'=>array_map(static function(array $row):array{$row['snapshot']=mg_investment_json($row['snapshot_json']);unset($row['snapshot_json']);return $row;},$rounds->fetchAll(PDO::FETCH_ASSOC)),'analyses'=>array_map(static function(array $row):array{$row['structured']=mg_investment_json($row['structured_json']);unset($row['structured_json']);return $row;},$analyses->fetchAll(PDO::FETCH_ASSOC))];
+}
+
+function mg_investment_workspace_list(PDO $pdo): array
+{
+    $rows=$pdo->query('SELECT w.public_id,w.name,w.status,w.active_step,w.updated_at,COUNT(DISTINCT s.id) AS scenario_count,COUNT(DISTINCT r.id) AS round_count FROM investment_workspaces w LEFT JOIN investment_scenarios s ON s.workspace_id=w.id LEFT JOIN investment_rounds r ON r.workspace_id=w.id GROUP BY w.id ORDER BY w.updated_at DESC')->fetchAll(PDO::FETCH_ASSOC);
+    return $rows ?: [];
+}
+
+function mg_investment_claude_model(PDO $pdo): string
+{
+    $configured=trim((string)(getenv('MG_INVESTMENT_CLAUDE_MODEL') ?: getenv('MG_ANTHROPIC_MODEL')));
+    if($configured!=='')return $configured;
+    try{
+        $stmt=$pdo->query("SELECT m.model_key FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id WHERE p.provider_key='anthropic' AND p.enabled=1 AND m.enabled=1 ORDER BY (m.model_key='claude-sonnet-4-6') DESC,m.is_default DESC,m.sort_order ASC LIMIT 1");
+        $model=trim((string)$stmt->fetchColumn());
+        if($model!=='')return $model;
+    }catch(Throwable){}
+    throw new MgInvestmentException('Claude is not enabled in the Microgifter AI model catalog.',503);
+}
+
+function mg_investment_run_claude_analysis(PDO $pdo,array $actor,array $input): array
+{
+    mg_investment_require_permission($actor,'admin.investment.ai');$workspace=mg_investment_workspace_by_public_id($pdo,mg_investment_text($input['workspace_id'] ?? '',36,36,'Workspace identifier'));$scenario=null;if(!empty($input['scenario_id']))$scenario=mg_investment_scenario_by_public_id($pdo,mg_investment_text($input['scenario_id'],36,36,'Scenario identifier'));
+    $analysisType=mg_investment_text($input['analysis_type'] ?? 'round_readiness',80,3,'Analysis type');$model=mg_investment_claude_model($pdo);$snapshot=mg_investment_workspace_detail($pdo,(string)$workspace['public_id']);
+    if($scenario){$snapshot['scenarios']=array_values(array_filter($snapshot['scenarios'],static fn(array $item):bool=>(string)$item['public_id']===(string)$scenario['public_id']));}
+    $publicId=mg_investment_uuid();$insert=$pdo->prepare('INSERT INTO investment_ai_analyses (public_id,workspace_id,scenario_id,requested_by_user_id,provider,model,analysis_type,input_snapshot_json,status,created_at) VALUES (?,?,?,? ,"anthropic",?,?,?,"requested",NOW())');$insert->execute([$publicId,(int)$workspace['id'],$scenario?(int)$scenario['id']:null,(int)$actor['id'],$model,$analysisType,mg_investment_json_encode($snapshot)]);$analysisId=(int)$pdo->lastInsertId();
+    try{
+      require_once dirname(__DIR__).'/ai/anthropic-client.php';
+      $system='You are the Microgifter Investment Analyst. Analyze only the supplied verified or explicitly projected data. Never invent legal approval, valuation, revenue, commitments, accreditation, or funded amounts. Return JSON with keys executive_summary, strengths, risks, missing_information, questions_for_counsel, questions_investors_may_ask, recommended_admin_actions. Distinguish actuals from projections and state that all financing terms require professional legal and financial review.';
+      $response=mg_anthropic_messages(['model'=>$model,'max_tokens'=>1800,'temperature'=>0.2,'system'=>$system,'messages'=>[['role'=>'user','content'=>'Analysis type: '.$analysisType."\nInvestment system snapshot:\n".mg_investment_json_encode($snapshot)]]]);$text=mg_anthropic_text_from_response($response);$structured=[];try{$structured=mg_anthropic_extract_json_object($text);}catch(Throwable){}
+      $usage=is_array($response['usage'] ?? null)?$response['usage']:[];$pdo->prepare('UPDATE investment_ai_analyses SET response_text=?,structured_json=?,status="completed",input_tokens=?,output_tokens=?,completed_at=NOW() WHERE id=?')->execute([$text,$structured?mg_investment_json_encode($structured):null,(int)($usage['input_tokens'] ?? 0),(int)($usage['output_tokens'] ?? 0),$analysisId]);mg_audit('investment_ai_analysis_completed','investment_ai',['analysis_id'=>$publicId,'analysis_type'=>$analysisType],(int)$actor['id']);
+    }catch(Throwable $error){$pdo->prepare('UPDATE investment_ai_analyses SET status="failed",error_message=?,completed_at=NOW() WHERE id=?')->execute([mb_substr($error->getMessage(),0,1000),$analysisId]);mg_security_log('warning','investment.ai.failed','Investment analysis failed.',['analysis_id'=>$publicId,'exception_class'=>$error::class],(int)$actor['id']);}
+    return mg_investment_workspace_detail($pdo,(string)$workspace['public_id']);
+}
+
+function mg_investment_portal_data(PDO $pdo,array $user): array
+{
+    if(!in_array('investor',is_array($user['roles'] ?? null)?$user['roles']:[],true))throw new MgInvestmentException('Investor access is not active.',403);
+    $profileStmt=$pdo->prepare('SELECT * FROM investor_profiles WHERE user_id=? AND status="active" LIMIT 1');$profileStmt->execute([(int)$user['id']]);$profile=$profileStmt->fetch(PDO::FETCH_ASSOC);if(!$profile)throw new MgInvestmentException('Investor profile is not active.',403);
+    $stmt=$pdo->prepare('SELECT r.* FROM investment_rounds r WHERE r.status IN ("private_preview","open","minimum_reached","closing","closed") AND (r.visibility="approved_investors" OR (r.visibility="selected_investors" AND EXISTS(SELECT 1 FROM investment_round_access a WHERE a.round_id=r.id AND a.investor_user_id=? AND a.status="granted" AND (a.expires_at IS NULL OR a.expires_at>NOW()))) OR (r.visibility="funded_investors" AND r.funded_cents>0)) ORDER BY FIELD(r.status,"open","minimum_reached","private_preview","closing","closed"),r.updated_at DESC');$stmt->execute([(int)$user['id']]);$rounds=[];
+    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){$snapshot=mg_investment_json($row['snapshot_json']);$metrics=$pdo->prepare('SELECT name,description,unit,value_type,confidence,current_value,last_verified_at FROM investment_metrics WHERE workspace_id=? AND investor_visible=1 ORDER BY name');$metrics->execute([(int)$row['workspace_id']]);$docs=$pdo->prepare('SELECT title,document_type,status,external_url,visibility FROM investment_documents WHERE workspace_id=? AND status="published" AND visibility IN ("approved_investors","public_summary") ORDER BY title');$docs->execute([(int)$row['workspace_id']]);$rounds[]=['id'=>$row['public_id'],'public_name'=>$row['public_name'],'status'=>$row['status'],'instrument_type'=>$row['instrument_type'],'minimum_raise_cents'=>(int)$row['minimum_raise_cents'],'target_raise_cents'=>(int)$row['target_raise_cents'],'maximum_raise_cents'=>(int)$row['maximum_raise_cents'],'valuation_cap_cents'=>(int)$row['valuation_cap_cents'],'discount_bps'=>(int)$row['discount_bps'],'minimum_investment_cents'=>(int)$row['minimum_investment_cents'],'soft_commitment_cents'=>(int)$row['soft_commitment_cents'],'signed_cents'=>(int)$row['signed_cents'],'funded_cents'=>(int)$row['funded_cents'],'opens_at'=>$row['opens_at'],'target_close_at'=>$row['target_close_at'],'counsel_status'=>$row['counsel_status'],'snapshot'=>$snapshot,'metrics'=>$metrics->fetchAll(PDO::FETCH_ASSOC),'documents'=>$docs->fetchAll(PDO::FETCH_ASSOC)];}
+    return ['profile'=>$profile,'rounds'=>$rounds];
+}

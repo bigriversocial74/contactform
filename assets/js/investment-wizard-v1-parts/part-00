@@ -1,0 +1,45 @@
+(() => {
+  'use strict';
+  const root = document.querySelector('[data-investment-wizard]');
+  if (!root) return;
+  const ui = {
+    list: root.querySelector('[data-workspace-list]'), emptyList: root.querySelector('[data-workspace-empty]'),
+    empty: root.querySelector('[data-wizard-empty]'), content: root.querySelector('[data-wizard-content]'),
+    title: root.querySelector('[data-workspace-title]'), status: root.querySelector('[data-workspace-status]'), saved: root.querySelector('[data-workspace-saved]'),
+    steps: root.querySelector('[data-wizard-steps]'), panel: root.querySelector('[data-step-panel]'), notice: root.querySelector('[data-wizard-notice]'),
+  };
+  const canManage = root.dataset.canManage === '1';
+  const canAi = root.dataset.canAi === '1';
+  const steps = [
+    ['company','Company'],['capitalization','Capitalization'],['operating','Operating Plan'],['assumptions','Assumptions'],
+    ['scenarios','Scenarios'],['use_of_funds','Use of Funds'],['goals','Goals'],['metrics','Evidence Metrics'],
+    ['documents','Documents'],['rounds','Official Rounds'],['ai_review','Claude Review'],
+  ];
+  const state = { workspaces:[], detail:null, step:'company', scenarioId:null, busy:false };
+  const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const readable = (value) => String(value || '').replace(/_/g,' ').replace(/\b\w/g,(c)=>c.toUpperCase());
+  const money = (cents) => new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(cents||0)/100);
+  const percent = (bps) => `${(Number(bps||0)/100).toFixed(2).replace(/\.00$/,'')}%`;
+  const date = (value) => value ? new Date(String(value).replace(' ','T')).toLocaleString() : '—';
+  const setNotice = (message='',type='info') => { ui.notice.textContent=message;ui.notice.dataset.type=type; };
+  const setBusy = (busy) => { state.busy=busy;root.querySelectorAll('button').forEach((button)=>button.disabled=busy); };
+  const request = async (url,options={}) => {
+    const response=await fetch(url,{credentials:'same-origin',headers:{Accept:'application/json',...(options.body?{'Content-Type':'application/json','X-CSRF-Token':root.dataset.csrfToken||''}:{})},...options});
+    const payload=await response.json().catch(()=>null);if(!response.ok||!payload?.ok)throw new Error(payload?.message||'Request failed.');return payload.data;
+  };
+  const post = async (payload) => {
+    if(state.busy)return null;setBusy(true);setNotice('Saving Investment Wizard data…');
+    try{const data=await request('/api/admin/investment-wizard.php',{method:'POST',body:JSON.stringify(payload)});if(data.workspace){state.detail=data.workspace;syncFromDetail();render();}setNotice('Saved.','success');return data;}
+    catch(error){setNotice(error.message,'error');throw error;}finally{setBusy(false);}
+  };
+  const activeScenario = () => state.detail?.scenarios?.find((item)=>String(item.public_id)===String(state.scenarioId)) || state.detail?.scenarios?.[0] || null;
+  const syncFromDetail = () => {
+    if(!state.detail)return;state.step=state.detail.workspace.active_step||state.step;
+    if(!activeScenario())state.scenarioId=state.detail.scenarios?.find((item)=>item.status==='preferred')?.public_id||state.detail.scenarios?.[0]?.public_id||null;
+  };
+  const renderWorkspaceList = () => {
+    ui.list.innerHTML=state.workspaces.map((item)=>`<button type="button" class="mg-workspace-button ${state.detail?.workspace?.id===item.public_id?'is-active':''}" data-workspace-id="${esc(item.public_id)}"><strong>${esc(item.name)}</strong><span>${esc(readable(item.status))} · ${Number(item.scenario_count||0)} scenarios · ${date(item.updated_at)}</span></button>`).join('');
+    ui.emptyList.hidden=state.workspaces.length>0;ui.list.querySelectorAll('[data-workspace-id]').forEach((button)=>button.addEventListener('click',()=>loadWorkspace(button.dataset.workspaceId)));
+  };
+  const loadList = async () => { try{state.workspaces=(await request('/api/admin/investment-wizard.php')).items||[];renderWorkspaceList();if(!state.detail&&state.workspaces.length)await loadWorkspace(state.workspaces[0].public_id);}catch(error){setNotice(error.message,'error');} };
+  const loadWorkspace = async (id) => { setNotice('Loading workspace…');try{state.detail=(await request(`/api/admin/investment-wizard.php?workspace_id=${encodeURIComponent(id)}`)).workspace;syncFromDetail();render();setNotice('');}catch(error){
