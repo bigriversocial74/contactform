@@ -1,8 +1,19 @@
 -- Microgifter Investor Module Audit Hardening v1
 -- Additive migration applied after Investor Governance v5.
--- Adds explicit consent visibility and maker/checker funding provenance.
+-- Adds explicit consent visibility, maker/checker funding provenance,
+-- and separate investor-relations publishing authority.
 
 SET @mg_schema := DATABASE();
+
+INSERT INTO permissions (slug,name,created_at) VALUES
+('admin.investment.relations.publish','Publish approved post-investment reports and investor-visible actuals',NOW())
+ON DUPLICATE KEY UPDATE name=VALUES(name);
+
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW()
+FROM roles r
+JOIN permissions p ON p.slug='admin.investment.relations.publish'
+WHERE r.slug IN ('admin','super_admin');
 
 SET @mg_sql := IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS
@@ -67,6 +78,6 @@ WHERE cr.verified_funded_cents=vr.requested_amount_cents;
 INSERT IGNORE INTO schema_migrations (migration_key,description,applied_at)
 VALUES (
   '20260724_investor_module_audit_hardening_v1',
-  'Adds explicit investor-portal consent visibility, maker-checker funding provenance, and investor module 10/10 audit hardening support.',
+  'Adds explicit investor-portal consent visibility, maker-checker funding provenance, relations publish separation, and investor module 10/10 audit hardening support.',
   NOW()
 );
