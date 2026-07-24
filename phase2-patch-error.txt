@@ -1,0 +1,7 @@
+PHP Fatal error:  Uncaught RuntimeException: campaign type options metadata expected 1 matches, found 2 in /home/runner/work/contactform/contactform/scripts/apply_public_donations_phase2_patch.php:20
+Stack trace:
+#0 /home/runner/work/contactform/contactform/scripts/apply_public_donations_phase2_patch.php(37): phase2_replace()
+#1 /home/runner/work/contactform/contactform/scripts/apply_public_donations_phase2_patch.php(12): {closure}()
+#2 /home/runner/work/contactform/contactform/scripts/apply_public_donations_phase2_patch.php(24): phase2_patch_file()
+#3 {main}
+  thrown in /home/runner/work/contactform/contactform/scripts/apply_public_donations_phase2_patch.php on line 20
