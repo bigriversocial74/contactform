@@ -1,0 +1,102 @@
+name: Public Donations Community Phase 1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/users.php'
+      - 'profile.php'
+      - 'api/admin/_user_management.php'
+      - 'api/public/profile-role-badges.php'
+      - 'includes/role-badges.php'
+      - 'assets/css/community-role-badges-v1.css'
+      - 'assets/js/community-role-badges-v1.js'
+      - 'database/20260724_public_donations_community_v1_single_install.sql'
+      - 'docs/public-donations-community-v1/**'
+      - 'scripts/validate_public_donations_community_v1.php'
+      - 'tests/phpunit/CommunityRoleFoundationContractTest.php'
+      - 'tests/sql/public_donations_community_v1_fixture.sql'
+      - '.github/workflows/public-donations-community-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: phpunit
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP syntax
+        run: |
+          php -l admin/users.php
+          php -l profile.php
+          php -l api/admin/_user_management.php
+          php -l api/public/profile-role-badges.php
+          php -l includes/role-badges.php
+          php -l scripts/validate_public_donations_community_v1.php
+          php -l tests/phpunit/CommunityRoleFoundationContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/community-role-badges-v1.js
+
+      - name: Focused contract validation
+        run: |
+          php scripts/validate_public_donations_community_v1.php
+          php scripts/validate_migration_manifest.php
+          phpunit tests/phpunit/CommunityRoleFoundationContractTest.php
+
+  mysql8:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Install and reimport master migration
+        run: |
+          mysql -h127.0.0.1 -uroot -proot < tests/sql/public_donations_community_v1_fixture.sql
+          mysql -h127.0.0.1 -uroot -proot microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
+          mysql -h127.0.0.1 -uroot -proot microgifter_community_test < database/20260724_public_donations_community_v1_single_install.sql
+
+      - name: Verify role, enums, tables, indexes, and foreign keys
+        run: |
+          test "$(mysql -N -h127.0.0.1 -uroot -proot microgifter_community_test -e "SELECT COUNT(*) FROM roles WHERE slug='community' AND name='Community'")" = "1"
+          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" = "4"
+          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='microgifter_community_test' AND ((TABLE_NAME='campaigns' AND COLUMN_NAME='campaign_type') OR (TABLE_NAME='wallet_items' AND COLUMN_NAME='source_type')) AND COLUMN_TYPE LIKE '%public_donation%'")" = "2"
+          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='microgifter_community_test' AND INDEX_NAME='uq_campaign_donation_operations_idempotency'")" = "2"
+          test "$(mysql -N -h127.0.0.1 -uroot -proot -e "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='microgifter_community_test' AND TABLE_NAME IN ('campaign_community_assignments','campaign_donation_operations','campaign_donation_batches','campaign_donation_rewards')")" -ge "20"

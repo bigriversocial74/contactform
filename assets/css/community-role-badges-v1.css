@@ -1,0 +1,27 @@
+.mg-community-role-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:.35rem;
+  width:max-content;
+  border:1px solid rgba(126,90,18,.28);
+  border-radius:999px;
+  background:linear-gradient(180deg,#fff9df 0%,#f8e8a5 100%);
+  color:#5f4307;
+  font-weight:800;
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+.mg-admin-user-role.mg-community-role-badge{padding:.32rem .62rem;text-transform:none}
+.mg-profile-pill.mg-community-role-badge{padding:.42rem .72rem}
+.mg-community-role-warning{
+  display:grid;
+  gap:.35rem;
+  margin:0 0 1rem;
+  padding:1rem 1.1rem;
+  border:1px solid #e5cf86;
+  border-radius:12px;
+  background:#fff9df;
+  color:#4d3b0d;
+}
+.mg-community-role-warning strong{font-size:.92rem}
+.mg-community-role-warning span{font-size:.82rem;line-height:1.5}
