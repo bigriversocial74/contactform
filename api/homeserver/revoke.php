@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_homeserver.php';
 
 mg_require_method('POST');
-$user = mg_require_recent_auth();
+$user = mg_require_api_user();
 $input = mg_homeserver_input();
 mg_require_csrf_for_write($input);
 $devicePublicId = strtolower(trim((string)($input['device_id'] ?? '')));
