@@ -78,8 +78,27 @@ final class PublicDonationsOperationsAdminContractTest extends TestCase
         ] as $contract) {
             self::assertStringContainsString($contract, $service);
         }
+        self::assertStringContainsString('mg_admin_public_donations_require_operations_user(true)', $action);
         self::assertStringContainsString('mg_require_csrf_for_write($input)', $action);
         self::assertStringContainsString("mg_rate_limit('admin.public_donations_operations.write'", $action);
+    }
+
+    public function testViewAndManageAccessRemainSeparate(): void
+    {
+        $projection = $this->read('api/admin/_public_donations_operations_projection.php');
+        $read = $this->read('api/admin/public-donations-operations.php');
+        $action = $this->read('api/admin/public-donations-operations-action.php');
+        $matrix = $this->read('includes/admin-permission-matrix.php');
+        $app = $this->read('assets/js/admin-public-donations-operations-app.js');
+
+        self::assertStringContainsString('mg_admin_public_donations_require_operations_user(bool $manage = false)', $projection);
+        self::assertStringContainsString("'view' => true", $projection);
+        self::assertStringContainsString("'manage' => \$canManage", $projection);
+        self::assertStringContainsString('mg_admin_public_donations_require_operations_user()', $read);
+        self::assertStringContainsString('mg_admin_public_donations_require_operations_user(true)', $action);
+        self::assertStringContainsString("'admin.public_donations_operations.repair' => ['admin.admin_agent.execute']", $matrix);
+        self::assertStringContainsString('Read-only access: rollout controls require the manage permission.', $app);
+        self::assertStringContainsString('Read-only access: reconciliation execution requires the manage permission.', $app);
     }
 
     public function testWorkspaceExposesAllOperationalSurfaces(): void
