@@ -70,6 +70,8 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
     <?php require dirname(__DIR__) . '/header-templates/logged-in.php'; ?>
   </div>
 </header>
+<link rel="stylesheet" href="/assets/css/homeserver-status-indicator.css?v=1.0.0">
+<script src="/assets/js/homeserver-status-indicator.js?v=1.0.0" defer></script>
 <style>
 html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
 html body.mg-app-page.mg-section-agent .mg-header-gift-tabs [data-system-tab]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
