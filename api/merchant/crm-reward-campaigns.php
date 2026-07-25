@@ -7,7 +7,7 @@ require_once __DIR__ . '/_merchant.php';
 function mg_crm_reward_campaign_label(string $type): string
 {
     return match ($type) {
-        'customer_refund' => 'Customer Refund',
+        'customer_refund' => 'Customer Refund / Make Good',
         'referral_reward' => 'Referral Reward',
         'newsletter_signup' => 'Newsletter Signup',
         'contest_giveaway' => 'Contest / Giveaway',
