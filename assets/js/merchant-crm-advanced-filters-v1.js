@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var filterButton = root && root.querySelector('[data-crm-desktop-filter]');
   if (!root || !table || !filterButton) return;
 
-  var state = { limit: 25, filters: { stage: '', status: '', account: '', verified: '', campaign: '' }, applying: false };
+  var state = { limit: 25, filters: { stage: '', status: '', account: '', verified: '', campaign: '' }, applying: false, contacts: new Map() };
 
   function normalize(value) { return String(value == null ? '' : value).toLowerCase().replace(/\s+/g, ' ').trim(); }
   function rows() { return Array.prototype.slice.call(table.querySelectorAll('.mg-crm-contact-row')); }
@@ -18,12 +18,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (row.classList.contains('is-search-hidden')) return false;
     if (state.filters.stage && normalize(row.dataset.crmStage) !== state.filters.stage) return false;
     if (state.filters.status && normalize(row.dataset.crmStatus) !== state.filters.status) return false;
-    if (state.filters.account === 'linked' && !row.querySelector('.mg-crm-badge.is-good')) return false;
-    if (state.filters.account === 'unlinked' && row.querySelector('.mg-crm-badge.is-good')) return false;
-    var contact = row.querySelector('.mg-crm-contact-cell');
-    var contactLabel = normalize(contact ? contact.textContent : row.textContent);
-    if (state.filters.verified === 'verified' && contactLabel.indexOf('verified') === -1) return false;
-    if (state.filters.verified === 'unverified' && contactLabel.indexOf('unverified') === -1) return false;
+    if (state.filters.account === 'linked' && row.dataset.crmHasAccount !== '1') return false;
+    if (state.filters.account === 'unlinked' && row.dataset.crmHasAccount !== '0') return false;
+    if (state.filters.verified === 'verified' && row.dataset.crmVerified !== '1') return false;
+    if (state.filters.verified === 'unverified' && row.dataset.crmVerified !== '0') return false;
     if (state.filters.campaign && contactText(row).indexOf(state.filters.campaign) === -1) return false;
     return true;
   }
@@ -159,7 +157,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 100);
   });
 
-  document.addEventListener('mg:crm-contacts:rendered', function () {
+  document.addEventListener('mg:crm-contacts:rendered', function (event) {
+    state.contacts.clear();
+    ((event.detail && event.detail.contacts) || []).forEach(function (contact) {
+      state.contacts.set(String(contact.id || contact.campaign_contact_id || ''), contact);
+    });
+    rows().forEach(function (row) {
+      var contact = state.contacts.get(String(row.getAttribute('data-contact-id') || '')) || {};
+      row.dataset.crmHasAccount = contact.has_account ? '1' : '0';
+      row.dataset.crmVerified = contact.email_verified ? '1' : '0';
+      row.dataset.crmCampaignType = String((contact.campaign_types || []).join(' ') || contact.campaign_type || '');
+      row.dataset.crmSource = String((contact.sources || []).join(' ') || contact.source || '');
+    });
     window.requestAnimationFrame(function () { window.requestAnimationFrame(apply); });
   });
   document.addEventListener('mg:crm-directory:filtered', function () {
