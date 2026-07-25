@@ -16,6 +16,7 @@ on:
       - 'assets/js/admin-public-donations-operations*.js'
       - 'database/20260724_public_donations_operations_admin_v1_single_install.sql'
       - 'includes/admin-permission-matrix.php'
+      - 'includes/admin-sidebar.php'
       - 'includes/public-donations-feature.php'
       - 'scripts/validate_public_donations_operations_admin_v1.php'
       - 'scripts/test_public_donations_operations_admin_mysql.php'
@@ -81,6 +82,7 @@ jobs:
           php -l api/admin/public-donations-operations.php
           php -l api/admin/public-donations-operations-action.php
           php -l includes/admin-permission-matrix.php
+          php -l includes/admin-sidebar.php
           php -l includes/public-donations-feature.php
           php -l scripts/validate_public_donations_operations_admin_v1.php
           php -l scripts/test_public_donations_operations_admin_mysql.php
@@ -125,6 +127,7 @@ jobs:
           php -l api/admin/public-donations-operations.php
           php -l api/admin/public-donations-operations-action.php
           php -l includes/admin-permission-matrix.php
+          php -l includes/admin-sidebar.php
           php -l includes/public-donations-feature.php
           php -l scripts/validate_public_donations_operations_admin_v1.php
           php -l scripts/test_public_donations_operations_admin_mysql.php
