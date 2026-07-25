@@ -63,7 +63,14 @@ $hasNav = str_contains($nav, "'campaigns'=>") && str_contains($nav, "'reward_tem
 $hasViewRoutes = str_contains($view, 'merchant-campaigns-view.php') && str_contains($view, 'merchant-reward-templates-view.php');
 $hasCampaignTypeRegistry = str_contains($registry, 'function mg_campaign_type_registry') && str_contains($registry, "'newsletter_signup'") && str_contains($registry, "'contest_giveaway'") && str_contains($registry, "'qr_reward_drop'");
 $hasLegacyCampaignShell = str_contains($campaignView, 'Newsletter Signup') && str_contains($campaignView, 'Contest / Giveaway') && str_contains($campaignView, 'QR Reward Drop');
-$hasRegistryCampaignShell = str_contains($campaignView, 'mg_campaign_type_options') && str_contains($campaignView, 'foreach ($mgCampaignTypeOptions as $typeOption)') && str_contains($campaignView, 'data-campaign-type-select') && str_contains($registry, 'Signup Reward') && str_contains($registry, 'Contest / Giveaway') && str_contains($registry, 'QR Reward Drop');
+$hasCampaignTypeOptionsPath = str_contains($campaignView, 'mg_campaign_type_options')
+    || str_contains($campaignView, 'mg_public_donations_campaign_type_options');
+$hasRegistryCampaignShell = $hasCampaignTypeOptionsPath
+    && str_contains($campaignView, 'foreach ($mgCampaignTypeOptions as $typeOption)')
+    && str_contains($campaignView, 'data-campaign-type-select')
+    && str_contains($registry, 'Signup Reward')
+    && str_contains($registry, 'Contest / Giveaway')
+    && str_contains($registry, 'QR Reward Drop');
 $hasCampaignShell = $hasLegacyCampaignShell || $hasRegistryCampaignShell;
 $hasTemplateShell = str_contains($templateView, 'Reward type') && str_contains($templateView, 'agent_discoverable') && str_contains($templateView, 'Redemption instructions');
 $hasTemplateApi = str_contains($templateApi, 'merchant.reward_templates.view') && str_contains($templateApi, 'merchant.reward_templates.manage') && str_contains($templateApi, 'INSERT INTO reward_templates') && str_contains($templateApi, 'UPDATE reward_templates') && str_contains($templateApi, 'mg_require_csrf_for_write');
@@ -92,6 +99,7 @@ echo json_encode([
     'has_view_routes' => $hasViewRoutes,
     'has_campaign_type_registry' => $hasCampaignTypeRegistry,
     'has_legacy_campaign_shell' => $hasLegacyCampaignShell,
+    'has_campaign_type_options_path' => $hasCampaignTypeOptionsPath,
     'has_registry_campaign_shell' => $hasRegistryCampaignShell,
     'has_campaign_shell' => $hasCampaignShell,
     'has_template_shell' => $hasTemplateShell,
