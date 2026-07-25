@@ -1,0 +1,45 @@
+.mg-homeserver-status-trigger{position:relative;width:25px;height:25px;min-width:25px;padding:0;border:1px solid #cbd5e1;border-radius:999px;background:#fff;display:inline-grid;place-items:center;cursor:pointer;box-shadow:0 3px 10px rgba(15,23,42,.08);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.mg-homeserver-status-trigger:hover,.mg-homeserver-status-trigger:focus-visible{transform:translateY(-1px);border-color:#94a3b8;box-shadow:0 6px 16px rgba(15,23,42,.13);outline:none}
+.mg-homeserver-status-trigger .mg-homeserver-status-dot{width:9px;height:9px;border-radius:50%;background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.13)}
+.mg-homeserver-status-trigger.is-online .mg-homeserver-status-dot{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.mg-homeserver-status-trigger.is-loading .mg-homeserver-status-dot{background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.14)}
+.mg-app-sidebar-brand>.mg-homeserver-status-trigger{margin-left:-3px;margin-right:auto;flex:0 0 25px}
+.mg-header-left>.mg-homeserver-status-trigger{display:none}
+.mg-homeserver-status-modal[hidden]{display:none!important}
+.mg-homeserver-status-modal{position:fixed;inset:0;z-index:50020;display:grid;place-items:center;padding:20px}
+.mg-homeserver-status-backdrop{position:absolute;inset:0;border:0;background:rgba(7,18,37,.58);backdrop-filter:blur(5px);cursor:default}
+.mg-homeserver-status-dialog{position:relative;width:min(560px,calc(100vw - 28px));max-height:min(760px,calc(100svh - 28px));overflow:auto;border:1px solid #d8e4f4;border-radius:24px;background:#fff;box-shadow:0 28px 90px rgba(2,12,27,.3)}
+.mg-homeserver-status-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 20px 16px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fbfdff 0%,#f7faff 100%)}
+.mg-homeserver-status-head p{margin:0 0 4px;color:#64748b;font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+.mg-homeserver-status-head h2{margin:0;color:#0f172a;font-size:22px;letter-spacing:-.035em}
+.mg-homeserver-status-close{width:36px;height:36px;padding:0;border:1px solid #dbe4f0;border-radius:11px;background:#fff;color:#334155;display:grid;place-items:center;font-size:22px;line-height:1;cursor:pointer}
+.mg-homeserver-status-body{display:grid;gap:16px;padding:18px 20px 20px}
+.mg-homeserver-overview{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+.mg-homeserver-status-card{padding:15px;border:1px solid #dce6f3;border-radius:17px;background:#f8fbff}
+.mg-homeserver-status-card>span{display:block;margin-bottom:6px;color:#64748b;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.mg-homeserver-status-card strong{display:flex;align-items:center;gap:8px;color:#0f172a;font-size:16px}
+.mg-homeserver-status-card p{margin:7px 0 0;color:#64748b;font-size:12px;line-height:1.5}
+.mg-homeserver-state-light{width:10px;height:10px;border-radius:50%;background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.12)}
+.mg-homeserver-state-light.is-online{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.13)}
+.mg-homeserver-section{padding:15px;border:1px solid #dce6f3;border-radius:18px;background:#fff}
+.mg-homeserver-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.mg-homeserver-section-head p{margin:0 0 3px;color:#64748b;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.mg-homeserver-section-head h3{margin:0;color:#0f172a;font-size:16px;letter-spacing:-.025em}
+.mg-homeserver-chip{min-height:25px;padding:0 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#475569;display:inline-flex;align-items:center;font-size:10px;font-weight:850;white-space:nowrap}
+.mg-homeserver-device-list{display:grid;gap:9px}
+.mg-homeserver-device{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fbfdff}
+.mg-homeserver-device h4{margin:0;color:#0f172a;font-size:13px}
+.mg-homeserver-device p{margin:4px 0 0;color:#64748b;font-size:11px;line-height:1.45}
+.mg-homeserver-device-state{align-self:start;min-height:24px;padding:0 8px;border-radius:999px;background:#fee2e2;color:#b91c1c;display:inline-flex;align-items:center;font-size:9px;font-weight:900;text-transform:uppercase}
+.mg-homeserver-device-state.is-online{background:#dcfce7;color:#15803d}
+.mg-homeserver-empty{padding:15px;border:1px dashed #cbd5e1;border-radius:14px;background:#f8fafc;color:#64748b;font-size:12px;line-height:1.55}
+.mg-homeserver-ollama-stub{display:grid;gap:10px}
+.mg-homeserver-ollama-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid #e2e8f0;border-radius:13px;background:#fbfdff}
+.mg-homeserver-ollama-row strong{color:#0f172a;font-size:12px}
+.mg-homeserver-ollama-row span{color:#64748b;font-size:11px}
+.mg-homeserver-status-actions{display:flex;justify-content:flex-end;gap:9px}
+.mg-homeserver-status-actions a,.mg-homeserver-status-actions button{min-height:42px;padding:0 15px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#1e293b;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:12px;font-weight:850;cursor:pointer}
+.mg-homeserver-status-actions a{border-color:#0f172a;background:#0f172a;color:#fff}
+body.mg-homeserver-status-open{overflow:hidden}
+@media(max-width:980px){.mg-header-left>.mg-homeserver-status-trigger{display:inline-grid;margin-left:-2px;flex:0 0 25px}.mg-app-sidebar-brand>.mg-homeserver-status-trigger{display:none}}
+@media(max-width:620px){.mg-homeserver-status-modal{padding:8px}.mg-homeserver-status-dialog{width:100%;max-height:calc(100svh - 16px);border-radius:20px}.mg-homeserver-status-head{padding:17px 16px 14px}.mg-homeserver-status-body{padding:14px 16px 17px}.mg-homeserver-overview{grid-template-columns:1fr}.mg-homeserver-status-actions{display:grid;grid-template-columns:1fr}.mg-homeserver-status-actions a,.mg-homeserver-status-actions button{width:100%}}
