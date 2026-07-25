@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
 
-$user = mg_require_admin_page_key('admin.settings');
+$user = mg_require_admin_page_key('admin.public_donations_operations');
 $page_title = 'Public Donations Operations | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
