@@ -3,15 +3,24 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_public_donations_operations.php';
 
-function mg_admin_public_donations_require_operations_user(): array
+function mg_admin_public_donations_require_operations_user(bool $manage = false): array
 {
     $actor = mg_current_user();
     if (!$actor) mg_fail('Authentication required.', 401);
-    if (!mg_admin_permission_user_has($actor, 'admin.public_donations_operations.manage')) {
+    $permission = $manage
+        ? 'admin.public_donations_operations.manage'
+        : 'admin.public_donations_operations.view';
+    if (!mg_admin_permission_user_has($actor, $permission)) {
         mg_security_log('warning', 'admin.public_donations_operations.permission_denied', 'Public Donations operations access was denied.', [
-            'required_permission' => 'admin.public_donations_operations.manage',
+            'required_permission' => $permission,
+            'access_mode' => $manage ? 'manage' : 'view',
         ], (int)$actor['id']);
-        mg_fail('You do not have permission to manage Public Donations operations.', 403);
+        mg_fail(
+            $manage
+                ? 'You do not have permission to manage Public Donations operations.'
+                : 'You do not have permission to view Public Donations operations.',
+            403
+        );
     }
     return $actor;
 }
@@ -89,6 +98,7 @@ function mg_admin_public_donations_read_projection(PDO $pdo, array $actor, strin
     $foundation = array_intersect_key($schema, array_flip(mg_admin_public_donations_required_tables()));
     $rollout = mg_public_donations_rollout_config(true);
     $environment = mg_public_donations_environment_rollout();
+    $canManage = mg_admin_permission_user_has($actor, 'admin.public_donations_operations.manage');
     $checks = [
         ['key' => 'operations_schema', 'label' => 'Operations schema', 'ready' => !empty($schema['public_donations_operations_settings']) && !empty($schema['public_donations_reconciliation_receipts'])],
         ['key' => 'foundation_schema', 'label' => 'Public Donations foundation', 'ready' => !in_array(false, $foundation, true)],
@@ -109,12 +119,15 @@ function mg_admin_public_donations_read_projection(PDO $pdo, array $actor, strin
             'selected_merchants' => mg_admin_public_donations_selected_merchants($pdo, $rollout['selected_merchant_ids']),
         ],
         'environment' => $environment,
-        'merchant_search' => mg_admin_public_donations_search_merchants_projection($pdo, $merchantQuery),
+        'merchant_search' => $canManage
+            ? mg_admin_public_donations_search_merchants_projection($pdo, $merchantQuery)
+            : [],
         'recent_operations' => mg_admin_public_donations_recent_operations_projection($pdo, $schema),
         'receipts' => mg_admin_public_donations_receipts($pdo, $schema),
         'permissions' => [
-            'manage' => mg_admin_permission_user_has($actor, 'admin.public_donations_operations.manage'),
-            'repair' => mg_admin_public_donations_actor_can_repair($actor),
+            'view' => true,
+            'manage' => $canManage,
+            'repair' => $canManage && mg_admin_public_donations_actor_can_repair($actor),
         ],
         'repair_modes' => MG_PUBLIC_DONATIONS_REPAIR_MODES,
         'confirmation' => [
