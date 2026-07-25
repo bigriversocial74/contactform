@@ -30,6 +30,7 @@ $canLoyaltyQuestOperations = $canAdminPage('admin.loyalty_quests');
 $canLoyaltyQuestIntegrity = $canAdminPage('admin.loyalty_quest_integrity');
 $canHostedGames = $canAdminPage('admin.hosted_games');
 $canMcpConnections = $canAdminPage('admin.mcp_connections');
+$canPublicDonationsOperations = $canAdminPage('admin.public_donations_operations');
 $canPackageModeration = $canCommerce;
 $canStampOperations = $canCommerce;
 $canStampHealth = $canCommerce;
@@ -99,6 +100,12 @@ $adminNav = [
         'detail' => 'Clients, scopes, deployment',
         'href' => '/admin/mcp-connections.php',
         'visible' => $canMcpConnections,
+    ],
+    'public-donations-operations' => [
+        'label' => 'Public Donations',
+        'detail' => 'Rollout, integrity, repair',
+        'href' => '/admin/public-donations-operations.php',
+        'visible' => $canPublicDonationsOperations,
     ],
     'ops-activity' => [
         'label' => 'Ops activity log',
