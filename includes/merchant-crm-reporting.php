@@ -112,17 +112,23 @@ function mg_merchant_crm_reporting_claim_window(PDO $pdo, int $merchantId, strin
 
 function mg_merchant_crm_reporting_open_followup_contacts(PDO $pdo, int $merchantId): array
 {
-    if (!mg_merchant_crm_search_table_exists($pdo, 'campaign_events')) return [];
-    $stmt = $pdo->prepare("SELECT contact_id,event_context_json FROM campaign_events
-        WHERE merchant_user_id=? AND event_type='crm.followup.created' ORDER BY id DESC LIMIT 1000");
+    if (!mg_merchant_crm_search_table_exists($pdo, 'campaign_events')
+        || !mg_merchant_crm_search_table_exists($pdo, 'campaign_contacts')) return [];
+    $stmt = $pdo->prepare("SELECT cc.user_id,cc.email,ce.event_context_json
+        FROM campaign_events ce
+        LEFT JOIN campaign_contacts cc ON cc.id=ce.contact_id AND cc.merchant_user_id=ce.merchant_user_id
+        WHERE ce.merchant_user_id=? AND ce.event_type='crm.followup.created'
+        ORDER BY ce.id DESC LIMIT 1000");
     $stmt->execute([$merchantId]);
     $contacts = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $context = json_decode((string)($row['event_context_json'] ?? ''), true);
         $context = is_array($context) ? $context : [];
         if (mg_merchant_crm_reporting_followup_status($context) === 'completed') continue;
-        $contactId = (int)($row['contact_id'] ?? 0);
-        if ($contactId > 0) $contacts[$contactId] = true;
+        $userId = (int)($row['user_id'] ?? 0);
+        $email = strtolower(trim((string)($row['email'] ?? '')));
+        if ($userId > 0) $contacts['user:' . $userId] = true;
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) $contacts['email:' . $email] = true;
     }
     return $contacts;
 }
@@ -162,7 +168,8 @@ function mg_merchant_crm_reporting_snapshot(PDO $pdo, int $merchantId, mixed $wi
         $issued = (int)($row['total_rewards_issued'] ?? 0);
         $claimed = (int)($row['total_rewards_claimed'] ?? 0);
         $redeemed = (int)($row['total_rewards_redeemed'] ?? 0);
-        $contactDbId = (int)($row['id'] ?? 0);
+        $contactUserId = (int)($row['user_id'] ?? 0);
+        $contactEmail = strtolower(trim((string)($row['primary_email'] ?? '')));
 
         if ($scoreValue >= 75) $metrics['high_intent']++;
         if ($verified) $metrics['verified_contacts']++;
@@ -170,7 +177,9 @@ function mg_merchant_crm_reporting_snapshot(PDO $pdo, int $merchantId, mixed $wi
         if ($scoreValue >= 50) $metrics['responsive_contacts']++;
         if ($lastActivity >= $start && $lastActivity <= $now) $metrics['engaged_contacts']++;
         if ($lastActivity >= $previousStart && $lastActivity < $start) $previousEngaged++;
-        if (isset($openFollowups[$contactDbId]) || $issued > ($claimed + $redeemed)) $metrics['needs_followup']++;
+        $hasOpenFollowup = ($contactUserId > 0 && isset($openFollowups['user:' . $contactUserId]))
+            || ($contactEmail !== '' && isset($openFollowups['email:' . $contactEmail]));
+        if ($hasOpenFollowup || $issued > ($claimed + $redeemed)) $metrics['needs_followup']++;
 
         $bucket = mg_merchant_crm_reporting_pipeline_bucket($row, $scoreValue, $start);
         $pipeline[$bucket]++;
