@@ -18,6 +18,10 @@ $read = static function (string $relative) use ($root): string {
     return $content;
 };
 
+$composer = json_decode($read('composer.json'), true);
+$check(is_array($composer), 'composer.json must decode as an object.');
+$check(isset($composer['require']['ext-sodium']), 'The HomeServer cloud contract must declare ext-sodium.');
+
 $manifest = require $root . '/config/migrations.php';
 $migrationName = '20260724_homeserver_cloud_pairing_sync_v1.sql';
 $check(in_array($migrationName, $manifest['ordered_files'] ?? [], true), 'HomeServer migration is not registered in the canonical manifest.');
@@ -74,6 +78,26 @@ $requiredEndpoints = [
 foreach ($requiredEndpoints as $endpoint) {
     $check(is_file($root . '/' . $endpoint), 'Missing HomeServer endpoint: ' . $endpoint);
 }
+
+$requiredAccountFiles = [
+    'account-homeserver.php',
+    'includes/account/homeserver-view.php',
+    'assets/js/homeserver-account.js',
+    'assets/css/homeserver-account.css',
+];
+foreach ($requiredAccountFiles as $accountFile) {
+    $check(is_file($root . '/' . $accountFile), 'Missing HomeServer account control: ' . $accountFile);
+}
+$accountEntry = $read('account-homeserver.php');
+$check(str_contains($accountEntry, "MG_ACCOUNT_VIEW', 'homeserver'"), 'HomeServer account entrypoint is not routed through the canonical account shell.');
+$accountShell = $read('account.php');
+$check(str_contains($accountShell, "\$accountView === 'homeserver'"), 'Canonical account shell does not render the HomeServer workspace.');
+$accountScript = $read('assets/js/homeserver-account.js');
+foreach (['/api/homeserver/pairing-code.php', '/api/homeserver/devices.php', '/api/homeserver/revoke.php'] as $accountEndpoint) {
+    $check(str_contains($accountScript, $accountEndpoint), 'HomeServer account controls are missing endpoint: ' . $accountEndpoint);
+}
+$check(str_contains($accountScript, 'navigator.clipboard.writeText'), 'HomeServer pairing code copy control is missing.');
+$check(str_contains($accountScript, 'window.confirm'), 'HomeServer revocation requires an explicit owner confirmation.');
 
 $body = '{"x":1}';
 $bodyHash = hash('sha256', $body);
