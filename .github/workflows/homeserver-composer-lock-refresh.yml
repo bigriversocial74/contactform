@@ -1,22 +1,24 @@
 name: HomeServer Connector Composer Lock Refresh
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/homeserver-cloud-connector-v2-20260724
+      - integration-from-repair-20260628
     paths:
       - 'composer.json'
+      - 'composer.lock'
       - '.github/workflows/homeserver-composer-lock-refresh.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: homeserver-connector-composer-lock
+  group: homeserver-connector-composer-lock-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   refresh:
+    if: github.head_ref == 'feature/homeserver-cloud-connector-v2-20260724'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -31,8 +33,11 @@ jobs:
           extensions: json, mbstring, pdo, sodium
           coverage: none
 
-      - name: Refresh lock metadata only
-        run: composer update --lock --no-install --no-interaction
+      - name: Refresh and validate lock metadata
+        run: |
+          composer update --lock --no-install --no-interaction
+          composer validate --strict
+          composer audit --locked --no-interaction
 
       - name: Commit exact lock metadata
         shell: bash
