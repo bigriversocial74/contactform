@@ -57,6 +57,22 @@ function mg_admin_public_donations_search_merchants_projection(PDO $pdo, string 
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
+function mg_admin_public_donations_summary_projection(PDO $pdo, array $schema): array
+{
+    $summary = mg_admin_public_donations_summary($pdo, $schema);
+    if (empty($schema['campaign_donation_rewards'])) return $summary;
+
+    $row = $pdo->query(
+        "SELECT COUNT(*) AS gross,SUM(status='recalled') AS recalled FROM campaign_donation_rewards"
+    )->fetch(PDO::FETCH_ASSOC) ?: [];
+    $gross = (int)($row['gross'] ?? 0);
+    $recalled = (int)($row['recalled'] ?? 0);
+    $summary['gross_allocated'] = $gross;
+    $summary['recalled'] = $recalled;
+    $summary['net_allocated'] = max(0, $gross - $recalled);
+    return $summary;
+}
+
 function mg_admin_public_donations_recent_operations_projection(PDO $pdo, array $schema): array
 {
     if (empty($schema['campaign_donation_operations']) || empty($schema['campaigns']) || empty($schema['users'])) return [];
@@ -109,7 +125,7 @@ function mg_admin_public_donations_read_projection(PDO $pdo, array $actor, strin
 
     return [
         'version' => 'public-donations-operations-admin-v1',
-        'summary' => mg_admin_public_donations_summary($pdo, $schema),
+        'summary' => mg_admin_public_donations_summary_projection($pdo, $schema),
         'readiness' => [
             'ready' => !in_array(false, array_column($checks, 'ready'), true),
             'checks' => $checks,
