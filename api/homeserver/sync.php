@@ -14,7 +14,7 @@ $validated = [];
 foreach ($operations as $index => $operation) {
     if (!is_array($operation)) mg_fail('Synchronization operation is invalid.', 422, ['index' => $index]);
     $idempotencyKey = trim((string)($operation['idempotency_key'] ?? ''));
-    $operationType = strtolower(trim((string)($operation['operation_type'] ?? ''));
+    $operationType = strtolower(trim((string)($operation['operation_type'] ?? '')));
     $payload = is_array($operation['payload'] ?? null) ? $operation['payload'] : [];
     if ($idempotencyKey === '' || mb_strlen($idempotencyKey) > 190 || preg_match('/^[A-Za-z0-9_.:-]+$/', $idempotencyKey) !== 1) {
         mg_fail('Synchronization idempotency key is invalid.', 422, ['index' => $index]);
