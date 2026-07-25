@@ -65,7 +65,7 @@ $must($projection, [
     'mg_admin_public_donations_require_operations_user(bool $manage = false)',
     "? 'admin.public_donations_operations.manage'",
     ": 'admin.public_donations_operations.view'",
-    "'access_mode' => $manage ? 'manage' : 'view'",
+    "'access_mode' => \$manage ? 'manage' : 'view'",
     'admin.public_donations_operations.permission_denied',
     'mg_admin_public_donations_search_merchants_projection',
     'mg_admin_public_donations_recent_operations_projection',
@@ -73,8 +73,8 @@ $must($projection, [
     "campaign.title AS campaign_name",
     "AND ((? > 0 AND u.id=?) OR u.email LIKE ? OR u.full_name LIKE ? OR u.display_name LIKE ?)",
     "'view' => true",
-    "'manage' => $canManage",
-    "'repair' => $canManage && mg_admin_public_donations_actor_can_repair($actor)",
+    "'manage' => \$canManage",
+    "'repair' => \$canManage && mg_admin_public_donations_actor_can_repair(\$actor)",
 ], 'read projection');
 
 $must($readApi, [
