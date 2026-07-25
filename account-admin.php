@@ -20,9 +20,17 @@ $adminPermissionSet = [
   'operational.alerts.view', 'demand.dashboard.view', 'intelligence.dashboard.view',
   'merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse', 'share_market.admin',
   'admin.pwa_branding.view', 'admin.pwa_branding.manage', 'admin.pwa_notifications.test',
-  'admin.blog.view', 'admin.blog.manage',
+  'admin.blog.view', 'admin.blog.manage', 'admin.settings.manage',
+  'admin.public_donations_operations.view', 'admin.public_donations_operations.manage',
 ];
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
+$canPublicDonationsOperations = $isSuperAdmin
+  || in_array('admin.settings.manage', $permissions, true)
+  || in_array('admin.public_donations_operations.view', $permissions, true)
+  || in_array('admin.public_donations_operations.manage', $permissions, true);
+if ($canPublicDonationsOperations) {
+  $page_scripts[] = '/assets/js/admin-public-donations-nav.js?v=20260724-v1';
+}
 $adminActive = 'dashboard';
 
 require __DIR__ . '/includes/header.php';
