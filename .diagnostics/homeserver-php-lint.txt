@@ -17,8 +17,7 @@ No syntax errors detected in api/homeserver/revoke.php
 No syntax errors detected in api/homeserver/status.php
 
 ### api/homeserver/sync.php
-PHP Parse error:  syntax error, unexpected token ";", expecting ")" in api/homeserver/sync.php on line 17
-Errors parsing api/homeserver/sync.php
+No syntax errors detected in api/homeserver/sync.php
 
 ### scripts/validate_homeserver_pairing_sync_v1.php
 No syntax errors detected in scripts/validate_homeserver_pairing_sync_v1.php
