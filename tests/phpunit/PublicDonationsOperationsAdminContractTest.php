@@ -53,13 +53,19 @@ final class PublicDonationsOperationsAdminContractTest extends TestCase
     public function testReconciliationBoundariesRemainReportOnly(): void
     {
         $service = $this->read('api/admin/_public_donations_operations.php');
-        self::assertStringContainsString("'missing_attribution'", $service);
-        self::assertStringContainsString("'missing_links'", $service);
-        self::assertStringContainsString("'ownership_mismatches'", $service);
-        self::assertStringNotContainsString('INSERT INTO campaign_donation_rewards', $service);
+        $reconciliation = $this->read('includes/public-donations-reconciliation.php');
+
+        self::assertStringContainsString('mg_public_donations_reconcile_apply', $service);
+        self::assertStringContainsString('mg_public_donations_reconcile_schema_ready', $service);
+        self::assertStringContainsString("'missing_attribution'", $reconciliation);
+        self::assertStringContainsString("'missing_links'", $reconciliation);
+        self::assertStringContainsString("'ownership_mismatches'", $reconciliation);
+
+        $boundary = $service . "\n" . $reconciliation;
+        self::assertStringNotContainsString('INSERT INTO campaign_donation_rewards', $boundary);
         self::assertDoesNotMatchRegularExpression(
             '/UPDATE\s+(?:wallet_items|pppm_items|microgift_instances)\s+SET\s+(?:user_id|owner_user_id|recipient_user_id)/i',
-            $service
+            $boundary
         );
     }
 
