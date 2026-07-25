@@ -18,8 +18,8 @@ $page_title = match ($accountView) {
 };
 $page_section = 'account';
 $header_mode = 'account';
-$page_styles = [];
-$page_scripts = [];
+$page_styles = ['/assets/css/personal-agent-chat-history.css?v=1.2.0'];
+$page_scripts = ['/assets/js/personal-agent-chat-history.js?v=1.2.0'];
 if ($accountView === 'profile') {
   $page_styles[] = '/assets/css/profile-editor.css';
   $page_styles[] = '/assets/css/profile-moderation-owner.css';
@@ -80,11 +80,12 @@ $canShareMarketAdmin = in_array('share_market.admin', $permissions, true) || $is
 $knownViews = ['profile', 'market', 'share_market', 'subscriptions', 'wallet', 'models', 'security', 'homeserver', 'access', 'admin', 'share_market_admin', 'investment_tests', 'marketplace_index', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 $agent_tab = $accountView;
-$use_inbox_sidebar = basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === 'account.php';
+$use_inbox_sidebar = true;
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-account-app">
-  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+  <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
+  <?php require __DIR__ . '/includes/account/account-sidebar-scanner.php'; ?>
 
   <main class="mg-app-workspace mg-account-main">
     <?php if (!$user): ?>
