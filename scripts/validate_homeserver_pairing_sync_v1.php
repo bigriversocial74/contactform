@@ -46,6 +46,8 @@ foreach ([
 ] as $needle) {
     $check(str_contains($foundation, $needle), 'HomeServer security foundation is missing: ' . $needle);
 }
+$check(str_contains($foundation, "mg_config_value('app', 'trust_proxy', false)"), 'Forwarded HTTPS may only be trusted through the platform proxy setting.');
+$check(str_contains($foundation, '$forwardedHttps = $trustProxy'), 'HomeServer secure transport must bind forwarded HTTPS to trusted-proxy configuration.');
 foreach (['commerce.', 'payment.', 'claim.', 'redemption.', 'ownership.'] as $authorityPrefix) {
     $check(str_contains($foundation, "str_starts_with(\$operationType, '" . $authorityPrefix . "')"), 'Cloud authority rejection is missing for ' . $authorityPrefix);
 }
