@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   if (!document.querySelector('[data-public-donations-operations]')) return;
+  import('/assets/js/admin-public-donations-nav.js?v=20260724-v1').catch(() => {});
   import('/assets/js/admin-public-donations-operations-app.js?v=20260724-v1')
     .then((module) => module.boot())
     .catch((error) => {
