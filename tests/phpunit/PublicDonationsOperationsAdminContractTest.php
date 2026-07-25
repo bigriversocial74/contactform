@@ -118,6 +118,14 @@ final class PublicDonationsOperationsAdminContractTest extends TestCase
         }
     }
 
+    public function testNetAllocationIncludesEveryNonRecalledLifecycleState(): void
+    {
+        $projection = $this->read('api/admin/_public_donations_operations_projection.php');
+        self::assertStringContainsString("SUM(status='recalled') AS recalled", $projection);
+        self::assertStringContainsString('max(0, $gross - $recalled)', $projection);
+        self::assertStringNotContainsString("SUM(status='allocated') AS net", $projection);
+    }
+
     public function testRepairModesReuseCanonicalPhaseTenEngine(): void
     {
         self::assertSame([
