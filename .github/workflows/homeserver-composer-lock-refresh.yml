@@ -1,0 +1,53 @@
+name: HomeServer Connector Composer Lock Refresh
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/homeserver-composer-lock-refresh.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: homeserver-connector-composer-lock-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: github.head_ref == 'feature/homeserver-cloud-connector-v2-20260724'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feature/homeserver-cloud-connector-v2-20260724
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: json, mbstring, pdo, sodium
+          coverage: none
+
+      - name: Refresh and validate lock metadata
+        run: |
+          composer update --lock --no-install --no-interaction
+          composer validate --strict
+          composer audit --locked --no-interaction
+
+      - name: Commit exact lock metadata
+        shell: bash
+        run: |
+          if git diff --quiet -- composer.lock; then
+            echo "composer.lock is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.lock
+          git commit -m "Refresh HomeServer connector Composer lock"
+          git push origin HEAD:feature/homeserver-cloud-connector-v2-20260724

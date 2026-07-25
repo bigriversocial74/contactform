@@ -1,0 +1,27 @@
+### api/homeserver/_homeserver.php
+No syntax errors detected in api/homeserver/_homeserver.php
+
+### api/homeserver/devices.php
+No syntax errors detected in api/homeserver/devices.php
+
+### api/homeserver/pair.php
+No syntax errors detected in api/homeserver/pair.php
+
+### api/homeserver/pairing-code.php
+No syntax errors detected in api/homeserver/pairing-code.php
+
+### api/homeserver/revoke.php
+No syntax errors detected in api/homeserver/revoke.php
+
+### api/homeserver/status.php
+No syntax errors detected in api/homeserver/status.php
+
+### api/homeserver/sync.php
+No syntax errors detected in api/homeserver/sync.php
+
+### scripts/validate_homeserver_pairing_sync_v1.php
+No syntax errors detected in scripts/validate_homeserver_pairing_sync_v1.php
+
+### config/migrations.php
+No syntax errors detected in config/migrations.php
+

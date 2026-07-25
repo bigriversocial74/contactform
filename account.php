@@ -12,6 +12,7 @@ $page_title = match ($accountView) {
   'profile_moderation' => 'Profile Moderation | Microgifter',
   'wallet' => 'My Wallet | Microgifter',
   'subscriptions' => 'My Subscription | Microgifter',
+  'homeserver' => 'HomeServer Connections | Microgifter',
   'profile' => 'Profile Editor | Microgifter',
   default => 'Account | Microgifter',
 };
@@ -31,6 +32,9 @@ if ($accountView === 'profile') {
 } elseif ($accountView === 'wallet') {
   $page_styles[] = '/assets/css/merchant-workspace.css';
   $page_scripts[] = '/assets/js/stage12-wallet.js';
+} elseif ($accountView === 'homeserver') {
+  $page_styles[] = '/assets/css/homeserver-account.css';
+  $page_scripts[] = '/assets/js/homeserver-account.js';
 } else {
   $page_scripts[] = '/assets/js/account.js';
 }
@@ -73,7 +77,7 @@ $adminPermissionSet = [
 ];
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
 $canShareMarketAdmin = in_array('share_market.admin', $permissions, true) || $isSuperAdmin;
-$knownViews = ['profile', 'market', 'share_market', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'share_market_admin', 'investment_tests', 'marketplace_index', 'profile_moderation'];
+$knownViews = ['profile', 'market', 'share_market', 'subscriptions', 'wallet', 'models', 'security', 'homeserver', 'access', 'admin', 'share_market_admin', 'investment_tests', 'marketplace_index', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 $agent_tab = $accountView;
 $use_inbox_sidebar = basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === 'account.php';
@@ -99,7 +103,9 @@ require __DIR__ . '/includes/header.php';
     <?php elseif ($accountView === 'models'): ?>
       <section class="mg-app-panel mg-account-pane is-active" data-account-pane="models"><div class="mg-app-panel-head"><div><h2>Identity onboarding</h2><p>Request the models you want to operate as. Approval-gated models keep the platform clean before commerce is added.</p></div></div><div class="mg-app-panel-body"><div class="mg-model-list" data-user-model-list><p class="mg-muted">Loading models…</p></div></div></section>
     <?php elseif ($accountView === 'security'): ?>
-      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="security"><div class="mg-app-panel-head"><div><h2>Security &amp; sessions</h2><p>Review active sessions, revoke device access, and open the Privacy &amp; Data Center for retention or account-erasure requests.</p></div></div><div class="mg-app-panel-body"><div class="mg-action-row"><button class="mg-btn mg-btn-ghost" type="button" data-session-revoke="all_except_current">Sign out other devices</button><button class="mg-btn mg-btn-soft" type="button" data-session-revoke="current">Sign out this device</button><button class="mg-btn mg-btn-soft" type="button" data-session-revoke="all">Sign out everywhere</button><a class="mg-btn mg-btn-ghost" href="/privacy-center.php">Privacy &amp; Data Center</a></div><div class="mg-session-list" data-account-sessions><p class="mg-muted">Loading sessions…</p></div></div></section>
+      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="security"><div class="mg-app-panel-head"><div><h2>Security &amp; sessions</h2><p>Review active sessions, revoke device access, and open the Privacy &amp; Data Center for retention or account-erasure requests.</p></div></div><div class="mg-app-panel-body"><div class="mg-action-row"><button class="mg-btn mg-btn-ghost" type="button" data-session-revoke="all_except_current">Sign out other devices</button><button class="mg-btn mg-btn-soft" type="button" data-session-revoke="current">Sign out this device</button><button class="mg-btn mg-btn-soft" type="button" data-session-revoke="all">Sign out everywhere</button><a class="mg-btn mg-btn-ghost" href="/account-homeserver.php">HomeServer Connections</a><a class="mg-btn mg-btn-ghost" href="/privacy-center.php">Privacy &amp; Data Center</a></div><div class="mg-session-list" data-account-sessions><p class="mg-muted">Loading sessions…</p></div></div></section>
+    <?php elseif ($accountView === 'homeserver'): ?>
+      <?php require __DIR__ . '/includes/account/homeserver-view.php'; ?>
     <?php elseif ($accountView === 'access'): ?>
       <section class="mg-app-panel mg-account-pane is-active" data-account-pane="access"><div class="mg-app-panel-head"><div><h2>Access profile</h2><p>Your current session is hydrated from the Stage 1 auth and permission layer.</p></div></div><div class="mg-app-panel-body"><div class="mg-account-section"><h3>Roles</h3><?php if ($roles): ?><div class="mg-chip-list"><?php foreach ($roles as $role): ?><span class="mg-chip"><?= mg_e($role) ?></span><?php endforeach; ?></div><?php else: ?><p class="mg-muted">No roles are attached to this session yet.</p><?php endif; ?></div><div class="mg-account-section"><h3>Permissions</h3><?php if ($permissions): ?><div class="mg-permission-list"><?php foreach ($permissions as $permission): ?><span><?= mg_e($permission) ?></span><?php endforeach; ?></div><?php else: ?><p class="mg-muted">No explicit permissions are attached to this session yet.</p><?php endif; ?></div></div></section>
     <?php elseif ($accountView === 'profile_moderation' && $canViewProfileModeration): ?>
