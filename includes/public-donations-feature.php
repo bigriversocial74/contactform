@@ -43,9 +43,13 @@ function mg_public_donations_environment_rollout(): array
 function mg_public_donations_rollout_config(bool $refresh = false): array
 {
     static $cached = null;
-    if (!$refresh && is_array($cached)) return $cached;
+    static $cachedEnvironmentKey = null;
 
     $fallback = mg_public_donations_environment_rollout();
+    $environmentKey = (string)$fallback['state'] . '|' . implode(',', $fallback['selected_merchant_ids']);
+    if (!$refresh && is_array($cached) && $cachedEnvironmentKey === $environmentKey) return $cached;
+    $cachedEnvironmentKey = $environmentKey;
+
     if (!function_exists('mg_db')) return $cached = $fallback;
 
     try {
