@@ -21,6 +21,7 @@ $readApi = $read('api/admin/public-donations-operations.php');
 $actionApi = $read('api/admin/public-donations-operations-action.php');
 $feature = $read('includes/public-donations-feature.php');
 $matrix = $read('includes/admin-permission-matrix.php');
+$sidebar = $read('includes/admin-sidebar.php');
 $sql = $read('database/20260724_public_donations_operations_admin_v1_single_install.sql');
 $loader = $read('assets/js/admin-public-donations-operations.js');
 $app = $read('assets/js/admin-public-donations-operations-app.js');
@@ -105,6 +106,13 @@ $must($matrix, [
     "'admin.public_donations_operations.repair' => ['admin.admin_agent.execute']",
 ], 'permission matrix');
 
+$must($sidebar, [
+    "\$canPublicDonationsOperations = \$canAdminPage('admin.public_donations_operations')",
+    "'public-donations-operations' => [",
+    "'href' => '/admin/public-donations-operations.php'",
+    "'visible' => \$canPublicDonationsOperations",
+], 'shared admin navigation');
+
 $must($sql, [
     'public_donations_operations_settings',
     'override_active TINYINT(1) NOT NULL DEFAULT 0',
@@ -157,4 +165,4 @@ if (!str_contains($service, "mg_admin_permission_user_has(\$actor, 'admin.admin_
     throw new RuntimeException('Repair execution must preserve the explicit elevated-permission path.');
 }
 
-echo "Public Donations Operations Admin contracts valid: 14/14.\n";
+echo "Public Donations Operations Admin contracts valid: 15/15.\n";
