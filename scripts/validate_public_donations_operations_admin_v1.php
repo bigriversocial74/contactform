@@ -62,26 +62,31 @@ $must($service, [
 ], 'admin service');
 
 $must($projection, [
-    'mg_admin_public_donations_require_operations_user',
-    "mg_admin_permission_user_has(\$actor, 'admin.public_donations_operations.manage')",
+    'mg_admin_public_donations_require_operations_user(bool $manage = false)',
+    "? 'admin.public_donations_operations.manage'",
+    ": 'admin.public_donations_operations.view'",
+    "'access_mode' => $manage ? 'manage' : 'view'",
     'admin.public_donations_operations.permission_denied',
     'mg_admin_public_donations_search_merchants_projection',
     'mg_admin_public_donations_recent_operations_projection',
     'mg_admin_public_donations_read_projection',
     "campaign.title AS campaign_name",
     "AND ((? > 0 AND u.id=?) OR u.email LIKE ? OR u.full_name LIKE ? OR u.display_name LIKE ?)",
+    "'view' => true",
+    "'manage' => $canManage",
+    "'repair' => $canManage && mg_admin_public_donations_actor_can_repair($actor)",
 ], 'read projection');
 
 $must($readApi, [
     "mg_require_method('GET')",
-    'mg_admin_public_donations_require_operations_user',
+    'mg_admin_public_donations_require_operations_user()',
     "mg_rate_limit('admin.public_donations_operations.read'",
     'mg_admin_public_donations_read_projection',
     'Cache-Control: private, no-store',
 ], 'read API');
 $must($actionApi, [
     "mg_require_method('POST')",
-    'mg_admin_public_donations_require_operations_user',
+    'mg_admin_public_donations_require_operations_user(true)',
     'mg_require_csrf_for_write($input)',
     "mg_rate_limit('admin.public_donations_operations.write'",
     'mg_admin_public_donations_read_projection',
@@ -135,6 +140,9 @@ $must($app, [
     "action:'return_to_environment'",
     "action:'reconcile'",
     'REPAIR PUBLIC DONATIONS',
+    'Read-only access: rollout controls require the manage permission.',
+    'Read-only access: reconciliation execution requires the manage permission.',
+    'if(!canManage())return',
 ], 'controller');
 $must($ui, [
     'renderReadiness',
@@ -165,4 +173,4 @@ if (!str_contains($service, "mg_admin_permission_user_has(\$actor, 'admin.admin_
     throw new RuntimeException('Repair execution must preserve the explicit elevated-permission path.');
 }
 
-echo "Public Donations Operations Admin contracts valid: 15/15.\n";
+echo "Public Donations Operations Admin contracts valid: 16/16.\n";
