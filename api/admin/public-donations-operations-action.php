@@ -19,6 +19,12 @@ try {
             'rollout' => mg_admin_public_donations_update_rollout($pdo, $actor, $input),
         ];
     } elseif ($action === 'reconcile') {
+        if (!mg_admin_public_donations_table($pdo, 'public_donations_reconciliation_receipts')) {
+            throw new MgAdminPublicDonationsOperationsException(
+                'Import the Public Donations Operations Admin SQL before running reconciliation.',
+                409
+            );
+        }
         $result = [
             'reconciliation' => mg_admin_public_donations_reconcile($pdo, $actor, $input),
         ];
