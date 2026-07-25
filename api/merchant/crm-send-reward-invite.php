@@ -113,6 +113,7 @@ try {
 
     $eventContact = $contact;
     $eventContact['campaign_id'] = $targetCampaignId;
+    $eventContact['contact_id'] = (int)$contact['id'];
     $eventContact['campaign_public_id'] = $targetCampaignPublicId;
     $eventContact['campaign_type'] = $targetCampaignType;
     $delivery = null;
