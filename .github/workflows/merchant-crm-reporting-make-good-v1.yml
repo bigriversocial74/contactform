@@ -1,0 +1,77 @@
+name: Merchant CRM Reporting and Make Good v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/merchant-crm-reporting.php'
+      - 'api/merchant/crm-reporting.php'
+      - 'api/merchant/crm-reward-campaigns.php'
+      - 'api/merchant/crm-campaign-send.php'
+      - 'api/merchant/crm-send-reward-invite.php'
+      - 'merchant-crm.php'
+      - 'assets/js/merchant-crm-reporting-v1.js'
+      - 'assets/js/merchant-crm-advanced-filters-v1.js'
+      - 'assets/js/merchant-crm-make-good-send-v1.js'
+      - 'assets/css/merchant-crm-advanced-filters-v1.css'
+      - 'assets/css/merchant-crm-make-good-send-v1.css'
+      - 'scripts/validate_merchant_crm_reporting_make_good_v1.php'
+      - 'tests/phpunit/MerchantCrmReportingMakeGoodV1Test.php'
+      - '.github/workflows/merchant-crm-reporting-make-good-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: merchant-crm-reporting-make-good-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: pdo_mysql,mbstring
+          tools: phpunit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l includes/merchant-crm-reporting.php
+          php -l api/merchant/crm-reporting.php
+          php -l api/merchant/crm-reward-campaigns.php
+          php -l api/merchant/crm-campaign-send.php
+          php -l api/merchant/crm-send-reward-invite.php
+          php -l scripts/validate_merchant_crm_reporting_make_good_v1.php
+          php -l tests/phpunit/MerchantCrmReportingMakeGoodV1Test.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-crm-reporting-v1.js
+          node --check assets/js/merchant-crm-advanced-filters-v1.js
+          node --check assets/js/merchant-crm-make-good-send-v1.js
+
+      - name: Focused contracts
+        run: php scripts/validate_merchant_crm_reporting_make_good_v1.php
+
+      - name: Compatibility contracts
+        run: |
+          php scripts/validate_merchant_crm_current_audit_v1.php
+          php scripts/validate_merchant_crm_desktop_analytics_v1.php
+
+      - name: PHPUnit
+        run: phpunit tests/phpunit/MerchantCrmReportingMakeGoodV1Test.php
