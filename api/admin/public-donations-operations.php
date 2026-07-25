@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_public_donations_operations_projection.php';
 
 mg_require_method('GET');
-$actor = mg_admin_public_donations_require_user();
+$actor = mg_admin_public_donations_require_operations_user();
 $actorId = (int)$actor['id'];
 mg_rate_limit('admin.public_donations_operations.read', 'user:' . $actorId, 180, 60);
 
