@@ -63,7 +63,7 @@ final class PublicDonationsOperationsAdminContractTest extends TestCase
         );
     }
 
-    public function testProtectedActionsRequireCsrfRateLimitsAndTypedConfirmation(): void
+    public function testProtectedActionsRequireCsrfRateLimitsTypedConfirmationAndReceiptStorage(): void
     {
         $service = $this->read('api/admin/_public_donations_operations.php');
         $action = $this->read('api/admin/public-donations-operations-action.php');
@@ -81,6 +81,8 @@ final class PublicDonationsOperationsAdminContractTest extends TestCase
         self::assertStringContainsString('mg_admin_public_donations_require_operations_user(true)', $action);
         self::assertStringContainsString('mg_require_csrf_for_write($input)', $action);
         self::assertStringContainsString("mg_rate_limit('admin.public_donations_operations.write'", $action);
+        self::assertStringContainsString("mg_admin_public_donations_table(\$pdo, 'public_donations_reconciliation_receipts')", $action);
+        self::assertStringContainsString('Import the Public Donations Operations Admin SQL before running reconciliation.', $action);
     }
 
     public function testViewAndManageAccessRemainSeparate(): void
