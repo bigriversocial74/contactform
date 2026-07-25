@@ -58,12 +58,14 @@ function mg_homeserver_request_path(): string
 function mg_homeserver_require_secure_transport(): void
 {
     $https = strtolower((string)($_SERVER['HTTPS'] ?? ''));
+    $trustProxy = (bool)mg_config_value('app', 'trust_proxy', false);
     $forwardedValues = explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
     $forwarded = strtolower(trim((string)($forwardedValues[0] ?? '')));
+    $forwardedHttps = $trustProxy && $forwarded === 'https';
     $host = strtolower(preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')) ?? '');
     $local = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     $allowLocal = in_array(strtolower((string)getenv('MG_HOMESERVER_ALLOW_INSECURE_LOCAL')), ['1', 'true', 'yes', 'on'], true);
-    if (!in_array($https, ['on', '1'], true) && $forwarded !== 'https' && !($local && $allowLocal)) {
+    if (!in_array($https, ['on', '1'], true) && !$forwardedHttps && !($local && $allowLocal)) {
         mg_fail('Secure HTTPS transport is required.', 426);
     }
 }
