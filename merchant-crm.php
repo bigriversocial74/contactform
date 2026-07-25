@@ -17,6 +17,7 @@ $page_styles = [
     '/assets/css/merchant-crm-contact-stats.css',
     '/assets/css/merchant-crm-contact-threads.css',
     '/assets/css/merchant-crm-action-center.css',
+    '/assets/css/merchant-crm-make-good-send-v1.css?v=1.0.0',
     '/assets/css/merchant-crm-contacts-clean.css',
     '/assets/css/merchant-crm-contact-link-polish.css?v=3.0.0',
     '/assets/css/merchant-crm-layout-stability.css?v=1.0.0',
@@ -29,6 +30,7 @@ $page_styles = [
     '/assets/css/merchant-crm-desktop-layout-fix.css?v=1.0.0',
     '/assets/css/merchant-crm-kpi-authoritative-v1.css?v=1.0.0',
     '/assets/css/merchant-crm-directory-v1.css?v=1.0.0',
+    '/assets/css/merchant-crm-advanced-filters-v1.css?v=1.0.0',
     '/assets/css/merchant-crm-creator-campaign-v12.css?v=12.0.0',
 ];
 
@@ -37,7 +39,7 @@ $page_scripts = [
     '/assets/js/merchant-crm-directory-data.js?v=1.0.0',
     '/assets/js/merchant-crm-creator-campaign-bridge-v12.js?v=12.0.0',
     '/assets/js/merchant-crm.js',
-    '/assets/js/merchant-crm-contact-action-modal.js',
+    '/assets/js/merchant-crm-make-good-send-v1.js?v=1.0.0',
     '/assets/js/merchant-crm-action-scheduler.js',
     '/assets/js/merchant-crm-contact-threads.js',
     '/assets/js/merchant-crm-realtime-message.js',
@@ -46,10 +48,12 @@ $page_scripts = [
     '/assets/js/merchant-crm-reward-invite-operations.js',
     '/assets/js/merchant-crm-contact-stats.js?v=2.0.0',
     '/assets/js/merchant-crm-desktop-analytics.js?v=1.0.0',
+    '/assets/js/merchant-crm-reporting-v1.js?v=1.0.0',
     '/assets/js/merchant-crm-contact-link-polish.js?v=3.0.0',
     '/assets/js/merchant-crm-identity-duplicates.js?v=1.1.0',
     '/assets/js/merchant-crm-mobile-dashboard.js?v=1.1.0',
     '/assets/js/merchant-crm-directory.js?v=1.0.0',
+    '/assets/js/merchant-crm-advanced-filters-v1.js?v=1.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
