@@ -229,6 +229,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var response = await Microgifter.post('/api/merchant/crm-send-reward-invite.php', {
       contact_id: contact.id,
       reward_template_id: campaign.reward_template_id,
+      campaign_id: campaign.id,
+      required_campaign_type: 'customer_refund',
       note: 'Customer Refund / Make Good campaign: ' + campaign.title,
       idempotency_key: 'crm-make-good-invite:' + contact.id + ':' + campaign.id + ':' + Date.now()
     });
@@ -335,6 +337,11 @@ document.addEventListener('DOMContentLoaded', function () {
       state.messageBody = event.target.value;
       footerSummary();
     }
+  });
+  document.addEventListener('mg:crm-contacts:rendered', function (event) {
+    state.contactsCache = (event.detail && event.detail.contacts) || state.contactsCache;
+    state.lastContactLoad = Date.now();
+    decorateRows();
   });
 
   loadContacts(true).catch(function () {});
