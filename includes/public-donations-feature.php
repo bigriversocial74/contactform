@@ -3,23 +3,98 @@ declare(strict_types=1);
 
 const MG_PUBLIC_DONATIONS_FEATURE_STATES = ['disabled', 'admin_only', 'selected_merchants', 'enabled'];
 
-function mg_public_donations_feature_state(): string
+/** @return list<int> */
+function mg_public_donations_parse_merchant_ids(mixed $value): array
+{
+    if (is_array($value)) {
+        $parts = $value;
+    } else {
+        $raw = trim((string)$value);
+        if ($raw === '') return [];
+        $parts = preg_split('/[\s,;]+/', $raw) ?: [];
+    }
+
+    $ids = [];
+    foreach ($parts as $part) {
+        $id = filter_var($part, FILTER_VALIDATE_INT);
+        if ($id !== false && $id > 0) $ids[(int)$id] = true;
+    }
+    $result = array_keys($ids);
+    sort($result, SORT_NUMERIC);
+    return $result;
+}
+
+function mg_public_donations_environment_rollout(): array
 {
     $state = strtolower(trim((string)(getenv('MG_PUBLIC_DONATIONS_FEATURE_STATE') ?: 'disabled')));
-    return in_array($state, MG_PUBLIC_DONATIONS_FEATURE_STATES, true) ? $state : 'disabled';
+    if (!in_array($state, MG_PUBLIC_DONATIONS_FEATURE_STATES, true)) $state = 'disabled';
+    return [
+        'state' => $state,
+        'selected_merchant_ids' => mg_public_donations_parse_merchant_ids(getenv('MG_PUBLIC_DONATIONS_MERCHANT_IDS') ?: ''),
+        'source' => 'environment',
+        'override_active' => false,
+        'configuration_version' => null,
+        'updated_at' => null,
+        'updated_by_user_id' => null,
+        'change_reason' => null,
+    ];
+}
+
+function mg_public_donations_rollout_config(bool $refresh = false): array
+{
+    static $cached = null;
+    static $cachedEnvironmentKey = null;
+
+    $fallback = mg_public_donations_environment_rollout();
+    $environmentKey = (string)$fallback['state'] . '|' . implode(',', $fallback['selected_merchant_ids']);
+    if (!$refresh && is_array($cached) && $cachedEnvironmentKey === $environmentKey) return $cached;
+    $cachedEnvironmentKey = $environmentKey;
+
+    if (!function_exists('mg_db')) return $cached = $fallback;
+
+    try {
+        $pdo = mg_db();
+        $table = $pdo->prepare(
+            'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1'
+        );
+        $table->execute(['public_donations_operations_settings']);
+        if (!$table->fetchColumn()) return $cached = $fallback;
+
+        $stmt = $pdo->query(
+            'SELECT override_active,feature_state,selected_merchant_ids_json,configuration_version,change_reason,updated_by_user_id,updated_at
+             FROM public_donations_operations_settings WHERE id=1 LIMIT 1'
+        );
+        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+        if (!$row || empty($row['override_active'])) return $cached = $fallback;
+
+        $state = strtolower(trim((string)$row['feature_state']));
+        if (!in_array($state, MG_PUBLIC_DONATIONS_FEATURE_STATES, true)) $state = 'disabled';
+        $decoded = json_decode((string)($row['selected_merchant_ids_json'] ?? '[]'), true);
+
+        return $cached = [
+            'state' => $state,
+            'selected_merchant_ids' => mg_public_donations_parse_merchant_ids(is_array($decoded) ? $decoded : []),
+            'source' => 'database_override',
+            'override_active' => true,
+            'configuration_version' => (int)$row['configuration_version'],
+            'updated_at' => $row['updated_at'] !== null ? (string)$row['updated_at'] : null,
+            'updated_by_user_id' => $row['updated_by_user_id'] !== null ? (int)$row['updated_by_user_id'] : null,
+            'change_reason' => $row['change_reason'] !== null ? (string)$row['change_reason'] : null,
+        ];
+    } catch (Throwable) {
+        return $cached = $fallback;
+    }
+}
+
+function mg_public_donations_feature_state(): string
+{
+    return (string)mg_public_donations_rollout_config()['state'];
 }
 
 /** @return list<int> */
 function mg_public_donations_selected_merchant_ids(): array
 {
-    $raw = trim((string)(getenv('MG_PUBLIC_DONATIONS_MERCHANT_IDS') ?: ''));
-    if ($raw === '') return [];
-    $ids = [];
-    foreach (preg_split('/[\s,;]+/', $raw) ?: [] as $value) {
-        $id = filter_var($value, FILTER_VALIDATE_INT);
-        if ($id !== false && $id > 0) $ids[(int)$id] = true;
-    }
-    return array_keys($ids);
+    return mg_public_donations_rollout_config()['selected_merchant_ids'];
 }
 
 function mg_public_donations_actor_is_admin(?array $actor): bool
@@ -47,10 +122,14 @@ function mg_public_donations_is_enabled_for(?int $merchantUserId, ?array $actor 
 
 function mg_public_donations_feature_context(?int $merchantUserId, ?array $actor = null): array
 {
+    $rollout = mg_public_donations_rollout_config();
     return [
-        'state' => mg_public_donations_feature_state(),
+        'state' => $rollout['state'],
         'enabled' => mg_public_donations_is_enabled_for($merchantUserId, $actor),
         'merchant_user_id' => $merchantUserId,
+        'source' => $rollout['source'],
+        'override_active' => $rollout['override_active'],
+        'configuration_version' => $rollout['configuration_version'],
     ];
 }
 
