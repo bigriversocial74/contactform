@@ -16,6 +16,7 @@ $must = static function (string $content, array $needles, string $label): void {
 
 $page = $read('admin/public-donations-operations.php');
 $service = $read('api/admin/_public_donations_operations.php');
+$projection = $read('api/admin/_public_donations_operations_projection.php');
 $readApi = $read('api/admin/public-donations-operations.php');
 $actionApi = $read('api/admin/public-donations-operations-action.php');
 $feature = $read('includes/public-donations-feature.php');
@@ -59,15 +60,25 @@ $must($service, [
     'rollBack()',
 ], 'admin service');
 
+$must($projection, [
+    'mg_admin_public_donations_search_merchants_projection',
+    'mg_admin_public_donations_recent_operations_projection',
+    'mg_admin_public_donations_read_projection',
+    "campaign.title AS campaign_name",
+    "AND ((? > 0 AND u.id=?) OR u.email LIKE ? OR u.full_name LIKE ? OR u.display_name LIKE ?)",
+], 'read projection');
+
 $must($readApi, [
     "mg_require_method('GET')",
     "mg_rate_limit('admin.public_donations_operations.read'",
+    'mg_admin_public_donations_read_projection',
     'Cache-Control: private, no-store',
 ], 'read API');
 $must($actionApi, [
     "mg_require_method('POST')",
     'mg_require_csrf_for_write($input)',
     "mg_rate_limit('admin.public_donations_operations.write'",
+    'mg_admin_public_donations_read_projection',
     'MgAdminPublicDonationsOperationsException',
     'mg_fail_unexpected(',
 ], 'action API');
@@ -134,4 +145,4 @@ if (!str_contains($service, "mg_admin_permission_user_has(\$actor, 'admin.admin_
     throw new RuntimeException('Repair execution must preserve the explicit elevated-permission path.');
 }
 
-echo "Public Donations Operations Admin contracts valid: 12/12.\n";
+echo "Public Donations Operations Admin contracts valid: 13/13.\n";
