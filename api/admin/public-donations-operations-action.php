@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/_public_donations_operations.php';
+require_once __DIR__ . '/_public_donations_operations_projection.php';
 
 mg_require_method('POST');
 $actor = mg_admin_public_donations_require_user();
@@ -26,7 +26,7 @@ try {
         throw new MgAdminPublicDonationsOperationsException('Invalid Public Donations operations action.');
     }
 
-    $result['operations'] = mg_admin_public_donations_read($pdo, $actor);
+    $result['operations'] = mg_admin_public_donations_read_projection($pdo, $actor);
 } catch (MgAdminPublicDonationsOperationsException $error) {
     mg_security_log('warning', 'admin.public_donations_operations.rejected', 'Public Donations operations action was rejected.', [
         'action' => $action,
