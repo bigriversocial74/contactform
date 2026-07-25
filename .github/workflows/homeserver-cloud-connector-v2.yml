@@ -52,10 +52,26 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress
 
       - name: Lint HomeServer PHP surface
+        shell: bash
         run: |
-          find api/homeserver -type f -name '*.php' -print0 | xargs -0 -n1 php -l
-          php -l config/migrations.php
-          php -l scripts/validate_homeserver_pairing_sync_v1.php
+          set +e
+          {
+            find api/homeserver -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+            php -l config/migrations.php
+            php -l scripts/validate_homeserver_pairing_sync_v1.php
+          } > homeserver-php-lint.log 2>&1
+          lint_code=$?
+          cat homeserver-php-lint.log
+          exit "$lint_code"
+
+      - name: Upload HomeServer PHP lint diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: homeserver-php-lint
+          path: homeserver-php-lint.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Validate HomeServer protocol
         run: php scripts/validate_homeserver_pairing_sync_v1.php
