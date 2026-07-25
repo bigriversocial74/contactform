@@ -20,6 +20,7 @@ $projection = $read('api/admin/_public_donations_operations_projection.php');
 $readApi = $read('api/admin/public-donations-operations.php');
 $actionApi = $read('api/admin/public-donations-operations-action.php');
 $feature = $read('includes/public-donations-feature.php');
+$reconciliation = $read('includes/public-donations-reconciliation.php');
 $matrix = $read('includes/admin-permission-matrix.php');
 $sidebar = $read('includes/admin-sidebar.php');
 $sql = $read('database/20260724_public_donations_operations_admin_v1_single_install.sql');
@@ -48,9 +49,6 @@ $must($service, [
     'public_donations_reconciliation_receipts',
     'mg_public_donations_reconcile_apply',
     'mg_public_donations_reconcile_schema_ready',
-    "'missing_attribution'",
-    "'missing_links'",
-    "'ownership_mismatches'",
     'UPDATE PUBLIC DONATIONS ROLLOUT',
     'RETURN TO ENVIRONMENT CONFIG',
     'REPAIR PUBLIC DONATIONS',
@@ -60,6 +58,15 @@ $must($service, [
     'beginTransaction()',
     'rollBack()',
 ], 'admin service');
+
+$must($reconciliation, [
+    "'missing_attribution'",
+    "'missing_links'",
+    "'ownership_mismatches'",
+    'mg_public_donations_reconcile_detect',
+    'mg_public_donations_reconcile_apply',
+    "'repairable' => false",
+], 'canonical reconciliation engine');
 
 $must($projection, [
     'mg_admin_public_donations_require_operations_user(bool $manage = false)',
@@ -160,11 +167,12 @@ $must($dashboard, [
     'admin-public-donations-nav.js',
 ], 'admin dashboard');
 
-if (preg_match('/INSERT\s+INTO\s+campaign_donation_rewards/i', $service) === 1) {
-    throw new RuntimeException('Admin operations service must never invent donation attribution.');
+$reconciliationBoundary = $service . "\n" . $reconciliation;
+if (preg_match('/INSERT\s+INTO\s+campaign_donation_rewards/i', $reconciliationBoundary) === 1) {
+    throw new RuntimeException('Admin operations must never invent donation attribution.');
 }
-if (preg_match('/UPDATE\s+(?:wallet_items|pppm_items|microgift_instances)\s+SET\s+(?:user_id|owner_user_id|recipient_user_id)/i', $service) === 1) {
-    throw new RuntimeException('Admin operations service must never assign ownership.');
+if (preg_match('/UPDATE\s+(?:wallet_items|pppm_items|microgift_instances)\s+SET\s+(?:user_id|owner_user_id|recipient_user_id)/i', $reconciliationBoundary) === 1) {
+    throw new RuntimeException('Admin operations must never assign ownership.');
 }
 if (str_contains($sql, "VALUES\n  (1,1,'")) {
     throw new RuntimeException('Database rollout override must not activate during import.');
