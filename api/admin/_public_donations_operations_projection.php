@@ -3,6 +3,19 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_public_donations_operations.php';
 
+function mg_admin_public_donations_require_operations_user(): array
+{
+    $actor = mg_current_user();
+    if (!$actor) mg_fail('Authentication required.', 401);
+    if (!mg_admin_permission_user_has($actor, 'admin.public_donations_operations.manage')) {
+        mg_security_log('warning', 'admin.public_donations_operations.permission_denied', 'Public Donations operations access was denied.', [
+            'required_permission' => 'admin.public_donations_operations.manage',
+        ], (int)$actor['id']);
+        mg_fail('You do not have permission to manage Public Donations operations.', 403);
+    }
+    return $actor;
+}
+
 function mg_admin_public_donations_search_merchants_projection(PDO $pdo, string $query): array
 {
     $query = trim($query);
@@ -100,7 +113,7 @@ function mg_admin_public_donations_read_projection(PDO $pdo, array $actor, strin
         'recent_operations' => mg_admin_public_donations_recent_operations_projection($pdo, $schema),
         'receipts' => mg_admin_public_donations_receipts($pdo, $schema),
         'permissions' => [
-            'manage' => true,
+            'manage' => mg_admin_permission_user_has($actor, 'admin.public_donations_operations.manage'),
             'repair' => mg_admin_public_donations_actor_can_repair($actor),
         ],
         'repair_modes' => MG_PUBLIC_DONATIONS_REPAIR_MODES,
