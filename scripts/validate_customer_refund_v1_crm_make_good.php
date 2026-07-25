@@ -44,7 +44,12 @@ $assert('Customer refund JS sends through refund API', str_contains($refundJs, '
 $assert('Customer refund JS previews campaign readiness and requires confirmation', str_contains($refundJs, 'data-cp-refund-preview') && str_contains($refundJs, 'data-cp-refund-confirm') && str_contains($refundJs, 'Review make-good'));
 $assert('Customer refund JS uses make-good wording', str_contains($refundJs, 'Send Make-Good') && str_contains($refundJs, 'make-good voucher'));
 
-$assert('Merchant campaign builder includes internal campaign types', str_contains($campaignView, 'mg_campaign_type_options(true)') && str_contains($campaignView, 'mg_campaign_type_client_registry(true)'));
+$hasDirectInternalRegistry = str_contains($campaignView, 'mg_campaign_type_options(true)')
+    && str_contains($campaignView, 'mg_campaign_type_client_registry(true)');
+$hasFeatureGatedInternalRegistry = str_contains($campaignView, 'mg_public_donations_campaign_type_options')
+    && str_contains($campaignView, 'mg_public_donations_client_registry')
+    && str_contains($campaignView, ', true)');
+$assert('Merchant campaign builder includes internal campaign types', $hasDirectInternalRegistry || $hasFeatureGatedInternalRegistry);
 $assert('Merchant campaign builder exposes Customer Refund quick action', str_contains($campaignView, 'data-campaign-type-preset="customer_refund"') && str_contains($campaignView, 'Create Customer Refund'));
 $assert('Merchant campaign builder explains internal-only Customer Refund behavior', str_contains($campaignView, 'data-campaign-type-fields="customer_refund"') && str_contains($campaignView, 'does not create a public landing page'));
 $assert('Campaign JS can render customer_refund from registry', str_contains($campaignJs, 'window.MicrogifterCampaignTypes') && str_contains($campaignJs, 'registryMap'));
