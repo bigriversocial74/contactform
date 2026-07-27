@@ -4,31 +4,50 @@ on:
   pull_request:
     paths:
       - 'api/homeserver/**'
+      - 'api/admin/homeserver-releases.php'
+      - 'admin/homeserver-releases.php'
+      - 'includes/homeserver-releases.php'
       - 'account-homeserver.php'
       - 'account.php'
       - 'includes/account/homeserver-view.php'
       - 'assets/js/homeserver-account.js'
+      - 'assets/js/homeserver-status-indicator.js'
+      - 'assets/js/admin-homeserver-releases.js'
       - 'assets/css/homeserver-account.css'
+      - 'assets/css/homeserver-status-indicator.css'
+      - 'assets/css/admin-homeserver-releases.css'
       - 'database/20260724_homeserver_cloud_pairing_sync_v1.sql'
+      - 'database/20260727_homeserver_release_distribution_v1.sql'
       - 'config/migrations.php'
       - 'scripts/validate_homeserver_pairing_sync_v1.php'
       - 'scripts/preflight.sh'
+      - 'tests/phpunit/HomeServerReleaseDistributionContractTest.php'
       - 'composer.json'
       - '.github/workflows/homeserver-cloud-connector-v2.yml'
   push:
     branches:
       - 'feature/homeserver-cloud-connector-v2-20260724'
+      - 'feature/homeserver-release-downloads-v1-20260727'
     paths:
       - 'api/homeserver/**'
+      - 'api/admin/homeserver-releases.php'
+      - 'admin/homeserver-releases.php'
+      - 'includes/homeserver-releases.php'
       - 'account-homeserver.php'
       - 'account.php'
       - 'includes/account/homeserver-view.php'
       - 'assets/js/homeserver-account.js'
+      - 'assets/js/homeserver-status-indicator.js'
+      - 'assets/js/admin-homeserver-releases.js'
       - 'assets/css/homeserver-account.css'
+      - 'assets/css/homeserver-status-indicator.css'
+      - 'assets/css/admin-homeserver-releases.css'
       - 'database/20260724_homeserver_cloud_pairing_sync_v1.sql'
+      - 'database/20260727_homeserver_release_distribution_v1.sql'
       - 'config/migrations.php'
       - 'scripts/validate_homeserver_pairing_sync_v1.php'
       - 'scripts/preflight.sh'
+      - 'tests/phpunit/HomeServerReleaseDistributionContractTest.php'
       - 'composer.json'
       - '.github/workflows/homeserver-cloud-connector-v2.yml'
   workflow_dispatch:
@@ -67,11 +86,15 @@ jobs:
           set +e
           {
             find api/homeserver -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+            php -l api/admin/homeserver-releases.php
+            php -l admin/homeserver-releases.php
+            php -l includes/homeserver-releases.php
             php -l account-homeserver.php
             php -l account.php
             php -l includes/account/homeserver-view.php
             php -l config/migrations.php
             php -l scripts/validate_homeserver_pairing_sync_v1.php
+            php -l tests/phpunit/HomeServerReleaseDistributionContractTest.php
           } > homeserver-php-lint.log 2>&1
           lint_code=$?
           cat homeserver-php-lint.log
@@ -86,8 +109,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Validate HomeServer account JavaScript
-        run: node --check assets/js/homeserver-account.js
+      - name: Validate HomeServer JavaScript
+        run: |
+          node --check assets/js/homeserver-account.js
+          node --check assets/js/homeserver-status-indicator.js
+          node --check assets/js/admin-homeserver-releases.js
 
       - name: Validate HomeServer protocol
         run: php scripts/validate_homeserver_pairing_sync_v1.php
@@ -101,6 +127,22 @@ jobs:
           php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
           test -s build/microgifter_full_upgrade.sql
           grep -q 'CREATE TABLE IF NOT EXISTS homeserver_devices' build/microgifter_full_upgrade.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_releases' build/microgifter_full_upgrade.sql
 
       - name: Run scoped branch preflight
-        run: bash scripts/preflight.sh "${{ github.event.pull_request.base.sha || 'origin/integration-from-repair-20260628' }}"
+        shell: bash
+        run: |
+          set +e
+          bash scripts/preflight.sh "${{ github.event.pull_request.base.sha || 'origin/integration-from-repair-20260628' }}" > homeserver-preflight.log 2>&1
+          preflight_code=$?
+          cat homeserver-preflight.log
+          exit "$preflight_code"
+
+      - name: Upload HomeServer preflight diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: homeserver-preflight
+          path: homeserver-preflight.log
+          if-no-files-found: error
+          retention-days: 7
