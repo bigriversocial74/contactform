@@ -50,7 +50,9 @@ final class HomeServerReleaseDistributionContractTest extends TestCase
         self::assertIsString($helper);
         self::assertIsString($admin);
         self::assertStringContainsString("\$signature !== 'MZ'", $helper);
-        self::assertStringContainsString("pathinfo((string)(\$file['name'] ?? ''), PATHINFO_EXTENSION)", $helper);
+        self::assertStringContainsString('strtolower(pathinfo(', $helper);
+        self::assertStringContainsString('PATHINFO_EXTENSION', $helper);
+        self::assertStringContainsString("\$extension !== 'exe'", $helper);
         self::assertStringContainsString("hash_file('sha256'", $helper);
         self::assertStringContainsString('mg_storage_store_uploaded_file', $admin);
         self::assertStringContainsString("'persistent_local'", $admin);
