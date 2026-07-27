@@ -55,7 +55,8 @@ final class HomeServerReleaseDistributionContractTest extends TestCase
         self::assertStringContainsString("\$extension !== 'exe'", $helper);
         self::assertStringContainsString("hash_file('sha256'", $helper);
         self::assertStringContainsString('mg_storage_store_uploaded_file', $admin);
-        self::assertStringContainsString("'persistent_local'", $admin);
+        self::assertStringContainsString('storage_provider,storage_key', $admin);
+        self::assertStringContainsString('persistent_local', $admin);
         self::assertStringContainsString("mg_require_permission('admin.settings.manage')", $admin);
         self::assertStringContainsString('mg_require_csrf_for_write', $admin);
     }
