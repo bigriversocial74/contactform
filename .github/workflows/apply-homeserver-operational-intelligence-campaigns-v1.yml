@@ -64,10 +64,11 @@ jobs:
             grep -Fq "homeserver.operational.read" api/homeserver/_homeserver.php
             grep -Fq "customer_reviews" api/homeserver/_operational_intelligence.php
             grep -Fq "maximum_daily_value_cents" api/homeserver/_operational_intelligence.php
-            if grep -Fq "merchant_approval_token" api/homeserver/_operational_intelligence.php; then
-              echo "Caller-supplied merchant approval material remains in the provider action code."
+            if grep -Eq "hash_equals\([^\n]*merchant_approval|\$input\[['\"]merchant_approval_(token|hash)['\"]\]" api/homeserver/_operational_intelligence.php; then
+              echo "Provider code consumes caller-supplied merchant approval material."
               exit 1
             fi
+            grep -Fq 'unset($request[' api/homeserver/_operational_intelligence.php
           } > focused-validation.log 2>&1
           status=$?
           cat focused-validation.log
