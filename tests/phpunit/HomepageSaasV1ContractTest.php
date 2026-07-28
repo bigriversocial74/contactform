@@ -90,8 +90,12 @@ final class HomepageSaasV1ContractTest extends TestCase
         self::assertStringContainsString('--mg-home-teal: #2563eb', $theme);
         self::assertStringContainsString('.mg-home-features', $theme);
         self::assertStringContainsString('background: #fff', $theme);
-        self::assertStringContainsString('font-family: inherit', $theme);
+        self::assertStringContainsString('font-family: Inter, system-ui', $theme);
+        self::assertStringContainsString('font-weight: 300', $theme);
+        self::assertStringContainsString('font-size: clamp(44px, 5.7vw, 76px)', $theme);
+        self::assertStringContainsString('letter-spacing: -.055em', $theme);
         self::assertStringContainsString('-webkit-text-fill-color: #fff', $theme);
+        self::assertStringNotContainsString('font-weight: 900;', $theme);
         self::assertStringNotContainsString('#0b934a', $desktop);
         self::assertStringNotContainsString('#00847c', $desktop);
         self::assertStringNotContainsString('#f7fbfb', $phone);
