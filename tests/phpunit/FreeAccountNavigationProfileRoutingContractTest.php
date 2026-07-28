@@ -60,14 +60,20 @@ final class FreeAccountNavigationProfileRoutingContractTest extends TestCase
         self::assertStringContainsString('/account-subscriptions.php?agent=personal&feature=design', $source);
     }
 
-    public function testAccountMenuUsesRoleIdentityWhileAdminPageRetainsDelegatedAuthority(): void
+    public function testFreePackageBlocksAdminLinkAndDirectDashboard(): void
     {
         $menu = $this->source('includes/header-templates/logged-in.php');
         $admin = $this->source('account-admin.php');
+
         self::assertStringContainsString("require_once dirname(__DIR__) . '/admin-navigation-access.php';", $menu);
-        self::assertStringContainsString('$can_admin_dashboard = mg_admin_navigation_user_has_admin_role', $menu);
+        self::assertStringContainsString('$account_is_free = !empty($mg_package_context[\'is_free\']);', $menu);
+        self::assertStringContainsString('$can_admin_dashboard = !$account_is_free && mg_admin_navigation_user_has_admin_role', $menu);
+
         self::assertStringContainsString("require_once __DIR__ . '/includes/admin-navigation-access.php';", $admin);
-        self::assertStringContainsString('$hasAdminAccess = $user ? mg_admin_navigation_user_can_access($user) : false;', $admin);
+        self::assertStringContainsString('$packageContext = $user ? mg_user_package_context(null, $user) : [];', $admin);
+        self::assertStringContainsString('$accountIsFree = !empty($packageContext[\'is_free\']);', $admin);
+        self::assertStringContainsString('$hasAdminAccess = $user && !$accountIsFree && mg_admin_navigation_user_can_access($user);', $admin);
+        self::assertStringContainsString('The Admin dashboard is not available on the Free package.', $admin);
     }
 
     public function testSearchFallbackRendersMemberProfileInsteadOfBareProfileRedirect(): void
