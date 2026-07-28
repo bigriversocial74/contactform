@@ -109,7 +109,18 @@ function mg_homeserver_token_hash(string $token): string
 
 function mg_homeserver_scopes(): array
 {
-    return ['homeserver.status', 'homeserver.sync.write'];
+    return [
+        'homeserver.status',
+        'homeserver.sync.write',
+        'homeserver.operational.read',
+        'homeserver.reviews.read',
+        'homeserver.messages.read',
+        'homeserver.crm.read',
+        'homeserver.commerce_history.read',
+        'homeserver.gifts.read',
+        'homeserver.campaigns.read',
+        'homeserver.campaigns.execute',
+    ];
 }
 
 function mg_homeserver_json(array $value): string

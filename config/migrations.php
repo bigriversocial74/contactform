@@ -243,6 +243,7 @@ return [
         'hosted_games_release_qa_foundation_v1.sql',
         '20260724_homeserver_cloud_pairing_sync_v1.sql',
         '20260727_homeserver_release_distribution_v1.sql',
+        '20260728_homeserver_operational_intelligence_campaign_authority_v1.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
