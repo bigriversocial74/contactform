@@ -67,6 +67,10 @@ jobs:
             status=$?
           fi
           if [ $status -eq 0 ]; then
+            python scripts/fix-homeserver-dataset-scopes.py >> focused-integration.log 2>&1
+            status=$?
+          fi
+          if [ $status -eq 0 ]; then
             python scripts/fix-homeserver-authority-notice.py >> focused-integration.log 2>&1
             status=$?
           fi
