@@ -1,4 +1,4 @@
-name: Homepage exact v2 checks
+name: Homepage public landing checks
 
 on:
   pull_request:
@@ -8,14 +8,12 @@ on:
       - index.php
       - includes/footer.php
       - includes/header-components/public-header.php
-      - assets/css/homepage-parallax-exact-v2.css
-      - assets/css/homepage-core-positioning-v1.css
+      - assets/css/homepage-saas-*.css
       - assets/css/universal-footer.css
-      - assets/js/homepage-parallax-exact-v2.js
-      - assets/js/homepage-core-positioning-v1.js
-      - assets/images/foreground.png
-      - assets/images/mountains.png
-      - assets/images/orb.png
+      - assets/images/home/microgifter-home-*.svg
+      - tests/phpunit/HomepageSaasV1ContractTest.php
+      - scripts/validate_homepage_redesign_foundation.php
+      - scripts/validate_public_site_local_business_v1.php
       - .github/workflows/homepage-exact-v2-checks.yml
 
 permissions:
@@ -26,37 +24,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate homepage files
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate public homepage
         shell: bash
         run: |
           set -euo pipefail
           php -l index.php
           php -l includes/footer.php
           php -l includes/header-components/public-header.php
-          node --check assets/js/homepage-parallax-exact-v2.js
-          node --check assets/js/homepage-core-positioning-v1.js
-          test -s assets/images/foreground.png
-          test -s assets/images/mountains.png
-          test -s assets/images/orb.png
-          grep -q '/assets/images/foreground.png' index.php
-          grep -q '/assets/images/mountains.png' index.php
-          grep -q '/assets/images/orb.png' index.php
-          grep -q '/assets/css/homepage-parallax-exact-v2.css' index.php
-          grep -q '/assets/css/homepage-core-positioning-v1.css' index.php
-          grep -q '/assets/js/homepage-parallax-exact-v2.js' index.php
-          grep -q '/assets/js/homepage-core-positioning-v1.js' index.php
-          grep -q 'Microgifter Is the Future' index.php
-          grep -q 'of Social Gifting.' index.php
-          grep -q 'Turn Future Demand Into Real-Time Revenue.' index.php
-          grep -q 'Increase Engagement. Grow Sales. Build Loyalty.' index.php
-          grep -q 'data-homepage-core-v1' index.php
-          grep -q 'data-core-chapter' index.php
+          php -l scripts/validate_homepage_redesign_foundation.php
+          php -l scripts/validate_public_site_local_business_v1.php
+          php -l tests/phpunit/HomepageSaasV1ContractTest.php
+          php scripts/validate_homepage_redesign_foundation.php
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomepageSaasV1ContractTest.php
+          test -s assets/images/home/microgifter-home-desktop-dashboard.svg
+          test -s assets/images/home/microgifter-home-phone.svg
+          grep -q '/assets/images/home/microgifter-home-desktop-dashboard.svg' index.php
+          grep -q '/assets/images/home/microgifter-home-phone.svg' index.php
+          grep -q '/assets/css/homepage-saas-v1.css' index.php
+          grep -q 'Microgifting. Big Impact.' index.php
+          grep -q 'Everything you need to grow with gifting.' index.php
+          grep -q 'Drive more sales with gift certificates.' index.php
+          grep -q 'Reward, recognize, and retain top talent.' index.php
+          grep -q 'One platform. Endless possibilities.' index.php
+          grep -q 'Coming soon' index.php
+          grep -q 'Gusto' index.php
+          grep -q 'Square' index.php
+          grep -q 'Toast' index.php
+          grep -q 'Other POS Systems' index.php
+          ! grep -q 'Build relationships with Microgifter CRM' index.php
           ! grep -q 'mg_render_public_pricing_cards(' index.php
           ! grep -q "require_once __DIR__ . '/includes/pricing-cards.php'" index.php
-          grep -q 'body.mg-homepage-exact-v2' assets/css/universal-footer.css
+          grep -q "require __DIR__ . '/includes/header.php'" index.php
+          grep -q "require __DIR__ . '/includes/footer.php'" index.php
           grep -q 'overflow-x:clip!important' assets/css/universal-footer.css
-          grep -q 'mg-home-header-past-hero' includes/footer.php
-          grep -q 'hero.getBoundingClientRect().bottom <= 0' includes/footer.php
           grep -q 'font-weight:500!important' assets/css/universal-footer.css
           ! grep -q 'pricingGrid.replaceChildren' includes/footer.php
           ! grep -q 'mg-homepage-live-pricing' includes/footer.php
