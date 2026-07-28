@@ -125,3 +125,21 @@ CREATE TABLE IF NOT EXISTS homeserver_campaign_action_receipts (
     CONSTRAINT fk_homeserver_campaign_action_device FOREIGN KEY (device_id) REFERENCES homeserver_devices(id) ON DELETE CASCADE,
     CONSTRAINT fk_homeserver_campaign_action_authorization FOREIGN KEY (authorization_id) REFERENCES homeserver_campaign_authorizations(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Existing paired devices receive endpoint scopes only. No operational dataset or
+-- campaign becomes usable until the account owner creates the separate grants
+-- and campaign authorization records above.
+UPDATE homeserver_devices
+SET scopes_json=JSON_ARRAY(
+    'homeserver.status',
+    'homeserver.sync.write',
+    'homeserver.operational.read',
+    'homeserver.reviews.read',
+    'homeserver.messages.read',
+    'homeserver.crm.read',
+    'homeserver.commerce_history.read',
+    'homeserver.gifts.read',
+    'homeserver.campaigns.read',
+    'homeserver.campaigns.execute'
+), updated_at=CURRENT_TIMESTAMP
+WHERE status='active';
