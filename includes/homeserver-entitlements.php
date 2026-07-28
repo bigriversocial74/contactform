@@ -95,10 +95,10 @@ function mg_homeserver_entitlement_context(?PDO $pdo = null, ?array $user = null
     $pdo ??= mg_db();
     $package = mg_user_package_context($pdo, $user);
     $userId = (int)($user['id'] ?? 0);
-    $source = strtolower(trim((string)($package['entitlement_source'] ?? 'free_wallet')));
+    $source = strtolower(trim((string)($package['entitlement_source'] ?? 'free_wallet'));
     $entitlementUserId = (int)($package['entitlement_user_id'] ?? 0);
     $packageId = mg_package_entitlement_slug((string)($package['package_id'] ?? 'free')) ?: 'free';
-    $subscriptionStatus = strtolower(trim((string)($package['status'] ?? 'free')));
+    $subscriptionStatus = strtolower(trim((string)($package['status'] ?? 'free'));
     $activePackage = !empty($package['merchant_access']) && $packageId !== 'free';
     $ownerEligible = $source === 'admin_override'
         || ($source === 'direct_subscription' && $entitlementUserId === $userId && $userId > 0);
@@ -170,7 +170,7 @@ function mg_homeserver_active_device_count(PDO $pdo, int $ownerUserId): int
 {
     if ($ownerUserId < 1) return 0;
     try {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM homeserver_devices WHERE owner_user_id=? AND status='active'");
+        $stmt = $pdo->prepare("SELECT COUNT(DISTINCT installation_id) FROM homeserver_devices WHERE owner_user_id=? AND status='active'");
         $stmt->execute([$ownerUserId]);
         return (int)$stmt->fetchColumn();
     } catch (Throwable) {
