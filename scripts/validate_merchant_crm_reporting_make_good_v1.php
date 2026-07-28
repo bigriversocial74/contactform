@@ -21,6 +21,7 @@ try {
     $campaignsApi = $read('api/merchant/crm-reward-campaigns.php');
     $sendApi = $read('api/merchant/crm-campaign-send.php');
     $inviteApi = $read('api/merchant/crm-send-reward-invite.php');
+    $sendService = $read('includes/merchant-crm-campaign-send-service.php');
     $page = $read('merchant-crm.php');
 } catch (Throwable $error) {
     fwrite(STDERR, $error->getMessage() . PHP_EOL);
@@ -96,17 +97,18 @@ $checks = [
         str_contains($campaignsApi, "'customer_refund' => 'Customer Refund / Make Good'")
         && str_contains($campaignsApi, "c.campaign_type=?")
         && str_contains($campaignsApi, 'reward_template_status'),
-    'direct and invite endpoints retain server-side campaign-type and transaction guards' =>
-        str_contains($sendApi, 'required_campaign_type')
-        && str_contains($sendApi, "in_array(\$requiredCampaignType")
-        && str_contains($sendApi, 'FOR UPDATE')
+    'direct and invite endpoints reuse one guarded canonical send service' =>
+        str_contains($sendApi, "require_once dirname(__DIR__, 2) . '/includes/merchant-crm-campaign-send-service.php'")
+        && str_contains($sendApi, 'mg_crm_campaign_send_execute')
         && str_contains($sendApi, 'mg_require_csrf_for_write($input)')
-        && str_contains($sendApi, 'crm_idempotency_key')
-        && str_contains($inviteApi, 'required_campaign_type')
-        && str_contains($inviteApi, "campaignRef")
-        && str_contains($inviteApi, "targetCampaignId")
-        && str_contains($inviteApi, 'FOR UPDATE')
-        && str_contains($inviteApi, 'mg_require_csrf_for_write($input)'),
+        && str_contains($inviteApi, "require_once dirname(__DIR__, 2) . '/includes/merchant-crm-campaign-send-service.php'")
+        && str_contains($inviteApi, 'mg_crm_campaign_invite_execute')
+        && str_contains($inviteApi, 'mg_require_csrf_for_write($input)')
+        && str_contains($sendService, 'required_campaign_type')
+        && str_contains($sendService, 'FOR UPDATE')
+        && str_contains($sendService, 'crm_idempotency_key')
+        && str_contains($sendService, 'mg_crm_campaign_send_for_contact')
+        && str_contains($sendService, 'mg_crm_campaign_invite_execute'),
     'simplified action center remains responsive' =>
         str_contains($actionCss, '.mg-crm-make-good-center')
         && str_contains($actionCss, '.mg-crm-make-good-list')

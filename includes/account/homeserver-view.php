@@ -6,7 +6,7 @@ declare(strict_types=1);
     <div>
       <span class="mg-homeserver-kicker">Private local Microgifter edge</span>
       <h2>HomeServer Connections</h2>
-      <p>Pair a Windows HomeServer, review its signed synchronization scopes, and revoke cloud access from one account-controlled workspace.</p>
+      <p>Pair a Windows HomeServer, review its signed synchronization scopes, and control exactly which operational data and campaign actions each agent may use.</p>
     </div>
     <button class="mg-btn mg-btn-primary" type="button" data-homeserver-create-code>Create pairing code</button>
   </div>
@@ -35,11 +35,11 @@ declare(strict_types=1);
           <li>Install and open the Microgifter HomeServer Control Center on Windows.</li>
           <li>Create a one-time code above while signed into the owning Microgifter account.</li>
           <li>Paste the code into the Control Center. A new Ed25519 key is generated locally.</li>
-          <li>Confirm the device appears below with only the approved status and synchronization scopes.</li>
+          <li>Confirm the device appears below, then grant only the data and campaign authority it needs.</li>
         </ol>
         <div class="mg-homeserver-boundary">
-          <strong>Cloud authority remains enforced.</strong>
-          <p>HomeServer cannot originate payments, purchases, claims, redemption, gift ownership, wallet, or other commerce mutations through this connector.</p>
+          <strong>Microgifter remains authoritative.</strong>
+          <p>HomeServer may analyze explicitly granted reviews, messages, CRM, store, purchase, gifting, and campaign records. Agent actions use separate merchant policies and Microgifter still verifies consent, limits, inventory, ownership, claims, redemptions, and delivery.</p>
         </div>
       </article>
 
@@ -68,6 +68,10 @@ declare(strict_types=1);
       <div class="mg-homeserver-devices" data-homeserver-devices>
         <p class="mg-muted">Loading HomeServer devices…</p>
       </div>
+    </section>
+
+    <section class="mg-homeserver-authority-shell" data-homeserver-authority aria-live="polite">
+      <div class="mg-homeserver-authority-empty">Loading HomeServer data grants and agent campaign policies…</div>
     </section>
   </div>
 </section>
