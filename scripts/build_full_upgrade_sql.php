@@ -167,7 +167,17 @@ try {
             'keys' => mg_migration_keys_from_sql($content, $name),
             'sha256' => $checksum,
         ];
-        fwrite($handle, "-- BEGIN {$name} sha256={$checksum}\n" . rtrim($content) . "\n-- END {$name}\n\n");
+
+        $bundleContent = rtrim($content);
+        // This migration intentionally remains unterminated when executed alone so
+        // mysqldump does not preserve an extra trigger terminator. In the generated
+        // multi-file upgrade bundle, however, the next migration must be separated
+        // from the CREATE TRIGGER statement explicitly.
+        if ($name === 'stage_v1_release_trigger_portability.sql' && !str_ends_with($bundleContent, ';')) {
+            $bundleContent .= ';';
+        }
+
+        fwrite($handle, "-- BEGIN {$name} sha256={$checksum}\n" . $bundleContent . "\n-- END {$name}\n\n");
     }
     fwrite($handle, "SET FOREIGN_KEY_CHECKS = @MG_OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS = @MG_OLD_UNIQUE_CHECKS;\n");
 } catch (Throwable $error) {
