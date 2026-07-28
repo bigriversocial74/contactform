@@ -15,6 +15,7 @@ window.Microgifter = window.Microgifter || {};
   var busy = false;
   var notice = null;
   var notice = null;
+  var notice = null;
 
   function escapeHtml(value) {
     return String(value === undefined || value === null ? '' : value)
