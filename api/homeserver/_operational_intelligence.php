@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_homeserver.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm-campaign-send-service.php';
+require_once dirname(__DIR__, 2) . '/includes/campaign-types.php';
 
 const MG_HOMESERVER_OPERATIONAL_CONTRACT_VERSION = 2;
 const MG_HOMESERVER_OPERATIONAL_MAX_RECORDS = 250;
@@ -369,6 +370,113 @@ function mg_homeserver_operational_record_receipt(PDO $pdo, array $device, strin
     $stmt->execute([mg_homeserver_public_uuid(), (int)$device['id'], mg_homeserver_device_merchant_id($device), $datasetKey, $mode, $cursorBefore, $cursorAfter, $sourceRevision, $records, $events, $payloadHash, $disposition, $reasonCode, $requestedAt, mg_homeserver_json(['provider_authoritative' => true, 'trust_state' => 'untrusted_provider_evidence'])]);
 }
 
+function mg_homeserver_campaign_slug(string $title): string
+{
+    $slug = strtolower(trim((string)(preg_replace('/[^a-z0-9]+/i', '-', $title) ?? '')));
+    $slug = trim($slug, '-');
+    return substr($slug !== '' ? $slug : 'campaign', 0, 120);
+}
+
+function mg_homeserver_campaign_unique_slug(PDO $pdo, int $merchantId, string $title, string $excludePublicId = ''): string
+{
+    $base = mg_homeserver_campaign_slug($title);
+    $candidate = $base;
+    $suffix = 1;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND public_slug=? AND public_id<>?');
+    while (true) {
+        $stmt->execute([$merchantId, $candidate, $excludePublicId]);
+        if ((int)$stmt->fetchColumn() === 0) return $candidate;
+        $suffix++;
+        $candidate = substr($base, 0, max(1, 120 - strlen((string)$suffix) - 1)) . '-' . $suffix;
+    }
+}
+
+function mg_homeserver_campaign_reward(PDO $pdo, int $merchantId, string $publicId): ?array
+{
+    $publicId = strtolower(trim($publicId));
+    if ($publicId === '') return null;
+    if (!mg_homeserver_is_uuid($publicId)) mg_fail('Reward template identity is invalid.', 422);
+    $stmt = $pdo->prepare("SELECT id,public_id,title,status,value_amount_cents,currency FROM reward_templates WHERE public_id=? AND merchant_user_id=? AND status<>'archived' LIMIT 1");
+    $stmt->execute([$publicId, $merchantId]);
+    $reward = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$reward) mg_fail('Merchant reward template was not found.', 404);
+    return $reward;
+}
+
+function mg_homeserver_campaign_save_draft(PDO $pdo, int $merchantId, string $campaignType, string $campaignId, array $input): array
+{
+    if (!mg_campaign_type_is_valid($campaignType, true)) mg_fail('Campaign type is not supported.', 422);
+    $existing = null;
+    if ($campaignId !== '') {
+        $stmt = $pdo->prepare('SELECT c.*,rt.public_id reward_template_public_id,rt.status reward_template_status,rt.value_amount_cents FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.public_id=? AND c.merchant_user_id=? LIMIT 1');
+        $stmt->execute([$campaignId, $merchantId]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$existing) mg_fail('Merchant campaign was not found.', 404);
+        if (!in_array((string)$existing['status'], ['draft', 'paused'], true)) mg_fail('Only draft or paused campaigns may be revised through a draft action.', 409);
+        if ((string)$existing['campaign_type'] !== $campaignType) mg_fail('Campaign type does not match the merchant authorization.', 409);
+    }
+
+    $title = trim((string)($input['title'] ?? $existing['title'] ?? ''));
+    if ($title === '' || mb_strlen($title) > 180) mg_fail('A campaign draft title is required.', 422);
+    $description = trim((string)($input['description'] ?? $input['message'] ?? $existing['description'] ?? ''));
+    $description = $description !== '' ? mb_substr($description, 0, 4000) : null;
+    $rewardPublicId = strtolower(trim((string)($input['reward_template_id'] ?? $existing['reward_template_public_id'] ?? '')));
+    $reward = mg_homeserver_campaign_reward($pdo, $merchantId, $rewardPublicId);
+    $rewardId = $reward ? (int)$reward['id'] : null;
+    $valueCents = $reward ? max(0, (int)$reward['value_amount_cents']) : 0;
+    $quantityRaw = trim((string)($input['quantity_limit'] ?? $existing['quantity_limit'] ?? ''));
+    $quantityLimit = $quantityRaw === '' ? null : max(1, min(1000000, (int)$quantityRaw));
+    $perUserLimit = max(1, min(1000, (int)($input['per_user_limit'] ?? $existing['per_user_limit'] ?? 1)));
+    $agentDiscoverable = !empty($input['agent_discoverable']) ? 1 : 0;
+    $existingRules = json_decode((string)($existing['rules_json'] ?? '[]'), true);
+    if (!is_array($existingRules)) $existingRules = [];
+    $rules = array_replace($existingRules, [
+        'campaign_type' => $campaignType,
+        'version' => max(2, (int)($existingRules['version'] ?? 2)),
+        'registry' => 'homeserver_agent_campaign_draft',
+        'homeserver_agent' => [
+            'recommendation_id' => trim((string)($input['recommendation_id'] ?? '')) ?: null,
+            'message_intent' => mb_substr(trim((string)($input['message'] ?? '')), 0, 1000),
+            'created_from_authorized_plan' => true,
+        ],
+    ]);
+    if ($campaignType === 'customer_refund') {
+        $rules = array_replace($rules, ['mode' => 'merchant_initiated', 'internal_only' => true, 'entry_reward_enabled' => true]);
+    }
+    $rulesJson = mg_homeserver_json($rules);
+    $publicSlug = mg_campaign_type_public_enabled($campaignType)
+        ? mg_homeserver_campaign_unique_slug($pdo, $merchantId, $title, $campaignId)
+        : null;
+
+    if ($existing) {
+        $stmt = $pdo->prepare("UPDATE campaigns SET reward_template_id=?,title=?,description=?,status='draft',quantity_limit=?,per_user_limit=?,agent_discoverable=?,public_slug=?,rules_json=?,updated_at=UTC_TIMESTAMP() WHERE public_id=? AND merchant_user_id=?");
+        $stmt->execute([$rewardId, $title, $description, $quantityLimit, $perUserLimit, $agentDiscoverable, $publicSlug, $rulesJson, $campaignId, $merchantId]);
+    } else {
+        $campaignId = mg_homeserver_public_uuid();
+        $qrToken = $campaignType === 'qr_reward_drop' ? bin2hex(random_bytes(16)) : null;
+        $stmt = $pdo->prepare("INSERT INTO campaigns (public_id,merchant_user_id,reward_template_id,campaign_type,title,description,status,quantity_limit,per_user_limit,agent_discoverable,public_slug,qr_code_token,rules_json,created_at,updated_at) VALUES (?,?,?,?,?,?,'draft',?,?,?,?,?,?,UTC_TIMESTAMP(),UTC_TIMESTAMP())");
+        $stmt->execute([$campaignId, $merchantId, $rewardId, $campaignType, $title, $description, $quantityLimit, $perUserLimit, $agentDiscoverable, $publicSlug, $qrToken, $rulesJson]);
+    }
+
+    if (function_exists('mg_audit')) {
+        mg_audit('merchant.homeserver_campaign_draft_saved', 'campaign', [
+            'campaign_id' => $campaignId,
+            'campaign_type' => $campaignType,
+            'reward_template_id' => $rewardPublicId !== '' ? $rewardPublicId : null,
+            'source' => 'homeserver_agent',
+        ], $merchantId);
+    }
+    return [
+        'campaign_id' => $campaignId,
+        'campaign_type' => $campaignType,
+        'title' => $title,
+        'status' => 'draft',
+        'reward_template_id' => $rewardPublicId !== '' ? $rewardPublicId : null,
+        'value_cents' => $valueCents,
+        'authority' => 'microgifter',
+    ];
+}
+
 function mg_homeserver_campaign_authorization(PDO $pdo, array $device, string $campaignType): array
 {
     if (!mg_homeserver_operational_tables_ready($pdo)) mg_fail('HomeServer campaign authority schema is not installed.', 503);
@@ -390,7 +498,10 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     $evidence = is_array($input['evidence'] ?? null) ? $input['evidence'] : [];
     $requestedChannel = strtolower(trim((string)($input['channel'] ?? '')));
     $allowedActions = ['campaign.draft','campaign.publish','campaign.pause','campaign.resume','campaign.send_make_good','campaign.send_authorized'];
-    if (!in_array($actionType, $allowedActions, true) || preg_match('/^[a-z0-9_]{3,80}$/', $campaignType) !== 1 || $idempotencyKey === '' || strlen($idempotencyKey) > 190) {
+    if (!in_array($actionType, $allowedActions, true)
+        || !mg_campaign_type_is_valid($campaignType, true)
+        || $idempotencyKey === ''
+        || strlen($idempotencyKey) > 190) {
         mg_fail('Invalid HomeServer campaign action request.', 422);
     }
     if ($campaignId !== '' && !mg_homeserver_is_uuid($campaignId)) mg_fail('Campaign identity is invalid.', 422);
@@ -398,18 +509,29 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     if ($actionType === 'campaign.send_make_good' && $campaignType !== 'customer_refund') mg_fail('Make-Good actions require a Customer Refund campaign.', 422);
 
     $authorization = mg_homeserver_campaign_authorization($pdo, $device, $campaignType);
+    $authorityLevel = (string)$authorization['authority_level'];
+    if ($actionType === 'campaign.draft' && !in_array($authorityLevel, ['draft','approval_required','authorized_execution'], true)) {
+        mg_fail('This campaign authorization does not permit provider drafts.', 403);
+    }
+    if (in_array($actionType, ['campaign.publish','campaign.pause','campaign.resume','campaign.send_make_good','campaign.send_authorized'], true)
+        && !in_array($authorityLevel, ['approval_required','authorized_execution'], true)) {
+        mg_fail('This campaign authorization does not permit provider changes.', 403);
+    }
+
     $existingStmt = $pdo->prepare('SELECT * FROM homeserver_campaign_action_receipts WHERE device_id=? AND idempotency_key=? LIMIT 1');
     $existingStmt->execute([(int)$device['id'], $idempotencyKey]);
-    $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
-    if ($existing) return ['duplicate' => true, 'receipt' => mg_homeserver_campaign_receipt_payload($existing)];
+    $existingReceipt = $existingStmt->fetch(PDO::FETCH_ASSOC);
+    if ($existingReceipt) return ['duplicate' => true, 'receipt' => mg_homeserver_campaign_receipt_payload($existingReceipt)];
 
     $allowedCampaigns = json_decode((string)($authorization['allowed_campaign_ids_json'] ?? 'null'), true);
-    if (is_array($allowedCampaigns) && $allowedCampaigns !== [] && !in_array($campaignId, $allowedCampaigns, true)) mg_fail('Campaign is outside the merchant authorization.', 403);
+    if (is_array($allowedCampaigns) && $allowedCampaigns !== [] && !in_array($campaignId, $allowedCampaigns, true)) {
+        mg_fail('Campaign is outside the merchant authorization.', 403);
+    }
     if ((bool)$authorization['require_evidence'] && $evidence === []) mg_fail('Evidence is required for this campaign action.', 422);
 
     $sendActions = ['campaign.send_make_good','campaign.send_authorized'];
     $isSend = in_array($actionType, $sendActions, true);
-    if (($isSend || in_array($actionType, ['campaign.publish','campaign.pause','campaign.resume'], true)) && $campaignId === '') mg_fail('Campaign identity is required for this action.', 422);
+    if ($actionType !== 'campaign.draft' && $campaignId === '') mg_fail('Campaign identity is required for this action.', 422);
     if ($isSend && $contactId === '') mg_fail('CRM contact identity is required for a campaign send.', 422);
 
     $actualValueCents = 0;
@@ -417,7 +539,13 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     $campaign = null;
     $contact = null;
     $channel = $requestedChannel;
-    if ($campaignId !== '') {
+    $providerResponse = null;
+
+    if ($actionType === 'campaign.draft') {
+        $providerResponse = mg_homeserver_campaign_save_draft($pdo, $merchantId, $campaignType, $campaignId, $input);
+        $campaignId = (string)$providerResponse['campaign_id'];
+        $actualValueCents = max(0, (int)$providerResponse['value_cents']);
+    } else {
         $campaignStmt = $pdo->prepare('SELECT c.*,rt.public_id reward_template_public_id,rt.value_amount_cents,rt.currency,rt.status reward_template_status FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.public_id=? AND c.merchant_user_id=? LIMIT 1');
         $campaignStmt->execute([$campaignId, $merchantId]);
         $campaign = $campaignStmt->fetch(PDO::FETCH_ASSOC);
@@ -425,8 +553,16 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
         if ((string)$campaign['campaign_type'] !== $campaignType) mg_fail('Campaign type does not match the merchant authorization.', 409);
         $actualValueCents = max(0, (int)($campaign['value_amount_cents'] ?? 0));
     }
+
+    $merchantStmt = $pdo->prepare('SELECT * FROM users WHERE id=? LIMIT 1');
+    $merchantStmt->execute([$merchantId]);
+    $merchantUser = $merchantStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$merchantUser) mg_fail('Merchant account is unavailable.', 404);
+
     if ($isSend) {
-        if (!$campaign || (string)$campaign['status'] !== 'active' || (string)($campaign['reward_template_status'] ?? '') !== 'active') mg_fail('Authorized campaign and reward must be active before sending.', 409);
+        if (!$campaign || (string)$campaign['status'] !== 'active' || (string)($campaign['reward_template_status'] ?? '') !== 'active') {
+            mg_fail('Authorized campaign and reward must be active before sending.', 409);
+        }
         $contactStmt = $pdo->prepare('SELECT * FROM campaign_contacts WHERE public_id=? AND merchant_user_id=? LIMIT 1');
         $contactStmt->execute([$contactId, $merchantId]);
         $contact = $contactStmt->fetch(PDO::FETCH_ASSOC);
@@ -466,12 +602,9 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     if ($authorization['maximum_daily_value_cents'] !== null && ((int)$spent['daily_spent'] + ($actualValueCents * $recipientCount)) > (int)$authorization['maximum_daily_value_cents']) mg_fail('Campaign action exceeds the merchant-authorized daily value.', 403);
     if ($authorization['maximum_total_value_cents'] !== null && ((int)$spent['total_spent'] + ($actualValueCents * $recipientCount)) > (int)$authorization['maximum_total_value_cents']) mg_fail('Campaign action exceeds the merchant-authorized total value.', 403);
 
-    $authorityLevel = (string)$authorization['authority_level'];
     $requiresApproval = $authorityLevel === 'approval_required'
         || ($authorization['approval_threshold_cents'] !== null && $actualValueCents > (int)$authorization['approval_threshold_cents']);
-    if ($isSend && !in_array($authorityLevel, ['approval_required','authorized_execution'], true)) mg_fail('This campaign authorization does not permit sending.', 403);
-    if (in_array($actionType, ['campaign.publish','campaign.pause','campaign.resume'], true) && !in_array($authorityLevel, ['approval_required','authorized_execution'], true)) mg_fail('This campaign authorization does not permit provider changes.', 403);
-    if ($authorityLevel === 'authorized_execution') $requiresApproval = false;
+    if ($actionType === 'campaign.draft' || $authorityLevel === 'authorized_execution') $requiresApproval = false;
 
     $request = $input;
     unset($request['merchant_approval_token'], $request['merchant_approval_hash'], $request['value_cents']);
@@ -480,20 +613,26 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     $requestHash = hash('sha256', mg_homeserver_json($request));
     $receiptId = mg_homeserver_public_uuid();
     $disposition = $actionType === 'campaign.draft' ? 'drafted' : ($requiresApproval ? 'awaiting_approval' : 'executed');
-    $providerResponse = null;
 
     if (!$requiresApproval && $actionType !== 'campaign.draft') {
         if (in_array($actionType, ['campaign.publish','campaign.pause','campaign.resume'], true)) {
+            if (in_array($actionType, ['campaign.publish','campaign.resume'], true)) {
+                if (mg_campaign_type_requires_reward_template($campaignType, 'active')
+                    && (empty($campaign['reward_template_id']) || (string)($campaign['reward_template_status'] ?? '') !== 'active')) {
+                    mg_fail('Active campaigns require an active reward template.', 422);
+                }
+                if (function_exists('mg_package_require_limit_available')) {
+                    $usageStmt = $pdo->prepare("SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active' AND public_id<>?");
+                    $usageStmt->execute([$merchantId, $campaignId]);
+                    mg_package_require_limit_available($pdo, $merchantUser, 'max_active_campaigns', (int)$usageStmt->fetchColumn(), 'Active campaign limit reached.');
+                }
+            }
             $status = match ($actionType) { 'campaign.publish','campaign.resume' => 'active', 'campaign.pause' => 'paused' };
             $stmt = $pdo->prepare('UPDATE campaigns SET status=?,updated_at=UTC_TIMESTAMP() WHERE public_id=? AND merchant_user_id=?');
             $stmt->execute([$status, $campaignId, $merchantId]);
             if ($stmt->rowCount() !== 1) mg_fail('Merchant campaign could not be updated.', 409);
             $providerResponse = ['campaign_id' => $campaignId, 'status' => $status, 'authority' => 'microgifter'];
         } elseif ($isSend) {
-            $merchantStmt = $pdo->prepare('SELECT * FROM users WHERE id=? LIMIT 1');
-            $merchantStmt->execute([$merchantId]);
-            $merchantUser = $merchantStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$merchantUser) mg_fail('Merchant account is unavailable.', 404);
             try {
                 $providerResponse = mg_crm_campaign_send_for_contact($pdo, $merchantId, $merchantUser, [
                     'contact_id' => $contactId,
