@@ -122,11 +122,17 @@ jobs:
       - name: Build and import canonical schema
         env:
           MYSQL_PWD: root
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p build
-          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql
-          mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot microgifter < build/homeserver-cloud-contract-v1-full.sql
-          mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot microgifter < database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql
+          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql 2>&1 | tee build/homeserver-cloud-contract-v1-mysql8.log
+          {
+            echo '--- MySQL 8 full canonical import ---'
+            mysql --show-warnings --protocol=tcp -h127.0.0.1 -P3306 -uroot microgifter < build/homeserver-cloud-contract-v1-full.sql
+            echo '--- MySQL 8 repeat contract migration ---'
+            mysql --show-warnings --protocol=tcp -h127.0.0.1 -P3306 -uroot microgifter < database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql
+          } 2>&1 | tee -a build/homeserver-cloud-contract-v1-mysql8.log
 
       - name: Verify contract tables and multisite index
         env:
@@ -137,6 +143,15 @@ jobs:
           done
           mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='uq_homeserver_devices_installation'" | grep -qx '0'
           mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='idx_homeserver_devices_installation'" | grep -qx '3'
+
+      - name: Upload MySQL 8 migration diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: homeserver-cloud-contract-v1-mysql8
+          path: build/homeserver-cloud-contract-v1-mysql8.log
+          if-no-files-found: warn
+          retention-days: 7
 
   mariadb1011:
     name: Contract migration MariaDB 10.11
@@ -170,11 +185,17 @@ jobs:
       - name: Build and import canonical schema
         env:
           MYSQL_PWD: root
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p build
-          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql
-          mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot microgifter < build/homeserver-cloud-contract-v1-full.sql
-          mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot microgifter < database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql
+          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql 2>&1 | tee build/homeserver-cloud-contract-v1-mariadb1011.log
+          {
+            echo '--- MariaDB 10.11 full canonical import ---'
+            mariadb --show-warnings --protocol=tcp -h127.0.0.1 -P3307 -uroot microgifter < build/homeserver-cloud-contract-v1-full.sql
+            echo '--- MariaDB 10.11 repeat contract migration ---'
+            mariadb --show-warnings --protocol=tcp -h127.0.0.1 -P3307 -uroot microgifter < database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql
+          } 2>&1 | tee -a build/homeserver-cloud-contract-v1-mariadb1011.log
 
       - name: Verify contract tables and multisite index
         env:
@@ -185,3 +206,12 @@ jobs:
           done
           mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='uq_homeserver_devices_installation'" | grep -qx '0'
           mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='idx_homeserver_devices_installation'" | grep -qx '3'
+
+      - name: Upload MariaDB 10.11 migration diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: homeserver-cloud-contract-v1-mariadb1011
+          path: build/homeserver-cloud-contract-v1-mariadb1011.log
+          if-no-files-found: warn
+          retention-days: 7
