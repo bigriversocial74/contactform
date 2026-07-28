@@ -1,0 +1,331 @@
+.mg-admin-workspace > .mg-payment-admin-page{
+  box-sizing:border-box;
+  width:min(1320px,calc(100% - 32px));
+  margin:0 auto;
+}
+
+.mg-payment-admin-page{
+  min-height:0;
+  padding:18px 0 42px;
+  gap:14px;
+  background:transparent;
+}
+
+.mg-payment-page-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:20px;
+  margin:0;
+  padding:0;
+}
+
+.mg-payment-page-head h1{
+  margin:5px 0 3px;
+  color:#071225;
+  font-size:clamp(28px,3vw,40px);
+  line-height:1;
+  letter-spacing:-.045em;
+}
+
+.mg-payment-page-head p{
+  margin:0;
+  color:#64748b;
+  font-size:14px;
+}
+
+.mg-payment-admin-tabs{
+  gap:6px;
+  margin:0;
+  padding:0 0 10px;
+}
+
+.mg-payment-admin-tabs button{
+  min-height:38px;
+  padding:0 14px;
+  border-radius:10px;
+}
+
+.mg-payment-admin-section{
+  gap:14px;
+  margin:0;
+  padding:0;
+}
+
+.mg-payment-method-admin-grid{
+  gap:14px;
+  align-items:start;
+}
+
+.mg-payment-setup-card,
+.mg-payment-admin-page .mg-app-panel{
+  border-radius:16px!important;
+  box-shadow:0 8px 24px rgba(15,23,42,.045);
+}
+
+.mg-payment-method-admin-card,
+.mg-payment-credential-setup,
+.mg-payment-secret-card{
+  padding:18px;
+}
+
+.mg-payment-card-head{
+  align-items:center;
+  margin-bottom:14px;
+}
+
+.mg-payment-card-head h2,
+.mg-payment-admin-page .mg-app-panel-head h2{
+  margin:0 0 4px;
+  font-size:20px;
+}
+
+.mg-payment-card-head p,
+.mg-payment-admin-page .mg-app-panel-head p{
+  line-height:1.4;
+}
+
+.mg-payment-method-mark,
+.mg-payment-step{
+  flex-basis:38px;
+  width:38px;
+  height:38px;
+  border-radius:12px;
+}
+
+.mg-payment-config-card .mg-app-panel-head,
+.mg-payment-readiness-card .mg-app-panel-head{
+  padding:17px 18px;
+}
+
+.mg-payment-config-card .mg-app-panel-body,
+.mg-payment-readiness-card .mg-app-panel-body{
+  padding:18px;
+}
+
+.mg-payment-settings-form{
+  gap:14px;
+}
+
+.mg-payment-form-strip{
+  grid-template-columns:minmax(210px,320px) minmax(210px,1fr);
+  gap:12px;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+
+.mg-payment-field-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+
+.mg-payment-admin-page label{
+  gap:6px;
+  font-size:13px;
+}
+
+.mg-payment-admin-page input,
+.mg-payment-admin-page select{
+  min-height:44px;
+  border-radius:11px;
+}
+
+.mg-payment-input-suffix{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  border:1px solid #dbe5f2;
+  border-radius:11px;
+  background:#fff;
+  overflow:hidden;
+}
+
+.mg-payment-input-suffix input{
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+
+.mg-payment-input-suffix span{
+  padding:0 13px;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+}
+
+.mg-payment-mode-warning{
+  padding:11px 13px;
+  border:1px solid rgba(245,158,11,.25);
+  border-radius:11px;
+  background:#fffbeb;
+  color:#92400e;
+  font-size:12px;
+  font-weight:800;
+}
+
+.mg-payment-submit-bar{
+  position:static;
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+  margin:0;
+  padding:14px 0 0;
+  border:0;
+  border-top:1px solid #e5edf6;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.mg-payment-submit-bar .mg-form-status{
+  flex:1 1 auto;
+  min-height:44px;
+}
+
+.mg-payment-save-button{
+  min-width:210px;
+  min-height:44px;
+  box-shadow:none!important;
+}
+
+.mg-payment-secret-tab-grid{
+  display:grid;
+  grid-template-columns:minmax(300px,.8fr) minmax(420px,1.2fr);
+  gap:14px;
+  align-items:start;
+}
+
+.mg-payment-credential-setup{
+  display:grid;
+  gap:12px;
+}
+
+.mg-payment-credential-state{
+  padding:10px 12px;
+  border-radius:11px;
+}
+
+.mg-payment-button-row{
+  display:flex;
+  gap:8px;
+}
+
+.mg-payment-key-output{
+  min-height:120px;
+  max-height:260px;
+  margin:0;
+  border-radius:11px;
+}
+
+.mg-secret-storage-fields{
+  display:grid;
+  gap:14px;
+}
+
+.mg-secret-saved-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+}
+
+.mg-secret-saved-row input{
+  background:#f8fafc;
+  color:#334155;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+
+.mg-secret-saved-row .mg-btn{
+  min-width:82px;
+  min-height:44px;
+}
+
+.mg-payment-secret-card > .mg-btn{
+  width:100%;
+  margin-top:14px;
+}
+
+.mg-payment-readiness-card .mg-app-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+[data-payment-checks]{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 16px;
+}
+
+.mg-payment-check{
+  align-items:center;
+  gap:9px;
+  padding:10px 0;
+}
+
+.mg-payment-check > span{
+  flex-basis:24px;
+  width:24px;
+  height:24px;
+  font-size:11px;
+}
+
+.mg-payment-check p{
+  display:none;
+}
+
+.mg-payment-readiness-meta{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);
+  gap:12px;
+  margin-top:14px;
+}
+
+.mg-payment-webhook,
+[data-payment-connect-counts]{
+  margin:0;
+  padding:12px;
+  border-radius:11px;
+}
+
+@media(max-width:900px){
+  .mg-payment-field-grid,
+  .mg-payment-secret-tab-grid,
+  [data-payment-checks],
+  .mg-payment-readiness-meta{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:700px){
+  .mg-admin-workspace > .mg-payment-admin-page{
+    width:calc(100% - 18px);
+  }
+
+  .mg-payment-admin-page{
+    padding:12px 0 30px;
+  }
+
+  .mg-payment-page-head{
+    align-items:flex-start;
+  }
+
+  .mg-payment-page-head > .mg-status-badge{
+    margin-top:2px;
+  }
+
+  .mg-payment-form-strip{
+    grid-template-columns:1fr;
+  }
+
+  .mg-payment-submit-bar{
+    display:grid;
+  }
+
+  .mg-payment-save-button{
+    width:100%;
+    min-width:0;
+  }
+}
