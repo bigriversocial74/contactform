@@ -1,0 +1,71 @@
+name: Apply HomeServer operational intelligence campaigns v1
+
+on:
+  push:
+    branches:
+      - feature/homeserver-operational-intelligence-campaigns-20260728
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: homeserver-operational-intelligence-campaigns-v1
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feature/homeserver-operational-intelligence-campaigns-20260728
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: json, mbstring, pdo, sodium
+          coverage: none
+
+      - name: Apply deterministic integration
+        run: python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py
+
+      - name: Validate PHP syntax and migration registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l api/homeserver/_homeserver.php
+          php -l api/homeserver/_operational_intelligence.php
+          php -l api/homeserver/operational-manifest.php
+          php -l api/homeserver/operational-export.php
+          php -l api/homeserver/operational-grants.php
+          php -l api/homeserver/campaign-authorizations.php
+          php -l api/homeserver/campaign-actions.php
+          php -l includes/merchant-crm-campaign-send-service.php
+          php -l api/merchant/crm-campaign-send.php
+          php -l api/merchant/crm-send-reward-invite.php
+          php -l config/migrations.php
+          php scripts/validate_migration_manifest.php
+          grep -Fq "20260728_homeserver_operational_intelligence_campaign_authority_v1.sql" config/migrations.php
+          grep -Fq "homeserver.operational.read" api/homeserver/_homeserver.php
+          grep -Fq "customer_reviews" api/homeserver/_operational_intelligence.php
+          grep -Fq "maximum_daily_value_cents" api/homeserver/_operational_intelligence.php
+          grep -Fq "merchant_approval_token" api/homeserver/_operational_intelligence.php && exit 1 || true
+
+      - name: Commit integrated product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No integration changes were produced."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api/homeserver/_homeserver.php api/homeserver/_operational_intelligence.php config/migrations.php api/merchant/crm-campaign-send.php api/merchant/crm-send-reward-invite.php
+          git commit -m "Integrate HomeServer operational intelligence and campaign authority"
+          git push origin HEAD:feature/homeserver-operational-intelligence-campaigns-20260728
