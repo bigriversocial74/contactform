@@ -34,7 +34,9 @@ if ($accountView === 'profile') {
   $page_scripts[] = '/assets/js/stage12-wallet.js';
 } elseif ($accountView === 'homeserver') {
   $page_styles[] = '/assets/css/homeserver-account.css';
+  $page_styles[] = '/assets/css/homeserver-intelligence-authority.css?v=1.0.0';
   $page_scripts[] = '/assets/js/homeserver-account.js';
+  $page_scripts[] = '/assets/js/homeserver-intelligence-authority.js?v=1.0.0';
 } else {
   $page_scripts[] = '/assets/js/account.js';
 }
