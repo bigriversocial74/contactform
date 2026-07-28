@@ -3,14 +3,21 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_homeserver.php';
 require_once dirname(__DIR__, 2) . '/includes/homeserver-releases.php';
+require_once dirname(__DIR__, 2) . '/includes/homeserver-entitlements.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
+$pdo = mg_db();
+mg_homeserver_require_capability(
+    $pdo,
+    $user,
+    'homeserver.download',
+    'Downloading HomeServer requires an active paid or complimentary Microgifter package.'
+);
 if (function_exists('mg_rate_limit')) {
     mg_rate_limit('homeserver.release_download', 'user:' . (int)$user['id'], 30, 600);
 }
 
-$pdo = mg_db();
 if (!mg_homeserver_release_schema_ready($pdo)) {
     mg_fail('HomeServer downloads are not configured yet.', 503);
 }
