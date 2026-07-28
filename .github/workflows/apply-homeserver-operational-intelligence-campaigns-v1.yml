@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/homeserver-operational-intelligence-campaigns-20260728
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
   workflow_dispatch:
 
 permissions:
@@ -32,29 +35,43 @@ jobs:
           coverage: none
 
       - name: Apply deterministic integration
-        run: python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py
+        shell: bash
+        run: |
+          set +e
+          python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py > focused-integration.log 2>&1
+          status=$?
+          cat focused-integration.log
+          exit $status
 
       - name: Validate PHP syntax and migration registration
         shell: bash
         run: |
-          set -euo pipefail
-          php -l api/homeserver/_homeserver.php
-          php -l api/homeserver/_operational_intelligence.php
-          php -l api/homeserver/operational-manifest.php
-          php -l api/homeserver/operational-export.php
-          php -l api/homeserver/operational-grants.php
-          php -l api/homeserver/campaign-authorizations.php
-          php -l api/homeserver/campaign-actions.php
-          php -l includes/merchant-crm-campaign-send-service.php
-          php -l api/merchant/crm-campaign-send.php
-          php -l api/merchant/crm-send-reward-invite.php
-          php -l config/migrations.php
-          php scripts/validate_migration_manifest.php
-          grep -Fq "20260728_homeserver_operational_intelligence_campaign_authority_v1.sql" config/migrations.php
-          grep -Fq "homeserver.operational.read" api/homeserver/_homeserver.php
-          grep -Fq "customer_reviews" api/homeserver/_operational_intelligence.php
-          grep -Fq "maximum_daily_value_cents" api/homeserver/_operational_intelligence.php
-          grep -Fq "merchant_approval_token" api/homeserver/_operational_intelligence.php && exit 1 || true
+          set +e
+          {
+            php -l api/homeserver/_homeserver.php
+            php -l api/homeserver/_operational_intelligence.php
+            php -l api/homeserver/operational-manifest.php
+            php -l api/homeserver/operational-export.php
+            php -l api/homeserver/operational-grants.php
+            php -l api/homeserver/campaign-authorizations.php
+            php -l api/homeserver/campaign-actions.php
+            php -l includes/merchant-crm-campaign-send-service.php
+            php -l api/merchant/crm-campaign-send.php
+            php -l api/merchant/crm-send-reward-invite.php
+            php -l config/migrations.php
+            php scripts/validate_migration_manifest.php
+            grep -Fq "20260728_homeserver_operational_intelligence_campaign_authority_v1.sql" config/migrations.php
+            grep -Fq "homeserver.operational.read" api/homeserver/_homeserver.php
+            grep -Fq "customer_reviews" api/homeserver/_operational_intelligence.php
+            grep -Fq "maximum_daily_value_cents" api/homeserver/_operational_intelligence.php
+            if grep -Fq "merchant_approval_token" api/homeserver/_operational_intelligence.php; then
+              echo "Caller-supplied merchant approval material remains in the provider action code."
+              exit 1
+            fi
+          } > focused-validation.log 2>&1
+          status=$?
+          cat focused-validation.log
+          exit $status
 
       - name: Commit integrated product files
         shell: bash
@@ -69,3 +86,14 @@ jobs:
           git add api/homeserver/_homeserver.php api/homeserver/_operational_intelligence.php config/migrations.php api/merchant/crm-campaign-send.php api/merchant/crm-send-reward-invite.php
           git commit -m "Integrate HomeServer operational intelligence and campaign authority"
           git push origin HEAD:feature/homeserver-operational-intelligence-campaigns-20260728
+
+      - name: Upload focused diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: homeserver-operational-intelligence-focused
+          path: |
+            focused-integration.log
+            focused-validation.log
+          if-no-files-found: ignore
+          retention-days: 7
