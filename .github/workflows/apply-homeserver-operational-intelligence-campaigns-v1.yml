@@ -38,7 +38,10 @@ jobs:
         shell: bash
         run: |
           set +e
-          python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py > focused-integration.log 2>&1
+          python scripts/fix-homeserver-operational-patcher.py > focused-integration.log 2>&1
+          if [ $? -eq 0 ]; then
+            python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py >> focused-integration.log 2>&1
+          fi
           status=$?
           cat focused-integration.log
           exit $status
