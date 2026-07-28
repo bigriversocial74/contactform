@@ -1,0 +1,24 @@
+.mg-hs-subscription-card,.mg-hs-subscription-card *{box-sizing:border-box}
+.mg-hs-subscription-card{margin:0 26px 28px;padding:24px;border:1px solid #d9e5f5;border-radius:20px;background:radial-gradient(circle at 100% 0,rgba(49,89,255,.12),transparent 30%),linear-gradient(150deg,#fff 0%,#f7faff 100%);box-shadow:0 18px 44px rgba(13,38,76,.08)}
+.mg-hs-subscription-card.is-highlighted{border-color:#3159ff;box-shadow:0 0 0 4px rgba(49,89,255,.1),0 20px 48px rgba(13,38,76,.1)}
+.mg-hs-subscription-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px}
+.mg-hs-subscription-kicker{display:block;margin-bottom:7px;color:#3159ff;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.mg-hs-subscription-head h3{margin:0;color:#071a44;font-size:24px;line-height:1.1;font-weight:950;letter-spacing:-.045em}
+.mg-hs-subscription-head p{max-width:760px;margin:9px 0 0;color:#536789;font-size:14px;line-height:1.55;font-weight:550}
+.mg-hs-subscription-state{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 12px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#475569;font-size:11px;font-weight:900;white-space:nowrap}
+.mg-hs-subscription-state i{width:9px;height:9px;border-radius:999px;background:#94a3b8;box-shadow:0 0 0 4px rgba(148,163,184,.14)}
+.mg-hs-subscription-state.is-online{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.mg-hs-subscription-state.is-online i{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.13)}
+.mg-hs-subscription-state.is-ready{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}.mg-hs-subscription-state.is-ready i{background:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.13)}
+.mg-hs-subscription-state.is-warning{border-color:#fde68a;background:#fffbeb;color:#b45309}.mg-hs-subscription-state.is-warning i{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.13)}
+.mg-hs-subscription-state.is-blocked{border-color:#fecaca;background:#fef2f2;color:#b91c1c}.mg-hs-subscription-state.is-blocked i{background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.12)}
+.mg-hs-subscription-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid #dce6f3;border-radius:16px;background:#fff;overflow:hidden}
+.mg-hs-subscription-grid article{min-width:0;padding:17px 18px;border-right:1px solid #e2e8f0}.mg-hs-subscription-grid article:last-child{border-right:0}
+.mg-hs-subscription-grid span{display:block;margin-bottom:6px;color:#71829f;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.mg-hs-subscription-grid strong{display:block;color:#0f172a;font-size:14px;line-height:1.35;font-weight:950;overflow-wrap:anywhere}
+.mg-hs-subscription-grid small{display:block;margin-top:5px;color:#64748b;font-size:11px;line-height:1.4;font-weight:650}
+.mg-hs-subscription-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:18px}
+.mg-hs-subscription-actions .mg-btn{min-height:42px;padding:0 16px;text-decoration:none}
+.mg-hs-subscription-disabled{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#64748b;font-size:12px;font-weight:850}
+.mg-hs-subscription-boundary{margin:16px 0 0;padding-top:15px;border-top:1px solid #e2e8f0;color:#71829f;font-size:11px;line-height:1.55;font-weight:650}
+@media(max-width:1050px){.mg-hs-subscription-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-hs-subscription-grid article:nth-child(2){border-right:0}.mg-hs-subscription-grid article:nth-child(-n+2){border-bottom:1px solid #e2e8f0}}
+@media(max-width:700px){.mg-hs-subscription-card{margin:0 16px 20px;padding:18px}.mg-hs-subscription-head{align-items:flex-start;flex-direction:column}.mg-hs-subscription-grid{grid-template-columns:1fr}.mg-hs-subscription-grid article,.mg-hs-subscription-grid article:nth-child(2){border-right:0;border-bottom:1px solid #e2e8f0}.mg-hs-subscription-grid article:last-child{border-bottom:0}.mg-hs-subscription-actions{display:grid;grid-template-columns:1fr}.mg-hs-subscription-actions .mg-btn,.mg-hs-subscription-disabled{width:100%;justify-content:center}}

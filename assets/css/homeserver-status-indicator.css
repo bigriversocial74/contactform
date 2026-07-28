@@ -1,8 +1,11 @@
 .mg-homeserver-status-trigger{position:relative;width:25px;height:25px;min-width:25px;padding:0;border:1px solid #cbd5e1;border-radius:999px;background:#fff;display:inline-grid;place-items:center;cursor:pointer;box-shadow:0 3px 10px rgba(15,23,42,.08);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
 .mg-homeserver-status-trigger:hover,.mg-homeserver-status-trigger:focus-visible{transform:translateY(-1px);border-color:#94a3b8;box-shadow:0 6px 16px rgba(15,23,42,.13);outline:none}
-.mg-homeserver-status-trigger .mg-homeserver-status-dot{width:9px;height:9px;border-radius:50%;background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.13)}
+.mg-homeserver-status-trigger .mg-homeserver-status-dot{width:9px;height:9px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.14)}
 .mg-homeserver-status-trigger.is-online .mg-homeserver-status-dot{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
-.mg-homeserver-status-trigger.is-loading .mg-homeserver-status-dot{background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.14)}
+.mg-homeserver-status-trigger.is-ready .mg-homeserver-status-dot{background:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.mg-homeserver-status-trigger.is-warning .mg-homeserver-status-dot{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.14)}
+.mg-homeserver-status-trigger.is-blocked .mg-homeserver-status-dot{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.13)}
+.mg-homeserver-status-trigger.is-muted .mg-homeserver-status-dot,.mg-homeserver-status-trigger.is-loading .mg-homeserver-status-dot{background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.14)}
 .mg-app-sidebar-brand>.mg-homeserver-status-trigger{margin-left:auto;margin-right:0;flex:0 0 25px;float:right}
 .mg-header-left>.mg-homeserver-status-trigger{display:none}
 .mg-homeserver-status-modal[hidden]{display:none!important}
@@ -19,14 +22,18 @@
 .mg-homeserver-status-card>span{display:block;margin-bottom:6px;color:#64748b;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
 .mg-homeserver-status-card strong{display:flex;align-items:center;gap:8px;color:#0f172a;font-size:16px}
 .mg-homeserver-status-card p{margin:7px 0 0;color:#64748b;font-size:12px;line-height:1.5}
-.mg-homeserver-state-light{width:10px;height:10px;border-radius:50%;background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.12)}
+.mg-homeserver-state-light{width:10px;height:10px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 4px rgba(148,163,184,.12)}
 .mg-homeserver-state-light.is-online{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.13)}
+.mg-homeserver-state-light.is-ready{background:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.13)}
+.mg-homeserver-state-light.is-warning{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.13)}
+.mg-homeserver-state-light.is-blocked{background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.12)}
+.mg-homeserver-state-light.is-muted{background:#94a3b8;box-shadow:0 0 0 4px rgba(148,163,184,.12)}
 .mg-homeserver-section{padding:15px;border:1px solid #dce6f3;border-radius:18px;background:#fff}
 .mg-homeserver-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
 .mg-homeserver-section-head p{margin:0 0 3px;color:#64748b;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
 .mg-homeserver-section-head h3{margin:0;color:#0f172a;font-size:16px;letter-spacing:-.025em}
 .mg-homeserver-chip{min-height:25px;padding:0 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#475569;display:inline-flex;align-items:center;font-size:10px;font-weight:850;white-space:nowrap}
-.mg-homeserver-chip.is-ready,.mg-homeserver-release-state.is-ready{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}.mg-homeserver-chip.is-update,.mg-homeserver-release-state.is-update{border-color:#fde68a;background:#fffbeb;color:#b45309}.mg-homeserver-chip.is-current,.mg-homeserver-release-state.is-current{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.mg-homeserver-chip.is-warning,.mg-homeserver-release-state.is-warning{border-color:#fed7aa;background:#fff7ed;color:#c2410c}
+.mg-homeserver-chip.is-ready,.mg-homeserver-release-state.is-ready{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}.mg-homeserver-chip.is-update,.mg-homeserver-release-state.is-update{border-color:#fde68a;background:#fffbeb;color:#b45309}.mg-homeserver-chip.is-current,.mg-homeserver-release-state.is-current{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.mg-homeserver-chip.is-warning,.mg-homeserver-release-state.is-warning{border-color:#fed7aa;background:#fff7ed;color:#c2410c}.mg-homeserver-chip.is-muted,.mg-homeserver-release-state.is-muted{border-color:#cbd5e1;background:#f8fafc;color:#64748b}
 .mg-homeserver-release-section{background:linear-gradient(145deg,#fff 0%,#f5f9ff 100%)}
 .mg-homeserver-release-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px;border:1px solid #dbeafe;border-radius:15px;background:#fff}
 .mg-homeserver-release-info{min-width:0}.mg-homeserver-release-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mg-homeserver-release-title>strong{color:#0f172a;font-size:14px}.mg-homeserver-release-state{min-height:23px;padding:0 8px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#475569;display:inline-flex;align-items:center;font-size:9px;font-weight:900;text-transform:uppercase}.mg-homeserver-release-info>p{margin:5px 0 0;color:#64748b;font-size:10px;line-height:1.5}.mg-homeserver-release-info .mg-homeserver-release-notes{color:#475569}.mg-homeserver-release-info code{display:block;max-width:100%;margin-top:8px;padding:5px 7px;border-radius:7px;background:#f1f5f9;color:#475569;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -38,6 +45,7 @@
 .mg-homeserver-device-state{align-self:start;min-height:24px;padding:0 8px;border-radius:999px;background:#fee2e2;color:#b91c1c;display:inline-flex;align-items:center;font-size:9px;font-weight:900;text-transform:uppercase}
 .mg-homeserver-device-state.is-online{background:#dcfce7;color:#15803d}
 .mg-homeserver-empty{padding:15px;border:1px dashed #cbd5e1;border-radius:14px;background:#f8fafc;color:#64748b;font-size:12px;line-height:1.55}
+.mg-homeserver-empty strong{color:#334155}
 .mg-homeserver-ollama-stub{display:grid;gap:10px}
 .mg-homeserver-ollama-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid #e2e8f0;border-radius:13px;background:#fbfdff}
 .mg-homeserver-ollama-row strong{color:#0f172a;font-size:12px}
