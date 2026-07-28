@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_homeserver.php';
+require_once dirname(__DIR__, 2) . '/includes/homeserver-entitlements.php';
 
 mg_require_method('POST');
 $user = mg_require_api_user();
@@ -10,6 +11,22 @@ mg_require_csrf_for_write($input);
 
 $pdo = mg_db();
 $ownerUserId = (int)$user['id'];
+$entitlement = mg_homeserver_require_capability(
+    $pdo,
+    $user,
+    'homeserver.pair',
+    'Creating a HomeServer Sync Code requires an active paid or complimentary Microgifter package.'
+);
+$activeDeviceCount = mg_homeserver_active_device_count($pdo, $ownerUserId);
+$deviceLimit = $entitlement['device_limit'] ?? 0;
+if ($deviceLimit !== null && $activeDeviceCount >= (int)$deviceLimit) {
+    mg_fail(
+        'This account has reached its HomeServer device allowance. Revoke or replace an existing device before creating another Sync Code.',
+        409,
+        ['entitlement' => mg_homeserver_entitlement_payload($pdo, $user, $entitlement)]
+    );
+}
+
 $code = mg_homeserver_pairing_code();
 $expiresAt = gmdate('Y-m-d H:i:s', time() + MG_HOMESERVER_PAIRING_TTL_SECONDS);
 
@@ -24,12 +41,17 @@ try {
     $pdo->commit();
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_fail_unexpected($error, 'homeserver.pairing_code_failed', 'Unable to create a HomeServer pairing code.', 500, [], $ownerUserId);
+    mg_fail_unexpected($error, 'homeserver.pairing_code_failed', 'Unable to create a HomeServer Sync Code.', 500, [], $ownerUserId);
 }
 
-mg_audit('homeserver.pairing_code_created', 'homeserver_device', ['expires_at' => $expiresAt], $ownerUserId);
+mg_audit('homeserver.pairing_code_created', 'homeserver_device', [
+    'expires_at' => $expiresAt,
+    'device_limit' => $deviceLimit,
+    'active_device_count' => $activeDeviceCount,
+], $ownerUserId);
 mg_ok([
     'pairing_code' => $code,
     'expires_at_utc' => gmdate(DATE_ATOM, strtotime($expiresAt . ' UTC')),
     'expires_in_seconds' => MG_HOMESERVER_PAIRING_TTL_SECONDS,
-], 'HomeServer pairing code created.', 201);
+    'entitlement' => mg_homeserver_entitlement_payload($pdo, $user, $entitlement),
+], 'HomeServer Sync Code created.', 201);
