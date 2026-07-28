@@ -13,6 +13,7 @@ window.Microgifter = window.Microgifter || {};
   var datasetResponse = null;
   var campaignResponse = null;
   var busy = false;
+  var notice = null;
 
   function escapeHtml(value) {
     return String(value === undefined || value === null ? '' : value)
@@ -42,11 +43,12 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function message(text, kind) {
+    notice = text ? { text: String(text), kind: kind || 'info' } : null;
     var node = authorityRoot.querySelector('[data-homeserver-authority-message]');
     if (!node) return;
-    node.hidden = !text;
-    node.textContent = text || '';
-    node.className = 'mg-homeserver-authority-message is-' + (kind || 'info');
+    node.hidden = !notice;
+    node.textContent = notice ? notice.text : '';
+    node.className = 'mg-homeserver-authority-message is-' + (notice ? notice.kind : 'info');
   }
 
   function activeDevices() {
@@ -126,7 +128,7 @@ window.Microgifter = window.Microgifter || {};
     authorityRoot.innerHTML = [
       '<div class="mg-homeserver-authority-head"><div><span class="mg-homeserver-kicker">Separate data and action authority</span><h3>HomeServer Data & Agent Authority</h3><p>Choose what the HomeServer agent may understand, then separately define which campaign actions Microgifter may accept.</p></div>',
       device ? '<label>HomeServer<select data-authority-device>' + deviceOptions() + '</select></label>' : '', '</div>',
-      '<div class="mg-homeserver-authority-message" data-homeserver-authority-message hidden></div>',
+      '<div class="mg-homeserver-authority-message is-' + escapeHtml(notice ? notice.kind : 'info') + '" data-homeserver-authority-message' + (notice ? '' : ' hidden') + '>' + escapeHtml(notice ? notice.text : '') + '</div>',
       !device ? '<div class="mg-homeserver-authority-empty">Pair an active HomeServer before granting operational data or campaign authority.</div>' : [
         '<div class="mg-homeserver-authority-boundaries"><article><strong>Data access</strong><span>Reviews, messages, CRM, store data, purchases, gifts, and campaigns require explicit dataset grants.</span></article><article><strong>LLM understanding</strong><span>Authorized text may be analyzed for sentiment, repeated context, likely causes, fixes, and recommendations.</span></article><article><strong>Campaign action</strong><span>Every campaign type has a separate merchant policy. Microgifter verifies consent, budgets, duplicate windows, inventory, dates, and delivery.</span></article></div>',
         '<section class="mg-homeserver-authority-section"><div class="mg-homeserver-section-head"><div><span class="mg-homeserver-kicker">Operational context</span><h3>Dataset Grants</h3></div><button class="mg-btn mg-btn-ghost" type="button" data-authority-refresh>Refresh</button></div><div class="mg-homeserver-dataset-list">', renderDatasets(), '</div><p class="mg-homeserver-authority-footnote">Purchase history and transaction facts may be shared. Raw card numbers, CVV/CVC, private keys, API secrets, reusable payment credentials, and processor secrets are never exported.</p></section>',
