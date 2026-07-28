@@ -10,7 +10,9 @@ on:
       - 'includes/homeserver-entitlements.php'
       - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
       - 'config/migrations.php'
+      - 'scripts/build_full_upgrade_sql.php'
       - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'tests/phpunit/V1ReleasePackagingContractTest.php'
       - 'docs/homeserver/microgifter-cloud-contract-v1-*.md'
       - '.github/workflows/homeserver-cloud-contract-v1.yml'
   push:
@@ -24,7 +26,9 @@ on:
       - 'includes/homeserver-entitlements.php'
       - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
       - 'config/migrations.php'
+      - 'scripts/build_full_upgrade_sql.php'
       - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'tests/phpunit/V1ReleasePackagingContractTest.php'
       - 'docs/homeserver/microgifter-cloud-contract-v1-*.md'
       - '.github/workflows/homeserver-cloud-contract-v1.yml'
   workflow_dispatch:
@@ -68,11 +72,15 @@ jobs:
             php -l includes/homeserver-device-identity.php
             php -l includes/homeserver-entitlements.php
             php -l config/migrations.php
+            php -l scripts/build_full_upgrade_sql.php
             php -l tests/phpunit/HomeServerCloudContractV1Test.php
+            php -l tests/phpunit/V1ReleasePackagingContractTest.php
           } 2>&1 | tee homeserver-cloud-contract-v1-php-lint.log
 
       - name: Run contract tests
-        run: vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomeServerCloudContractV1Test.php
+        run: |
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomeServerCloudContractV1Test.php
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/V1ReleasePackagingContractTest.php
 
       - name: Validate migration manifest and full-upgrade assembly
         run: |
@@ -81,6 +89,15 @@ jobs:
           test -s build/homeserver-cloud-contract-v1-full.sql
           grep -q 'CREATE TABLE IF NOT EXISTS homeserver_provider_connections' build/homeserver-cloud-contract-v1-full.sql
           grep -q 'CREATE TABLE IF NOT EXISTS homeserver_entitlement_leases_v1' build/homeserver-cloud-contract-v1-full.sql
+          python3 - <<'PY'
+          from pathlib import Path
+          sql = Path('build/homeserver-cloud-contract-v1-full.sql').read_text()
+          trigger = sql.index('CREATE TRIGGER trg_catalog_assets_review_state')
+          next_table = sql.index('CREATE TABLE IF NOT EXISTS ad_campaigns', trigger)
+          block = sql[trigger:next_table]
+          assert block.rstrip().endswith('-- END stage_v1_release_trigger_portability.sql')
+          assert ')\n;\n-- END stage_v1_release_trigger_portability.sql' in block
+          PY
 
       - name: Upload contract diagnostics
         if: always()
