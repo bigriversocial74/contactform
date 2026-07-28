@@ -1,0 +1,45 @@
+.mg-homeserver-authority-shell{display:grid;gap:18px;margin-top:8px;padding-top:24px;border-top:1px solid #e4ebe7}
+.mg-homeserver-authority-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:22px;border:1px solid #dce7e1;border-radius:18px;background:linear-gradient(145deg,#fbfdfc,#f2f8f5)}
+.mg-homeserver-authority-head h3{margin:0 0 7px;color:#19382a;font-size:24px}
+.mg-homeserver-authority-head p{max-width:780px;margin:0;color:#64736b;line-height:1.6}
+.mg-homeserver-authority-head label{display:grid;gap:7px;min-width:280px;color:#627169;font-size:11px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+.mg-homeserver-authority-head select,.mg-homeserver-campaign-form select,.mg-homeserver-campaign-form input,.mg-homeserver-dataset-actions input{width:100%;min-height:42px;padding:9px 11px;border:1px solid #cedbd4;border-radius:10px;background:#fff;color:#243a30;font:inherit;box-sizing:border-box}
+.mg-homeserver-authority-message{padding:13px 15px;border:1px solid #dbe3de;border-radius:13px;background:#f7faf8;color:#33473e;font-weight:750}
+.mg-homeserver-authority-message.is-success{border-color:#b7dfc4;background:#ecfaef;color:#176335}
+.mg-homeserver-authority-message.is-error{border-color:#e8c5bd;background:#fff0ed;color:#8a2f22}
+.mg-homeserver-authority-boundaries{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mg-homeserver-authority-boundaries article{padding:17px;border:1px solid #dfe7e2;border-radius:14px;background:#fff}
+.mg-homeserver-authority-boundaries strong{display:block;margin-bottom:6px;color:#234536;font-size:14px}
+.mg-homeserver-authority-boundaries span{display:block;color:#67756e;font-size:12px;line-height:1.55}
+.mg-homeserver-authority-section{display:grid;gap:14px;padding:22px;border:1px solid #dfe7e2;border-radius:18px;background:#fff}
+.mg-homeserver-dataset-list,.mg-homeserver-campaign-policy-list{display:grid;gap:10px}
+.mg-homeserver-dataset{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:18px;padding:17px;border:1px solid #e2e9e5;border-radius:14px;background:#fafcfb}
+.mg-homeserver-dataset-copy{min-width:0}
+.mg-homeserver-dataset h4,.mg-homeserver-campaign-policy h4{margin:5px 0 5px;color:#203b2f;font-size:16px}
+.mg-homeserver-dataset p,.mg-homeserver-campaign-policy p{margin:0;color:#697870;font-size:12px;line-height:1.5}
+.mg-homeserver-authority-state{display:inline-flex;padding:5px 8px;border-radius:999px;background:#edf2ef;color:#5c6962;font-size:9px;font-weight:950;letter-spacing:.07em;text-transform:uppercase}
+.mg-homeserver-authority-state.is-enabled,.mg-homeserver-authority-state.is-authorized_execution{background:#dcf8e4;color:#176335}
+.mg-homeserver-authority-state.is-paused,.mg-homeserver-authority-state.is-approval_required{background:#fff1cf;color:#805b00}
+.mg-homeserver-authority-state.is-revoked,.mg-homeserver-authority-state.is-disabled{background:#fbe7e3;color:#8a2f22}
+.mg-homeserver-authority-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mg-homeserver-authority-tags span{padding:5px 8px;border-radius:999px;background:#edf5f1;color:#416b57;font-size:10px}
+.mg-homeserver-sensitive-flags{display:grid;gap:7px;margin-top:12px;padding:12px;border:1px solid #dce8e1;border-radius:11px;background:#f4faf6}
+.mg-homeserver-sensitive-flags label,.mg-homeserver-campaign-checks label{display:flex;align-items:flex-start;gap:8px;color:#40564b;font-size:12px;line-height:1.45}
+.mg-homeserver-sensitive-flags input,.mg-homeserver-campaign-checks input{width:16px;height:16px;margin:1px 0 0;accent-color:#276749}
+.mg-homeserver-dataset-actions{display:grid;align-content:start;gap:10px}
+.mg-homeserver-dataset-actions label{display:grid;gap:6px;color:#69766f;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.mg-homeserver-authority-footnote{margin:0;padding:13px 15px;border-left:4px solid #5e8f76;border-radius:0 11px 11px 0;background:#f1f7f3;color:#5a6c63;font-size:12px;line-height:1.55}
+.mg-homeserver-campaign-form{display:grid;gap:15px;padding:18px;border:1px solid #dce7e1;border-radius:15px;background:#f8fbf9}
+.mg-homeserver-campaign-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mg-homeserver-campaign-form-grid label{display:grid;gap:6px;color:#627169;font-size:10px;font-weight:900;letter-spacing:.055em;text-transform:uppercase}
+.mg-homeserver-campaign-checks{display:flex;flex-wrap:wrap;gap:12px 18px;padding:13px;border:1px solid #e0e8e3;border-radius:11px;background:#fff}
+.mg-homeserver-campaign-actions{display:flex;align-items:center;gap:14px}
+.mg-homeserver-campaign-actions span{color:#68766f;font-size:11px;line-height:1.5}
+.mg-homeserver-campaign-policy{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,1fr) auto;align-items:center;gap:16px;padding:16px;border:1px solid #e1e8e4;border-radius:13px;background:#fff}
+.mg-homeserver-campaign-policy dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0}
+.mg-homeserver-campaign-policy dl div{padding:9px;border:1px solid #e8edea;border-radius:9px;background:#fafcfb}
+.mg-homeserver-campaign-policy dt{margin-bottom:3px;color:#89928d;font-size:8px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.mg-homeserver-campaign-policy dd{margin:0;color:#334a3f;font-size:11px;font-weight:850}
+.mg-homeserver-authority-empty{padding:28px;border:1px dashed #cbd8d1;border-radius:15px;background:#fafcfb;color:#6b7871;text-align:center}
+@media(max-width:1180px){.mg-homeserver-authority-boundaries{grid-template-columns:1fr}.mg-homeserver-campaign-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-homeserver-campaign-policy{grid-template-columns:1fr}.mg-homeserver-campaign-policy dl{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:780px){.mg-homeserver-authority-head{align-items:stretch;flex-direction:column}.mg-homeserver-authority-head label{min-width:0}.mg-homeserver-dataset{grid-template-columns:1fr}.mg-homeserver-campaign-form-grid,.mg-homeserver-campaign-policy dl{grid-template-columns:1fr}.mg-homeserver-campaign-actions{align-items:stretch;flex-direction:column}.mg-homeserver-campaign-actions .mg-btn{width:100%}}
