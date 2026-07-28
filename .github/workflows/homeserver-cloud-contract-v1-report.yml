@@ -1,0 +1,89 @@
+name: HomeServer Cloud Contract v1 Report
+
+on:
+  pull_request:
+    paths:
+      - 'api/homeserver/pair.php'
+      - 'api/homeserver/pairing-code.php'
+      - 'api/homeserver/v1/**'
+      - 'includes/homeserver-device-identity.php'
+      - 'includes/homeserver-entitlements.php'
+      - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
+      - 'config/migrations.php'
+      - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'docs/homeserver/microgifter-cloud-contract-v1-*.md'
+      - '.github/workflows/homeserver-cloud-contract-v1.yml'
+      - '.github/workflows/homeserver-cloud-contract-v1-report.yml'
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: homeserver-cloud-contract-v1-report-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - name: Wait for the contract workflow
+        id: contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id=''
+          for attempt in $(seq 1 80); do
+            run_id="$(gh run list --repo "$REPOSITORY" --workflow homeserver-cloud-contract-v1.yml --branch "$HEAD_BRANCH" --event pull_request --limit 20 --json databaseId,headSha --jq ".[] | select(.headSha == \"$HEAD_SHA\") | .databaseId" | head -n1)"
+            if [ -n "$run_id" ]; then
+              status="$(gh run view "$run_id" --repo "$REPOSITORY" --json status --jq .status)"
+              if [ "$status" = 'completed' ]; then
+                break
+              fi
+            fi
+            sleep 10
+          done
+          if [ -z "$run_id" ]; then
+            echo 'Unable to find the HomeServer Cloud Contract v1 workflow run for this PR head.' >&2
+            exit 1
+          fi
+          status="$(gh run view "$run_id" --repo "$REPOSITORY" --json status --jq .status)"
+          if [ "$status" != 'completed' ]; then
+            echo "Contract workflow $run_id did not complete before the reporter timeout." >&2
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Publish contract validation status
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.contract.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          jobs="$(gh run view "$RUN_ID" --repo "$REPOSITORY" --json jobs --jq '.jobs[] | "- " + (if .conclusion == "success" then "PASS" elif .conclusion == "skipped" then "SKIP" else "FAIL" end) + " — " + .name + " (`" + (.conclusion // .status) + "`)"')"
+          conclusion="$(gh run view "$RUN_ID" --repo "$REPOSITORY" --json conclusion --jq .conclusion)"
+          body="<!-- homeserver-cloud-contract-v1-report -->
+          ## HomeServer Cloud Contract v1
+
+          Head: \`$HEAD_SHA\`
+          Overall: **${conclusion^^}**
+
+          $jobs
+
+          This scoped matrix validates PHP 8.2, PHP 8.3, the Phase 6B-B contract tests, MySQL 8, MariaDB 10.11, repeat-safe migration execution, and the multisite installation index."
+          existing="$(gh api --repo "$REPOSITORY" "repos/$REPOSITORY/issues/$PR_NUMBER/comments" --paginate --jq '.[] | select(.body | contains("<!-- homeserver-cloud-contract-v1-report -->")) | .id' | tail -n1)"
+          if [ -n "$existing" ]; then
+            gh api --repo "$REPOSITORY" --method PATCH "repos/$REPOSITORY/issues/comments/$existing" -f body="$body" >/dev/null
+          else
+            gh api --repo "$REPOSITORY" --method POST "repos/$REPOSITORY/issues/$PR_NUMBER/comments" -f body="$body" >/dev/null
+          fi
+          test "$conclusion" = 'success'
