@@ -23,6 +23,7 @@ $page_scripts=[
     '/assets/js/subscription-billing-v2.js?v=1.0.0',
     '/assets/js/subscription-checkout-completion-v1.js?v=1.0.0',
     '/assets/js/subscription-agent-access-v1.js?v=1.0.0',
+    '/assets/js/subscription-cart-routing-v1.js?v=1.0.0',
 ];
 $user=mg_current_user();
 require __DIR__ . '/includes/header.php';
