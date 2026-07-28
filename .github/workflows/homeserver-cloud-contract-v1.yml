@@ -92,11 +92,13 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           sql = Path('build/homeserver-cloud-contract-v1-full.sql').read_text()
-          trigger = sql.index('CREATE TRIGGER trg_catalog_assets_review_state')
-          next_table = sql.index('CREATE TABLE IF NOT EXISTS ad_campaigns', trigger)
-          block = sql[trigger:next_table]
-          assert block.rstrip().endswith('-- END stage_v1_release_trigger_portability.sql')
-          assert ');\n-- END stage_v1_release_trigger_portability.sql' in block
+          begin_marker = '-- BEGIN stage_v1_release_trigger_portability.sql'
+          end_marker = '-- END stage_v1_release_trigger_portability.sql'
+          begin = sql.index(begin_marker)
+          end = sql.index(end_marker, begin)
+          block = sql[begin:end + len(end_marker)]
+          assert 'CREATE TRIGGER trg_catalog_assets_review_state' in block
+          assert block.rstrip().endswith(');\n' + end_marker)
           PY
 
       - name: Upload contract diagnostics
