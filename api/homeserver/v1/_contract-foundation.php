@@ -217,10 +217,19 @@ function mg_hs_v1_decrypt_response(string $ciphertext, string $nonce): array
 
 function mg_hs_v1_user(PDO $pdo, int $userId): array
 {
+    if ($userId < 1) {
+        mg_hs_v1_fail('microgifter_account_not_found', 'The owning Microgifter account was not found.', 404);
+    }
+    if (function_exists('mg_load_user_auth')) {
+        $user = mg_load_user_auth($userId);
+        if (is_array($user)) return $user;
+    }
     $stmt = $pdo->prepare('SELECT * FROM users WHERE id=? LIMIT 1');
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) mg_hs_v1_fail('microgifter_account_not_found', 'The owning Microgifter account was not found.', 404);
     $user['id'] = $userId;
+    $user['roles'] = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+    $user['permissions'] = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
     return $user;
 }
