@@ -80,3 +80,47 @@ jobs:
               assert filename in bundle, filename
               assert (root / 'assets/css' / filename).is_file(), filename
           PY
+
+      - name: Build homepage deploy ZIP
+        if: matrix.php == '8.3'
+        shell: bash
+        run: |
+          set -euo pipefail
+          package='build/homepage-deploy'
+          rm -rf "$package"
+          mkdir -p "$package/assets/css" "$package/assets/images/home"
+          cp index.php "$package/index.php"
+          cp assets/css/homepage-saas-v1.css "$package/assets/css/"
+          cp assets/css/homepage-saas-core-v1.css "$package/assets/css/"
+          cp assets/css/homepage-saas-visuals-v1.css "$package/assets/css/"
+          cp assets/css/homepage-saas-sections-v1.css "$package/assets/css/"
+          cp assets/css/homepage-saas-responsive-v1.css "$package/assets/css/"
+          cp assets/images/home/microgifter-home-desktop-dashboard.svg "$package/assets/images/home/"
+          cp assets/images/home/microgifter-home-phone.svg "$package/assets/images/home/"
+          cat > "$package/DEPLOY-README.txt" <<EOF
+          Microgifter Homepage SaaS Redesign v1
+          Source branch: ${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
+          Source commit: $GITHUB_SHA
+          Pull request: #1369
+
+          Extract this ZIP into the Microgifter web root while preserving paths.
+          Overwrite only the files included in this package.
+          Do not replace config.php, api/config.local.php, storage/, uploads/, or other production-local data.
+          SQL required: No.
+          The universal header and footer are reused and are not included in this package.
+          EOF
+          (
+            cd "$package"
+            zip -qr ../microgifter-homepage-pr1369-deploy.zip .
+          )
+          unzip -l build/microgifter-homepage-pr1369-deploy.zip
+          sha256sum build/microgifter-homepage-pr1369-deploy.zip
+
+      - name: Upload homepage deploy ZIP
+        if: matrix.php == '8.3'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: microgifter-homepage-pr1369-deploy
+          path: build/microgifter-homepage-pr1369-deploy.zip
+          if-no-files-found: error
+          retention-days: 30
