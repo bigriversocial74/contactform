@@ -11,14 +11,18 @@ $page_styles = ['/assets/css/admin-dashboard.css'];
 $page_scripts = ['/assets/js/account.js', '/assets/js/admin-dashboard.js', '/assets/js/reviews-management-nav.js?v=1.0.0'];
 
 $user = mg_current_user();
+$packageContext = $user ? mg_user_package_context(null, $user) : [];
+$accountIsFree = !empty($packageContext['is_free']);
 $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $isSuperAdmin = in_array('super_admin', $roles, true);
-$hasAdminAccess = $user ? mg_admin_navigation_user_can_access($user) : false;
-$canPublicDonationsOperations = $isSuperAdmin
+$hasAdminAccess = $user && !$accountIsFree && mg_admin_navigation_user_can_access($user);
+$canPublicDonationsOperations = $hasAdminAccess && (
+  $isSuperAdmin
   || in_array('admin.settings.manage', $permissions, true)
   || in_array('admin.public_donations_operations.view', $permissions, true)
-  || in_array('admin.public_donations_operations.manage', $permissions, true);
+  || in_array('admin.public_donations_operations.manage', $permissions, true)
+);
 if ($canPublicDonationsOperations) {
   $page_scripts[] = '/assets/js/admin-public-donations-nav.js?v=20260724-v1';
 }
@@ -52,7 +56,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-app-panel-head">
           <div>
             <h2>Admin access is not active.</h2>
-            <p>This account does not have an administrative role or permission.</p>
+            <p><?= $accountIsFree ? 'The Admin dashboard is not available on the Free package.' : 'This account does not have an administrative role or permission.' ?></p>
           </div>
         </div>
         <div class="mg-app-panel-body">
