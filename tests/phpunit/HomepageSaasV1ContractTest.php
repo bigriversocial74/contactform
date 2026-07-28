@@ -61,6 +61,7 @@ final class HomepageSaasV1ContractTest extends TestCase
             'homepage-saas-visuals-v1.css',
             'homepage-saas-sections-v1.css',
             'homepage-saas-responsive-v1.css',
+            'homepage-saas-blue-v1.css',
         ] as $file) {
             self::assertFileExists($this->root . '/assets/css/' . $file);
         }
@@ -72,5 +73,28 @@ final class HomepageSaasV1ContractTest extends TestCase
         self::assertStringContainsString('padding-block: clamp(104px, 11vw, 168px)', $core);
         self::assertStringContainsString('@media (max-width: 980px)', $responsive);
         self::assertStringContainsString('@media (max-width: 680px)', $responsive);
+    }
+
+    public function testHomepageUsesBlueAccentsSharedTypographyAndWhiteSecondSection(): void
+    {
+        $bundle = file_get_contents($this->root . '/assets/css/homepage-saas-v1.css');
+        $theme = file_get_contents($this->root . '/assets/css/homepage-saas-blue-v1.css');
+        $desktop = file_get_contents($this->root . '/assets/images/home/microgifter-home-desktop-dashboard.svg');
+        $phone = file_get_contents($this->root . '/assets/images/home/microgifter-home-phone.svg');
+
+        self::assertIsString($bundle);
+        self::assertIsString($theme);
+        self::assertIsString($desktop);
+        self::assertIsString($phone);
+        self::assertStringContainsString('homepage-saas-blue-v1.css', $bundle);
+        self::assertStringContainsString('--mg-home-teal: #2563eb', $theme);
+        self::assertStringContainsString('.mg-home-features', $theme);
+        self::assertStringContainsString('background: #fff', $theme);
+        self::assertStringContainsString('font-family: inherit', $theme);
+        self::assertStringContainsString('-webkit-text-fill-color: #fff', $theme);
+        self::assertStringNotContainsString('#0b934a', $desktop);
+        self::assertStringNotContainsString('#00847c', $desktop);
+        self::assertStringNotContainsString('#f7fbfb', $phone);
+        self::assertStringNotContainsString('#e7efed', $phone);
     }
 }
