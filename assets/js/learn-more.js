@@ -200,6 +200,7 @@ window.Microgifter = window.Microgifter || {};
       applyTrackingFields(form);
 
       var button = form.querySelector('[type="submit"]');
+      var submitted = false;
       MG.setBusy(button, true, 'Submitting…');
 
       try {
@@ -207,19 +208,24 @@ window.Microgifter = window.Microgifter || {};
         payload.region_country = visitorCountry();
         await MG.post('/api/crm/leads/create.php', payload);
 
+        submitted = true;
+        MG.setBusy(button, false);
+        button.textContent = 'Request received';
+        button.disabled = true;
         MG.setStatus('[data-learn-more-status]', 'Thanks — your request was received.', 'success');
         MG.toast('Request submitted.', 'success');
 
         var complete = form.querySelector('[data-lm-complete]');
-        if (complete) complete.classList.add('is-visible');
-        button.disabled = true;
-        complete && complete.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (complete) {
+          complete.classList.add('is-visible');
+          complete.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       } catch (error) {
         var message = error.message || 'Unable to submit your request right now.';
         MG.setStatus('[data-learn-more-status]', message, 'error');
         MG.toast(message, 'error');
       } finally {
-        if (!button.disabled) MG.setBusy(button, false);
+        if (!submitted) MG.setBusy(button, false);
       }
     });
   }
