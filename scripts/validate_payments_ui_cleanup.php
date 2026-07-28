@@ -51,11 +51,13 @@ $checks=[
         && str_contains($content['merchantApi'],"'stripe_onboarding_connected' => !empty(\$stripeAccount['connected'])"),
     'legacy unfinished connect client is not loaded on merchant page' =>
         !str_contains($content['merchantPage'],'merchant-connect.js'),
-    'admin page is split into three focused tabs' =>
-        substr_count($content['adminPage'],'data-admin-payment-tab=')===3
+    'admin page is split into four focused tabs' =>
+        substr_count($content['adminPage'],'data-admin-payment-tab=')===4
         && str_contains($content['adminPage'],'data-admin-payment-tab="methods"')
         && str_contains($content['adminPage'],'data-admin-payment-tab="stripe"')
-        && str_contains($content['adminPage'],'data-admin-payment-tab="readiness"'),
+        && str_contains($content['adminPage'],'data-admin-payment-tab="secrets"')
+        && str_contains($content['adminPage'],'data-admin-payment-tab="readiness"')
+        && str_contains($content['adminPage'],'data-admin-payment-page="secrets"'),
     'admin Cash and Stripe method toggles are visible' =>
         str_contains($content['adminPage'],'data-admin-cash-payment-toggle')
         && str_contains($content['adminPage'],'data-admin-stripe-payment-toggle')
@@ -64,7 +66,8 @@ $checks=[
         !str_contains($content['adminPage'],'mg-payment-hero')
         && str_contains($content['adminPage'],'data-payment-key-generate')
         && str_contains($content['adminPage'],'data-payment-settings-form')
-        && str_contains($content['adminPage'],'data-payment-checks'),
+        && str_contains($content['adminPage'],'data-payment-checks')
+        && str_contains($content['adminPage'],'Encrypted Stripe secret storage'),
     'tab controllers use scoped page switching' =>
         str_contains($content['merchantJs'],'activatePage')
         && str_contains($content['merchantJs'],'[data-payments-page]')
