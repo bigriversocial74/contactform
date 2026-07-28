@@ -6,6 +6,18 @@
   var ONLINE_WINDOW_MS = 10 * 60 * 1000;
   var REFRESH_INTERVAL_MS = 60 * 1000;
   var devices = [];
+  var entitlement = {
+    state: 'loading',
+    included: false,
+    can_download: false,
+    can_manage: false,
+    package_name: 'Checking access',
+    subscription_status: 'loading',
+    active_device_count: 0,
+    device_limit: 0,
+    remaining_device_slots: 0,
+    upgrade_url: '/account-subscriptions.php?homeserver=upgrade'
+  };
   var latestRelease = null;
   var releaseSchemaReady = true;
   var canManageReleases = false;
@@ -77,37 +89,77 @@
     return Boolean(lastSeen && Date.now() - lastSeen.getTime() <= ONLINE_WINDOW_MS);
   }
 
-  function statusSummary() {
-    var active = devices.filter(function (device) {
+  function activeDevices() {
+    return devices.filter(function (device) {
       return String(device.status || '').toLowerCase() === 'active';
     });
-    var online = active.filter(isOnline);
-    var revoked = devices.filter(function (device) {
+  }
+
+  function onlineDevices() {
+    return activeDevices().filter(isOnline);
+  }
+
+  function revokedDevices() {
+    return devices.filter(function (device) {
       return String(device.status || '').toLowerCase() === 'revoked';
     });
+  }
+
+  function hasUpdateAvailable() {
+    if (!latestRelease || !entitlement.can_download) return false;
+    var installedVersions = activeDevices()
+      .filter(function (device) { return String(device.version || '').trim() !== ''; })
+      .map(function (device) { return String(device.version); });
+    if (!installedVersions.length) return false;
+    var newestInstalled = installedVersions.sort(compareVersions).slice(-1)[0];
+    return compareVersions(latestRelease.version, newestInstalled) > 0;
+  }
+
+  function statusSummary() {
+    var active = activeDevices();
+    var online = onlineDevices();
+    var revoked = revokedDevices();
+    var state = String(entitlement.state || 'not_included').toLowerCase();
+    var subscriptionStatus = String(entitlement.subscription_status || '').toLowerCase();
 
     if (lastLoadFailed) {
-      return { online: false, label: 'Status unavailable', detail: 'Microgifter could not load the HomeServer connection record.' };
+      return { tone: 'muted', online: false, label: 'Status unavailable', detail: 'Microgifter could not load the HomeServer connection record.' };
+    }
+    if (state === 'owner_required') {
+      return { tone: 'warning', online: false, label: 'Account owner required', detail: entitlement.message || 'HomeServer is managed by the merchant workspace owner.' };
+    }
+    if (!entitlement.included) {
+      if (state === 'suspended' || active.length > 0 || revoked.length > 0) {
+        return { tone: 'blocked', online: false, label: 'Subscription attention', detail: entitlement.message || 'HomeServer cloud access is not active for this account.' };
+      }
+      return { tone: 'muted', online: false, label: 'HomeServer not included', detail: entitlement.message || 'Upgrade to a paid Microgifter package to install and connect HomeServer.' };
     }
     if (online.length > 0) {
-      return { online: true, label: 'Connected', detail: online.length === 1 ? '1 HomeServer checked in recently.' : online.length + ' HomeServers checked in recently.' };
+      if (hasUpdateAvailable()) {
+        return { tone: 'warning', online: true, label: 'Connected · update available', detail: 'HomeServer is connected and a newer signed installer is available.' };
+      }
+      if (subscriptionStatus === 'past_due' || subscriptionStatus === 'cancel_pending') {
+        return { tone: 'warning', online: true, label: 'Connected · account attention', detail: 'HomeServer remains connected while the subscription needs attention.' };
+      }
+      return { tone: 'online', online: true, label: 'Connected', detail: online.length === 1 ? '1 HomeServer checked in recently.' : online.length + ' HomeServers checked in recently.' };
     }
     if (active.length > 0) {
-      return { online: false, label: 'Offline or degraded', detail: 'A paired HomeServer has not checked in during the last 10 minutes.' };
+      return { tone: 'warning', online: false, label: 'Offline or degraded', detail: 'A paired HomeServer has not checked in during the last 10 minutes.' };
     }
     if (revoked.length > 0) {
-      return { online: false, label: 'Revoked', detail: 'The saved HomeServer connection has been revoked.' };
+      return { tone: 'blocked', online: false, label: 'Revoked', detail: 'The saved HomeServer connection has been revoked.' };
     }
-    return { online: false, label: 'Not paired', detail: 'No active HomeServer is connected to this account.' };
+    return { tone: 'ready', online: false, label: 'Ready to install', detail: 'HomeServer is included. Download the installer and connect it with a one-time Sync Code.' };
   }
 
   function releaseSummary() {
+    if (!entitlement.can_download) return { label: 'Upgrade required', className: ' is-muted' };
     if (releaseLoadFailed) return { label: 'Download unavailable', className: ' is-warning' };
     if (!releaseSchemaReady) return { label: 'Coming soon', className: ' is-warning' };
     if (!latestRelease) return { label: 'Not published', className: ' is-warning' };
 
-    var installedVersions = devices
-      .filter(function (device) { return String(device.status || '').toLowerCase() === 'active' && String(device.version || '').trim() !== ''; })
+    var installedVersions = activeDevices()
+      .filter(function (device) { return String(device.version || '').trim() !== ''; })
       .map(function (device) { return String(device.version); });
     if (!installedVersions.length) return { label: 'Ready to install', className: ' is-ready' };
 
@@ -146,8 +198,8 @@
   function updateTriggers() {
     var summary = statusSummary();
     document.querySelectorAll('[data-homeserver-status-trigger]').forEach(function (button) {
-      button.classList.remove('is-loading', 'is-online');
-      if (summary.online) button.classList.add('is-online');
+      button.classList.remove('is-loading', 'is-online', 'is-ready', 'is-warning', 'is-blocked', 'is-muted');
+      button.classList.add('is-' + summary.tone);
       button.setAttribute('aria-label', 'HomeServer: ' + summary.label);
       button.setAttribute('title', 'HomeServer: ' + summary.label);
     });
@@ -195,6 +247,9 @@
 
   function releaseMarkup() {
     var summary = releaseSummary();
+    if (!entitlement.can_download) {
+      return '<div class="mg-homeserver-empty"><strong>HomeServer is not included with this account.</strong><br>Upgrade to a paid Microgifter package to download the Windows installer and create a Sync Code.</div>';
+    }
     if (releaseLoadFailed) {
       return '<div class="mg-homeserver-empty">Microgifter could not load the latest HomeServer installer. Refresh the modal or try again shortly.</div>';
     }
@@ -220,6 +275,12 @@
     ].join('');
   }
 
+  function allowanceLabel() {
+    var active = Number(entitlement.active_device_count || activeDevices().length || 0);
+    if (entitlement.device_limit === null) return active + ' active · unlimited';
+    return active + ' of ' + Number(entitlement.device_limit || 0) + ' active';
+  }
+
   function renderModal() {
     var root = createModal().querySelector('[data-homeserver-status-body]');
     var summary = statusSummary();
@@ -229,21 +290,20 @@
       var bDate = parseUtc(b.last_seen_at);
       return (bDate ? bDate.getTime() : 0) - (aDate ? aDate.getTime() : 0);
     });
-    var activeCount = devices.filter(function (device) {
-      return String(device.status || '').toLowerCase() === 'active';
-    }).length;
+    var activeCount = activeDevices().length;
+    var statusClass = summary.tone === 'online' ? ' is-online' : ' is-' + summary.tone;
 
     root.innerHTML = [
       '<div class="mg-homeserver-overview">',
       '  <article class="mg-homeserver-status-card">',
       '    <span>Cloud connection</span>',
-      '    <strong><i class="mg-homeserver-state-light' + (summary.online ? ' is-online' : '') + '" aria-hidden="true"></i>' + escapeHtml(summary.label) + '</strong>',
+      '    <strong><i class="mg-homeserver-state-light' + statusClass + '" aria-hidden="true"></i>' + escapeHtml(summary.label) + '</strong>',
       '    <p>' + escapeHtml(summary.detail) + '</p>',
       '  </article>',
       '  <article class="mg-homeserver-status-card">',
-      '    <span>Local service</span>',
-      '    <strong>Managed on Windows</strong>',
-      '    <p>Local API and database health are reported inside the HomeServer Control Center.</p>',
+      '    <span>Package access</span>',
+      '    <strong>' + escapeHtml(entitlement.package_name || 'Free Wallet') + '</strong>',
+      '    <p>' + escapeHtml(allowanceLabel()) + ' · ' + escapeHtml(String(entitlement.subscription_status || 'unknown').replace(/_/g, ' ')) + '</p>',
       '  </article>',
       '</div>',
       '<section class="mg-homeserver-section mg-homeserver-release-section">',
@@ -275,7 +335,7 @@
       '<div class="mg-homeserver-status-actions">',
       '  <button type="button" data-homeserver-status-refresh>Refresh status</button>',
       (canManageReleases && releaseAdminUrl ? '  <a class="is-secondary" href="' + escapeHtml(releaseAdminUrl) + '">Release admin</a>' : ''),
-      '  <a href="/account-homeserver.php">Manage HomeServer</a>',
+      (entitlement.can_manage ? '  <a href="/account-homeserver.php">Manage HomeServer</a>' : '  <a href="' + escapeHtml(entitlement.upgrade_url || '/account-subscriptions.php?homeserver=upgrade') + '">Upgrade for HomeServer</a>'),
       '</div>'
     ].join('');
 
@@ -313,6 +373,7 @@
       if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Unable to load HomeServer status.');
       var data = payload.data && typeof payload.data === 'object' ? payload.data : payload;
       devices = Array.isArray(data.devices) ? data.devices : [];
+      entitlement = data.entitlement && typeof data.entitlement === 'object' ? data.entitlement : entitlement;
       lastLoadFailed = false;
     } catch (error) {
       lastLoadFailed = true;
@@ -320,6 +381,15 @@
   }
 
   async function loadRelease() {
+    if (!entitlement.can_download) {
+      latestRelease = null;
+      releaseSchemaReady = true;
+      canManageReleases = false;
+      releaseAdminUrl = null;
+      releaseLoadFailed = false;
+      return;
+    }
+
     try {
       var response = await window.fetch(RELEASE_API_URL, {
         method: 'GET',
@@ -332,6 +402,7 @@
       var data = payload.data && typeof payload.data === 'object' ? payload.data : payload;
       latestRelease = data.release && typeof data.release === 'object' ? data.release : null;
       releaseSchemaReady = data.schema_ready !== false;
+      if (data.entitlement && typeof data.entitlement === 'object') entitlement = data.entitlement;
       canManageReleases = data.can_manage_releases === true;
       releaseAdminUrl = canManageReleases ? String(data.admin_url || '/admin/homeserver-releases.php') : null;
       releaseLoadFailed = false;
@@ -341,7 +412,8 @@
   }
 
   async function loadAll(forceRender) {
-    await Promise.all([loadStatus(), loadRelease()]);
+    await loadStatus();
+    await loadRelease();
     updateTriggers();
     if (forceRender && modal && !modal.hidden) renderModal();
   }
