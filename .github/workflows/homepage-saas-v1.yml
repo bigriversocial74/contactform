@@ -76,6 +76,7 @@ jobs:
               'homepage-saas-visuals-v1.css',
               'homepage-saas-sections-v1.css',
               'homepage-saas-responsive-v1.css',
+              'homepage-saas-blue-v1.css',
           ]:
               assert filename in bundle, filename
               assert (root / 'assets/css' / filename).is_file(), filename
@@ -95,10 +96,11 @@ jobs:
           cp assets/css/homepage-saas-visuals-v1.css "$package/assets/css/"
           cp assets/css/homepage-saas-sections-v1.css "$package/assets/css/"
           cp assets/css/homepage-saas-responsive-v1.css "$package/assets/css/"
+          cp assets/css/homepage-saas-blue-v1.css "$package/assets/css/"
           cp assets/images/home/microgifter-home-desktop-dashboard.svg "$package/assets/images/home/"
           cp assets/images/home/microgifter-home-phone.svg "$package/assets/images/home/"
           cat > "$package/DEPLOY-README.txt" <<EOF
-          Microgifter Homepage SaaS Redesign v1
+          Microgifter Homepage SaaS Redesign v1.1
           Source branch: ${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
           Source commit: $GITHUB_SHA
           Pull request: #1369
