@@ -70,10 +70,13 @@ try {
     );
 
     $expect(
-        str_contains($redirect, 'SELECT pp.slug')
-        && str_contains($redirect, "pp.visibility IN ('public','unlisted')")
-        && str_contains($redirect, "'/profile.php?slug='"),
-        'User reference redirect resolves only active visible profiles to the canonical profile page'
+        str_contains($redirect, 'SELECT slug,status,visibility')
+        && str_contains($redirect, "['public', 'unlisted']")
+        && str_contains($redirect, "header('Location: /profile.php?slug='")
+        && str_contains($redirect, 'This member has not published a public profile yet.')
+        && str_contains($redirect, '/feed.php?chat=')
+        && !str_contains($redirect, "header('Location: /profile.php', true, 302);"),
+        'User reference route preserves canonical published profiles and renders a safe unpublished-member fallback'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();

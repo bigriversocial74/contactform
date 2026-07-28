@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
+require_once __DIR__ . '/includes/admin-navigation-access.php';
 
 $page_title = 'Admin Dashboard | Microgifter';
 $page_section = 'account';
@@ -13,17 +14,7 @@ $user = mg_current_user();
 $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $isSuperAdmin = in_array('super_admin', $roles, true);
-$adminPermissionSet = [
-  'admin.users.view', 'admin.users.manage', 'admin.audit.view', 'admin.health.view',
-  'admin.profiles.moderation.view', 'admin.profiles.moderation.manage',
-  'security.logs.view', 'admin.security_logs.view', 'admin.sessions.view',
-  'operational.alerts.view', 'demand.dashboard.view', 'intelligence.dashboard.view',
-  'merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse', 'share_market.admin',
-  'admin.pwa_branding.view', 'admin.pwa_branding.manage', 'admin.pwa_notifications.test',
-  'admin.blog.view', 'admin.blog.manage', 'admin.settings.manage',
-  'admin.public_donations_operations.view', 'admin.public_donations_operations.manage',
-];
-$hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
+$hasAdminAccess = $user ? mg_admin_navigation_user_can_access($user) : false;
 $canPublicDonationsOperations = $isSuperAdmin
   || in_array('admin.settings.manage', $permissions, true)
   || in_array('admin.public_donations_operations.view', $permissions, true)
@@ -61,7 +52,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-app-panel-head">
           <div>
             <h2>Admin access is not active.</h2>
-            <p>This account does not have an administrative permission.</p>
+            <p>This account does not have an administrative role or permission.</p>
           </div>
         </div>
         <div class="mg-app-panel-body">

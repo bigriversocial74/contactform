@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/admin-navigation-access.php';
+
 $show_header_create = $show_header_create ?? true;
 $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
@@ -15,6 +17,7 @@ $can_create_campaigns = (bool) ($can_create_campaigns ?? ($can_merchant_nav && m
 $can_create_rewards = (bool) ($can_create_rewards ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_rewards', 0)));
 $can_create_post = (bool) ($can_create_post ?? mg_is_authenticated());
 $can_create_list = (bool) ($can_create_list ?? mg_is_authenticated());
+$can_admin_dashboard = mg_admin_navigation_user_can_access(mg_current_user() ?? []);
 $can_header_create = $show_header_create && (
     $can_create_list
     || $can_create_post

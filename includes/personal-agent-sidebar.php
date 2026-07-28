@@ -12,6 +12,8 @@ $suppressAgentSidebarTools = !empty($suppress_agent_sidebar_tools);
 $packageContext = $user ? mg_user_package_context(null, $user) : [];
 $hasMerchantAgentAccess = $user && !empty($packageContext['merchant_access']);
 $hasPersonalAgentAccess = $user && (!empty($packageContext['is_paid']) || !empty($packageContext['merchant_access']));
+$hasDesignAccess = $hasPersonalAgentAccess;
+$hasCalendarAccess = $hasMerchantAgentAccess;
 $personalAgentHref = $hasPersonalAgentAccess ? '/agent.php' : '/account-subscriptions.php?agent=personal';
 $merchantAgentHref = $hasMerchantAgentAccess ? '/merchant-agent-chat.php' : '/account-subscriptions.php?agent=merchant';
 $quickActionMode = $isMerchantAgentMode ? 'merchant' : 'personal';
@@ -45,8 +47,12 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <?php else: ?>
         <a class="<?= mg_e($sidebarLinkClass('agent')) ?>" href="<?= mg_e($personalAgentHref) ?>"><span aria-hidden="true">✦</span><strong>Agent</strong></a>
       <?php endif; ?>
-      <a class="<?= mg_e($sidebarLinkClass('design')) ?>" href="/design-studio.php"><span aria-hidden="true">✦</span><strong>Design</strong></a>
-      <a class="<?= mg_e($sidebarLinkClass('calendar')) ?>" href="/design-calendar.php"><span aria-hidden="true">▦</span><strong>Calendar</strong></a>
+      <?php if ($hasDesignAccess): ?>
+        <a class="<?= mg_e($sidebarLinkClass('design')) ?>" href="/design-studio.php"><span aria-hidden="true">✦</span><strong>Design</strong></a>
+      <?php endif; ?>
+      <?php if ($hasCalendarAccess): ?>
+        <a class="<?= mg_e($sidebarLinkClass('calendar')) ?>" href="/design-calendar.php"><span aria-hidden="true">▦</span><strong>Calendar</strong></a>
+      <?php endif; ?>
     </nav>
 
     <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
