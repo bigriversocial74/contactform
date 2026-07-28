@@ -92,6 +92,16 @@ for dataset in (
 for marker in (
     "MG_HOMESERVER_OPERATIONAL_MAX_RECORDS",
     "mg_homeserver_operational_grant",
+    "mg_homeserver_operational_required_scope",
+    "mg_homeserver_operational_require_dataset_scope",
+    "required_device_scope",
+    "device_scope_allowed",
+    "homeserver.reviews.read",
+    "homeserver.messages.read",
+    "homeserver.crm.read",
+    "homeserver.commerce_history.read",
+    "homeserver.gifts.read",
+    "homeserver.campaigns.read",
     "mg_homeserver_operational_cursor_decode",
     "mg_homeserver_operational_source_cursor",
     "mg_homeserver_operational_cursor_encode",
@@ -206,6 +216,14 @@ for marker in (
     require(STYLE, marker, f"merchant authority style contract is missing {marker}")
 
 require("config/migrations.php", "20260728_homeserver_operational_intelligence_campaign_authority_v1.sql", "migration is not registered")
+
+runtime_source = read(RUNTIME)
+draft_persist = runtime_source.find("$providerResponse = mg_homeserver_campaign_save_draft($pdo, $merchantId, $campaignType, $campaignId, $input);")
+value_limit = runtime_source.find("Campaign value exceeds the per-recipient authorization")
+daily_limit = runtime_source.find("merchant-authorized daily value")
+total_limit = runtime_source.find("merchant-authorized total value")
+if draft_persist < 0 or value_limit < 0 or daily_limit < 0 or total_limit < 0 or not (value_limit < daily_limit < total_limit < draft_persist):
+    ERRORS.append("provider campaign drafts are not persisted strictly after value, daily, and total authorization checks")
 
 # Caller-supplied values may be stripped, but may never be accepted as proof or value authority.
 forbidden_runtime = (

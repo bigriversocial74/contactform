@@ -169,9 +169,39 @@ function mg_homeserver_device_merchant_id(array $device): int
     return $merchantId;
 }
 
+function mg_homeserver_operational_required_scope(string $datasetKey): string
+{
+    if (str_starts_with($datasetKey, 'reviews.')) return 'homeserver.reviews.read';
+    if (str_starts_with($datasetKey, 'conversations.')) return 'homeserver.messages.read';
+    if (str_starts_with($datasetKey, 'crm.')) return 'homeserver.crm.read';
+    if (str_starts_with($datasetKey, 'commerce.')) return 'homeserver.commerce_history.read';
+    if (str_starts_with($datasetKey, 'gifts.')) return 'homeserver.gifts.read';
+    if (str_starts_with($datasetKey, 'campaigns.') || str_starts_with($datasetKey, 'creator.')) return 'homeserver.campaigns.read';
+    return 'homeserver.operational.read';
+}
+
+function mg_homeserver_operational_device_has_scope(array $device, string $scope): bool
+{
+    $scopes = json_decode((string)($device['scopes_json'] ?? '[]'), true);
+    return is_array($scopes) && in_array($scope, $scopes, true);
+}
+
+function mg_homeserver_operational_require_dataset_scope(array $device, string $datasetKey): string
+{
+    $scope = mg_homeserver_operational_required_scope($datasetKey);
+    if (!mg_homeserver_operational_device_has_scope($device, $scope)) {
+        mg_fail('The paired HomeServer does not have the device scope required for this dataset.', 403, [
+            'dataset_key' => $datasetKey,
+            'required_scope' => $scope,
+        ]);
+    }
+    return $scope;
+}
+
 function mg_homeserver_operational_grant(PDO $pdo, array $device, string $datasetKey): array
 {
     if (!isset(mg_homeserver_operational_catalog()[$datasetKey])) mg_fail('Operational dataset is not declared by the Microgifter provider.', 422);
+    mg_homeserver_operational_require_dataset_scope($device, $datasetKey);
     if (!mg_homeserver_operational_tables_ready($pdo)) mg_fail('HomeServer operational intelligence schema is not installed.', 503);
     $stmt = $pdo->prepare("SELECT * FROM homeserver_dataset_grants WHERE device_id=? AND merchant_user_id=? AND dataset_key=? AND grant_state='enabled' LIMIT 1");
     $stmt->execute([(int)$device['id'], mg_homeserver_device_merchant_id($device), $datasetKey]);
@@ -207,6 +237,8 @@ function mg_homeserver_operational_manifest(PDO $pdo, array $device): array
             'sync_modes' => $definition['sync_modes'],
             'permitted_uses' => $definition['permitted_uses'],
             'required_grant_flags' => $definition['required_grant_flags'],
+            'required_device_scope' => mg_homeserver_operational_required_scope($key),
+            'device_scope_allowed' => mg_homeserver_operational_device_has_scope($device, mg_homeserver_operational_required_scope($key)),
             'available' => $availableSources !== [],
             'source_contracts' => $availableSources,
             'grant' => $grant ? [
@@ -576,9 +608,9 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     $providerResponse = null;
 
     if ($actionType === 'campaign.draft') {
-        $providerResponse = mg_homeserver_campaign_save_draft($pdo, $merchantId, $campaignType, $campaignId, $input);
-        $campaignId = (string)$providerResponse['campaign_id'];
-        $actualValueCents = max(0, (int)$providerResponse['value_cents']);
+        $draftRewardPublicId = strtolower(trim((string)($input['reward_template_id'] ?? '')));
+        $draftReward = mg_homeserver_campaign_reward($pdo, $merchantId, $draftRewardPublicId);
+        $actualValueCents = $draftReward ? max(0, (int)$draftReward['value_amount_cents']) : 0;
     } else {
         $campaignStmt = $pdo->prepare('SELECT c.*,rt.public_id reward_template_public_id,rt.value_amount_cents,rt.currency,rt.status reward_template_status FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.public_id=? AND c.merchant_user_id=? LIMIT 1');
         $campaignStmt->execute([$campaignId, $merchantId]);
@@ -639,6 +671,11 @@ function mg_homeserver_campaign_action(PDO $pdo, array $device, array $input): a
     $requiresApproval = $authorityLevel === 'approval_required'
         || ($authorization['approval_threshold_cents'] !== null && $actualValueCents > (int)$authorization['approval_threshold_cents']);
     if ($actionType === 'campaign.draft' || $authorityLevel === 'authorized_execution') $requiresApproval = false;
+
+    if ($actionType === 'campaign.draft') {
+        $providerResponse = mg_homeserver_campaign_save_draft($pdo, $merchantId, $campaignType, $campaignId, $input);
+        $campaignId = (string)$providerResponse['campaign_id'];
+    }
 
     $request = $input;
     unset($request['merchant_approval_token'], $request['merchant_approval_hash'], $request['value_cents']);
