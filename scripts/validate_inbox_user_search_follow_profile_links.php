@@ -74,7 +74,7 @@ try {
         && str_contains($redirect, "['public', 'unlisted']")
         && str_contains($redirect, "header('Location: /profile.php?slug='")
         && str_contains($redirect, 'This member has not published a public profile yet.')
-        && str_contains($redirect, "'/feed.php?chat='")
+        && str_contains($redirect, '/feed.php?chat=')
         && !str_contains($redirect, "header('Location: /profile.php', true, 302);"),
         'User reference route preserves canonical published profiles and renders a safe unpublished-member fallback'
     );
