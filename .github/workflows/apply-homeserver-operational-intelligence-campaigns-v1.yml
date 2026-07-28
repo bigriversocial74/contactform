@@ -1,5 +1,6 @@
 name: Apply HomeServer operational intelligence campaigns v1
 
+# Temporary focused integrator; removed before final validation.
 on:
   push:
     branches:
