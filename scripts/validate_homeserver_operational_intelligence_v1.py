@@ -150,9 +150,18 @@ for marker in (
     "approval_required",
     "mg_crm_campaign_send_for_contact",
     "homeserver_campaign_action_receipts",
+    "mg_homeserver_campaign_save_draft",
+    "homeserver_agent_campaign_draft",
+    "Only draft or paused campaigns may be revised",
+    "A campaign draft title is required",
+    "This campaign authorization does not permit provider drafts",
+    "Active campaigns require an active reward template",
+    "max_active_campaigns",
+    "merchant.homeserver_campaign_draft_saved",
 ):
     require(RUNTIME, marker, f"provider campaign enforcement is missing {marker}")
 
+require(RUNTIME, "includes/campaign-types.php", "provider campaign actions do not use the canonical campaign-type registry")
 require(SERVICE, "mg_crm_campaign_send_for_contact", "canonical CRM campaign send service is missing")
 require("api/merchant/crm-campaign-send.php", "mg_crm_campaign_send_execute", "merchant CRM send endpoint does not reuse the canonical service")
 require("api/merchant/crm-send-reward-invite.php", "mg_crm_campaign_invite_execute", "merchant invite endpoint does not reuse the canonical service")
@@ -207,4 +216,4 @@ if ERRORS:
         print(f"- {error}", file=sys.stderr)
     raise SystemExit(1)
 
-print("Microgifter operational exports, sensitive data grants, and merchant-authorized campaign controls validated.")
+print("Microgifter operational exports, real campaign drafts, sensitive data grants, and merchant-authorized campaign controls validated.")
