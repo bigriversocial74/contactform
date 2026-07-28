@@ -59,19 +59,25 @@ $checks=[
         && str_contains($source['adminApi'],"\$payload['environment_override']")
         && str_contains($source['adminApi'],'effective_publishable_key')
         && str_contains($source['adminApi'],'effective_connect_client_id'),
-    'admin UI explains that Test and Live are independent' =>
-        str_contains($source['adminPage'],'A live-only setup does not require test credentials.')
-        && str_contains($source['adminPage'],'data-payment-mode-help')
-        && str_contains($source['adminPage'],'data-payment-mode-warning')
-        && str_contains($source['adminPage'],'data-payment-persistence-state'),
+    'admin UI separates encrypted secrets and exposes masked database references' =>
+        str_contains($source['adminPage'],'data-admin-payment-tab="secrets"')
+        && str_contains($source['adminPage'],'data-admin-payment-page="secrets"')
+        && str_contains($source['adminPage'],'Encrypted Stripe secret storage')
+        && str_contains($source['adminPage'],'data-payment-secret-save-status')
+        && str_contains($source['adminFields'],'data-payment-secret-display')
+        && str_contains($source['adminFields'],'data-payment-secret-replace')
+        && str_contains($source['adminJs'],"'Saved in database · '")
+        && str_contains($source['adminJs'],'provider.secret_hint')
+        && str_contains($source['adminJs'],'provider.webhook_hint')
+        && str_contains($source['adminJs'],'Saved and database-verified for '),
     'browser initially requests automatic mode selection' =>
         str_contains($source['adminJs'],"requestedMode = 'auto'")
         && str_contains($source['adminJs'],'load(requestedMode)')
         && str_contains($source['adminJs'],'provider.mode'),
-    'browser accepts matching secret or restricted keys' =>
+    'browser accepts mode-matched secret and restricted keys' =>
         str_contains($source['adminJs'],"value.indexOf('sk_' + selected + '_')")
         && str_contains($source['adminJs'],"value.indexOf('rk_' + selected + '_')")
-        && str_contains($source['adminJs'],'Test credentials are not required when saving Live.'),
+        && str_contains($source['adminJs'],"payload.webhook_secret.indexOf('whsec_')"),
     'persistence client resolves authoritative mode before writing the URL' =>
         str_contains($source['persistenceJs'],'function initializePersistence()')
         && str_contains($source['persistenceJs'],"payment-settings.php?mode=auto&verify=")
