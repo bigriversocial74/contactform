@@ -1,0 +1,187 @@
+name: HomeServer Cloud Contract v1
+
+on:
+  pull_request:
+    paths:
+      - 'api/homeserver/pair.php'
+      - 'api/homeserver/pairing-code.php'
+      - 'api/homeserver/v1/**'
+      - 'includes/homeserver-device-identity.php'
+      - 'includes/homeserver-entitlements.php'
+      - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
+      - 'config/migrations.php'
+      - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'docs/homeserver/microgifter-cloud-contract-v1-*.md'
+      - '.github/workflows/homeserver-cloud-contract-v1.yml'
+  push:
+    branches:
+      - 'feature/homeserver-cloud-contract-v1-20260728'
+    paths:
+      - 'api/homeserver/pair.php'
+      - 'api/homeserver/pairing-code.php'
+      - 'api/homeserver/v1/**'
+      - 'includes/homeserver-device-identity.php'
+      - 'includes/homeserver-entitlements.php'
+      - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
+      - 'config/migrations.php'
+      - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'docs/homeserver/microgifter-cloud-contract-v1-*.md'
+      - '.github/workflows/homeserver-cloud-contract-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homeserver-cloud-contract-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Contract PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, mbstring, pdo, sodium
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint Phase 6B-B PHP
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            php -l api/homeserver/pair.php
+            php -l api/homeserver/pairing-code.php
+            find api/homeserver/v1 -type f -name '*.php' -print0 | sort -z | xargs -0 -n1 php -l
+            php -l includes/homeserver-device-identity.php
+            php -l includes/homeserver-entitlements.php
+            php -l config/migrations.php
+            php -l tests/phpunit/HomeServerCloudContractV1Test.php
+          } 2>&1 | tee homeserver-cloud-contract-v1-php-lint.log
+
+      - name: Run contract tests
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomeServerCloudContractV1Test.php
+
+      - name: Validate migration manifest and full-upgrade assembly
+        run: |
+          php scripts/validate_migration_manifest.php
+          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql
+          test -s build/homeserver-cloud-contract-v1-full.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_provider_connections' build/homeserver-cloud-contract-v1-full.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_entitlement_leases_v1' build/homeserver-cloud-contract-v1-full.sql
+
+      - name: Upload contract diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: homeserver-cloud-contract-v1-php-${{ matrix.php }}
+          path: |
+            homeserver-cloud-contract-v1-php-lint.log
+            build/homeserver-cloud-contract-v1-full.sql
+          if-no-files-found: warn
+          retention-days: 7
+
+  mysql8:
+    name: Contract migration MySQL 8
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: json, mbstring, pdo, pdo_mysql, sodium
+          coverage: none
+
+      - name: Build and import canonical schema
+        env:
+          MYSQL_PWD: root
+        run: |
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql
+          mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot microgifter < build/homeserver-cloud-contract-v1-full.sql
+          mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot microgifter < database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql
+
+      - name: Verify contract tables and multisite index
+        env:
+          MYSQL_PWD: root
+        run: |
+          for table in homeserver_provider_connections homeserver_pairing_exchanges_v1 homeserver_device_credentials homeserver_credential_rotations homeserver_entitlement_leases_v1 homeserver_update_authorizations_v1 homeserver_update_receipts_v1 homeserver_device_replacements_v1 homeserver_connection_receipts_v1; do
+            mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='microgifter' AND table_name='${table}'" | grep -qx '1'
+          done
+          mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='uq_homeserver_devices_installation'" | grep -qx '0'
+          mysql --protocol=tcp -h127.0.0.1 -P3306 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='idx_homeserver_devices_installation'" | grep -qx '3'
+
+  mariadb1011:
+    name: Contract migration MariaDB 10.11
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: microgifter
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: json, mbstring, pdo, pdo_mysql, sodium
+          coverage: none
+
+      - name: Install MariaDB client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mariadb-client
+
+      - name: Build and import canonical schema
+        env:
+          MYSQL_PWD: root
+        run: |
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/homeserver-cloud-contract-v1-full.sql
+          mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot microgifter < build/homeserver-cloud-contract-v1-full.sql
+          mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot microgifter < database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql
+
+      - name: Verify contract tables and multisite index
+        env:
+          MYSQL_PWD: root
+        run: |
+          for table in homeserver_provider_connections homeserver_pairing_exchanges_v1 homeserver_device_credentials homeserver_credential_rotations homeserver_entitlement_leases_v1 homeserver_update_authorizations_v1 homeserver_update_receipts_v1 homeserver_device_replacements_v1 homeserver_connection_receipts_v1; do
+            mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='microgifter' AND table_name='${table}'" | grep -qx '1'
+          done
+          mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='uq_homeserver_devices_installation'" | grep -qx '0'
+          mariadb --protocol=tcp -h127.0.0.1 -P3307 -uroot -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='microgifter' AND table_name='homeserver_devices' AND index_name='idx_homeserver_devices_installation'" | grep -qx '3'
