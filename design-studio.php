@@ -4,6 +4,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
 $user = mg_require_auth('/signin.php', '/design-studio.php');
+$packageContext = mg_user_package_context(null, $user);
+$hasDesignAccess = !empty($packageContext['is_paid']) || !empty($packageContext['merchant_access']);
+if (!$hasDesignAccess) {
+    header('Cache-Control: no-store, private');
+    header('Location: /account-subscriptions.php?agent=personal&feature=design', true, 302);
+    exit;
+}
+
 $pdo = mg_db();
 $displayName = trim((string) mg_user_display_name()) ?: 'Your Business';
 $activeView = 'design';
