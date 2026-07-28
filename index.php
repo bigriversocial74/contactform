@@ -14,7 +14,7 @@ $header_mode = 'public';
 $page_body_class = 'mg-home-saas-v1';
 $page_disable_legacy_home_assets = true;
 $page_styles = [
-    '/assets/css/homepage-saas-v1.css?v=1.0.0',
+    '/assets/css/homepage-saas-v1.css?v=1.1.0',
 ];
 $page_scripts = [];
 $page_meta = [
@@ -63,7 +63,7 @@ require __DIR__ . '/includes/header.php';
       <figure class="mg-home-hero__visual">
         <div class="mg-home-hero__glow" aria-hidden="true"></div>
         <img
-          src="/assets/images/home/microgifter-home-desktop-dashboard.svg?v=1.0.0"
+          src="/assets/images/home/microgifter-home-desktop-dashboard.svg?v=1.1.0"
           alt="Microgifter dashboard showing pre-sale revenue, gift certificate sales, and top-performing products"
           width="1448"
           height="1086"
@@ -109,7 +109,7 @@ require __DIR__ . '/includes/header.php';
       <figure class="mg-home-phone-card">
         <div class="mg-home-phone-card__halo" aria-hidden="true"></div>
         <img
-          src="/assets/images/home/microgifter-home-phone.svg?v=1.0.0"
+          src="/assets/images/home/microgifter-home-phone.svg?v=1.1.0"
           alt="Microgifter mobile inbox displaying claimable local gifts"
           width="768"
           height="1152"
