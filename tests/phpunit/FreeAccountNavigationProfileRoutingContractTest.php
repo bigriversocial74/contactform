@@ -16,7 +16,7 @@ final class FreeAccountNavigationProfileRoutingContractTest extends TestCase
 
     public function testOrdinaryProductPermissionsDoNotCreateAdminNavigation(): void
     {
-        self::assertFalse(mg_admin_navigation_user_can_access([
+        $delegatedUser = [
             'roles' => ['customer'],
             'permissions' => [
                 'agent.test',
@@ -26,13 +26,18 @@ final class FreeAccountNavigationProfileRoutingContractTest extends TestCase
                 'merchant.payments.view',
                 'microgift.operations.view',
                 'tips.reverse',
+                'admin.users.view',
+                'security.logs.view',
             ],
-        ]));
+        ];
 
+        self::assertFalse(mg_admin_navigation_user_has_admin_role($delegatedUser));
+        self::assertTrue(mg_admin_navigation_user_can_access($delegatedUser));
+
+        self::assertTrue(mg_admin_navigation_user_has_admin_role(['roles' => ['admin'], 'permissions' => []]));
+        self::assertTrue(mg_admin_navigation_user_has_admin_role(['roles' => ['super_admin'], 'permissions' => []]));
         self::assertTrue(mg_admin_navigation_user_can_access(['roles' => ['admin'], 'permissions' => []]));
         self::assertTrue(mg_admin_navigation_user_can_access(['roles' => ['super_admin'], 'permissions' => []]));
-        self::assertTrue(mg_admin_navigation_user_can_access(['roles' => ['customer'], 'permissions' => ['admin.users.view']]));
-        self::assertTrue(mg_admin_navigation_user_can_access(['roles' => ['customer'], 'permissions' => ['security.logs.view']]));
     }
 
     public function testCustomerSidebarAppliesPackageEntitlements(): void
@@ -55,12 +60,12 @@ final class FreeAccountNavigationProfileRoutingContractTest extends TestCase
         self::assertStringContainsString('/account-subscriptions.php?agent=personal&feature=design', $source);
     }
 
-    public function testAccountMenuAndAdminPageShareNarrowAdminAuthority(): void
+    public function testAccountMenuUsesRoleIdentityWhileAdminPageRetainsDelegatedAuthority(): void
     {
         $menu = $this->source('includes/header-templates/logged-in.php');
         $admin = $this->source('account-admin.php');
         self::assertStringContainsString("require_once dirname(__DIR__) . '/admin-navigation-access.php';", $menu);
-        self::assertStringContainsString('$can_admin_dashboard = mg_admin_navigation_user_can_access', $menu);
+        self::assertStringContainsString('$can_admin_dashboard = mg_admin_navigation_user_has_admin_role', $menu);
         self::assertStringContainsString("require_once __DIR__ . '/includes/admin-navigation-access.php';", $admin);
         self::assertStringContainsString('$hasAdminAccess = $user ? mg_admin_navigation_user_can_access($user) : false;', $admin);
     }
