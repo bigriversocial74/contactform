@@ -96,7 +96,7 @@ jobs:
           next_table = sql.index('CREATE TABLE IF NOT EXISTS ad_campaigns', trigger)
           block = sql[trigger:next_table]
           assert block.rstrip().endswith('-- END stage_v1_release_trigger_portability.sql')
-          assert ')\n;\n-- END stage_v1_release_trigger_portability.sql' in block
+          assert ');\n-- END stage_v1_release_trigger_portability.sql' in block
           PY
 
       - name: Upload contract diagnostics
