@@ -7,6 +7,7 @@ on:
       - 'api/admin/homeserver-releases.php'
       - 'admin/homeserver-releases.php'
       - 'includes/homeserver-releases.php'
+      - 'includes/homeserver-device-identity.php'
       - 'includes/merchant-crm-campaign-send-service.php'
       - 'api/merchant/crm-campaign-send.php'
       - 'api/merchant/crm-send-reward-invite.php'
@@ -24,11 +25,14 @@ on:
       - 'database/20260724_homeserver_cloud_pairing_sync_v1.sql'
       - 'database/20260727_homeserver_release_distribution_v1.sql'
       - 'database/20260728_homeserver_operational_intelligence_campaign_authority_v1.sql'
+      - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
       - 'config/migrations.php'
       - 'scripts/validate_homeserver_pairing_sync_v1.php'
       - 'scripts/validate_homeserver_operational_intelligence_v1.py'
       - 'scripts/preflight.sh'
       - 'tests/phpunit/HomeServerReleaseDistributionContractTest.php'
+      - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'docs/homeserver/microgifter-cloud-contract-v1-provider.md'
       - 'composer.json'
       - '.github/workflows/homeserver-cloud-connector-v2.yml'
   push:
@@ -36,11 +40,13 @@ on:
       - 'feature/homeserver-cloud-connector-v2-20260724'
       - 'feature/homeserver-release-downloads-v1-20260727'
       - 'feature/homeserver-operational-intelligence-campaigns-20260728'
+      - 'feature/homeserver-cloud-contract-v1-20260728'
     paths:
       - 'api/homeserver/**'
       - 'api/admin/homeserver-releases.php'
       - 'admin/homeserver-releases.php'
       - 'includes/homeserver-releases.php'
+      - 'includes/homeserver-device-identity.php'
       - 'includes/merchant-crm-campaign-send-service.php'
       - 'api/merchant/crm-campaign-send.php'
       - 'api/merchant/crm-send-reward-invite.php'
@@ -58,11 +64,14 @@ on:
       - 'database/20260724_homeserver_cloud_pairing_sync_v1.sql'
       - 'database/20260727_homeserver_release_distribution_v1.sql'
       - 'database/20260728_homeserver_operational_intelligence_campaign_authority_v1.sql'
+      - 'database/20260728_homeserver_pairing_entitlement_update_contract_v1.sql'
       - 'config/migrations.php'
       - 'scripts/validate_homeserver_pairing_sync_v1.php'
       - 'scripts/validate_homeserver_operational_intelligence_v1.py'
       - 'scripts/preflight.sh'
       - 'tests/phpunit/HomeServerReleaseDistributionContractTest.php'
+      - 'tests/phpunit/HomeServerCloudContractV1Test.php'
+      - 'docs/homeserver/microgifter-cloud-contract-v1-provider.md'
       - 'composer.json'
       - '.github/workflows/homeserver-cloud-connector-v2.yml'
   workflow_dispatch:
@@ -104,6 +113,7 @@ jobs:
             php -l api/admin/homeserver-releases.php
             php -l admin/homeserver-releases.php
             php -l includes/homeserver-releases.php
+            php -l includes/homeserver-device-identity.php
             php -l includes/merchant-crm-campaign-send-service.php
             php -l api/merchant/crm-campaign-send.php
             php -l api/merchant/crm-send-reward-invite.php
@@ -113,6 +123,7 @@ jobs:
             php -l config/migrations.php
             php -l scripts/validate_homeserver_pairing_sync_v1.php
             php -l tests/phpunit/HomeServerReleaseDistributionContractTest.php
+            php -l tests/phpunit/HomeServerCloudContractV1Test.php
           } > homeserver-php-lint.log 2>&1
           lint_code=$?
           cat homeserver-php-lint.log
@@ -137,6 +148,9 @@ jobs:
       - name: Validate HomeServer protocol
         run: php scripts/validate_homeserver_pairing_sync_v1.php
 
+      - name: Validate HomeServer cloud contract v1
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomeServerCloudContractV1Test.php
+
       - name: Validate operational intelligence and campaign authority
         run: python scripts/validate_homeserver_operational_intelligence_v1.py
 
@@ -153,6 +167,8 @@ jobs:
           grep -q 'CREATE TABLE IF NOT EXISTS homeserver_dataset_grants' build/microgifter_full_upgrade.sql
           grep -q 'CREATE TABLE IF NOT EXISTS homeserver_campaign_authorizations' build/microgifter_full_upgrade.sql
           grep -q 'CREATE TABLE IF NOT EXISTS homeserver_campaign_action_receipts' build/microgifter_full_upgrade.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_provider_connections' build/microgifter_full_upgrade.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_entitlement_leases_v1' build/microgifter_full_upgrade.sql
 
       - name: Run scoped branch preflight
         shell: bash

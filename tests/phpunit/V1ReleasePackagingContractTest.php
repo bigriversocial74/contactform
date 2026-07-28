@@ -68,6 +68,14 @@ final class V1ReleasePackagingContractTest extends TestCase
         self::assertStringEndsWith(')', rtrim($migration));
     }
 
+    public function testFullUpgradeBuilderTerminatesPortableTriggerBeforeNextMigration(): void
+    {
+        $builder = $this->source('scripts/build_full_upgrade_sql.php');
+        self::assertStringContainsString("\$name === 'stage_v1_release_trigger_portability.sql'", $builder);
+        self::assertStringContainsString("\$bundleContent .= ';'", $builder);
+        self::assertStringContainsString('multi-file upgrade bundle', $builder);
+    }
+
     public function testRestoredDatabaseValidatorUsesCanonicalDatabaseStatus(): void
     {
         $validator = $this->source('scripts/validate_database_migration_status.php');
