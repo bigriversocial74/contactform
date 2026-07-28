@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteRule ^pairing/exchange/?$ pairing-exchange.php [L,QSA]
+RewriteRule ^entitlements/refresh/?$ entitlement-refresh.php [L,QSA]
+RewriteRule ^devices/heartbeat/?$ device-heartbeat.php [L,QSA]
+RewriteRule ^devices/credentials/rotate/?$ credential-rotate.php [L,QSA]
+RewriteRule ^updates/authorize/?$ update-authorize.php [L,QSA]
+RewriteRule ^updates/receipts/?$ update-receipts.php [L,QSA]
+RewriteRule ^devices/replacements/start/?$ replacement-start.php [L,QSA]
+RewriteRule ^devices/replacements/complete/?$ replacement-complete.php [L,QSA]
