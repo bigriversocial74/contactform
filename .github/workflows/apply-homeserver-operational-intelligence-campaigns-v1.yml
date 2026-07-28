@@ -59,6 +59,10 @@ jobs:
             status=$?
           fi
           if [ $status -eq 0 ]; then
+            python scripts/fix-homeserver-campaign-draft-order.py >> focused-integration.log 2>&1
+            status=$?
+          fi
+          if [ $status -eq 0 ]; then
             python scripts/fix-homeserver-operational-cursors.py >> focused-integration.log 2>&1
             status=$?
           fi
