@@ -1,11 +1,12 @@
-/* Public auth pages v4: homepage typography with shared parallax landscape artwork. */
+/* Public auth pages v5: homepage typography on a clean solid background. */
 .mg-auth-page .mg-main{
   min-height:calc(100svh - 72px);
   display:flex;
   align-items:center;
   justify-content:center;
   padding:clamp(44px,6vw,86px) clamp(18px,4vw,54px);
-  background:#edf0f4 url('/assets/images/mountains.png?v=2.0.0') center 38%/cover no-repeat!important;
+  background:#f4f7fb!important;
+  background-image:none!important;
   color:#102d4c;
   overflow:hidden;
   position:relative;
@@ -13,22 +14,11 @@
   font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   -webkit-font-smoothing:antialiased;
 }
-.mg-auth-page .mg-main:before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  background:url('/assets/images/foreground.png?v=2.0.0') center bottom/cover no-repeat;
-  opacity:.9;
-}
+.mg-auth-page .mg-main:before,
 .mg-auth-page .mg-main:after{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  background:rgba(255,255,255,.18);
+  content:none!important;
+  display:none!important;
+  background:none!important;
 }
 .mg-auth-page .mg-main button,
 .mg-auth-page .mg-main input,
@@ -107,7 +97,7 @@
   padding:16px;
   border:1px solid #d7e4f1;
   border-radius:16px;
-  background:rgba(255,255,255,.9);
+  background:#fff;
   box-shadow:0 14px 36px rgba(16,45,76,.07);
 }
 .mg-auth-page .mg-auth-value-grid strong{
@@ -136,8 +126,8 @@
   padding:clamp(26px,4vw,42px);
   border:1px solid #d7e4f1;
   border-radius:26px;
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(12px);
+  background:#fff;
+  backdrop-filter:none;
   box-shadow:0 34px 90px rgba(16,45,76,.13),inset 0 1px 0 rgba(255,255,255,.95);
   display:grid;
   gap:17px;
@@ -206,7 +196,7 @@
 .mg-auth-page .mg-alert{padding:13px 14px;border-radius:11px;font-size:13px;line-height:1.45}
 
 @media(max-width:920px){
-  .mg-auth-page .mg-main{align-items:flex-start;padding-top:42px;background-position:center top!important}
+  .mg-auth-page .mg-main{align-items:flex-start;padding-top:42px}
   .mg-auth-page .mg-auth-shell{grid-template-columns:1fr;gap:34px}
   .mg-auth-page .mg-auth-aside{max-width:760px}
 }
