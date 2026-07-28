@@ -86,13 +86,14 @@ final class HomepageSaasV1ContractTest extends TestCase
         self::assertIsString($theme);
         self::assertIsString($desktop);
         self::assertIsString($phone);
-        self::assertStringContainsString('homepage-saas-blue-v1.css', $bundle);
+        self::assertStringContainsString('homepage-saas-blue-v1.css?v=1.2.0', $bundle);
         self::assertStringContainsString('--mg-home-teal: #2563eb', $theme);
         self::assertStringContainsString('.mg-home-features', $theme);
         self::assertStringContainsString('background: #fff', $theme);
         self::assertStringContainsString('font-family: Inter, system-ui', $theme);
         self::assertStringContainsString('font-weight: 300', $theme);
         self::assertStringContainsString('font-size: clamp(44px, 5.7vw, 76px)', $theme);
+        self::assertStringContainsString('font-size: clamp(38px, 4.4vw, 62px)', $theme);
         self::assertStringContainsString('letter-spacing: -.055em', $theme);
         self::assertStringContainsString('-webkit-text-fill-color: #fff', $theme);
         self::assertStringNotContainsString('font-weight: 900;', $theme);
