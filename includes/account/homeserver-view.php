@@ -8,7 +8,7 @@ declare(strict_types=1);
       <h2>HomeServer Connections</h2>
       <p>Pair a Windows HomeServer, review its signed synchronization scopes, and control exactly which operational data and campaign actions each agent may use.</p>
     </div>
-    <button class="mg-btn mg-btn-primary" type="button" data-homeserver-create-code>Create pairing code</button>
+    <button id="create-sync-code" class="mg-btn mg-btn-primary" type="button" data-homeserver-create-code>Create Sync Code</button>
   </div>
 
   <div class="mg-app-panel-body mg-homeserver-body">
@@ -16,7 +16,7 @@ declare(strict_types=1);
 
     <section class="mg-homeserver-code-panel" data-homeserver-code-panel hidden aria-live="polite">
       <div>
-        <span>One-time pairing code</span>
+        <span>One-time Sync Code</span>
         <strong class="mg-homeserver-code" data-homeserver-code></strong>
         <small data-homeserver-code-expiry></small>
       </div>
@@ -30,10 +30,10 @@ declare(strict_types=1);
     <div class="mg-homeserver-grid">
       <article class="mg-homeserver-card mg-homeserver-onboarding">
         <span class="mg-homeserver-kicker">Secure setup</span>
-        <h3>Pair a HomeServer</h3>
+        <h3>Connect a HomeServer</h3>
         <ol>
           <li>Install and open the Microgifter HomeServer Control Center on Windows.</li>
-          <li>Create a one-time code above while signed into the owning Microgifter account.</li>
+          <li>Create a one-time Sync Code above while signed into the owning Microgifter account.</li>
           <li>Paste the code into the Control Center. A new Ed25519 key is generated locally.</li>
           <li>Confirm the device appears below, then grant only the data and campaign authority it needs.</li>
         </ol>
