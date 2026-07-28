@@ -80,10 +80,10 @@ jobs:
           $jobs
 
           This scoped matrix validates PHP 8.2, PHP 8.3, the Phase 6B-B contract tests, MySQL 8, MariaDB 10.11, repeat-safe migration execution, and the multisite installation index."
-          existing="$(gh api --repo "$REPOSITORY" "repos/$REPOSITORY/issues/$PR_NUMBER/comments" --paginate --jq '.[] | select(.body | contains("<!-- homeserver-cloud-contract-v1-report -->")) | .id' | tail -n1)"
+          existing="$(gh api "repos/$REPOSITORY/issues/$PR_NUMBER/comments" --paginate --jq '.[] | select(.body | contains("<!-- homeserver-cloud-contract-v1-report -->")) | .id' | tail -n1)"
           if [ -n "$existing" ]; then
-            gh api --repo "$REPOSITORY" --method PATCH "repos/$REPOSITORY/issues/comments/$existing" -f body="$body" >/dev/null
+            gh api --method PATCH "repos/$REPOSITORY/issues/comments/$existing" -f body="$body" >/dev/null
           else
-            gh api --repo "$REPOSITORY" --method POST "repos/$REPOSITORY/issues/$PR_NUMBER/comments" -f body="$body" >/dev/null
+            gh api --method POST "repos/$REPOSITORY/issues/$PR_NUMBER/comments" -f body="$body" >/dev/null
           fi
           test "$conclusion" = 'success'
