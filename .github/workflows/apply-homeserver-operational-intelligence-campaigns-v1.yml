@@ -59,6 +59,14 @@ jobs:
             status=$?
           fi
           if [ $status -eq 0 ]; then
+            python scripts/fix-homeserver-operational-cursors.py >> focused-integration.log 2>&1
+            status=$?
+          fi
+          if [ $status -eq 0 ]; then
+            python scripts/fix-homeserver-operational-cursor-validator.py >> focused-integration.log 2>&1
+            status=$?
+          fi
+          if [ $status -eq 0 ]; then
             python scripts/fix-homeserver-authority-notice.py >> focused-integration.log 2>&1
             status=$?
           fi
@@ -102,7 +110,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add api/homeserver/_homeserver.php api/homeserver/_operational_intelligence.php config/migrations.php api/merchant/crm-campaign-send.php api/merchant/crm-send-reward-invite.php assets/js/homeserver-intelligence-authority.js
+          git add api/homeserver/_homeserver.php api/homeserver/_operational_intelligence.php config/migrations.php api/merchant/crm-campaign-send.php api/merchant/crm-send-reward-invite.php assets/js/homeserver-intelligence-authority.js scripts/validate_homeserver_operational_intelligence_v1.py
           git commit -m "Integrate HomeServer operational intelligence and campaign authority"
           git push origin HEAD:feature/homeserver-operational-intelligence-campaigns-20260728
 
