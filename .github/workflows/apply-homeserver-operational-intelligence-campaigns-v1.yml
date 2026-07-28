@@ -20,7 +20,7 @@ jobs:
   integrate:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -42,18 +42,25 @@ jobs:
         shell: bash
         run: |
           set +e
+          status=0
           if grep -Fq "function mg_homeserver_operational_catalog" api/homeserver/_operational_intelligence.php; then
             echo "HomeServer operational intelligence product integration is already present." > focused-integration.log
           else
             python scripts/fix-homeserver-operational-patcher.py > focused-integration.log 2>&1
-            if [ $? -eq 0 ]; then
+            status=$?
+            if [ $status -eq 0 ]; then
               python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py >> focused-integration.log 2>&1
+              status=$?
             fi
           fi
-          if [ $? -eq 0 ]; then
-            python scripts/fix-homeserver-authority-notice.py >> focused-integration.log 2>&1
+          if [ $status -eq 0 ]; then
+            python scripts/fix-homeserver-campaign-management.py >> focused-integration.log 2>&1
+            status=$?
           fi
-          status=$?
+          if [ $status -eq 0 ]; then
+            python scripts/fix-homeserver-authority-notice.py >> focused-integration.log 2>&1
+            status=$?
+          fi
           cat focused-integration.log
           exit $status
 
