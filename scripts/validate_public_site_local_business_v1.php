@@ -15,8 +15,8 @@ $headerCss = $read('assets/css/public-logged-out-header-unified.css');
 $header = $read('includes/header-components/public-header.php');
 $loggedInHeader = $read('includes/header-templates/logged-in.php');
 $footer = $read('includes/footer.php');
-$homepageJs = $read('assets/js/homepage-parallax-exact-v2.js');
-$homepageCoreJs = $read('assets/js/homepage-core-positioning-v1.js');
+$homepageCss = $read('assets/css/homepage-saas-core-v1.css');
+$homepageResponsiveCss = $read('assets/css/homepage-saas-responsive-v1.css');
 $signin = $read('signin.php');
 $signup = $read('signup.php');
 $forgot = $read('forgot-password.php');
@@ -96,18 +96,19 @@ $checks = [
     'pricing responsive breakpoints remain' => str_contains($pricingCss, '@media(max-width:1120px)')
         && str_contains($pricingCss, '@media(max-width:760px)')
         && str_contains($pricingCss, '@media(max-width:430px)'),
-    'homepage social gifting and sticky sections remain wired' => str_contains($index, 'class="hero-scroll"')
-        && str_contains($index, 'class="hero-sticky"')
-        && str_contains($index, 'data-homepage-core-v1')
-        && str_contains($index, 'data-core-chapter')
-        && str_contains($index, 'mg-core-chapter--sticky')
-        && str_contains($index, 'Microgifter Is the Future')
-        && str_contains($index, 'of Social Gifting.')
-        && str_contains($index, 'Turn Future Demand Into Real-Time Revenue.')
-        && str_contains($index, 'Increase Engagement. Grow Sales. Build Loyalty.')
-        && str_contains($index, '/assets/js/homepage-core-positioning-v1.js')
-        && str_contains($homepageJs, 'requestAnimationFrame')
-        && str_contains($homepageCoreJs, 'requestAnimationFrame'),
+    'homepage SaaS landing and public solutions remain wired' => str_contains($index, 'data-mg-home-saas-v1')
+        && str_contains($index, 'Microgifting. Big Impact.')
+        && str_contains($index, 'Everything you need to grow with gifting.')
+        && str_contains($index, 'Drive more sales with gift certificates.')
+        && str_contains($index, 'Reward, recognize, and retain top talent.')
+        && str_contains($index, 'One platform. Endless possibilities.')
+        && str_contains($index, 'Coming soon')
+        && str_contains($index, 'Gusto')
+        && str_contains($index, 'Square')
+        && str_contains($index, 'Toast')
+        && str_contains($index, '/assets/css/homepage-saas-v1.css')
+        && str_contains($homepageCss, 'padding-block: clamp(104px, 11vw, 168px)')
+        && str_contains($homepageResponsiveCss, '@media (max-width: 680px)'),
     'sign-in and registration contracts remain intact' => str_contains($signin, '/api/auth/login.php')
         && str_contains($signin, 'data-success-redirect="/agent.php"')
         && str_contains($signup, '/api/auth/register.php')

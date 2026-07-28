@@ -1,0 +1,133 @@
+@media (max-width: 980px) {
+  .mg-home-section {
+    padding-block: 100px;
+  }
+
+  .mg-home-split,
+  .mg-home-coming-soon,
+  .mg-home-faq__grid,
+  .mg-home-final__panel {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-home-split--reverse > :first-child,
+  .mg-home-split--reverse > :last-child {
+    order: initial;
+  }
+
+  .mg-home-phone-card {
+    width: min(480px, 100%);
+  }
+
+  .mg-home-platform-grid,
+  .mg-home-outcome-grid,
+  .mg-home-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mg-home-support-card {
+    position: static;
+  }
+
+  .mg-home-final__panel .mg-home-actions {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 680px) {
+  .mg-home-container {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .mg-home-section {
+    padding-block: 82px;
+  }
+
+  .mg-home-hero {
+    padding-top: 54px;
+  }
+
+  .mg-home-hero h1 {
+    font-size: clamp(3rem, 15vw, 4.4rem);
+  }
+
+  .mg-home-copy-block h2,
+  .mg-home-section-heading h2,
+  .mg-home-coming-soon h2,
+  .mg-home-faq h2,
+  .mg-home-final h2 {
+    font-size: clamp(2.35rem, 11vw, 3.5rem);
+  }
+
+  .mg-home-actions,
+  .mg-home-button {
+    width: 100%;
+  }
+
+  .mg-home-feature-row {
+    grid-template-columns: 58px 1fr;
+    gap: 16px;
+  }
+
+  .mg-home-feature-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+  }
+
+  .mg-home-feature-row i {
+    display: none;
+  }
+
+  .mg-home-phone-card {
+    padding: 18px;
+  }
+
+  .mg-home-analytics {
+    padding: 14px;
+  }
+
+  .mg-home-analytics__small,
+  .mg-home-metric-strip,
+  .mg-home-platform-grid,
+  .mg-home-integration-grid,
+  .mg-home-outcome-grid,
+  .mg-home-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-home-metric-strip span + span {
+    border-top: 1px solid var(--mg-home-line);
+    border-left: 0;
+  }
+
+  .mg-home-reward-visual {
+    min-height: 690px;
+  }
+
+  .mg-home-float-card--total { left: 18px; right: 18px; top: 24px; width: auto; }
+  .mg-home-float-card--performer { left: 18px; right: 18px; top: 126px; width: auto; }
+  .mg-home-float-card--peer { left: 18px; right: 18px; top: 228px; width: auto; }
+  .mg-home-float-card--milestone { left: 18px; right: 18px; top: 330px; width: auto; }
+  .mg-home-gift-box { top: 70%; transform: translate(-50%, -50%) scale(.78); }
+  .mg-home-progress-card { left: 18px; right: 18px; bottom: 18px; }
+
+  .mg-home-coming-soon {
+    padding: 30px 22px;
+  }
+
+  .mg-home-final__panel {
+    padding: 36px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-home *,
+  .mg-home *::before,
+  .mg-home *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

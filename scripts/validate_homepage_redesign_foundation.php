@@ -12,22 +12,43 @@ if (!is_file($indexPath) || !is_file($merchantPath)) {
 
 $index = (string) file_get_contents($indexPath);
 $merchant = (string) file_get_contents($merchantPath);
+$bundle = (string) file_get_contents($root . '/assets/css/homepage-saas-v1.css');
+$coreCss = (string) file_get_contents($root . '/assets/css/homepage-saas-core-v1.css');
+$responsiveCss = (string) file_get_contents($root . '/assets/css/homepage-saas-responsive-v1.css');
 
 $checks = [
     'index shared header' => str_contains($index, "require __DIR__ . '/includes/header.php'"),
     'index shared footer' => str_contains($index, "require __DIR__ . '/includes/footer.php'"),
-    'index page manifest' => str_contains($index, "'id' => 'index'") && str_contains($index, "'header_mode' => \$header_mode"),
-    'index homepage shell' => str_contains($index, 'class="homepage-exact-v2 mg-home-rework"')
-        && str_contains($index, 'data-homepage-core-v1')
-        && str_contains($index, 'class="hero-scroll"')
-        && str_contains($index, 'class="scene" id="scene"'),
-    'index parallax stylesheet' => str_contains($index, '/assets/css/homepage-parallax-exact-v2.css'),
-    'index core positioning stylesheet' => str_contains($index, '/assets/css/homepage-core-positioning-v1.css'),
-    'index parallax javascript' => str_contains($index, '/assets/js/homepage-parallax-exact-v2.js'),
-    'index core positioning javascript' => str_contains($index, '/assets/js/homepage-core-positioning-v1.js'),
-    'index foreground image' => str_contains($index, '/assets/images/foreground.png'),
-    'index mountains image' => str_contains($index, '/assets/images/mountains.png'),
-    'index orb image' => str_contains($index, '/assets/images/orb.png'),
+    'index page manifest' => str_contains($index, "'id' => 'homepage-saas'")
+        && str_contains($index, "'header_mode' => \$header_mode"),
+    'index SaaS homepage shell' => str_contains($index, 'class="mg-home"')
+        && str_contains($index, 'data-mg-home-saas-v1')
+        && str_contains($index, 'class="mg-home-hero"')
+        && str_contains($index, 'class="mg-home-section'),
+    'index homepage stylesheet bundle' => str_contains($index, '/assets/css/homepage-saas-v1.css')
+        && str_contains($bundle, 'homepage-saas-core-v1.css')
+        && str_contains($bundle, 'homepage-saas-visuals-v1.css')
+        && str_contains($bundle, 'homepage-saas-sections-v1.css')
+        && str_contains($bundle, 'homepage-saas-responsive-v1.css'),
+    'index desktop product artwork' => str_contains($index, '/assets/images/home/microgifter-home-desktop-dashboard.svg')
+        && is_file($root . '/assets/images/home/microgifter-home-desktop-dashboard.svg'),
+    'index phone product artwork' => str_contains($index, '/assets/images/home/microgifter-home-phone.svg')
+        && is_file($root . '/assets/images/home/microgifter-home-phone.svg'),
+    'index spacious section rhythm' => str_contains($coreCss, 'padding-block: clamp(104px, 11vw, 168px)'),
+    'index responsive breakpoints' => str_contains($responsiveCss, '@media (max-width: 980px)')
+        && str_contains($responsiveCss, '@media (max-width: 680px)'),
+    'index coming soon integration plan' => str_contains($index, 'Coming soon')
+        && str_contains($index, 'Gusto')
+        && str_contains($index, 'Square')
+        && str_contains($index, 'Toast')
+        && str_contains($index, 'Other POS Systems'),
+    'index standalone CRM showcase removed' => !str_contains($index, 'Build relationships with Microgifter CRM')
+        && !str_contains($index, 'id="merchant-crm"')
+        && !str_contains($index, 'mg-core-crm'),
+    'index legacy parallax removed' => !str_contains($index, 'homepage-parallax-exact-v2')
+        && !str_contains($index, 'homepage-core-positioning-v1')
+        && !str_contains($index, 'class="hero-scroll"')
+        && !str_contains($index, 'data-core-chapter'),
     'index no duplicate document shell' => !str_contains($index, '<!doctype html>') && !str_contains($index, '<body>'),
     'index no duplicate demo header' => !str_contains($index, 'class="os-bar"'),
     'index no duplicate demo footer' => !str_contains($index, 'class="site-footer"'),
