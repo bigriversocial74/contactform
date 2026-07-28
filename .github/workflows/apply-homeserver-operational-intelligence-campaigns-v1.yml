@@ -34,19 +34,30 @@ jobs:
           extensions: json, mbstring, pdo, sodium
           coverage: none
 
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '24'
+
       - name: Apply deterministic integration
         shell: bash
         run: |
           set +e
-          python scripts/fix-homeserver-operational-patcher.py > focused-integration.log 2>&1
+          if grep -Fq "function mg_homeserver_operational_catalog" api/homeserver/_operational_intelligence.php; then
+            echo "HomeServer operational intelligence product integration is already present." > focused-integration.log
+          else
+            python scripts/fix-homeserver-operational-patcher.py > focused-integration.log 2>&1
+            if [ $? -eq 0 ]; then
+              python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py >> focused-integration.log 2>&1
+            fi
+          fi
           if [ $? -eq 0 ]; then
-            python scripts/apply_homeserver_operational_intelligence_campaigns_v1.py >> focused-integration.log 2>&1
+            python scripts/fix-homeserver-authority-notice.py >> focused-integration.log 2>&1
           fi
           status=$?
           cat focused-integration.log
           exit $status
 
-      - name: Validate PHP syntax and migration registration
+      - name: Validate provider contract and UI
         shell: bash
         run: |
           set +e
@@ -61,17 +72,13 @@ jobs:
             php -l includes/merchant-crm-campaign-send-service.php
             php -l api/merchant/crm-campaign-send.php
             php -l api/merchant/crm-send-reward-invite.php
+            php -l account.php
+            php -l includes/account/homeserver-view.php
             php -l config/migrations.php
+            node --check assets/js/homeserver-intelligence-authority.js
+            python scripts/validate_homeserver_operational_intelligence_v1.py
+            php scripts/validate_merchant_crm_reporting_make_good_v1.php
             php scripts/validate_migration_manifest.php
-            grep -Fq "20260728_homeserver_operational_intelligence_campaign_authority_v1.sql" config/migrations.php
-            grep -Fq "homeserver.operational.read" api/homeserver/_homeserver.php
-            grep -Fq "customer_reviews" api/homeserver/_operational_intelligence.php
-            grep -Fq "maximum_daily_value_cents" api/homeserver/_operational_intelligence.php
-            if grep -Eq "hash_equals\([^\n]*merchant_approval|\$input\[['\"]merchant_approval_(token|hash)['\"]\]" api/homeserver/_operational_intelligence.php; then
-              echo "Provider code consumes caller-supplied merchant approval material."
-              exit 1
-            fi
-            grep -Fq 'unset($request[' api/homeserver/_operational_intelligence.php
           } > focused-validation.log 2>&1
           status=$?
           cat focused-validation.log
@@ -87,7 +94,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add api/homeserver/_homeserver.php api/homeserver/_operational_intelligence.php config/migrations.php api/merchant/crm-campaign-send.php api/merchant/crm-send-reward-invite.php
+          git add api/homeserver/_homeserver.php api/homeserver/_operational_intelligence.php config/migrations.php api/merchant/crm-campaign-send.php api/merchant/crm-send-reward-invite.php assets/js/homeserver-intelligence-authority.js
           git commit -m "Integrate HomeServer operational intelligence and campaign authority"
           git push origin HEAD:feature/homeserver-operational-intelligence-campaigns-20260728
 
