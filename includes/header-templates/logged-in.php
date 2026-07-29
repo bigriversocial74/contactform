@@ -2,13 +2,30 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/admin-navigation-access.php';
+require_once dirname(__DIR__) . '/investment/investor-access-state.php';
 
 $show_header_create = $show_header_create ?? true;
 $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
 $user_roles = is_array($user_roles ?? null) ? $user_roles : [];
 $user_permissions = is_array($user_permissions ?? null) ? $user_permissions : [];
-$is_investor_account = in_array('investor', $user_roles, true);
+$investor_access_state = [
+    'state' => 'not_requested',
+    'label' => 'Investor access not requested',
+    'can_open_portal' => false,
+];
+if (in_array('investor', $user_roles, true)) {
+    try {
+        $investor_access_state = mg_investor_access_state(mg_db(), mg_current_user() ?? []);
+    } catch (Throwable) {
+        $investor_access_state = [
+            'state' => 'unavailable',
+            'label' => 'Investor access unavailable',
+            'can_open_portal' => false,
+        ];
+    }
+}
+$is_investor_account = !empty($investor_access_state['can_open_portal']);
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, mg_current_user());
 $account_package_label = (string) ($mg_package_context['package_name'] ?? 'Free');
 $account_is_free = !empty($mg_package_context['is_free']);

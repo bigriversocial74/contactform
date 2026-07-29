@@ -1,0 +1,72 @@
+name: Investor Center Certification v6
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/investor-center.php'
+      - 'admin/investor-access-requests.php'
+      - 'admin/investment-wizard.php'
+      - 'admin/investor-pipeline.php'
+      - 'admin/investor-diligence.php'
+      - 'admin/investment-closing.php'
+      - 'admin/investor-governance.php'
+      - 'api/public/profile.php'
+      - 'investor-portal.php'
+      - 'includes/header-templates/logged-in.php'
+      - 'includes/investment/investor-access-state.php'
+      - 'includes/investment/investor-center-dashboard.php'
+      - 'includes/investment/investment-service.php'
+      - 'assets/js/investor-portal-boot-v6.js'
+      - 'assets/js/investor-portal-certification-v6.js'
+      - 'assets/css/investor-center-v6.css'
+      - 'scripts/validate_investor_center_v6.php'
+      - '.github/workflows/investor-center-v6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l admin/investor-center.php
+          php -l admin/investor-access-requests.php
+          php -l admin/investment-wizard.php
+          php -l admin/investor-pipeline.php
+          php -l admin/investor-diligence.php
+          php -l admin/investment-closing.php
+          php -l admin/investor-governance.php
+          php -l api/public/profile.php
+          php -l investor-portal.php
+          php -l includes/header-templates/logged-in.php
+          php -l includes/investment/investor-access-state.php
+          php -l includes/investment/investor-center-dashboard.php
+          php -l includes/investment/investment-service.php
+          php -l scripts/validate_investor_center_v6.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/investor-portal-boot-v6.js
+          node --check assets/js/investor-portal-certification-v6.js
+
+      - name: Investor Center 10-point contract
+        run: php scripts/validate_investor_center_v6.php

@@ -34,6 +34,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <p>Manage approved investors, round relationships, follow-ups, selected-round access, portal publication, live evidence snapshots, and draft-only Claude support.</p>
         </div>
         <div class="mg-pipeline-hero-actions">
+          <a class="mg-btn mg-btn-ghost" href="/admin/investor-center.php">Investor Center</a>
           <a class="mg-btn mg-btn-ghost" href="/admin/investor-access-requests.php">Access requests</a>
           <a class="mg-btn mg-btn-soft" href="/admin/investment-wizard.php">Investment Wizard</a>
           <a class="mg-btn mg-btn-soft" href="/admin/investor-diligence.php">Due Diligence</a>
