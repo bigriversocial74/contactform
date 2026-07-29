@@ -8,7 +8,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-investment-page mg-investor-portal-page';
 $page_styles = ['/assets/css/investment-system-v1.css?v=1.0.0','/assets/css/investor-portal-v3.css?v=3.0.0','/assets/css/investor-portal-v4.css?v=4.0.0','/assets/css/investor-portal-v5.css?v=5.0.0'];
-$page_scripts = in_array('investor',$roles,true) ? ['/assets/js/investor-portal-v4.js?v=4.0.0','/assets/js/investor-portal-v5.js?v=5.0.0'] : [];
+$page_scripts = in_array('investor',$roles,true) ? ['/assets/js/investor-portal-v4.js?v=4.0.0','/assets/js/investor-portal-v5.js?v=5.0.0','/assets/js/investor-portal-navigation-v1.js?v=1.0.0'] : [];
 $accountView = in_array('investor',$roles,true) ? 'investor-portal' : 'investor-access';
 $csrfToken = mg_csrf_token();
 require __DIR__ . '/includes/header.php';
