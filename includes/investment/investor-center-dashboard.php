@@ -30,7 +30,7 @@ function mg_investor_center_snapshot(PDO $pdo): array
         'more_information' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_access_requests WHERE status="more_information_requested"'),
         'active' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_profiles WHERE status="active"'),
         'revoked' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_profiles WHERE status="revoked"'),
-        'inconsistent' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_profiles ip LEFT JOIN user_roles ur ON ur.user_id=ip.user_id LEFT JOIN roles r ON r.id=ur.role_id AND r.slug="investor" WHERE (ip.status="active" AND r.id IS NULL) OR (ip.status<>"active" AND r.id IS NOT NULL)'),
+        'inconsistent' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_profiles ip WHERE (ip.status="active" AND NOT EXISTS(SELECT 1 FROM user_roles ur INNER JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=ip.user_id AND r.slug="investor")) OR (ip.status<>"active" AND EXISTS(SELECT 1 FROM user_roles ur INNER JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=ip.user_id AND r.slug="investor"))'),
     ];
 
     $pipeline = [
