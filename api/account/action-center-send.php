@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center.php';
+require_once __DIR__ . '/_claim_voucher_token.php';
 require_once dirname(__DIR__) . '/microgifts/_lifecycle.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
 require_once dirname(__DIR__) . '/microgifts/_delivery.php';
@@ -212,6 +213,7 @@ function mg_action_center_send_wallet_item(PDO $pdo, array $item, array $sender,
     $title = trim((string)($item['title_snapshot'] ?? $item['reward_template_title'] ?? 'Microgifter reward'));
     $occurredAt = date('Y-m-d H:i:s');
     $stampStatus = mg_action_center_regift_stamp_status($stampLedger);
+    $revokedVoucherTokens = mg_wallet_claim_voucher_revoke_stale_owner_tokens($pdo, (int)$item['id'], $recipientUserId);
     $pdo->prepare("UPDATE wallet_items SET user_id=?,contact_id=NULL,source_id=NULL,status='issued',viewed_at=NULL,claimed_at=NULL,updated_at=? WHERE id=?")
         ->execute([$recipientUserId, $occurredAt, (int)$item['id']]);
     mg_action_center_wallet_event($pdo, $item, 'wallet_item.regifted', [
@@ -220,6 +222,7 @@ function mg_action_center_send_wallet_item(PDO $pdo, array $item, array $sender,
         'sender_user_id' => $senderUserId,
         'recipient_user_id' => $recipientUserId,
         'message' => $message,
+        'revoked_qr_tokens' => $revokedVoucherTokens,
     ] + $stampStatus);
 
     $senderLabel = mg_notification_user_label($pdo, $senderUserId);
@@ -236,6 +239,7 @@ function mg_action_center_send_wallet_item(PDO $pdo, array $item, array $sender,
             'wallet_item_id' => (string)$item['public_id'],
             'sender_user_id' => $senderUserId,
             'recipient_user_id' => $recipientUserId,
+            'revoked_qr_tokens' => $revokedVoucherTokens,
         ] + $stampStatus
     );
 
@@ -245,6 +249,7 @@ function mg_action_center_send_wallet_item(PDO $pdo, array $item, array $sender,
         'recipient_user_id' => $recipientUserId,
         'status' => 'sent',
         'duplicate' => false,
+        'revoked_qr_tokens' => $revokedVoucherTokens,
         'delivery_event' => [
             'event_id' => 'wallet-' . hash('sha256', $idempotencyKey . '|' . $actionItemId),
             'event_type' => 'sent',
@@ -308,6 +313,7 @@ try {
             'recipient_user_id' => $recipientUserId,
             'sent_at' => $result['delivery_event']['occurred_at'],
             'notification_id' => $result['notification_id'],
+            'revoked_qr_tokens' => $result['revoked_qr_tokens'] ?? 0,
             'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
             'stamp_sponsor_user_id' => $stampLedger['sponsor_user_id'] ?? null,
             'stamp_debit_status' => $stampLedger['debit_status'] ?? null,
@@ -318,6 +324,7 @@ try {
             'idempotency_key' => $idempotencyKey,
             'sent_at' => $result['delivery_event']['occurred_at'],
             'notification_id' => $result['notification_id'],
+            'revoked_qr_tokens' => $result['revoked_qr_tokens'] ?? 0,
             'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
             'stamp_sponsor_user_id' => $stampLedger['sponsor_user_id'] ?? null,
             'stamp_debit_status' => $stampLedger['debit_status'] ?? null,
