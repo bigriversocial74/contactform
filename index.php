@@ -48,7 +48,7 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-home-hero__copy">
         <p class="mg-home-eyebrow">Gift certificates, rewards, loyalty and CRM</p>
         <h1 id="home-hero-title">Microgifting. Big Impact.</h1>
-        <p class="mg-home-lead">Give local businesses and organizations one connected platform to sell gift certificates, reward people, engage customers, and turn future demand into present-day revenue.</p>
+        <p class="mg-home-lead">Discover local businesses, buy and send gift certificates, earn meaningful rewards, and enjoy more value from every connection.</p>
         <div class="mg-home-actions" aria-label="Homepage actions">
           <a class="mg-home-button mg-home-button--primary" href="/signup.php">Get started free</a>
           <a class="mg-home-button mg-home-button--secondary" href="/learn-more.php">Book a demo</a>
