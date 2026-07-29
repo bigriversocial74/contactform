@@ -23,22 +23,28 @@ final class HomeServerPaidEntitlementAccessContractTest extends TestCase
         }
     }
 
-    public function testCapabilityRegistryAndPackageDeviceLimitsAreMachineReadable(): void
+    public function testCapabilityRegistryIsProviderSpecificAndVp3OwnsSoftwareAuthority(): void
     {
         require_once $this->root . '/includes/homeserver-entitlements.php';
 
+        self::assertSame('vp3', mg_homeserver_software_authority());
         $registry = mg_homeserver_capability_registry();
         foreach ([
-            'homeserver.download',
             'homeserver.manage',
             'homeserver.pair',
             'homeserver.cloud_sync',
             'homeserver.operational_data',
             'homeserver.agent_actions',
-            'homeserver.feature_updates',
             'homeserver.device_limit',
         ] as $capability) {
             self::assertContains($capability, $registry);
+        }
+        foreach ([
+            'homeserver.download',
+            'homeserver.feature_updates',
+            'homeserver.beta_updates',
+        ] as $softwareCapability) {
+            self::assertNotContains($softwareCapability, $registry);
         }
 
         self::assertSame(1, mg_homeserver_package_policy('starter')['device_limit']);
@@ -46,10 +52,10 @@ final class HomeServerPaidEntitlementAccessContractTest extends TestCase
         self::assertSame(2, mg_homeserver_package_policy('pro')['device_limit']);
         self::assertNull(mg_homeserver_package_policy('enterprise')['device_limit']);
         self::assertSame([], mg_homeserver_package_policy('free')['capabilities']);
-        self::assertContains('homeserver.beta_updates', mg_homeserver_package_policy('pro')['capabilities']);
+        self::assertNotContains('homeserver.beta_updates', mg_homeserver_package_policy('pro')['capabilities']);
     }
 
-    public function testPairingReleaseAndDownloadRoutesRequireHomeServerCapabilities(): void
+    public function testMicrogifterPairingRemainsWhileReleaseAndDownloadDelegateToVp3(): void
     {
         $pairing = file_get_contents($this->root . '/api/homeserver/pairing-code.php');
         $latest = file_get_contents($this->root . '/api/homeserver/latest-release.php');
@@ -63,12 +69,15 @@ final class HomeServerPaidEntitlementAccessContractTest extends TestCase
         self::assertStringContainsString("'homeserver.pair'", $pairing);
         self::assertStringContainsString('mg_homeserver_active_device_count', $pairing);
         self::assertStringContainsString('device allowance', $pairing);
-        self::assertStringContainsString("'homeserver.download'", $latest);
-        self::assertStringContainsString("'homeserver.download'", $download);
+        self::assertStringContainsString("'software_authority' => 'vp3'", $latest);
+        self::assertStringContainsString("'installer_authority' => 'vp3'", $latest);
+        self::assertStringContainsString('vp3_installer_authority', $download);
+        self::assertStringNotContainsString("'homeserver.download'", $latest);
+        self::assertStringNotContainsString("'homeserver.download'", $download);
         self::assertStringContainsString('mg_homeserver_entitlement_payload', $devices);
     }
 
-    public function testDirectManagementPageAndSubscriptionPanelUseCanonicalEntitlement(): void
+    public function testDirectManagementPageAndSubscriptionPanelExplainSeparatedAuthority(): void
     {
         $management = file_get_contents($this->root . '/account-homeserver.php');
         $subscriptions = file_get_contents($this->root . '/account-subscriptions.php');
@@ -80,31 +89,31 @@ final class HomeServerPaidEntitlementAccessContractTest extends TestCase
         self::assertIsString($card);
         self::assertIsString($view);
         self::assertStringContainsString("'homeserver.manage'", $management);
-        self::assertStringContainsString('/account-subscriptions.php?homeserver=upgrade', $management);
         self::assertStringContainsString('homeserver-subscription-card.php', $subscriptions);
-        self::assertStringContainsString('HomeServer Management', $card);
-        self::assertStringContainsString('Download HomeServer', $card);
+        self::assertStringContainsString('Microgifter HomeServer Connection', $card);
+        self::assertStringContainsString('Software authority', $card);
+        self::assertStringContainsString('VP3', $card);
         self::assertStringContainsString('Create Sync Code', $card);
         self::assertStringContainsString('id="create-sync-code"', $view);
+        self::assertStringContainsString('HomeServer license</dt><dd>VP3', $view);
+        self::assertStringContainsString('Microgifter remains authoritative for Microgifter data and actions.', $view);
     }
 
-    public function testStatusIndicatorSupportsEntitlementAwareGrayBlueAmberGreenAndRedStates(): void
+    public function testMicrogifterLeaseAndUpdateAuthorizationCannotBecomeSoftwareAuthority(): void
     {
-        $script = file_get_contents($this->root . '/assets/js/homeserver-status-indicator.js');
-        $styles = file_get_contents($this->root . '/assets/css/homeserver-status-indicator.css');
+        $entitlement = file_get_contents($this->root . '/api/homeserver/v1/_contract-entitlement.php');
+        $authorization = file_get_contents($this->root . '/api/homeserver/v1/update-authorize.php');
 
-        self::assertIsString($script);
-        self::assertIsString($styles);
-        self::assertStringContainsString('HomeServer not included', $script);
-        self::assertStringContainsString('Ready to install', $script);
-        self::assertStringContainsString('Connected · update available', $script);
-        self::assertStringContainsString('Subscription attention', $script);
-        self::assertStringContainsString('entitlement.can_download', $script);
-        self::assertStringContainsString('.is-ready .mg-homeserver-status-dot', $styles);
-        self::assertStringContainsString('.is-warning .mg-homeserver-status-dot', $styles);
-        self::assertStringContainsString('.is-blocked .mg-homeserver-status-dot', $styles);
-        self::assertStringContainsString('.is-online .mg-homeserver-status-dot', $styles);
-        self::assertStringContainsString('.is-muted .mg-homeserver-status-dot', $styles);
+        self::assertIsString($entitlement);
+        self::assertIsString($authorization);
+        self::assertStringContainsString("'software_authority' => 'vp3'", $entitlement);
+        self::assertStringContainsString("'update_eligibility' => false", $entitlement);
+        self::assertStringContainsString("'allowed_update_channels' => $channels", $entitlement);
+        self::assertStringNotContainsString("'update-authorization.v1',", $entitlement);
+        self::assertStringContainsString("$reason = 'vp3_software_authority'", $authorization);
+        self::assertStringContainsString("'decision' => 'not_required'", $authorization);
+        self::assertStringNotContainsString('can_feature_updates', $authorization);
+        self::assertStringNotContainsString('can_beta_updates', $authorization);
     }
 
     public function testNoPairingOrDeviceSchemaRewriteIsIntroduced(): void
