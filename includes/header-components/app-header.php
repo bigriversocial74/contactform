@@ -15,7 +15,7 @@ $show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
 $show_header_cart = true;
 $multiAgentHeaderAgents = [];
-$multiAgentSelectedId = strtolower(trim((string) ($_GET['agent_id'] ?? ''));
+$multiAgentSelectedId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
 if ($is_agent_workspace_header && $is_authenticated_user) {
     require_once dirname(__DIR__) . '/multi-agent-workspace-data.php';
     $multiAgentHeaderAgents = mg_multi_agent_open_tabs(mg_multi_agent_active_agents(mg_current_user()));
