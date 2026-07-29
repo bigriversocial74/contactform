@@ -23,12 +23,6 @@ $accountNav += [
   'subscriptions' => ['Account', 'My Subscriptions', 'Plans, billing, and access', '/account-subscriptions.php'],
   'privacy' => ['Account', 'Privacy & Data', 'Requests, retention, and account deletion', '/privacy-center.php'],
 ];
-$accountRoles = function_exists('mg_user_roles') ? mg_user_roles() : [];
-if (in_array('investor', $accountRoles, true)) {
-  $accountNav['investor-portal'] = ['Investor', 'Investor Portal', 'Private rounds, goals, metrics, and documents', '/investor-portal.php'];
-} else {
-  $accountNav['investor-access'] = ['Investor', 'Request Investor Access', 'Apply for private investor portal access', '/investor-access.php'];
-}
 $currentSection = '';
 ?>
 <button class="mg-account-sidebar-toggle" type="button" data-account-sidebar-toggle aria-expanded="false" aria-controls="account-sidebar">Account menu</button>
