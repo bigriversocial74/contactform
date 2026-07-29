@@ -19,6 +19,7 @@ $dashboard = $read('includes/investment/investor-center-dashboard.php');
 $accessState = $read('includes/investment/investor-access-state.php');
 $portal = $read('investor-portal.php');
 $header = $read('includes/header-templates/logged-in.php');
+$profileApi = $read('api/public/profile.php');
 $boot = $read('assets/js/investor-portal-boot-v6.js');
 $navigation = $read('assets/js/investor-portal-certification-v6.js');
 $accountSidebar = $read('includes/account-sidebar.php');
@@ -45,10 +46,11 @@ $checks = [
         && str_contains($dashboard, 'pending_verifications')
         && str_contains($dashboard, 'overdue_obligations')
         && str_contains($center, 'Investor work queue'),
-    'effective Investor access requires both role and active profile' =>
+    'effective Investor access requires both role and active profile across all entry surfaces' =>
         str_contains($accessState, '$hasRole && $profileStatus === \'active\'')
         && str_contains($accessState, '\'can_open_portal\' => $state === \'approved_active\'')
-        && str_contains($accessState, "'role_without_active_profile'"),
+        && str_contains($accessState, "'role_without_active_profile'")
+        && str_contains($profileApi, "INNER JOIN investor_profiles ip ON ip.user_id=ur.user_id AND ip.status='active'"),
     'header Investor tab uses authoritative access state instead of role alone' =>
         str_contains($header, 'mg_investor_access_state')
         && str_contains($header, '$is_investor_account = !empty($investor_access_state[\'can_open_portal\'])')
@@ -57,10 +59,10 @@ $checks = [
         str_contains($portal, '$portalActive = !empty($accessState[\'can_open_portal\'])')
         && str_contains($portal, 'Investor access requires administrator repair.')
         && str_contains($portal, '$page_scripts = $portalActive ? ['),
-    'portal boot deduplicates simultaneous GET requests without caching writes' =>
+    'portal boot deduplicates GET requests and invalidates before writes' =>
         str_contains($boot, "url.pathname === '/api/investment/portal.php'")
-        && str_contains($boot, "method === 'GET'")
-        && str_contains($boot, 'let portalGet = null')
+        && str_contains($boot, "details.method !== 'GET'")
+        && str_contains($boot, 'portalGet = null')
         && str_contains($boot, 'return portalGet.then(cloneResponse)'),
     'deep links always resolve to relations and governance fallback panels' =>
         str_contains($navigation, "ensureFallback(container, 'relations')")
