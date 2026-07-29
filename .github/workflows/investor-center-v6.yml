@@ -12,6 +12,7 @@ on:
       - 'admin/investor-diligence.php'
       - 'admin/investment-closing.php'
       - 'admin/investor-governance.php'
+      - 'api/public/profile.php'
       - 'investor-portal.php'
       - 'includes/header-templates/logged-in.php'
       - 'includes/investment/investor-access-state.php'
@@ -54,6 +55,7 @@ jobs:
           php -l admin/investor-diligence.php
           php -l admin/investment-closing.php
           php -l admin/investor-governance.php
+          php -l api/public/profile.php
           php -l investor-portal.php
           php -l includes/header-templates/logged-in.php
           php -l includes/investment/investor-access-state.php
