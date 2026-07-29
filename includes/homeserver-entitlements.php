@@ -3,18 +3,22 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/package-entitlements.php';
 
+if (!function_exists('mg_homeserver_software_authority')) {
+function mg_homeserver_software_authority(): string
+{
+    return 'vp3';
+}
+}
+
 if (!function_exists('mg_homeserver_capability_registry')) {
 function mg_homeserver_capability_registry(): array
 {
     return [
-        'homeserver.download',
         'homeserver.manage',
         'homeserver.pair',
         'homeserver.cloud_sync',
         'homeserver.operational_data',
         'homeserver.agent_actions',
-        'homeserver.feature_updates',
-        'homeserver.beta_updates',
         'homeserver.device_limit',
     ];
 }
@@ -25,13 +29,11 @@ function mg_homeserver_package_policy(string $packageId): array
 {
     $packageId = mg_package_entitlement_slug($packageId);
     $baseCapabilities = [
-        'homeserver.download',
         'homeserver.manage',
         'homeserver.pair',
         'homeserver.cloud_sync',
         'homeserver.operational_data',
         'homeserver.agent_actions',
-        'homeserver.feature_updates',
         'homeserver.device_limit',
     ];
 
@@ -48,12 +50,12 @@ function mg_homeserver_package_policy(string $packageId): array
         ],
         'pro' => [
             'package_id' => 'pro',
-            'capabilities' => array_values(array_unique(array_merge($baseCapabilities, ['homeserver.beta_updates']))),
+            'capabilities' => $baseCapabilities,
             'device_limit' => 2,
         ],
         'enterprise' => [
             'package_id' => 'enterprise',
-            'capabilities' => array_values(array_unique(array_merge($baseCapabilities, ['homeserver.beta_updates']))),
+            'capabilities' => $baseCapabilities,
             'device_limit' => null,
         ],
         default => [
@@ -68,6 +70,7 @@ function mg_homeserver_package_policy(string $packageId): array
 if (!function_exists('mg_homeserver_entitlement_context')) {
 function mg_homeserver_entitlement_context(?PDO $pdo = null, ?array $user = null): array
 {
+    $softwareAuthority = mg_homeserver_software_authority();
     $user = $user ?? (function_exists('mg_current_user') ? mg_current_user() : null);
     if (!$user) {
         return [
@@ -88,7 +91,10 @@ function mg_homeserver_entitlement_context(?PDO $pdo = null, ?array $user = null
             'can_agent_actions' => false,
             'can_feature_updates' => false,
             'can_beta_updates' => false,
-            'message' => 'Sign in to review HomeServer access.',
+            'software_authority' => $softwareAuthority,
+            'software_license_managed_here' => false,
+            'installer_managed_here' => false,
+            'message' => 'Sign in to review Microgifter HomeServer connection access.',
         ];
     }
 
@@ -113,19 +119,19 @@ function mg_homeserver_entitlement_context(?PDO $pdo = null, ?array $user = null
 
     if ($activePackage && $workspaceDerived) {
         $state = 'owner_required';
-        $message = 'HomeServer is managed by the merchant workspace owner. Delegated device management is not enabled yet.';
+        $message = 'The Microgifter HomeServer connection is managed by the merchant workspace owner. Delegated provider-connection administration is not enabled yet.';
     } elseif ($activePackage && $ownerEligible && in_array($subscriptionStatus, ['past_due', 'cancel_pending'], true)) {
         $state = 'grace';
-        $message = 'HomeServer access remains available while the subscription needs attention.';
+        $message = 'Microgifter provider access remains available while this Microgifter subscription needs attention.';
     } elseif ($activePackage && $ownerEligible) {
         $state = 'included';
-        $message = 'HomeServer is included with this Microgifter package.';
+        $message = 'Microgifter provider access is included with this Microgifter package. VP3 separately controls the HomeServer software license, installer, and updates.';
     } elseif (in_array($subscriptionStatus, ['paused', 'canceled', 'expired', 'incomplete', 'pending_admin_review'], true)) {
         $state = 'suspended';
-        $message = 'HomeServer cloud access is not active for the current subscription state.';
+        $message = 'Microgifter provider access is not active for the current Microgifter subscription state.';
     } else {
         $state = 'not_included';
-        $message = 'HomeServer requires an active paid or complimentary Microgifter package.';
+        $message = 'Connecting HomeServer to Microgifter requires an eligible Microgifter package. The HomeServer software license is managed separately by VP3.';
     }
 
     $has = static fn(string $capability): bool => in_array($capability, $capabilities, true);
@@ -147,14 +153,17 @@ function mg_homeserver_entitlement_context(?PDO $pdo = null, ?array $user = null
         'is_complimentary' => !empty($package['is_complimentary']),
         'capabilities' => $capabilities,
         'device_limit' => $activePackage && $ownerEligible ? ($policy['device_limit'] ?? 0) : 0,
-        'can_download' => $has('homeserver.download'),
+        'can_download' => false,
         'can_manage' => $has('homeserver.manage'),
         'can_pair' => $has('homeserver.pair'),
         'can_cloud_sync' => $has('homeserver.cloud_sync'),
         'can_operational_data' => $has('homeserver.operational_data'),
         'can_agent_actions' => $has('homeserver.agent_actions'),
-        'can_feature_updates' => $has('homeserver.feature_updates'),
-        'can_beta_updates' => $has('homeserver.beta_updates'),
+        'can_feature_updates' => false,
+        'can_beta_updates' => false,
+        'software_authority' => $softwareAuthority,
+        'software_license_managed_here' => false,
+        'installer_managed_here' => false,
         'message' => $message,
     ];
 }
@@ -203,17 +212,21 @@ function mg_homeserver_entitlement_payload(PDO $pdo, array $user, ?array $entitl
         'device_limit' => $deviceLimit,
         'active_device_count' => $activeDevices,
         'remaining_device_slots' => $remaining,
-        'can_download' => !empty($entitlement['can_download']),
+        'can_download' => false,
         'can_manage' => !empty($entitlement['can_manage']),
         'can_pair' => !empty($entitlement['can_pair']),
         'can_cloud_sync' => !empty($entitlement['can_cloud_sync']),
         'can_operational_data' => !empty($entitlement['can_operational_data']),
         'can_agent_actions' => !empty($entitlement['can_agent_actions']),
-        'can_feature_updates' => !empty($entitlement['can_feature_updates']),
-        'can_beta_updates' => !empty($entitlement['can_beta_updates']),
+        'can_feature_updates' => false,
+        'can_beta_updates' => false,
+        'software_authority' => (string)($entitlement['software_authority'] ?? mg_homeserver_software_authority()),
+        'software_license_managed_here' => false,
+        'installer_managed_here' => false,
         'message' => (string)($entitlement['message'] ?? ''),
-        'upgrade_url' => '/account-subscriptions.php?homeserver=upgrade',
+        'upgrade_url' => '/account-subscriptions.php?homeserver=provider-access',
         'manage_url' => !empty($entitlement['can_manage']) ? '/account-homeserver.php' : null,
+        'vp3_account_url' => 'https://vp3.me',
     ];
 }
 }
