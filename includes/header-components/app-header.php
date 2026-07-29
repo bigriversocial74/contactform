@@ -8,7 +8,12 @@ $is_authenticated_user = mg_current_user() !== null;
 $can_create_list = (bool) ($can_create_list ?? $is_authenticated_user);
 $can_agent_workspace = $is_authenticated_user || $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
 $workspace_agent_tabs = ['agent'];
-$gift_center_tabs = ['inbox', 'sent', 'claimed'];
+$giftCenterHeaderTabs = [
+    ['inbox', 'Inbox'],
+    ['sent', 'Sent'],
+    ['claimed', 'Claimed'],
+];
+$gift_center_tabs = array_column($giftCenterHeaderTabs, 0);
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
 $is_gift_center_header = $header_mode === 'agent' && in_array((string) $agent_tab, $gift_center_tabs, true);
 $show_header_create = !$is_agent_workspace_header;
@@ -52,9 +57,14 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
         <?php elseif ($is_gift_center_header): ?>
           <div class="mg-header-agent-tools mg-header-gift-tools">
             <div class="mg-header-agent-tabs mg-header-gift-tabs" data-gift-center-tabs aria-label="Gift center folders">
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="inbox"><a class="<?= $agent_tab === 'inbox' ? 'is-active' : '' ?>" href="/inbox.php"><span>Inbox</span><span class="mg-agent-tab-badge" data-gift-nav-count="inbox">0</span></a></span>
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="sent"><a class="<?= $agent_tab === 'sent' ? 'is-active' : '' ?>" href="/sent.php"><span>Sent</span><span class="mg-agent-tab-badge" data-gift-nav-count="sent">0</span></a></span>
-              <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="claimed"><a class="<?= $agent_tab === 'claimed' ? 'is-active' : '' ?>" href="/claimed.php"><span>Claimed</span><span class="mg-agent-tab-badge" data-gift-nav-count="claimed">0</span></a></span>
+              <?php foreach ($giftCenterHeaderTabs as $tab): ?>
+                <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="<?= mg_e($tab[0]) ?>">
+                  <a class="<?= $agent_tab === $tab[0] ? 'is-active' : '' ?>" href="/<?= mg_e($tab[0]) ?>.php">
+                    <span><?= mg_e($tab[1]) ?></span>
+                    <span class="mg-agent-tab-badge" data-gift-nav-count="<?= $tab[0] ?>" data-gift-nav-unread="<?= $tab[0] ?>">0</span>
+                  </a>
+                </span>
+              <?php endforeach; ?>
             </div>
           </div>
         <?php elseif ($header_mode === 'builder'): ?>
