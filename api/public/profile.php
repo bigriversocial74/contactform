@@ -60,7 +60,7 @@ function mg_public_profile_attach_post_product_images(PDO $pdo, array &$data): v
     }
 
     foreach ($data['posts']['items'] as &$post) {
-        $productId = strtolower(trim((string)($post['product_id'] ?? '')));
+        $productId = strtolower(trim((string)($post['product_id'] ?? ''));
         if ($productId === '' || !isset($products[$productId])) {
             continue;
         }
@@ -100,6 +100,18 @@ try{
     ]);
 
     mg_public_profile_attach_post_product_images($pdo, $data);
+
+    $hostStmt = mg_public_profile_query(
+        $pdo,
+        "SELECT 1
+         FROM public_profiles pp
+         INNER JOIN user_roles ur ON ur.user_id=pp.user_id
+         INNER JOIN roles r ON r.id=ur.role_id
+         WHERE pp.public_id=? AND r.slug='super_admin'
+         LIMIT 1",
+        [(string)($data['profile']['id'] ?? '')]
+    );
+    $data['profile']['availability']['is_investor_access_host'] = (bool)$hostStmt->fetchColumn();
 
     $viewerId=isset($viewer['id'])?(int)$viewer['id']:null;
     $isOwner=!empty($data['profile']['availability']['is_owner']);
