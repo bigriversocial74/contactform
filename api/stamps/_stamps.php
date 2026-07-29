@@ -165,9 +165,27 @@ function mg_stamp_post_entry(PDO $pdo, int $accountUserId, ?int $actorUserId, st
 function mg_stamp_debit(PDO $pdo, int $accountUserId, int $actorUserId, string $actionKey, int $quantity, string $idempotencyKey, array $options = []): array
 {
     $action = mg_stamp_action($pdo, $actionKey);
-    $stampValue = max(0, (int)$action['stamp_value']);
+    $configuredStampValue = max(0, (int)$action['stamp_value']);
+    $stampValue = $actionKey === 'regift_send' ? 0 : $configuredStampValue;
     $quantity = max(1, $quantity);
-    $options = array_merge($options, ['idempotency_key' => $idempotencyKey, 'action_key' => $actionKey, 'stamp_value' => $stampValue, 'quantity' => $quantity, 'metadata' => array_merge($options['metadata'] ?? [], ['action' => $action])]);
+    $options = array_merge($options, ['idempotency_key' => $idempotencyKey, 'action_key' => $actionKey, 'stamp_value' => $stampValue, 'quantity' => $quantity, 'metadata' => array_merge($options['metadata'] ?? [], ['action' => $action, 'configured_stamp_value' => $configuredStampValue, 'effective_stamp_value' => $stampValue])]);
+
+    if ($stampValue === 0) {
+        return [
+            'entry' => null,
+            'idempotent' => false,
+            'ledger' => null,
+            'free_action' => true,
+            'debit_status' => 'free_action',
+            'debit_applied' => false,
+            'action_key' => $actionKey,
+            'stamp_value' => 0,
+            'quantity' => $quantity,
+            'required' => 0,
+            'configured_stamp_value' => $configuredStampValue,
+        ];
+    }
+
     return mg_stamp_post_entry($pdo, $accountUserId, $actorUserId, (string)($options['actor_type'] ?? 'merchant'), 'debit', -1 * $stampValue * $quantity, $options);
 }
 
@@ -180,7 +198,7 @@ function mg_stamp_service_catalog(): array
 {
     return [
         ['service_key'=>'direct_reward_send','label'=>'Direct reward send','category'=>'Rewards','action_key'=>'direct_reward_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/crm-send-gift.php','api/public/campaigns/_limits.php','api/store/_canvas_rewards.php'],'markers'=>['mg_stamp_require_service','direct_reward_send'],'notes'=>'Merchant reward issue paths use the central Service Gate and resolve cost from Stamp actions.'],
-        ['service_key'=>'regift_send','label'=>'Customer regift send','category'=>'PPPM / Regift','action_key'=>'regift_send','owner'=>'merchant_sponsored','status'=>'enforced','enforced_in'=>['api/account/action-center-send.php'],'markers'=>['mg_action_center_merchant_sponsored_regift_stamp','regift_send'],'notes'=>'Customer action remains free; merchant/issuer sponsors the configured regift_send cost.'],
+        ['service_key'=>'regift_send','label'=>'Customer regift send','category'=>'PPPM / Regift','action_key'=>'regift_send','owner'=>'merchant_sponsored','status'=>'enforced','enforced_in'=>['api/account/action-center-send.php'],'markers'=>['mg_action_center_merchant_sponsored_regift_stamp','regift_send'],'notes'=>'Customer regifts are always free and bypass Stamp balance and ledger writes.'],
         ['service_key'=>'campaign_feed_send','label'=>'Campaign feed send','category'=>'Campaign distribution','action_key'=>'campaign_feed_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','campaign_feed_send'],'notes'=>'Campaign distribution debits configured action cost per recipient/batch quantity.'],
         ['service_key'=>'email_list_send','label'=>'Email list send','category'=>'Campaign distribution','action_key'=>'email_list_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','email_list_send'],'notes'=>'Campaign email send cost is configured in Stamp actions.'],
         ['service_key'=>'sms_send','label'=>'SMS send','category'=>'Campaign distribution','action_key'=>'sms_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','sms_send'],'notes'=>'SMS cost can be higher than other sends and remains admin-configured.'],
