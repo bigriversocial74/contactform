@@ -56,13 +56,12 @@ final class Stage11DActionCenterLifecycleProjectionTest extends TestCase
 
     public function testCanonicalLifecycleEntryPointsProjectBeforeCommit(): void
     {
-        $files=[
+        $directFiles=[
             'api/microgifts/issue.php',
-            'api/microgifts/claim.php',
             'api/microgifts/redeem.php',
             'api/admin/microgift-lifecycle.php',
         ];
-        foreach($files as $file){
+        foreach($directFiles as $file){
             $source=$this->read($file);
             self::assertStringContainsString('_action_center_projection.php',$source,$file);
             self::assertStringContainsString('mg_action_center_project_lifecycle(',$source,$file);
@@ -72,6 +71,18 @@ final class Stage11DActionCenterLifecycleProjectionTest extends TestCase
             self::assertIsInt($commitPosition,$file);
             self::assertLessThan($commitPosition,$projectionPosition,$file.' must project inside the lifecycle transaction.');
         }
+
+        $claimEndpoint=$this->read('api/microgifts/claim.php');
+        $claimAuthority=$this->read('api/microgifts/_claim_authority.php');
+        self::assertStringContainsString("require_once __DIR__ . '/_claim_authority.php'",$claimEndpoint);
+        self::assertStringContainsString('mg_microgift_claim_canonical(',$claimEndpoint);
+        self::assertStringContainsString("require_once __DIR__ . '/_action_center_projection.php'",$claimAuthority);
+        self::assertStringContainsString('mg_action_center_project_lifecycle(',$claimAuthority);
+        $claimPosition=strpos($claimEndpoint,'mg_microgift_claim_canonical(');
+        $claimCommitPosition=strpos($claimEndpoint,'$pdo->commit()',$claimPosition);
+        self::assertIsInt($claimPosition);
+        self::assertIsInt($claimCommitPosition);
+        self::assertLessThan($claimCommitPosition,$claimPosition,'Canonical claim authority must complete projection before commit.');
     }
 
     public function testMerchantClaimDelegatesCompletedProjectionToAtomicAuthority(): void
