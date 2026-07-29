@@ -19,7 +19,7 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         return $content;
     }
 
-    public function testRegiftUsesCanonicalOwnershipProjectionNotificationAndTimestampAuthorities(): void
+    public function testRegiftUsesCanonicalOwnershipProjectionNotificationAndFreeActionAuthority(): void
     {
         $source=$this->read('api/account/action-center-send.php');
         self::assertStringContainsString('mg_pppm_transfer_owner_canonical(',$source);
@@ -29,16 +29,18 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString('mg_create_notification(',$source);
         self::assertStringContainsString('mg_require_csrf_for_write(',$source);
         self::assertStringContainsString("['issued','delivered']",$source);
-        self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']",$source);
+        self::assertMatchesRegularExpression("/'sent_at'\\s*=>\\s*\\$deliveryEvent\\['occurred_at'\\]/",$source);
         self::assertStringContainsString("SET owner_user_id=?,recipient_user_id=?,status='delivered'",$source);
         self::assertStringContainsString("'regift_send'",$source);
-        self::assertStringContainsString('mg_stamp_debit_send(',$source);
+        self::assertStringContainsString('mg_action_center_merchant_sponsored_regift_stamp(',$source);
+        self::assertStringContainsString("'debit_status' => 'free_action'",$source);
         self::assertStringContainsString('stamp_ledger',$source);
+        self::assertStringNotContainsString('mg_stamp_debit_send(',$source);
         self::assertStringNotContainsString('SET issuer_user_id=?',$source);
         self::assertStringNotContainsString('INSERT INTO pppm_items',$source);
     }
 
-    public function testFollowUpUsesMessagingWithoutOwnershipOrDeliveryMutation(): void
+    public function testFollowUpUsesMessagingWithoutOwnershipDeliveryOrStampMutation(): void
     {
         $source=$this->read('api/account/action-center-follow-up.php');
         self::assertStringContainsString("folder']!=='sent'",$source);
@@ -47,8 +49,9 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString('mg_message_conversation_key(',$source);
         self::assertStringContainsString("'follow_up'",$source);
         self::assertStringContainsString('mg_message_send_microgift(',$source);
-        self::assertStringContainsString('mg_stamp_debit_send(',$source);
-        self::assertStringContainsString("'action_center_follow_up'",$source);
+        self::assertStringContainsString("'stamp_ledger_entry_id'=>null",$source);
+        self::assertStringContainsString("'stamp_ledger'=>\$stampLedger",$source);
+        self::assertStringNotContainsString('mg_stamp_debit_send(',$source);
         self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical(',$source);
         self::assertStringNotContainsString('UPDATE pppm_items',$source);
         self::assertStringNotContainsString('UPDATE microgift_instances',$source);
@@ -58,15 +61,21 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
     public function testClaimUsesCanonicalClaimReplayAndLifecycleProjection(): void
     {
         $source=$this->read('api/account/action-center-claim.php');
-        self::assertStringContainsString('mg_microgift_assert_claim_replay(',$source);
-        self::assertStringContainsString('mg_microgift_claim(',$source);
-        self::assertStringContainsString('mg_action_center_project_lifecycle(',$source);
+        $authority=$this->read('api/microgifts/_claim_authority.php');
+        self::assertStringContainsString('mg_microgift_claim_canonical(',$source);
+        self::assertStringContainsString('mg_microgift_assert_claim_replay(',$authority);
+        self::assertStringContainsString('mg_microgift_claim(',$authority);
+        self::assertStringContainsString('mg_action_center_project_lifecycle(',$authority);
         self::assertStringContainsString('recipient_user_id',$source);
         self::assertStringContainsString("['issued','delivered','claim_pending']",$source);
-        self::assertLessThan(strpos($source,'$pdo->commit()'),strpos($source,'mg_action_center_project_lifecycle('));
+        $claimPosition=strpos($source,'mg_microgift_claim_canonical(');
+        $commitPosition=strpos($source,'$pdo->commit()',$claimPosition);
+        self::assertIsInt($claimPosition);
+        self::assertIsInt($commitPosition);
+        self::assertLessThan($commitPosition,$claimPosition);
     }
 
-    public function testMessageUsesTransferScopedDurableMessagingAuthority(): void
+    public function testMessageUsesTransferScopedDurableMessagingWithoutStampMutation(): void
     {
         $source=$this->read('api/account/action-center-message.php');
         self::assertStringContainsString('messages/_messaging.php',$source);
@@ -74,8 +83,9 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString('mg_message_send_microgift(',$source);
         self::assertStringContainsString('action_sender_user_id',$source);
         self::assertStringContainsString('action_recipient_user_id',$source);
-        self::assertStringContainsString('mg_stamp_debit_send(',$source);
-        self::assertStringContainsString("'action_center_message'",$source);
+        self::assertStringContainsString("'stamp_ledger_entry_id'=>null",$source);
+        self::assertStringContainsString("'stamp_ledger'=>\$stampLedger",$source);
+        self::assertStringNotContainsString('mg_stamp_debit_send(',$source);
         self::assertStringNotContainsString('INSERT INTO events',$source);
         self::assertStringNotContainsString('UPDATE microgift_instances',$source);
         self::assertStringNotContainsString('mg_action_center_project_lifecycle(',$source);
