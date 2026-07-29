@@ -1,9 +1,9 @@
-/* Public auth pages v6: homepage typography on the same clean white background as the main index. */
-.mg-auth-page{
+/* Public auth pages v6.1: homepage typography on the same clean white background as the main index. */
+body.mg-auth-page[data-authenticated="false"]{
   background:#fff!important;
   background-image:none!important;
 }
-.mg-auth-page .mg-main{
+body.mg-auth-page[data-authenticated="false"] .mg-main{
   min-height:calc(100svh - 72px);
   display:flex;
   align-items:center;
@@ -18,8 +18,8 @@
   font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   -webkit-font-smoothing:antialiased;
 }
-.mg-auth-page .mg-main:before,
-.mg-auth-page .mg-main:after{
+body.mg-auth-page[data-authenticated="false"] .mg-main:before,
+body.mg-auth-page[data-authenticated="false"] .mg-main:after{
   content:none!important;
   display:none!important;
   background:none!important;
