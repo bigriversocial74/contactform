@@ -22,6 +22,8 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
     public function testRegiftUsesCanonicalOwnershipProjectionNotificationAndFreeActionAuthority(): void
     {
         $source=$this->read('api/account/action-center-send.php');
+        $compact=preg_replace('/\s+/','',$source);
+        self::assertIsString($compact);
         self::assertStringContainsString('mg_pppm_transfer_owner_canonical(',$source);
         self::assertStringContainsString("'action_center_regift'",$source);
         self::assertStringContainsString('mg_microgift_delivery_event(',$source);
@@ -29,7 +31,7 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString('mg_create_notification(',$source);
         self::assertStringContainsString('mg_require_csrf_for_write(',$source);
         self::assertStringContainsString("['issued','delivered']",$source);
-        self::assertMatchesRegularExpression("/'sent_at'\\s*=>\\s*\\$deliveryEvent\\['occurred_at'\\]/",$source);
+        self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']",$compact);
         self::assertStringContainsString("SET owner_user_id=?,recipient_user_id=?,status='delivered'",$source);
         self::assertStringContainsString("'regift_send'",$source);
         self::assertStringContainsString('mg_action_center_merchant_sponsored_regift_stamp(',$source);
