@@ -125,31 +125,43 @@ function mg_action_center_merchant_sponsored_regift_stamp(PDO $pdo, array $actor
     ];
 
     if ($sponsorUserId < 1) {
-        return $base + ['debit_status' => 'free_no_merchant_sponsor', 'reason' => 'No merchant sponsor was attached to this regift.'];
+        return array_merge($base, ['debit_status' => 'free_no_merchant_sponsor', 'reason' => 'No merchant sponsor was attached to this regift.']);
     }
 
     $actorCanSpendOwnStamps = mg_api_user_has_permission($actorUser, 'stamps.debit') || mg_api_user_has_permission($actorUser, 'admin.stamps.manage');
     if ($sponsorUserId === $actorUserId && !$actorCanSpendOwnStamps) {
-        return $base + ['debit_status' => 'free_customer_self_sponsored', 'reason' => 'Customer-side sends are free unless a merchant sponsor is attached.'];
+        return array_merge($base, ['debit_status' => 'free_customer_self_sponsored', 'reason' => 'Customer-side sends are free unless a merchant sponsor is attached.']);
     }
 
     $action = mg_stamp_action($pdo, 'regift_send');
-    $stampValue = max(0, (int)($action['stamp_value'] ?? 1));
-    $required = $stampValue * $quantity;
+    $configuredStampValue = max(0, (int)($action['stamp_value'] ?? 0));
+    $required = 0;
+
+    if ($required === 0) {
+        return array_merge($base, [
+            'debit_status' => 'free_action',
+            'debit_applied' => false,
+            'required' => 0,
+            'configured_stamp_value' => $configuredStampValue,
+            'effective_stamp_value' => 0,
+            'reason' => 'Regift sends are free and bypass Stamp balance and ledger writes.',
+        ]);
+    }
+
     $balance = mg_stamp_balance($pdo, $sponsorUserId, true);
     $available = (int)($balance['balance'] ?? 0);
     $sponsorKey = 'stamp:merchant-sponsored-regift:' . hash('sha256', $sponsorUserId . '|' . $actorUserId . '|' . $sourceType . '|' . $sourceId . '|' . $idempotencyKey);
 
     if ($available < $required) {
         $shortfall = max(0, $required - $available);
-        $payload = $base + [
+        $payload = array_merge($base, [
             'debit_status' => 'merchant_sponsor_shortfall',
             'required' => $required,
             'available' => $available,
             'shortfall' => $shortfall,
             'reason' => 'Merchant Stamp balance was insufficient; customer regift was allowed and flagged for merchant/admin follow-up.',
             'idempotency_key' => $sponsorKey,
-        ];
+        ]);
         if (function_exists('mg_security_log')) {
             mg_security_log('warning', 'stamps.merchant_sponsored_regift_shortfall', 'Merchant-sponsored regift allowed with Stamp shortfall.', $payload, $actorUserId ?: null);
         }
