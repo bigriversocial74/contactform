@@ -39,7 +39,7 @@ final class ActionCenterMutationEndpointContractTest extends TestCase
         self::assertIsString($source);
 
         foreach([
-            "Follow Up is available only from Sent.",
+            'Follow Up is available only from Sent.',
             'Only the most recent sender can follow up.',
             'mg_message_conversation_key(',
             'mg_message_send_microgift(',
@@ -52,24 +52,41 @@ final class ActionCenterMutationEndpointContractTest extends TestCase
         self::assertStringNotContainsString('mg_microgift_delivery_event(',$source);
     }
 
-    public function testClaimEndpointRequiresIdempotencyAndUsesCanonicalClaim(): void
+    public function testClaimEndpointRequiresIdempotencyAndUsesCanonicalClaimAuthority(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-claim.php');
+        $root=dirname(__DIR__,2);
+        $source=file_get_contents($root.'/api/account/action-center-claim.php');
+        $authority=file_get_contents($root.'/api/microgifts/_claim_authority.php');
         self::assertIsString($source);
+        self::assertIsString($authority);
 
         foreach([
-            "require_once dirname(__DIR__) . '/microgifts/_lifecycle.php'",
-            "require_once dirname(__DIR__) . '/microgifts/_idempotency.php'",
-            "require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php'",
+            "require_once dirname(__DIR__) . '/microgifts/_claim_authority.php'",
+            "require_once dirname(__DIR__) . '/microgifts/_golden_path_integrity.php'",
             'Action Center item id and idempotency key are required.',
-            'mg_microgift_assert_claim_replay($pdo,$idempotencyKey,(string)$instance[\'public_id\'],(int)$user[\'id\'])',
-            'mg_microgift_claim($pdo,(int)$user[\'id\'],$input)',
-            'mg_action_center_project_lifecycle($pdo,$instance)',
+            'mg_microgift_claim_canonical(',
+            'mg_microgift_integrity_claim(',
+            'mg_microgift_claim(',
             "mg_audit('action_center.microgift_claimed'",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
 
+        foreach([
+            "require_once __DIR__ . '/_lifecycle.php'",
+            "require_once __DIR__ . '/_idempotency.php'",
+            "require_once __DIR__ . '/_action_center_projection.php'",
+            'mg_microgift_assert_claim_replay(',
+            'mg_action_center_project_lifecycle(',
+        ] as $needle){
+            self::assertStringContainsString($needle,$authority);
+        }
+
+        $claimPosition=strpos($source,'mg_microgift_claim_canonical(');
+        $commitPosition=strpos($source,'$pdo->commit()',$claimPosition);
+        self::assertIsInt($claimPosition);
+        self::assertIsInt($commitPosition);
+        self::assertLessThan($commitPosition,$claimPosition);
         self::assertStringNotContainsString('$idempotencyKey!==\'\'',$source);
     }
 

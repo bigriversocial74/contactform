@@ -148,6 +148,24 @@ function mg_wallet_claim_voucher_scan_payload(string $token): string
     return 'MGFT-WALLET-CLAIM-TOKEN|' . trim($token);
 }
 
+function mg_wallet_claim_voucher_revoke_stale_owner_tokens(PDO $pdo, int $walletItemId, int $currentUserId): int
+{
+    if ($walletItemId < 1 || $currentUserId < 1) return 0;
+    $stmt = $pdo->prepare("UPDATE wallet_claim_voucher_tokens
+        SET status='revoked',revoked_at=COALESCE(revoked_at,NOW()),updated_at=NOW()
+        WHERE wallet_item_id=? AND user_id<>? AND status IN ('issued','scanned')");
+    $stmt->execute([$walletItemId, $currentUserId]);
+    return $stmt->rowCount();
+}
+
+function mg_wallet_claim_voucher_revoke_token(PDO $pdo, int $tokenId): void
+{
+    if ($tokenId < 1) return;
+    $pdo->prepare("UPDATE wallet_claim_voucher_tokens
+        SET status='revoked',revoked_at=COALESCE(revoked_at,NOW()),updated_at=NOW()
+        WHERE id=? AND status IN ('issued','scanned')")->execute([$tokenId]);
+}
+
 function mg_wallet_claim_voucher_issue_token(PDO $pdo, int $walletItemId, string $walletPublicId, int $userId, int $merchantUserId, int $ttlSeconds = 900): array
 {
     if ($walletItemId < 1 || $userId < 1 || $merchantUserId < 1 || trim($walletPublicId) === '') {
@@ -161,6 +179,7 @@ function mg_wallet_claim_voucher_issue_token(PDO $pdo, int $walletItemId, string
     $expiresAt = date('Y-m-d H:i:s', time() + $ttlSeconds);
     $request = mg_claim_voucher_request_hashes();
 
+    mg_wallet_claim_voucher_revoke_stale_owner_tokens($pdo, $walletItemId, $userId);
     $pdo->prepare("UPDATE wallet_claim_voucher_tokens SET status='expired',updated_at=NOW() WHERE wallet_item_id=? AND user_id=? AND status IN ('issued','scanned') AND expires_at<NOW()")->execute([$walletItemId, $userId]);
     $pdo->prepare("INSERT INTO wallet_claim_voucher_tokens (public_id,wallet_item_id,user_id,merchant_user_id,token_hash,status,expires_at,created_ip_hash,created_user_agent_hash,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,'issued',?,?,?,?,NOW(),NOW())")->execute([
         $publicId,
@@ -212,6 +231,16 @@ function mg_wallet_claim_voucher_require_active(PDO $pdo, string $token, bool $f
     if (in_array($status, ['revoked','expired'], true)) {
         throw new RuntimeException('Wallet voucher QR token is no longer active.');
     }
+
+    $tokenUserId = (int)($row['user_id'] ?? 0);
+    $walletUserId = (int)($row['wallet_user_id'] ?? 0);
+    $tokenMerchantUserId = (int)($row['merchant_user_id'] ?? 0);
+    $walletMerchantUserId = (int)($row['wallet_merchant_user_id'] ?? 0);
+    if ($walletUserId < 1 || $tokenUserId !== $walletUserId || $tokenMerchantUserId !== $walletMerchantUserId) {
+        mg_wallet_claim_voucher_revoke_token($pdo, (int)($row['id'] ?? 0));
+        throw new RuntimeException('Wallet voucher QR token no longer belongs to the current reward owner.');
+    }
+
     if (!empty($row['expires_at']) && strtotime((string)$row['expires_at']) < time()) {
         if ($forUpdate) {
             $pdo->prepare("UPDATE wallet_claim_voucher_tokens SET status='expired',updated_at=NOW() WHERE id=?")->execute([(int)$row['id']]);

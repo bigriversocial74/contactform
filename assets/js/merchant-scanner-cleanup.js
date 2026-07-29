@@ -20,7 +20,7 @@ window.Microgifter = window.Microgifter || {};
     high_risk_threshold: 65
   };
 
-  window.MicrogifterMerchantScannerRuntime = 'cleanup-v2';
+  window.MicrogifterMerchantScannerRuntime = 'cleanup-v3-signed-token-preservation';
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
@@ -205,21 +205,41 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
+  function isSignedVoucherPayload(value) {
+    return /^MGFT-(?:WALLET-)?CLAIM-TOKEN\|(?:mgwv1_|mgv1_)/i.test(value) ||
+      /^(?:mgwv1_|mgv1_)[0-9a-f-]{36}_[a-f0-9]{32}$/i.test(value);
+  }
+
   function extractScanIdentifier(raw) {
     var value = String(raw || '').trim();
     if (!value) return '';
+
+    // Signed QR payloads must remain byte-for-byte intact. The previous generic
+    // GFT matcher truncated MGFT-CLAIM-TOKEN|... to GFT-CLAIM-TOKEN and deleted
+    // the token before it reached the merchant claim API.
+    if (isSignedVoucherPayload(value)) return value;
+    if (/^MGFT-WALLET-CLAIM\|wallet-[0-9a-f-]{36}$/i.test(value)) return value;
+    if (/^MGFT-CLAIM\|/i.test(value)) return value;
+
     try {
       var url = new URL(value, window.location.origin);
-      var token = url.searchParams.get('t') || url.searchParams.get('token') || url.searchParams.get('voucher_token');
+      var token = url.searchParams.get('wt') || url.searchParams.get('wallet_token') || url.searchParams.get('wallet_voucher_token') ||
+        url.searchParams.get('t') || url.searchParams.get('token') || url.searchParams.get('voucher_token');
       if (token) return value;
-      var keys = ['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','g','claim','code'];
+      var keys = ['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','wallet','wallet_id','g','claim','code'];
       for (var i = 0; i < keys.length; i++) {
         var candidate = url.searchParams.get(keys[i]);
-        if (candidate && /GFT-[A-Z0-9-]+/i.test(candidate)) return candidate.match(/GFT-[A-Z0-9-]+/i)[0].toUpperCase();
+        if (candidate && /^wallet-[0-9a-f-]{36}$/i.test(candidate)) return candidate.toLowerCase();
+        if (candidate && /(?:^|[^A-Z0-9])GFT-[A-Z0-9-]+/i.test(candidate)) {
+          return candidate.match(/(?:^|[^A-Z0-9])(GFT-[A-Z0-9-]+)/i)[1].toUpperCase();
+        }
       }
     } catch (error) {}
-    var match = value.match(/GFT-[A-Z0-9-]+/i);
-    return match ? match[0].toUpperCase() : value;
+
+    var wallet = value.match(/wallet-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    if (wallet) return wallet[0].toLowerCase();
+    var match = value.match(/(?:^|[^A-Z0-9])(GFT-[A-Z0-9-]+)/i);
+    return match ? match[1].toUpperCase() : value;
   }
 
   function showConfirm(data) {
@@ -378,8 +398,8 @@ window.Microgifter = window.Microgifter || {};
 
   function install() {
     ensureModal();
-    if (!modal || modal.dataset.scannerCleanupReady === '2') return;
-    modal.dataset.scannerCleanupReady = '2';
+    if (!modal || modal.dataset.scannerCleanupReady === '3') return;
+    modal.dataset.scannerCleanupReady = '3';
     ensureMobileShortcut();
 
     document.addEventListener('click', function (event) {

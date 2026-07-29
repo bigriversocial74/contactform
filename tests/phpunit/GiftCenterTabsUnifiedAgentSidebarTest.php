@@ -10,14 +10,21 @@ final class GiftCenterTabsUnifiedAgentSidebarTest extends TestCase
         $root = dirname(__DIR__, 2);
         $header = file_get_contents($root . '/includes/header-components/app-header.php');
         self::assertIsString($header);
-        self::assertStringContainsString("\$gift_center_tabs = ['inbox', 'sent', 'claimed'];", $header);
+
+        foreach ([
+            "['inbox', 'Inbox']",
+            "['sent', 'Sent']",
+            "['claimed', 'Claimed']",
+        ] as $tabDefinition) {
+            self::assertStringContainsString($tabDefinition, $header);
+        }
+
+        self::assertStringContainsString('$gift_center_tabs = array_column($giftCenterHeaderTabs, 0);', $header);
+        self::assertStringContainsString('foreach ($giftCenterHeaderTabs as $tab)', $header);
         self::assertStringContainsString('data-gift-center-tabs', $header);
-        self::assertStringContainsString('href="/inbox.php"', $header);
-        self::assertStringContainsString('href="/sent.php"', $header);
-        self::assertStringContainsString('href="/claimed.php"', $header);
-        self::assertStringContainsString('data-gift-nav-count="inbox"', $header);
-        self::assertStringContainsString('data-gift-nav-count="sent"', $header);
-        self::assertStringContainsString('data-gift-nav-count="claimed"', $header);
+        self::assertStringContainsString('href="/<?= mg_e($tab[0]) ?>.php"', $header);
+        self::assertStringContainsString('data-gift-nav-count="<?= $tab[0] ?>"', $header);
+        self::assertStringContainsString('data-gift-nav-unread="<?= $tab[0] ?>"', $header);
         self::assertStringContainsString("\$workspace_agent_tabs = ['agent'];", $header);
 
         foreach (['inbox.php' => 'inbox', 'sent.php' => 'sent', 'claimed.php' => 'claimed'] as $file => $tab) {
