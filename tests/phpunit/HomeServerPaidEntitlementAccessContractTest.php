@@ -108,9 +108,9 @@ final class HomeServerPaidEntitlementAccessContractTest extends TestCase
         self::assertIsString($authorization);
         self::assertStringContainsString("'software_authority' => 'vp3'", $entitlement);
         self::assertStringContainsString("'update_eligibility' => false", $entitlement);
-        self::assertStringContainsString("'allowed_update_channels' => $channels", $entitlement);
+        self::assertStringContainsString("'allowed_update_channels' => \$channels", $entitlement);
         self::assertStringNotContainsString("'update-authorization.v1',", $entitlement);
-        self::assertStringContainsString("$reason = 'vp3_software_authority'", $authorization);
+        self::assertStringContainsString("\$reason = 'vp3_software_authority'", $authorization);
         self::assertStringContainsString("'decision' => 'not_required'", $authorization);
         self::assertStringNotContainsString('can_feature_updates', $authorization);
         self::assertStringNotContainsString('can_beta_updates', $authorization);
