@@ -64,7 +64,8 @@
 }
 
 .mg-unified-header #mg-account-tab-customer:checked ~ .mg-account-tab-list label[for="mg-account-tab-customer"],
-.mg-unified-header #mg-account-tab-merchant:checked ~ .mg-account-tab-list label[for="mg-account-tab-merchant"]{
+.mg-unified-header #mg-account-tab-merchant:checked ~ .mg-account-tab-list label[for="mg-account-tab-merchant"],
+.mg-unified-header #mg-account-tab-investor:checked ~ .mg-account-tab-list label[for="mg-account-tab-investor"]{
   background:#071225;
   border-color:#071225;
   color:#fff;
@@ -86,7 +87,8 @@
 }
 
 .mg-unified-header #mg-account-tab-customer:checked ~ .mg-account-tab-panels .mg-account-customer-panel,
-.mg-unified-header #mg-account-tab-merchant:checked ~ .mg-account-tab-panels .mg-account-merchant-panel{
+.mg-unified-header #mg-account-tab-merchant:checked ~ .mg-account-tab-panels .mg-account-merchant-panel,
+.mg-unified-header #mg-account-tab-investor:checked ~ .mg-account-tab-panels .mg-account-investor-panel{
   display:grid;
 }
 
