@@ -153,6 +153,31 @@ window.Microgifter = window.Microgifter || {};
     setHidden(website, false);
   }
 
+  function renderInvestorAccess(profile, relationship) {
+    var actions = node('.mg-invest-actions', root);
+    if (!actions) return;
+    var action = node('[data-profile-investor-access]', actions);
+    var isHost = Boolean(profile && profile.availability && profile.availability.is_investor_access_host);
+    if (!isHost) {
+      if (action) action.remove();
+      return;
+    }
+    if (!action) {
+      action = document.createElement('a');
+      action.className = 'mg-invest-btn is-gold mg-profile-investor-access-action';
+      action.setAttribute('data-profile-investor-access', '');
+      var firstAction = actions.firstElementChild;
+      if (firstAction) actions.insertBefore(action, firstAction);
+      else actions.appendChild(action);
+    }
+    var authenticated = Boolean(relationship && relationship.authenticated);
+    var isInvestor = Boolean(relationship && relationship.is_investor);
+    action.textContent = isInvestor ? 'Open Investor Portal' : 'Request Investor Access';
+    action.href = isInvestor
+      ? '/investor-portal.php'
+      : (authenticated ? '/investor-access.php' : '/signin.php?return=' + encodeURIComponent('/investor-access.php'));
+  }
+
   function publishProfileData(data) {
     MG.publicProfileData = data;
     document.dispatchEvent(new CustomEvent('mg:public-profile:data', { detail: data }));
@@ -161,12 +186,14 @@ window.Microgifter = window.Microgifter || {};
   function renderProfile(data) {
     var profile = data && data.profile ? data.profile : {};
     var counts = data && data.social_counts ? data.social_counts : {};
+    var relationship = data && data.relationship ? data.relationship : {};
     var displayName = String(profile.display_name || 'Microgifter profile');
     renderCover(profile);
     renderAvatar(profile);
     renderStatus(profile);
     renderMeta(profile);
     renderWebsite(profile);
+    renderInvestorAccess(profile, relationship);
     renderLinks(data.links);
     renderSections(data.sections);
     setText('[data-profile-name]', displayName);
