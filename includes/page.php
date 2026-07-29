@@ -89,7 +89,7 @@ function mg_asset_registry(): array
             'scripts'=>['/assets/js/agent-presentation.js'],
         ],
         'learn-more-questionnaire'=>['scripts'=>['/assets/js/learn-more.js']],
-        'auth-pages'=>['styles'=>['/assets/css/auth-page.css?v=6.0.0']],
+        'auth-pages'=>['styles'=>['/assets/css/auth-page.css?v=6.1.0']],
         'auth-forms'=>['scripts'=>['/assets/js/auth.js']],
     ];
 }
