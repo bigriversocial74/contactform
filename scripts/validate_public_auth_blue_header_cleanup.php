@@ -48,14 +48,17 @@ try {
     );
 
     $expect(
-        str_contains($authCss, 'background:#f4f7fb!important')
+        str_contains($authCss, ".mg-auth-page{\n  background:#fff!important;")
+        && str_contains($authCss, ".mg-auth-page .mg-main{")
+        && substr_count($authCss, 'background:#fff!important') >= 2
         && str_contains($authCss, 'background-image:none!important')
         && str_contains($authCss, 'content:none!important')
         && !str_contains($authCss, '/assets/images/mountains.png')
         && !str_contains($authCss, '/assets/images/foreground.png')
+        && !str_contains($authCss, 'background:#f4f7fb!important')
         && !str_contains($authCss, 'rgba(96,165,250,.16)')
         && !str_contains($authCss, 'linear-gradient(180deg,#fff 0%,#f2f7fd 62%,#fff 100%)'),
-        'Auth pages use a clean solid background without mountain or foreground artwork'
+        'Auth pages match the main index with a clean solid white background'
     );
 
     $expect(
@@ -79,9 +82,9 @@ try {
     }
 
     $expect(
-        str_contains($page, "'auth-pages'=>['styles'=>['/assets/css/auth-page.css?v=5.0.0']]")
+        str_contains($page, "'auth-pages'=>['styles'=>['/assets/css/auth-page.css?v=6.0.0']]")
         && str_contains($signin, 'class="mg-auth-shell"'),
-        'Auth pages load the v5 cache-busted shared stylesheet without changing the sign-in structure'
+        'Auth pages load the v6 cache-busted shared stylesheet without changing the sign-in structure'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();

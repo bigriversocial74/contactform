@@ -1,11 +1,15 @@
-/* Public auth pages v5: homepage typography on a clean solid background. */
+/* Public auth pages v6: homepage typography on the same clean white background as the main index. */
+.mg-auth-page{
+  background:#fff!important;
+  background-image:none!important;
+}
 .mg-auth-page .mg-main{
   min-height:calc(100svh - 72px);
   display:flex;
   align-items:center;
   justify-content:center;
   padding:clamp(44px,6vw,86px) clamp(18px,4vw,54px);
-  background:#f4f7fb!important;
+  background:#fff!important;
   background-image:none!important;
   color:#102d4c;
   overflow:hidden;
