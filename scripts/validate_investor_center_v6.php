@@ -47,7 +47,7 @@ $checks = [
         && str_contains($center, 'Investor work queue'),
     'effective Investor access requires both role and active profile' =>
         str_contains($accessState, '$hasRole && $profileStatus === \'active\'')
-        && str_contains($accessState, "'can_open_portal' => $state === 'approved_active'")
+        && str_contains($accessState, '\'can_open_portal\' => $state === \'approved_active\'')
         && str_contains($accessState, "'role_without_active_profile'"),
     'header Investor tab uses authoritative access state instead of role alone' =>
         str_contains($header, 'mg_investor_access_state')
