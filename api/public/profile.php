@@ -121,6 +121,7 @@ try{
             "SELECT 1
              FROM user_roles ur
              INNER JOIN roles r ON r.id=ur.role_id
+             INNER JOIN investor_profiles ip ON ip.user_id=ur.user_id AND ip.status='active'
              WHERE ur.user_id=? AND r.slug='investor'
              LIMIT 1",
             [$viewerId]
