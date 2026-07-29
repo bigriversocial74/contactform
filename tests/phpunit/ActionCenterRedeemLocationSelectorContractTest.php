@@ -9,8 +9,8 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-claim.php');
         self::assertIsString($source);
-        self::assertStringContainsString('mg_microgift_claim($pdo,(int)$user[\'id\'],$input)',$source);
-        self::assertStringContainsString('Microgift claim processed.',$source);
+        self::assertStringContainsString('mg_microgift_claim_canonical(',$source);
+        self::assertStringContainsString('Microgift claimed.',$source);
         self::assertStringNotContainsString('mg_microgift_redeem',$source);
         self::assertStringNotContainsString('location_id',$source);
     }
@@ -54,8 +54,11 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
 
     public function testMerchantEndpointUsesOneCanonicalAtomicOperation(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/microgift-claim.php');
+        $root=dirname(__DIR__,2);
+        $source=file_get_contents($root.'/api/merchant/microgift-claim.php');
+        $atomic=file_get_contents($root.'/api/microgifts/_atomic_merchant_redemption.php');
         self::assertIsString($source);
+        self::assertIsString($atomic);
         foreach([
             "mg_require_method('POST')",
             "mg_require_permission('merchant.location_claim.execute')",
@@ -63,24 +66,30 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
             "SELECT merchant_user_id,name,status FROM merchant_locations WHERE public_id=? LIMIT 1",
             'unset($input[\'claimant_user_id\'])',
             'mg_claim_execute_operation(',
-            "'customer_notification_id'=>",
-            "'merchant_notification_id'=>",
             'Microgift redeemed and both parties confirmed.',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
+        }
+        foreach([
+            "'customer_notification_id'=>\$confirmations['customer_notification_id']",
+            "'merchant_notification_id'=>\$confirmations['merchant_notification_id']",
+            'mg_microgift_redemption_confirmations(',
+        ] as $needle){
+            self::assertStringContainsString($needle,$atomic);
         }
         self::assertStringNotContainsString('/api/gifts/verify-merchant-claim.php',$source);
         self::assertStringNotContainsString('/api/gifts/redeem-merchant-claim.php',$source);
     }
 
-    public function testMerchantUiUsesCanonicalLookupAndAtomicRedemptionOnly(): void
+    public function testMerchantUiUsesCanonicalLookupAndPersistentAtomicRedemptionKey(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/merchant-claims.js');
         self::assertIsString($source);
         foreach([
             '/api/merchant/microgift-claim-lookup.php?instance_id=',
             "Microgifter.post('/api/merchant/microgift-claim.php', payload)",
-            'payload.idempotency_key = idempotencyKey()',
+            'payload.idempotency_key = redemptionWorkflowKey(payload.instance_id, payload.location_id)',
+            'window.sessionStorage.getItem(storageKey)',
             'Redemption confirmed',
             'Customer confirmation',
             'Merchant confirmation',
