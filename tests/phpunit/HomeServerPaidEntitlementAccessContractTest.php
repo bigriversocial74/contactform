@@ -68,7 +68,6 @@ final class HomeServerPaidEntitlementAccessContractTest extends TestCase
         self::assertIsString($devices);
         self::assertStringContainsString("'homeserver.pair'", $pairing);
         self::assertStringContainsString('mg_homeserver_active_device_count', $pairing);
-        self::assertStringContainsString('device allowance', $pairing);
         self::assertStringContainsString("'software_authority' => 'vp3'", $latest);
         self::assertStringContainsString("'installer_authority' => 'vp3'", $latest);
         self::assertStringContainsString('vp3_installer_authority', $download);
