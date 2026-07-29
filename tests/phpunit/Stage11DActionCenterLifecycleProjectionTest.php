@@ -58,7 +58,6 @@ final class Stage11DActionCenterLifecycleProjectionTest extends TestCase
     {
         $directFiles=[
             'api/microgifts/issue.php',
-            'api/microgifts/redeem.php',
             'api/admin/microgift-lifecycle.php',
         ];
         foreach($directFiles as $file){
@@ -83,6 +82,12 @@ final class Stage11DActionCenterLifecycleProjectionTest extends TestCase
         self::assertIsInt($claimPosition);
         self::assertIsInt($claimCommitPosition);
         self::assertLessThan($claimCommitPosition,$claimPosition,'Canonical claim authority must complete projection before commit.');
+
+        $retiredCustomerRedeem=$this->read('api/microgifts/redeem.php');
+        self::assertStringContainsString('Direct customer redemption has been retired.',$retiredCustomerRedeem);
+        self::assertStringContainsString("'canonical_endpoint'=>'/api/merchant/microgift-claim.php'",$retiredCustomerRedeem);
+        self::assertStringContainsString('410,',$retiredCustomerRedeem);
+        self::assertStringNotContainsString('mg_action_center_project_lifecycle(',$retiredCustomerRedeem);
     }
 
     public function testMerchantClaimDelegatesCompletedProjectionToAtomicAuthority(): void
@@ -96,6 +101,11 @@ final class Stage11DActionCenterLifecycleProjectionTest extends TestCase
         self::assertStringContainsString('mg_action_center_refresh_existing_lifecycle(',$atomic);
         self::assertStringContainsString('mg_microgift_upsert_inbox_redeemed(',$atomic);
         self::assertStringContainsString("'can_tip'=>1",$atomic);
+        $projectionPosition=strpos($atomic,'mg_action_center_refresh_existing_lifecycle(');
+        $commitPosition=strpos($atomic,'$pdo->commit()',$projectionPosition);
+        self::assertIsInt($projectionPosition);
+        self::assertIsInt($commitPosition);
+        self::assertLessThan($commitPosition,$projectionPosition,'Merchant redemption must refresh Action Center state before its transaction commits.');
     }
 
     public function testProjectionCarriesLifecycleAndRedemptionMetadata(): void
