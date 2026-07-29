@@ -5,6 +5,40 @@ require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once __DIR__ . '/_claims.php';
 require_once __DIR__ . '/_scanner_trust.php';
 require_once dirname(__DIR__) . '/account/_claim_voucher_token.php';
+require_once dirname(__DIR__) . '/account/_action_center_wallet.php';
+
+function mg_scanner_trust_micro_token_context(PDO $pdo, string $token, string $raw): array
+{
+    try {
+        $row = mg_claim_voucher_require_active($pdo, $token, true);
+        return [
+            'identifier' => (string)$row['action_item_public_id'],
+            'voucher_token' => $row,
+            'wallet_voucher_token' => null,
+            'wallet_id' => null,
+            'raw_scan' => $raw,
+        ];
+    } catch (Throwable) {
+        mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+    }
+}
+
+function mg_scanner_trust_wallet_token_context(PDO $pdo, string $token, string $raw): array
+{
+    try {
+        $row = mg_wallet_claim_voucher_require_active($pdo, $token, true);
+        $walletId = (string)$row['wallet_item_public_id'];
+        return [
+            'identifier' => 'wallet-' . $walletId,
+            'voucher_token' => null,
+            'wallet_voucher_token' => $row,
+            'wallet_id' => $walletId,
+            'raw_scan' => $raw,
+        ];
+    } catch (Throwable) {
+        mg_fail('The scanned wallet reward QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+    }
+}
 
 function mg_scanner_trust_scan_context(PDO $pdo, mixed $value): array
 {
@@ -15,41 +49,52 @@ function mg_scanner_trust_scan_context(PDO $pdo, mixed $value): array
     $parts = @parse_url($decoded);
     if (is_array($parts) && !empty($parts['query'])) {
         parse_str((string)$parts['query'], $query);
-        foreach (['t','token','voucher_token'] as $key) {
+        foreach (['wt','wallet_token','wallet_voucher_token'] as $key) {
             if (isset($query[$key]) && !is_array($query[$key])) {
-                try {
-                    $token = mg_claim_voucher_require_active($pdo, (string)$query[$key], true);
-                    return ['identifier' => (string)$token['action_item_public_id'], 'voucher_token' => $token, 'raw_scan' => $raw];
-                } catch (Throwable) {
-                    mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
-                }
+                return mg_scanner_trust_wallet_token_context($pdo, (string)$query[$key], $raw);
             }
         }
-        foreach (['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','instance','instance_id','g','claim','code'] as $key) {
+        foreach (['t','token','voucher_token'] as $key) {
+            if (!isset($query[$key]) || is_array($query[$key])) continue;
+            $token = trim((string)$query[$key]);
+            if (str_starts_with(strtolower($token), 'mgwv1_')) {
+                return mg_scanner_trust_wallet_token_context($pdo, $token, $raw);
+            }
+            return mg_scanner_trust_micro_token_context($pdo, $token, $raw);
+        }
+        foreach (['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','instance','instance_id','wallet','wallet_id','g','claim','code'] as $key) {
             if (isset($query[$key]) && !is_array($query[$key])) $candidates[] = trim((string)$query[$key]);
         }
     }
+    if (str_starts_with(strtoupper($decoded), 'MGFT-WALLET-CLAIM-TOKEN|')) {
+        return mg_scanner_trust_wallet_token_context($pdo, substr($decoded, 24), $raw);
+    }
+    if (preg_match('/^mgwv1_[0-9a-f-]{36}_[a-f0-9]{32}$/i', $decoded) === 1) {
+        return mg_scanner_trust_wallet_token_context($pdo, $decoded, $raw);
+    }
     if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM-TOKEN|')) {
-        try {
-            $token = mg_claim_voucher_require_active($pdo, substr($decoded, 17), true);
-            return ['identifier' => (string)$token['action_item_public_id'], 'voucher_token' => $token, 'raw_scan' => $raw];
-        } catch (Throwable) {
-            mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
-        }
+        return mg_scanner_trust_micro_token_context($pdo, substr($decoded, 17), $raw);
     }
     if (preg_match('/^mgv1_[0-9a-f-]{36}_[a-f0-9]{32}$/i', $decoded) === 1) {
-        try {
-            $token = mg_claim_voucher_require_active($pdo, $decoded, true);
-            return ['identifier' => (string)$token['action_item_public_id'], 'voucher_token' => $token, 'raw_scan' => $raw];
-        } catch (Throwable) {
-            mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+        return mg_scanner_trust_micro_token_context($pdo, $decoded, $raw);
+    }
+    if (str_starts_with(strtoupper($decoded), 'MGFT-WALLET-CLAIM|')) {
+        $walletId = strtolower(trim(substr($decoded, 18)));
+        if (str_starts_with($walletId, 'wallet-')) $walletId = substr($walletId, 7);
+        if (preg_match('/^[0-9a-f-]{36}$/', $walletId) === 1) {
+            return ['identifier' => 'wallet-' . $walletId, 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => $walletId, 'raw_scan' => $raw];
         }
+        mg_fail('The scanned wallet reward QR is invalid.', 422);
     }
     if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM|')) $candidates[] = substr($decoded, 11);
     $candidates[] = $decoded;
     foreach ($candidates as $candidate) {
-        if (preg_match('/GFT-[A-Z0-9-]{4,32}/i', $candidate, $match)) return ['identifier' => strtoupper($match[0]), 'voucher_token' => null, 'raw_scan' => $raw];
-        if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $candidate, $match)) return ['identifier' => strtolower($match[0]), 'voucher_token' => null, 'raw_scan' => $raw];
+        if (preg_match('/wallet-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $candidate, $match)) {
+            $walletId = strtolower($match[1]);
+            return ['identifier' => 'wallet-' . $walletId, 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => $walletId, 'raw_scan' => $raw];
+        }
+        if (preg_match('/GFT-[A-Z0-9-]{4,32}/i', $candidate, $match)) return ['identifier' => strtoupper($match[0]), 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => null, 'raw_scan' => $raw];
+        if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $candidate, $match)) return ['identifier' => strtolower($match[0]), 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => null, 'raw_scan' => $raw];
     }
     mg_fail('This scan does not look like a Microgifter gift or claim QR code.', 422);
 }
@@ -61,6 +106,30 @@ function mg_scanner_trust_claim_code(PDO $pdo, int $merchantUserId, int $locatio
     $code = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$code) mg_fail('This scanner location does not have an active claim code assigned.', 409);
     return $code;
+}
+
+function mg_scanner_trust_wallet(PDO $pdo, int $merchantUserId, string $walletId): ?array
+{
+    $sql = mg_ac_wallet_select_sql() . " WHERE wi.public_id=? AND wi.merchant_user_id=? AND wi.status<>'cancelled' LIMIT 1 FOR UPDATE";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$walletId, $merchantUserId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_scanner_trust_wallet_completed_redemption(PDO $pdo, int $walletItemId): ?array
+{
+    $stmt = $pdo->prepare("SELECT * FROM wallet_item_redemptions WHERE wallet_item_id=? AND status='completed' LIMIT 1 FOR UPDATE");
+    $stmt->execute([$walletItemId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_scanner_trust_wallet_redemption_cycle(PDO $pdo, int $walletItemId): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM wallet_item_redemptions WHERE wallet_item_id=?');
+    $stmt->execute([$walletItemId]);
+    return (int)$stmt->fetchColumn() + 1;
 }
 
 function mg_scanner_trust_microgift(PDO $pdo, int $merchantUserId, string $identifier): ?array
@@ -104,6 +173,9 @@ $locationPublicId = mg_claim_code_public_id((string)($input['location_id'] ?? ''
 $identifier = '';
 $location = null;
 $voucherToken = null;
+$walletVoucherToken = null;
+$activeVoucherToken = null;
+$walletId = null;
 $rawScan = (string)($input['scan'] ?? $input['gift_id'] ?? '');
 
 try {
@@ -111,6 +183,9 @@ try {
     $context = mg_scanner_trust_scan_context($pdo, $rawScan);
     $identifier = (string)$context['identifier'];
     $voucherToken = is_array($context['voucher_token'] ?? null) ? $context['voucher_token'] : null;
+    $walletVoucherToken = is_array($context['wallet_voucher_token'] ?? null) ? $context['wallet_voucher_token'] : null;
+    $activeVoucherToken = $walletVoucherToken ?: $voucherToken;
+    $walletId = is_string($context['wallet_id'] ?? null) ? (string)$context['wallet_id'] : null;
     $rawScan = (string)($context['raw_scan'] ?? $rawScan);
 
     $locationStmt = $pdo->prepare("SELECT * FROM merchant_locations WHERE public_id=? AND workspace_id=? AND merchant_user_id=? AND status='active' LIMIT 1 FOR UPDATE");
@@ -119,6 +194,47 @@ try {
     if (!$location) mg_fail('Merchant location not found or inactive.', 404);
     $claimCode = mg_scanner_trust_claim_code($pdo, $merchantUserId, (int)$location['id']);
     if ($voucherToken) mg_claim_voucher_mark_scanned($pdo, (int)$voucherToken['id'], $merchantUserId, (int)$location['id']);
+    if ($walletVoucherToken) mg_wallet_claim_voucher_mark_scanned($pdo, (int)$walletVoucherToken['id'], $merchantUserId, (int)$location['id']);
+
+    if ($walletId !== null) {
+        $wallet = mg_scanner_trust_wallet($pdo, $merchantUserId, $walletId);
+        if (!$wallet) mg_fail('Wallet reward not found for this merchant.', 404);
+        $walletPublicId = (string)$wallet['public_id'];
+        $giftId = 'wallet-' . $walletPublicId;
+        $customerId = (int)($wallet['user_id'] ?: ($walletVoucherToken['user_id'] ?? 0));
+        $title = trim((string)($wallet['title_snapshot'] ?? '')) ?: trim((string)($wallet['reward_template_title'] ?? '')) ?: 'Microgifter reward';
+        $amount = (int)($wallet['value_cents_snapshot'] ?? 0);
+        $currency = (string)($wallet['currency_snapshot'] ?? 'USD');
+        $status = (string)($wallet['status'] ?? 'issued');
+        if (mg_ac_wallet_expired($wallet)) mg_fail('This wallet reward has expired.', 410);
+        if (!in_array($status, ['issued','viewed','claimed','redeemed'], true)) mg_fail('This wallet reward is not available for scanner redemption.', 409);
+        $completedRedemption = mg_scanner_trust_wallet_completed_redemption($pdo, (int)$wallet['id']);
+        if ($completedRedemption || $status === 'redeemed') {
+            mg_scanner_trust_event($pdo, 'already_redeemed_scan', 45, $giftId, $merchantUserId, $location, $activeVoucherToken, null, $rawScan, ['type' => 'wallet_reward']);
+            $pdo->commit();
+            mg_ok(['gift_id' => $giftId, 'instance_id' => $walletPublicId, 'verified' => true, 'redeemed' => true, 'already_redeemed' => true, 'is_wallet_reward' => true], 'Wallet reward already redeemed.');
+        }
+        $confirmation = mg_scanner_trust_confirmation($giftId, $title, $amount, $currency, $location, $claimCode, mg_scanner_trust_user_summary($pdo, $customerId));
+        if ($action === 'verify' || ($action === 'redeem' && $requireConfirm && !$confirmed)) {
+            mg_scanner_trust_event($pdo, 'scanner_verified', 5, $giftId, $merchantUserId, $location, $activeVoucherToken, null, $rawScan, ['type' => 'wallet_reward']);
+            $pdo->commit();
+            mg_ok(['gift_id' => $giftId, 'instance_id' => $walletPublicId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'verified' => true, 'redeemed' => false, 'needs_confirmation' => $action === 'redeem' && $requireConfirm && !$confirmed, 'confirmation' => $confirmation, 'is_wallet_reward' => true, 'gift' => ['title' => $title, 'value_cents' => $amount, 'currency' => $currency]], 'Wallet reward verified. Confirm redemption before claiming voucher.');
+        }
+        $redemptionPublicId = mg_public_uuid();
+        $cycle = mg_scanner_trust_wallet_redemption_cycle($pdo, (int)$wallet['id']);
+        $idempotencyKey = 'wallet-scanner:' . $walletPublicId . ':' . $locationPublicId . ':' . $cycle;
+        $eventContext = ['redemption_id' => $redemptionPublicId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'merchant_claim_code_id' => (string)$claimCode['public_id'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'source' => 'merchant_scanner_trust', 'voucher_token_id' => $walletVoucherToken['public_id'] ?? null];
+        $pdo->prepare("INSERT INTO wallet_item_redemptions (public_id,wallet_item_id,user_id,merchant_user_id,location_id,location_reference,amount_cents,currency,status,idempotency_key,source_reference,redeemed_at,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,'completed',?,?,NOW(),?,NOW(),NOW())")->execute([$redemptionPublicId, (int)$wallet['id'], $customerId > 0 ? $customerId : null, $merchantUserId, (int)$location['id'], $locationPublicId, $amount, $currency, $idempotencyKey, 'merchant_scanner_trust:' . $locationPublicId, json_encode($eventContext, JSON_UNESCAPED_SLASHES)]);
+        $receipt = mg_scanner_trust_receipt($pdo, 'microgift', $giftId, $redemptionPublicId, null, $customerId > 0 ? $customerId : null, $merchantUserId, $merchantUserId, $location, $claimCode, $amount, $currency, ['confirmation' => $confirmation, 'redemption_id' => $redemptionPublicId, 'receipt_subtype' => 'wallet_reward', 'wallet_item_id' => $walletPublicId]);
+        $pdo->prepare("UPDATE wallet_items SET status='redeemed',claimed_at=COALESCE(claimed_at,NOW()),redeemed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$wallet['id']]);
+        $pdo->prepare('UPDATE merchant_claim_codes SET usage_count=usage_count+1,updated_at=NOW() WHERE id=?')->execute([(int)$claimCode['id']]);
+        if ($walletVoucherToken) mg_wallet_claim_voucher_mark_redeemed($pdo, (int)$walletVoucherToken['id'], $merchantUserId, (int)$location['id']);
+        mg_ac_wallet_event($pdo, $wallet, 'wallet_item.redeemed', $eventContext + ['receipt_id' => $receipt['id']]);
+        mg_scanner_claim_notify_many($pdo, [$customerId, $merchantUserId], $merchantUserId, 'wallet_reward_redeemed', 'Wallet reward redeemed', $title . ' was redeemed at ' . (string)$location['name'] . '.', $receipt['url'], null);
+        mg_scanner_trust_event($pdo, 'scanner_redeemed', 10, $giftId, $merchantUserId, $location, $activeVoucherToken, $receipt['id'], $rawScan, ['type' => 'wallet_reward']);
+        $pdo->commit();
+        mg_ok(['gift_id' => $giftId, 'instance_id' => $walletPublicId, 'redemption_id' => $redemptionPublicId, 'receipt_id' => $receipt['id'], 'receipt_url' => $receipt['url'], 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'verified' => true, 'redeemed' => true, 'notifications' => true, 'confirmation' => $confirmation, 'is_wallet_reward' => true, 'gift' => ['title' => $title, 'value_cents' => $amount, 'currency' => $currency]], 'Wallet reward redeemed and receipt created.');
+    }
 
     $microgift = mg_scanner_trust_microgift($pdo, $merchantUserId, $identifier);
     if ($microgift) {
@@ -131,13 +247,13 @@ try {
         if ($claimantId < 1) mg_fail('This Microgift is not assigned to a customer account yet.', 409);
         if (in_array((string)$microgift['status'], ['cancelled','revoked','expired'], true)) mg_fail('This Microgift is not available for scanner redemption.', 409);
         if ((string)$microgift['status'] === 'redeemed') {
-            mg_scanner_trust_event($pdo, 'already_redeemed_scan', 45, $giftId, $merchantUserId, $location, $voucherToken, null, $rawScan, ['type' => 'microgift']);
+            mg_scanner_trust_event($pdo, 'already_redeemed_scan', 45, $giftId, $merchantUserId, $location, $activeVoucherToken, null, $rawScan, ['type' => 'microgift']);
             $pdo->commit();
             mg_ok(['gift_id' => $giftId, 'verified' => true, 'redeemed' => true, 'already_redeemed' => true], 'Microgift already redeemed.');
         }
         $confirmation = mg_scanner_trust_confirmation($giftId, $title, $amount, $currency, $location, $claimCode, mg_scanner_trust_user_summary($pdo, $claimantId));
         if ($action === 'verify' || ($action === 'redeem' && $requireConfirm && !$confirmed)) {
-            mg_scanner_trust_event($pdo, 'scanner_verified', 5, $giftId, $merchantUserId, $location, $voucherToken, null, $rawScan, ['type' => 'microgift']);
+            mg_scanner_trust_event($pdo, 'scanner_verified', 5, $giftId, $merchantUserId, $location, $activeVoucherToken, null, $rawScan, ['type' => 'microgift']);
             $pdo->commit();
             mg_ok(['gift_id' => $giftId, 'instance_id' => $giftId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'verified' => true, 'redeemed' => false, 'needs_confirmation' => $action === 'redeem' && $requireConfirm && !$confirmed, 'confirmation' => $confirmation, 'gift' => ['title' => $title, 'value_cents' => $amount, 'currency' => $currency]], 'Microgift verified. Confirm redemption before claiming voucher.');
         }
@@ -151,13 +267,13 @@ try {
         if ($voucherToken) mg_claim_voucher_mark_redeemed($pdo, (int)$voucherToken['id'], $merchantUserId, (int)$location['id']);
         $pdo->prepare('INSERT INTO microgift_events (public_id,instance_id,event_type,actor_user_id,source_type,source_reference,payload_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')->execute([mg_public_uuid(), (int)$microgift['id'], 'scanner_redeemed', $merchantUserId, 'merchant_scanner', $locationPublicId, json_encode(['receipt_id' => $receipt['id'], 'location_id' => $locationPublicId], JSON_UNESCAPED_SLASHES)]);
         mg_scanner_claim_notify_many($pdo, [$claimantId, $issuerId, $merchantUserId], $merchantUserId, 'microgift_redeemed', 'Microgift redeemed', $title . ' was redeemed at ' . (string)$location['name'] . '.', $receipt['url'], null);
-        mg_scanner_trust_event($pdo, 'scanner_redeemed', 10, $giftId, $merchantUserId, $location, $voucherToken, $receipt['id'], $rawScan, ['type' => 'microgift']);
+        mg_scanner_trust_event($pdo, 'scanner_redeemed', 10, $giftId, $merchantUserId, $location, $activeVoucherToken, $receipt['id'], $rawScan, ['type' => 'microgift']);
         $pdo->commit();
         mg_ok(['gift_id' => $giftId, 'redemption_id' => $redemptionPublicId, 'receipt_id' => $receipt['id'], 'receipt_url' => $receipt['url'], 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'verified' => true, 'redeemed' => true, 'notifications' => true, 'confirmation' => $confirmation, 'gift' => ['title' => $title, 'value_cents' => $amount, 'currency' => $currency]], 'Microgift redeemed and receipt created.');
     }
 
     $legacy = mg_scanner_trust_legacy($pdo, $merchantUserId, $identifier);
-    if (!$legacy) mg_fail('Eligible gift, Microgift, or PPPM item not found.', 404);
+    if (!$legacy) mg_fail('Eligible gift, Microgift, wallet reward, or PPPM item not found.', 404);
     $giftId = (string)$legacy['public_id'];
     if (!in_array((string)$legacy['status'], ['sent','delivered','claimed'], true)) mg_fail('Gift is not available for scanner redemption.', 404);
     $eligibilityStmt = $pdo->prepare('SELECT 1 FROM gift_merchant_eligibility WHERE gift_id=? AND merchant_user_id=? AND (location_id IS NULL OR location_id=?) LIMIT 1');
@@ -178,7 +294,7 @@ try {
     $currency = (string)($legacy['currency'] ?? 'USD');
     $confirmation = mg_scanner_trust_confirmation($giftId, $title, $amount, $currency, $location, $claimCode, mg_scanner_trust_user_summary($pdo, (int)($legacy['recipient_user_id'] ?? 0)));
     if ((string)$claim['status'] === 'redeemed' || (string)$legacy['status'] === 'claimed') {
-        mg_scanner_trust_event($pdo, 'already_redeemed_scan', 45, $giftId, $merchantUserId, $location, $voucherToken, null, $rawScan, ['type' => 'legacy']);
+        mg_scanner_trust_event($pdo, 'already_redeemed_scan', 45, $giftId, $merchantUserId, $location, $activeVoucherToken, null, $rawScan, ['type' => 'legacy']);
         $pdo->commit();
         mg_ok(['gift_id' => $giftId, 'claim_id' => (string)$claim['public_id'], 'verified' => true, 'redeemed' => true, 'already_redeemed' => true], 'Gift already redeemed.');
     }
@@ -186,7 +302,7 @@ try {
     $pdo->prepare('INSERT INTO gift_claim_attempts (claim_id,actor_user_id,successful,ip_hash,user_agent_hash,created_at) VALUES (?,?,?,?,?,NOW())')->execute([(int)$claim['id'], $merchantUserId, 1, hash_hmac('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? ''), $pepper), hash_hmac('sha256', (string)($_SERVER['HTTP_USER_AGENT'] ?? ''), $pepper)]);
     $pdo->prepare("UPDATE gift_claims SET location_id=?,merchant_claim_code_id=?,verified_by_user_id=?,status='verified',verified_at=COALESCE(verified_at,NOW()),failed_attempts=0,locked_at=NULL,updated_at=NOW() WHERE id=?")->execute([(int)$location['id'], (int)$claimCode['id'], $merchantUserId, (int)$claim['id']]);
     if ($action === 'verify' || ($action === 'redeem' && $requireConfirm && !$confirmed)) {
-        mg_scanner_trust_event($pdo, 'scanner_verified', 5, $giftId, $merchantUserId, $location, $voucherToken, null, $rawScan, ['type' => 'legacy']);
+        mg_scanner_trust_event($pdo, 'scanner_verified', 5, $giftId, $merchantUserId, $location, $activeVoucherToken, null, $rawScan, ['type' => 'legacy']);
         $pdo->commit();
         mg_ok(['gift_id' => $giftId, 'claim_id' => (string)$claim['public_id'], 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'verified' => true, 'redeemed' => false, 'needs_confirmation' => $action === 'redeem' && $requireConfirm && !$confirmed, 'confirmation' => $confirmation, 'gift' => ['title' => $title, 'value_cents' => $amount, 'currency' => $currency]], 'Gift verified. Confirm redemption before claiming voucher.');
     }
@@ -197,12 +313,12 @@ try {
     if ($voucherToken) mg_claim_voucher_mark_redeemed($pdo, (int)$voucherToken['id'], $merchantUserId, (int)$location['id']);
     mg_gift_event($pdo, (int)$legacy['id'], $merchantUserId, 'claimed', ['claim_id' => (string)$claim['public_id'], 'location_id' => $locationPublicId, 'source' => 'scanner', 'receipt_id' => $receipt['id']]);
     mg_scanner_claim_notify_many($pdo, [(int)($legacy['sender_user_id'] ?? 0), (int)($legacy['recipient_user_id'] ?? 0), $merchantUserId], $merchantUserId, 'gift_claimed', 'Gift redeemed', 'A merchant location successfully redeemed your gift.', $receipt['url'], (int)$legacy['id']);
-    mg_scanner_trust_event($pdo, 'scanner_redeemed', 10, $giftId, $merchantUserId, $location, $voucherToken, $receipt['id'], $rawScan, ['type' => 'legacy']);
+    mg_scanner_trust_event($pdo, 'scanner_redeemed', 10, $giftId, $merchantUserId, $location, $activeVoucherToken, $receipt['id'], $rawScan, ['type' => 'legacy']);
     $pdo->commit();
     mg_ok(['gift_id' => $giftId, 'claim_id' => (string)$claim['public_id'], 'receipt_id' => $receipt['id'], 'receipt_url' => $receipt['url'], 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'verified' => true, 'redeemed' => true, 'notifications' => true, 'confirmation' => $confirmation, 'gift' => ['title' => $title, 'value_cents' => $amount, 'currency' => $currency]], 'Gift redeemed and receipt created.');
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    try { mg_scanner_trust_event($pdo, 'scanner_exception', 70, $identifier !== '' ? $identifier : null, $merchantUserId, is_array($location) ? $location : null, is_array($voucherToken) ? $voucherToken : null, null, $rawScan, ['exception_class' => $error::class, 'message' => $error->getMessage()]); } catch (Throwable) {}
+    try { mg_scanner_trust_event($pdo, 'scanner_exception', 70, $identifier !== '' ? $identifier : null, $merchantUserId, is_array($location) ? $location : null, is_array($activeVoucherToken) ? $activeVoucherToken : null, null, $rawScan, ['exception_class' => $error::class, 'message' => $error->getMessage()]); } catch (Throwable) {}
     mg_security_log('error', 'merchant.scanner_claim_trust_failed', 'Scanner trust claim failed.', ['identifier' => $identifier, 'exception_class' => $error::class], $merchantUserId);
     mg_fail('Unable to process scanner claim right now.', 500);
 }
