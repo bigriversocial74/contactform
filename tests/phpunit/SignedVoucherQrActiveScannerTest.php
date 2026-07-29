@@ -27,8 +27,8 @@ final class SignedVoucherQrActiveScannerTest extends TestCase
         self::assertStringContainsString("url.searchParams.get('wt')", $scannerClient);
         self::assertStringContainsString("url.searchParams.get('wallet_token')", $scannerClient);
         self::assertStringContainsString("url.searchParams.get('wallet_voucher_token')", $scannerClient);
-        self::assertStringContainsString("/(?:^|[^A-Z0-9])(GFT-[A-Z0-9-]+)/i", $scannerClient);
-        self::assertStringNotContainsString("value.match(/GFT-[A-Z0-9-]+/i)", $scannerClient);
+        self::assertStringContainsString('/(?:^|[^A-Z0-9])(GFT-[A-Z0-9-]+)/i', $scannerClient);
+        self::assertStringNotContainsString('value.match(/GFT-[A-Z0-9-]+/i)', $scannerClient);
 
         $preservePosition = strpos($scannerClient, 'if (isSignedVoucherPayload(value)) return value;');
         $genericGiftPosition = strpos($scannerClient, 'var match = value.match(/(?:^|[^A-Z0-9])(GFT-[A-Z0-9-]+)/i);');
@@ -40,7 +40,7 @@ final class SignedVoucherQrActiveScannerTest extends TestCase
         self::assertStringContainsString("require __DIR__ . '/scanner-claim-trust.php';", $scannerOps);
 
         foreach ([
-            "_action_center_wallet.php",
+            '_action_center_wallet.php',
             "['wt','wallet_token','wallet_voucher_token']",
             'MGFT-WALLET-CLAIM-TOKEN|',
             'mgwv1_',
@@ -68,7 +68,7 @@ final class SignedVoucherQrActiveScannerTest extends TestCase
             self::assertStringContainsString($needle, $scannerTrust);
         }
 
-        self::assertStringContainsString("'scan_payload' => $issued['scan_payload']", $tokenEndpoint);
+        self::assertStringContainsString("'scan_payload' => \$issued['scan_payload']", $tokenEndpoint);
         self::assertStringContainsString("'qr_image_url' => '/api/account/action-center-voucher-qr.php?t='", $tokenEndpoint);
         self::assertStringContainsString("'qr_image_url' => '/api/account/action-center-voucher-qr.php?wt='", $tokenEndpoint);
         self::assertStringContainsString('mg_claim_voucher_scan_payload($token)', $qrEndpoint);
