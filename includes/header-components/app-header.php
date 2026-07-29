@@ -15,7 +15,7 @@ $show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
 $show_header_cart = true;
 $multiAgentHeaderAgents = [];
-$multiAgentSelectedId = strtolower(trim((string) ($_GET['agent_id'] ?? '')));
+$multiAgentSelectedId = strtolower(trim((string) ($_GET['agent_id'] ?? ''));
 if ($is_agent_workspace_header && $is_authenticated_user) {
     require_once dirname(__DIR__) . '/multi-agent-workspace-data.php';
     $multiAgentHeaderAgents = mg_multi_agent_open_tabs(mg_multi_agent_active_agents(mg_current_user()));
@@ -70,7 +70,7 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
     <?php require dirname(__DIR__) . '/header-templates/logged-in.php'; ?>
   </div>
 </header>
-<link rel="stylesheet" href="/assets/css/homeserver-status-indicator.css?v=1.2.0">
+<link rel="stylesheet" href="/assets/css/homeserver-status-indicator.css?v=1.2.1">
 <script src="/assets/js/homeserver-status-indicator.js?v=1.2.0" defer></script>
 <style>
 html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
