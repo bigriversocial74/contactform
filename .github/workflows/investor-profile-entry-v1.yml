@@ -1,0 +1,48 @@
+name: Investor Profile Entry v1
+
+on:
+  pull_request:
+    paths:
+      - 'includes/account-sidebar.php'
+      - 'includes/header-templates/logged-in.php'
+      - 'assets/css/account-dropdown-tabs.css'
+      - 'api/public/profile.php'
+      - 'assets/js/public-profile.js'
+      - 'assets/js/investor-portal-navigation-v1.js'
+      - 'investor-portal.php'
+      - 'scripts/validate_investor_profile_entry_v1.php'
+      - '.github/workflows/investor-profile-entry-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: PHP syntax
+        run: |
+          php -l includes/account-sidebar.php
+          php -l includes/header-templates/logged-in.php
+          php -l api/public/profile.php
+          php -l investor-portal.php
+          php -l scripts/validate_investor_profile_entry_v1.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/public-profile.js
+          node --check assets/js/investor-portal-navigation-v1.js
+      - name: Investor navigation contract
+        run: php scripts/validate_investor_profile_entry_v1.php
