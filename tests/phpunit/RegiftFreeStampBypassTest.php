@@ -30,6 +30,23 @@ final class RegiftFreeStampBypassTest extends TestCase
         self::assertStringContainsString("'debit_applied' => false", $source);
     }
 
+    public function testActionCenterFreeRegiftReturnsBeforeBalanceLookup(): void
+    {
+        $source = file_get_contents($this->root . '/api/account/action-center-send.php');
+        self::assertIsString($source);
+
+        $functionStart = strpos($source, 'function mg_action_center_merchant_sponsored_regift_stamp(');
+        $freeReason = strpos($source, 'Regift sends are free and bypass Stamp balance and ledger writes.', $functionStart);
+        $balanceLookup = strpos($source, 'mg_stamp_balance($pdo, $sponsorUserId, true)', $functionStart);
+
+        self::assertNotFalse($functionStart);
+        self::assertNotFalse($freeReason);
+        self::assertNotFalse($balanceLookup);
+        self::assertLessThan($balanceLookup, $freeReason, 'The free regift return must occur before the sponsor balance lookup.');
+        self::assertStringContainsString('return array_merge($base, [', $source);
+        self::assertStringNotContainsString("\$base + ['debit_status'", $source);
+    }
+
     public function testRegiftBypassesMissingBalanceAndLedgerTablesWhenSqliteIsAvailable(): void
     {
         if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) {
