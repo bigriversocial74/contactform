@@ -25,7 +25,7 @@ final class RegiftFreeStampBypassTest extends TestCase
         self::assertNotFalse($freeGuard);
         self::assertNotFalse($ledgerWrite);
         self::assertLessThan($ledgerWrite, $freeGuard, 'The zero-cost return must execute before any Stamp ledger write.');
-        self::assertStringContainsString("$stampValue = $actionKey === 'regift_send' ? 0 : $configuredStampValue;", $source);
+        self::assertStringContainsString("\$stampValue = \$actionKey === 'regift_send' ? 0 : \$configuredStampValue;", $source);
         self::assertStringContainsString("'debit_status' => 'free_action'", $source);
         self::assertStringContainsString("'debit_applied' => false", $source);
     }
