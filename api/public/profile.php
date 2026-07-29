@@ -60,7 +60,7 @@ function mg_public_profile_attach_post_product_images(PDO $pdo, array &$data): v
     }
 
     foreach ($data['posts']['items'] as &$post) {
-        $productId = strtolower(trim((string)($post['product_id'] ?? ''));
+        $productId = strtolower(trim((string)($post['product_id'] ?? '')));
         if ($productId === '' || !isset($products[$productId])) {
             continue;
         }
@@ -114,9 +114,23 @@ try{
     $data['profile']['availability']['is_investor_access_host'] = (bool)$hostStmt->fetchColumn();
 
     $viewerId=isset($viewer['id'])?(int)$viewer['id']:null;
+    $viewerIsInvestor=false;
+    if($viewerId!==null){
+        $investorStmt=mg_public_profile_query(
+            $pdo,
+            "SELECT 1
+             FROM user_roles ur
+             INNER JOIN roles r ON r.id=ur.role_id
+             WHERE ur.user_id=? AND r.slug='investor'
+             LIMIT 1",
+            [$viewerId]
+        );
+        $viewerIsInvestor=(bool)$investorStmt->fetchColumn();
+    }
     $isOwner=!empty($data['profile']['availability']['is_owner']);
     $relationship=[
         'authenticated'=>$viewerId!==null,
+        'is_investor'=>$viewerIsInvestor,
         'can_follow'=>$viewerId!==null&&!$isOwner,
         'following'=>false,
         'muted'=>false,
