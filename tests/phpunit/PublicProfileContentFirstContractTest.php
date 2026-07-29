@@ -22,14 +22,8 @@ final class PublicProfileContentFirstContractTest extends TestCase
     public function testProfileUsesOneUnifiedIdentityAndActionCard(): void
     {
         $page = $this->read('profile.php');
-        self::assertStringContainsString('class="mg-profile-hero-card"', $page);
-        self::assertStringContainsString('class="mg-profile-hero-identity"', $page);
-        self::assertStringContainsString('class="mg-profile-hero-actions"', $page);
-        self::assertStringContainsString('data-profile-avatar', $page);
-        self::assertStringContainsString('data-profile-name', $page);
-        self::assertStringContainsString('mg-profile-merchant-badge', $page);
-        foreach (['data-profile-follow', 'data-profile-message', 'data-profile-share', 'data-profile-edit'] as $action) {
-            self::assertStringContainsString($action, $page);
+        foreach (['class="mg-profile-hero-card"', 'class="mg-profile-hero-identity"', 'class="mg-profile-hero-actions"', 'data-profile-avatar', 'data-profile-name', 'mg-profile-merchant-badge', 'data-profile-follow', 'data-profile-message', 'data-profile-share', 'data-profile-edit'] as $required) {
+            self::assertStringContainsString($required, $page);
         }
         self::assertStringNotContainsString('data-profile-save', $page);
     }
@@ -37,7 +31,7 @@ final class PublicProfileContentFirstContractTest extends TestCase
     public function testPublicDataDashboardChartAndAnalyticsMarkupIsRemoved(): void
     {
         $page = $this->read('profile.php');
-        foreach (['mg-invest-stat-board','mg-invest-chart-row','data-invest-market-chart','data-invest-demand-meter','mg-invest-sidebar','Portfolio Snapshot','Ticker Value','Merchant Score','data-invest-analytics-grid','data-invest-formula-list','data-invest-tab="analytics"','data-invest-panel="analytics"','Public analytics are not displayed.'] as $removed) {
+        foreach (['mg-invest-stat-board', 'mg-invest-chart-row', 'data-invest-market-chart', 'data-invest-demand-meter', 'mg-invest-sidebar', 'Portfolio Snapshot', 'Ticker Value', 'Merchant Score', 'data-invest-analytics-grid', 'data-invest-formula-list', 'data-invest-tab="analytics"', 'data-invest-panel="analytics"', 'Public analytics are not displayed.'] as $removed) {
             self::assertStringNotContainsString($removed, $page);
         }
     }
@@ -49,13 +43,9 @@ final class PublicProfileContentFirstContractTest extends TestCase
         foreach (['overview', 'products', 'stories', 'posts', 'campaigns', 'community'] as $tab) {
             self::assertStringContainsString('data-invest-tab="' . $tab . '"', $page);
         }
-        self::assertStringContainsString('Featured Experiences', $page);
-        self::assertStringContainsString('data-profile-products-grid', $page);
-        self::assertStringContainsString('Active Campaigns', $page);
-        self::assertStringContainsString('data-invest-campaigns-list', $page);
-        self::assertStringContainsString('data-profile-community-summary', $page);
-        self::assertStringContainsString('data-profile-community-campaigns', $page);
-        self::assertStringContainsString('data-profile-community-accounts', $page);
+        foreach (['Featured Experiences', 'data-profile-products-grid', 'Active Campaigns', 'data-invest-campaigns-list', 'data-profile-community-summary', 'data-profile-community-campaigns', 'data-profile-community-accounts'] as $required) {
+            self::assertStringContainsString($required, $page);
+        }
     }
 
     public function testContentFirstStyleShowsMoreCoverAndResponsiveCards(): void
@@ -63,43 +53,34 @@ final class PublicProfileContentFirstContractTest extends TestCase
         $page = $this->read('profile.php');
         $css = $this->read('assets/css/public-profile-content-first.css');
         self::assertStringContainsString('/assets/css/public-profile-content-first.css?v=1.0.0', $page);
-        self::assertStringContainsString('height:560px!important', $css);
-        self::assertStringContainsString('margin-top:-168px!important', $css);
-        self::assertStringContainsString('grid-template-columns:minmax(0,1fr) 320px', $css);
-        self::assertStringContainsString('@media(max-width:900px)', $css);
-        self::assertStringContainsString('@media(max-width:680px)', $css);
-        self::assertStringContainsString('.mg-profile-campaign-list-full', $css);
+        foreach (['height:560px!important', 'margin-top:-168px!important', 'grid-template-columns:minmax(0,1fr) 320px', '@media(max-width:900px)', '@media(max-width:680px)', '.mg-profile-campaign-list-full'] as $required) {
+            self::assertStringContainsString($required, $css);
+        }
     }
 
-    public function testRuntimeUsesContentCardsAndDoesNotLoadMarketSeries(): void
+    public function testRuntimeUsesContentCardsAndDoesNotLoadProgressOrMarketSeries(): void
     {
         $runtime = $this->read('assets/js/public-profile-investment.js');
-        self::assertStringContainsString('mg-profile-campaign-card', $runtime);
-        self::assertStringContainsString('mg-profile-campaign-icon', $runtime);
-        self::assertStringContainsString('mg-profile-campaign-chevron', $runtime);
-        self::assertStringContainsString('/api/public/profile-investment.php?slug=', $runtime);
-        self::assertStringNotContainsString('profile-market-series.php', $runtime);
-        self::assertStringNotContainsString("document.createElement('progress')", $runtime);
-        self::assertStringNotContainsString('issued_count', $runtime);
+        foreach (['mg-profile-campaign-card', 'mg-profile-campaign-icon', 'mg-profile-campaign-chevron', '/api/public/profile-investment.php?slug='] as $required) {
+            self::assertStringContainsString($required, $runtime);
+        }
+        foreach (['profile-market-series.php', "document.createElement('progress')", 'mg-profile-campaign-progress', 'data-campaign-progress'] as $removed) {
+            self::assertStringNotContainsString($removed, $runtime);
+        }
     }
 
     public function testProfileApiFallsBackToLinkedProductCoverForPosts(): void
     {
         $api = $this->read('api/public/profile.php');
-        self::assertStringContainsString('mg_public_profile_attach_post_product_images', $api);
-        self::assertStringContainsString('catalog_product_version_assets', $api);
-        self::assertStringContainsString("pva.role='cover'", $api);
-        self::assertStringContainsString("cover.status='ready'", $api);
-        self::assertStringContainsString("'source' => 'product_cover'", $api);
-        self::assertStringContainsString("'type' => 'image'", $api);
-        self::assertStringContainsString("'url' => \$product['cover_url']", $api);
-        self::assertStringContainsString('mg_public_profile_attach_post_product_images($pdo, $data);', $api);
+        foreach (['mg_public_profile_attach_post_product_images', 'catalog_product_version_assets', "pva.role='cover'", "cover.status='ready'", "'source' => 'product_cover'", "'type' => 'image'", "'url' => \$product['cover_url']", 'mg_public_profile_attach_post_product_images($pdo, $data);'] as $required) {
+            self::assertStringContainsString($required, $api);
+        }
     }
 
     public function testCanonicalPublicProfileHooksRemainAvailable(): void
     {
         $page = $this->read('profile.php');
-        foreach (['data-public-profile-page','data-profile-loading','data-profile-error','data-profile-content','data-profile-preview-banner','data-profile-cover','data-profile-avatar','data-profile-name','data-profile-headline','data-profile-biography','data-profile-links','data-profile-sections','data-profile-followers','data-profile-supporters','data-profile-products'] as $hook) {
+        foreach (['data-public-profile-page', 'data-profile-loading', 'data-profile-error', 'data-profile-content', 'data-profile-preview-banner', 'data-profile-cover', 'data-profile-avatar', 'data-profile-name', 'data-profile-headline', 'data-profile-biography', 'data-profile-links', 'data-profile-sections', 'data-profile-followers', 'data-profile-supporters', 'data-profile-products'] as $hook) {
             self::assertStringContainsString($hook, $page);
         }
     }

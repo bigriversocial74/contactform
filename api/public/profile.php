@@ -101,10 +101,36 @@ try{
 
     mg_public_profile_attach_post_product_images($pdo, $data);
 
+    $hostStmt = mg_public_profile_query(
+        $pdo,
+        "SELECT 1
+         FROM public_profiles pp
+         INNER JOIN user_roles ur ON ur.user_id=pp.user_id
+         INNER JOIN roles r ON r.id=ur.role_id
+         WHERE pp.public_id=? AND r.slug='super_admin'
+         LIMIT 1",
+        [(string)($data['profile']['id'] ?? '')]
+    );
+    $data['profile']['availability']['is_investor_access_host'] = (bool)$hostStmt->fetchColumn();
+
     $viewerId=isset($viewer['id'])?(int)$viewer['id']:null;
+    $viewerIsInvestor=false;
+    if($viewerId!==null){
+        $investorStmt=mg_public_profile_query(
+            $pdo,
+            "SELECT 1
+             FROM user_roles ur
+             INNER JOIN roles r ON r.id=ur.role_id
+             WHERE ur.user_id=? AND r.slug='investor'
+             LIMIT 1",
+            [$viewerId]
+        );
+        $viewerIsInvestor=(bool)$investorStmt->fetchColumn();
+    }
     $isOwner=!empty($data['profile']['availability']['is_owner']);
     $relationship=[
         'authenticated'=>$viewerId!==null,
+        'is_investor'=>$viewerIsInvestor,
         'can_follow'=>$viewerId!==null&&!$isOwner,
         'following'=>false,
         'muted'=>false,
