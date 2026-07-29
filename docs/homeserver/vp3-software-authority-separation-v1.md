@@ -14,6 +14,7 @@ Microgifter remains an independent HomeServer provider connection. It owns merch
 - Microgifter update authorization and receipt routes return an explicit VP3 delegation boundary for older clients.
 - Installer metadata and downloads are no longer served by Microgifter.
 - Existing merchant, site, dataset, campaign, synchronization, and operational-receipt authorities are unchanged.
+- The Microgifter account status interface directs software-license and installer actions to VP3 while retaining Microgifter connection management locally.
 
 ## Deployment boundary
 
