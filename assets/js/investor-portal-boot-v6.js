@@ -4,17 +4,23 @@
   const nativeFetch = window.fetch.bind(window);
   let portalGet = null;
 
-  const portalRequest = (input, init = {}) => {
+  const requestDetails = (input, init = {}) => {
     try {
       const request = input instanceof Request ? input : null;
       const url = new URL(request ? request.url : String(input), window.location.origin);
       const method = String(init.method || request?.method || 'GET').toUpperCase();
-      return url.origin === window.location.origin
-        && url.pathname === '/api/investment/portal.php'
-        && method === 'GET';
+      return {
+        isPortal: url.origin === window.location.origin && url.pathname === '/api/investment/portal.php',
+        method,
+      };
     } catch (_) {
-      return false;
+      return { isPortal: false, method: 'GET' };
     }
+  };
+
+  const portalRequest = (input, init = {}) => {
+    const { isPortal, method } = requestDetails(input, init);
+    return isPortal && method === 'GET';
   };
 
   const cloneResponse = (snapshot) => new Response(snapshot.body, {
@@ -24,6 +30,12 @@
   });
 
   window.fetch = (input, init = {}) => {
+    const details = requestDetails(input, init);
+    if (details.isPortal && details.method !== 'GET') {
+      portalGet = null;
+      return nativeFetch(input, init);
+    }
+
     if (!portalRequest(input, init)) {
       return nativeFetch(input, init);
     }
