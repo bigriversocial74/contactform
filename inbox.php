@@ -21,6 +21,7 @@ $page_styles = [
 $page_scripts = [
     '/assets/js/sponsored-campaign-card.js',
     '/assets/js/gift-action-center-claim-modal.js',
+    '/assets/js/gift-action-center-claim-recovery.js?v=1.0.0',
     '/assets/js/gift-action-center-send-modal.js',
     '/assets/js/gift-action-center-regift-submit.js',
     '/assets/js/gift-action-center-message-lock.js',
