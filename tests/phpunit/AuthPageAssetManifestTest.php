@@ -18,19 +18,23 @@ final class AuthPageAssetManifestTest extends TestCase
             self::assertSame('mg-auth-page', $manifest['body_class'], "{$pageId} should use the auth page layout class.");
 
             $assets = mg_resolve_page_assets($manifest);
-            self::assertContains('/assets/css/auth-page.css?v=5.0.0', $assets['styles']);
+            self::assertContains('/assets/css/auth-page.css?v=6.0.0', $assets['styles']);
             self::assertNotContains('/assets/css/agent-presentation.css', $assets['styles']);
             self::assertNotContains('/assets/css/agent-presentation-layout.css', $assets['styles']);
             self::assertNotContains('/assets/js/agent-presentation.js', $assets['scripts']);
         }
     }
 
-    public function testAuthPageStylesDoNotUseLandscapeBackgroundArtwork(): void
+    public function testAuthPageStylesUseTheHomepageWhiteBackgroundWithoutArtwork(): void
     {
         $css = file_get_contents(dirname(__DIR__, 2) . '/assets/css/auth-page.css');
         self::assertIsString($css);
+        self::assertStringContainsString('.mg-auth-page{', $css);
+        self::assertStringContainsString('background:#fff!important', $css);
+        self::assertStringContainsString('.mg-auth-page .mg-main{', $css);
         self::assertStringContainsString('background-image:none!important', $css);
         self::assertStringContainsString('content:none!important', $css);
+        self::assertStringNotContainsString('background:#f4f7fb!important', $css);
         self::assertStringNotContainsString('/assets/images/mountains.png', $css);
         self::assertStringNotContainsString('/assets/images/foreground.png', $css);
     }
