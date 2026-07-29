@@ -8,6 +8,7 @@ $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
 $user_roles = is_array($user_roles ?? null) ? $user_roles : [];
 $user_permissions = is_array($user_permissions ?? null) ? $user_permissions : [];
+$is_investor_account = in_array('investor', $user_roles, true);
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, mg_current_user());
 $account_package_label = (string) ($mg_package_context['package_name'] ?? 'Free');
 $account_is_free = !empty($mg_package_context['is_free']);
@@ -66,10 +67,12 @@ $can_header_create = $show_header_create && (
       <div class="mg-account-tabs">
         <input class="mg-account-tab-radio" type="radio" name="mg-account-tab" id="mg-account-tab-customer" checked>
         <input class="mg-account-tab-radio" type="radio" name="mg-account-tab" id="mg-account-tab-merchant">
+        <?php if ($is_investor_account): ?><input class="mg-account-tab-radio" type="radio" name="mg-account-tab" id="mg-account-tab-investor"><?php endif; ?>
 
         <div class="mg-account-tab-list" role="tablist" aria-label="Account menu sections">
           <label class="mg-account-tab" for="mg-account-tab-customer" role="tab">Customer</label>
           <label class="mg-account-tab" for="mg-account-tab-merchant" role="tab">Merchant</label>
+          <?php if ($is_investor_account): ?><label class="mg-account-tab" for="mg-account-tab-investor" role="tab">Investor</label><?php endif; ?>
         </div>
 
         <div class="mg-account-tab-panels">
@@ -103,6 +106,19 @@ $can_header_create = $show_header_create && (
               </div>
             <?php endif; ?>
           </div>
+
+          <?php if ($is_investor_account): ?>
+            <div class="mg-account-tab-panel mg-account-investor-panel" role="tabpanel" aria-label="Investor links">
+              <?php $investorMenuIndex = 1; ?>
+              <a class="mg-account-action" href="/investor-portal.php#summary"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Investor Portal</span></a>
+              <a class="mg-account-action" href="/investor-portal.php#dataroom"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Data Room</span></a>
+              <a class="mg-account-action" href="/investor-portal.php#qa"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Investor Q&amp;A</span></a>
+              <a class="mg-account-action" href="/investor-portal.php#requests"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Questions &amp; Requests</span></a>
+              <a class="mg-account-action" href="/investor-portal.php#updates"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Investor Updates</span></a>
+              <a class="mg-account-action" href="/investor-portal.php#relations"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Investment Relations</span></a>
+              <a class="mg-account-action" href="/investor-portal.php#governance"><span class="mg-account-index"><?= str_pad((string) $investorMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Governance &amp; Documents</span></a>
+            </div>
+          <?php endif; ?>
         </div>
       </div>
 
