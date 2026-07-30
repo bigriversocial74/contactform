@@ -70,3 +70,32 @@ function mg_creator_campaign_operations_scan_workspace(PDO $pdo,int $workspaceId
         throw $e;
     }
 }
+
+/**
+ * Return Creator-visible policies with the canonical merchant workspace label.
+ */
+function mg_creator_campaign_operations_creator_policies_labeled(PDO $pdo,int $creatorUserId): array
+{
+    $rows=mg_creator_campaign_operations_creator_policies($pdo,$creatorUserId);
+    if($rows===[])return [];
+
+    $workspaceIds=array_values(array_unique(array_filter(array_map(
+        static fn(array $row):int=>(int)($row['workspace_id']??0),
+        $rows
+    ))));
+    if($workspaceIds===[])return $rows;
+
+    $marks=implode(',',array_fill(0,count($workspaceIds),'?'));
+    $stmt=$pdo->prepare("SELECT id,display_name FROM merchant_workspaces WHERE id IN ({$marks})");
+    $stmt->execute($workspaceIds);
+    $labels=[];
+    foreach($stmt->fetchAll(PDO::FETCH_ASSOC)?:[] as $workspace){
+        $labels[(int)$workspace['id']]=(string)$workspace['display_name'];
+    }
+
+    foreach($rows as &$row){
+        $row['merchant_name']=$labels[(int)($row['workspace_id']??0)]??'Merchant';
+    }
+    unset($row);
+    return $rows;
+}
