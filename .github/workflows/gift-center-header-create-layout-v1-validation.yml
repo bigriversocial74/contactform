@@ -9,6 +9,7 @@ on:
       - 'includes/header-templates/logged-in.php'
       - 'assets/css/gift-center-header-create-fix-v1.css'
       - 'scripts/validate_gift_center_header_create_layout_v1.php'
+      - 'tests/phpunit/GiftActivityPersistenceTest.php'
       - '.github/workflows/gift-center-header-create-layout-v1-validation.yml'
   workflow_dispatch:
 
@@ -38,6 +39,15 @@ jobs:
           php -l includes/header-components/app-header.php
           php -l includes/header-templates/logged-in.php
           php -l scripts/validate_gift_center_header_create_layout_v1.php
+          php -l tests/phpunit/GiftActivityPersistenceTest.php
 
       - name: Gift Center header contract
         run: php scripts/validate_gift_center_header_create_layout_v1.php
+
+      - name: Retained gift activity contract when PHPUnit is available
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/GiftActivityPersistenceTest.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone contract completed.'
+          fi
