@@ -1,0 +1,48 @@
+name: Register Investor Invite Migration
+
+on:
+  push:
+    branches:
+      - feature/investor-invite-onboarding-v1-20260729
+
+permissions:
+  contents: write
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/investor-invite-onboarding-v1-20260729
+          fetch-depth: 0
+
+      - name: Register canonical migration order
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('config/migrations.php')
+          text = path.read_text(encoding='utf-8')
+          target = "        '20260729_investor_invite_onboarding_v1.sql',\n"
+          anchor = "        '20260728_homeserver_pairing_entitlement_update_contract_v1.sql',\n"
+          if target in text:
+              print('Investor Invite migration is already registered.')
+          else:
+              if anchor not in text:
+                  raise SystemExit('Canonical insertion anchor was not found.')
+              path.write_text(text.replace(anchor, anchor + target, 1), encoding='utf-8')
+              print('Registered Investor Invite migration after the current 20260728 migration.')
+          PY
+          if git diff --quiet -- config/migrations.php; then
+            exit 0
+          fi
+          php -l config/migrations.php
+          php scripts/validate_migration_manifest.php
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/migrations.php
+          git commit -m "Register Investor Invite migration order"
+          git push origin HEAD:feature/investor-invite-onboarding-v1-20260729
