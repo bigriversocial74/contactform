@@ -76,7 +76,7 @@ function mg_creator_campaign_earnings_creator(PDO $pdo,array $user,array $filter
         elseif($payout){$lifecycle=match((string)$payout['payout_status']){'draft'=>'scheduled','approved'=>'approved','processing'=>'processing','paid'=>'paid','failed'=>'payment_failed','cancelled'=>'cancelled','reversed'=>'reversed',default=>'scheduled'};}
         elseif($reservation){$lifecycle=match((string)$reservation['status']){'reserved'=>'reserved','committed'=>'committed','released'=>'released','cancelled'=>'cancelled',default=>'earned'};}
         $item['lifecycle_status']=$lifecycle;
-        if($amount>0&&$reservation){if($reservation['status']==='reserved')$totals[$currency]['reserved_minor']+=(int)$reservation['amount_minor'];if($reservation['status']==='committed')$totals[$currency]['committed_minor']+=(int)$reservation['amount_minor'];}
+        if($amount>0&&$reservation&&!$payout){if($reservation['status']==='reserved')$totals[$currency]['reserved_minor']+=(int)$reservation['amount_minor'];if($reservation['status']==='committed')$totals[$currency]['committed_minor']+=(int)$reservation['amount_minor'];}
         if($amount>0&&$payout){$payoutAmount=(int)($payout['payout_item_amount_minor']??0);if(in_array($payout['payout_status'],['draft','approved'],true))$totals[$currency]['scheduled_minor']+=$payoutAmount;if($payout['payout_status']==='processing')$totals[$currency]['processing_minor']+=$payoutAmount;if($payout['payout_status']==='paid')$totals[$currency]['paid_minor']+=$payoutAmount;}
         unset($item['id']);
     }
