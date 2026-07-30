@@ -16,6 +16,7 @@ $adminPage = $read('admin/investor-invitations.php');
 $adminApi = $read('api/admin/investor-invitations.php');
 $publicPage = $read('investor-invitation.php');
 $publicApi = $read('api/investment/invitation.php');
+$viewerHelper = $read('includes/investment/investor-invitation-viewer.php');
 $signin = $read('signin.php');
 $signup = $read('signup.php');
 $register = $read('api/auth/register.php');
@@ -60,12 +61,15 @@ $checks = [
         && str_contains($service, 'This Investor invitation has expired.')
         && str_contains($service, 'This Investor invitation has been revoked.')
         && str_contains($service, "throw new MgInvestmentException('This Investor invitation is no longer available.', 410)"),
-    'sign-in, sign-up, verification, and safe return preserve onboarding continuity' =>
+    'sign-in, sign-up, verification, safe return, and public-layout classification preserve onboarding continuity' =>
         str_contains($signin, 'name="return"')
         && str_contains($signup, 'name="return"')
         && str_contains($signup, 'investor-invitation.php?token=')
         && str_contains($register, '$postVerifyRedirect=$returnPath')
-        && str_contains($register, 'mg_safe_return_path'),
+        && str_contains($register, 'mg_safe_return_path')
+        && str_contains($publicPage, 'mg_investment_invitation_optional_viewer($returnPath)')
+        && !str_contains($publicPage, 'mg_require_auth(')
+        && str_contains($viewerHelper, "mg_require_auth('/signin.php', \$returnPath)"),
     'Investor Center and access review expose invitation operations and source context' =>
         str_contains($center, '/admin/investor-invitations.php')
         && str_contains($centerData, "'failed_delivery'")
