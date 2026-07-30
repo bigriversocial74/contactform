@@ -42,6 +42,28 @@ $can_header_create = $show_header_create && (
     || ($can_merchant_nav && ($can_create_microgift || $can_create_campaigns || $can_create_rewards))
     || in_array('super_admin', $user_roles, true)
 );
+
+$can_creator_campaign_nav = in_array('super_admin', $user_roles, true);
+if (!$can_creator_campaign_nav) {
+    $headerAccountUser = mg_current_user();
+    $headerAccountUserId = (int) ($headerAccountUser['id'] ?? 0);
+    if ($headerAccountUserId > 0) {
+        try {
+            $creatorNavStmt = mg_db()->prepare(
+                "SELECT 1
+                 FROM user_model_assignments uma
+                 INNER JOIN user_models um ON um.id=uma.user_model_id AND um.code='creator'
+                 INNER JOIN creator_profiles cp ON cp.user_id=uma.user_id
+                 WHERE uma.user_id=? AND uma.status='active' AND cp.status='active'
+                 LIMIT 1"
+            );
+            $creatorNavStmt->execute([$headerAccountUserId]);
+            $can_creator_campaign_nav = (bool) $creatorNavStmt->fetchColumn();
+        } catch (Throwable) {
+            $can_creator_campaign_nav = false;
+        }
+    }
+}
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
   <?php if ($can_header_create): ?>
@@ -88,6 +110,7 @@ $can_header_create = $show_header_create && (
             <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
             <a class="mg-account-action" href="/lists.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Lists</span></a>
             <a class="mg-account-action" href="/feed.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Feed</span></a>
+            <?php if ($can_creator_campaign_nav): ?><a class="mg-account-action" href="/creator-campaigns.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Creator Campaigns</span></a><?php endif; ?>
             <a class="mg-account-action" href="/notifications.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Notifications</span></a>
             <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Orders</span></a>
             <?php if ($account_profile_url): ?><a class="mg-account-action" href="<?= mg_e($account_profile_url) ?>"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Profile</span></a><?php endif; ?>
@@ -99,6 +122,7 @@ $can_header_create = $show_header_create && (
             <?php if ($can_merchant_nav): ?>
               <?php $merchantMenuIndex = 1; ?>
               <a class="mg-account-action" href="/merchant.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Dashboard</span></a>
+              <a class="mg-account-action" href="/merchant-creator-campaigns.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Creator Campaigns</span></a>
               <a class="mg-account-action" href="/merchant-notifications.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merch Notifications</span></a>
               <a class="mg-account-action" href="/merchant-pppm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Orders</span></a>
               <a class="mg-account-action" href="/merchant-stamps.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Stamps</span></a>
