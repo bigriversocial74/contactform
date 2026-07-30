@@ -33,6 +33,14 @@ function mg_investor_center_snapshot(PDO $pdo): array
         'inconsistent' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_profiles ip WHERE (ip.status="active" AND NOT EXISTS(SELECT 1 FROM user_roles ur INNER JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=ip.user_id AND r.slug="investor")) OR (ip.status<>"active" AND EXISTS(SELECT 1 FROM user_roles ur INNER JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=ip.user_id AND r.slug="investor"))'),
     ];
 
+    $invitations = [
+        'active' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_invitations WHERE status IN ("created","sent","viewed") AND expires_at>NOW()'),
+        'viewed' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_invitations WHERE status="viewed" AND expires_at>NOW()'),
+        'accepted_pending' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_invitations i INNER JOIN investor_access_requests r ON r.id=i.request_id WHERE i.status="accepted" AND r.status IN ("pending","more_information_requested")'),
+        'expiring' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_invitations WHERE status IN ("created","sent","viewed") AND expires_at BETWEEN NOW() AND DATE_ADD(NOW(),INTERVAL 7 DAY)'),
+        'failed_delivery' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_invitations WHERE status IN ("created","sent","viewed") AND delivery_status="failed" AND expires_at>NOW()'),
+    ];
+
     $pipeline = [
         'active' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_pipeline_records WHERE stage NOT IN ("passed","declined","archived")'),
         'overdue_followups' => mg_investor_center_scalar($pdo, 'SELECT COUNT(*) FROM investor_pipeline_records WHERE next_follow_up_at IS NOT NULL AND next_follow_up_at<NOW() AND stage NOT IN ("passed","declined","archived")'),
@@ -80,6 +88,8 @@ function mg_investor_center_snapshot(PDO $pdo): array
     $definitions = [
         ['count' => $access['pending'], 'severity' => 'high', 'label' => 'Investor access requests await review', 'href' => '/admin/investor-access-requests.php?status=pending'],
         ['count' => $access['inconsistent'], 'severity' => 'critical', 'label' => 'Investor role/profile records require repair', 'href' => '/admin/investor-access-requests.php'],
+        ['count' => $invitations['failed_delivery'], 'severity' => 'high', 'label' => 'Investor invitations have failed email delivery', 'href' => '/admin/investor-invitations.php?status=created'],
+        ['count' => $invitations['expiring'], 'severity' => 'normal', 'label' => 'Investor invitations expire within 7 days', 'href' => '/admin/investor-invitations.php'],
         ['count' => $pipeline['overdue_followups'], 'severity' => 'high', 'label' => 'Investor follow-ups are overdue', 'href' => '/admin/investor-pipeline.php'],
         ['count' => $diligence['urgent_requests'], 'severity' => 'critical', 'label' => 'Urgent diligence requests are open', 'href' => '/admin/investor-diligence.php'],
         ['count' => $diligence['overdue_requests'], 'severity' => 'high', 'label' => 'Diligence requests are overdue', 'href' => '/admin/investor-diligence.php'],
@@ -90,10 +100,8 @@ function mg_investor_center_snapshot(PDO $pdo): array
         ['count' => $governance['unacknowledged_notices'], 'severity' => 'normal', 'label' => 'Published material notices remain unacknowledged', 'href' => '/admin/investor-governance.php'],
     ];
     foreach ($definitions as $item) {
-        if ((int)$item['count'] > 0) {
-            $work[] = $item;
-        }
+        if ((int)$item['count'] > 0) $work[] = $item;
     }
 
-    return compact('access', 'pipeline', 'diligence', 'closing', 'governance', 'rounds', 'work');
+    return compact('access', 'invitations', 'pipeline', 'diligence', 'closing', 'governance', 'rounds', 'work');
 }

@@ -1,0 +1,130 @@
+name: Investor Invite and Onboarding v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'admin/investor-invitations.php'
+      - 'admin/investor-center.php'
+      - 'admin/investor-access-requests.php'
+      - 'api/admin/investor-invitations.php'
+      - 'api/admin/investor-access.php'
+      - 'api/investment/invitation.php'
+      - 'api/auth/register.php'
+      - 'investor-invitation.php'
+      - 'signin.php'
+      - 'signup.php'
+      - 'includes/investment/investor-invitations.php'
+      - 'includes/investment/investor-invitation-viewer.php'
+      - 'includes/investment/investment-service.php'
+      - 'includes/investment/investor-center-dashboard.php'
+      - 'assets/js/admin-investor-invitations-v1.js'
+      - 'assets/js/admin-investor-access-v1.js'
+      - 'assets/js/investor-invitation-v1.js'
+      - 'assets/css/investor-invitations-v1.css'
+      - 'assets/css/investor-invitation-v1.css'
+      - 'config/migrations.php'
+      - 'database/20260729_investor_invite_onboarding_v1.sql'
+      - 'scripts/validate_investor_invite_onboarding_v1.php'
+      - '.github/workflows/investor-invite-onboarding-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l admin/investor-invitations.php
+          php -l admin/investor-center.php
+          php -l admin/investor-access-requests.php
+          php -l api/admin/investor-invitations.php
+          php -l api/admin/investor-access.php
+          php -l api/investment/invitation.php
+          php -l api/auth/register.php
+          php -l investor-invitation.php
+          php -l signin.php
+          php -l signup.php
+          php -l includes/investment/investor-invitations.php
+          php -l includes/investment/investor-invitation-viewer.php
+          php -l includes/investment/investment-service.php
+          php -l includes/investment/investor-center-dashboard.php
+          php -l config/migrations.php
+          php -l scripts/validate_investor_invite_onboarding_v1.php
+
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/admin-investor-invitations-v1.js
+          node --check assets/js/admin-investor-access-v1.js
+          node --check assets/js/investor-invitation-v1.js
+
+      - name: Investor invitation 10-point contract
+        run: php scripts/validate_investor_invite_onboarding_v1.php
+
+      - name: Build focused deployment package
+        if: matrix.php == '8.3'
+        run: |
+          set -euo pipefail
+          package_root="build/investor-invite-onboarding-v1"
+          files=(
+            admin/investor-invitations.php
+            admin/investor-center.php
+            admin/investor-access-requests.php
+            api/admin/investor-invitations.php
+            api/admin/investor-access.php
+            api/investment/invitation.php
+            api/auth/register.php
+            investor-invitation.php
+            signin.php
+            signup.php
+            includes/investment/investor-invitations.php
+            includes/investment/investor-invitation-viewer.php
+            includes/investment/investment-service.php
+            includes/investment/investor-center-dashboard.php
+            assets/js/admin-investor-invitations-v1.js
+            assets/js/admin-investor-access-v1.js
+            assets/js/investor-invitation-v1.js
+            assets/css/investor-invitations-v1.css
+            assets/css/investor-invitation-v1.css
+            config/migrations.php
+            database/20260729_investor_invite_onboarding_v1.sql
+            docs/investor-invite-onboarding-v1.md
+          )
+          mkdir -p "$package_root"
+          for file in "${files[@]}"; do
+            mkdir -p "$package_root/$(dirname "$file")"
+            cp "$file" "$package_root/$file"
+          done
+          (
+            cd "$package_root"
+            zip -qr ../microgifter-investor-invite-onboarding-v1.zip .
+          )
+
+      - name: Upload focused deployment package
+        if: matrix.php == '8.3'
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-investor-invite-onboarding-v1
+          path: build/microgifter-investor-invite-onboarding-v1.zip
+          if-no-files-found: error

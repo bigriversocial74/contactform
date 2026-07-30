@@ -245,6 +245,7 @@ return [
         '20260727_homeserver_release_distribution_v1.sql',
         '20260728_homeserver_operational_intelligence_campaign_authority_v1.sql',
         '20260728_homeserver_pairing_entitlement_update_contract_v1.sql',
+        '20260729_investor_invite_onboarding_v1.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
