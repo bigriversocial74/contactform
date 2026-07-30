@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/campaign-types.php';
+require_once dirname(__DIR__) . '/public-donations-feature.php';
+
 if (!empty($GLOBALS['mg_create_menu_rendered'])) {
     return;
 }
@@ -12,6 +15,16 @@ $can_create_rewards = (bool) ($can_create_rewards ?? false);
 $can_manage_storefront = (bool) ($can_manage_storefront ?? false);
 $can_manage_locations = (bool) ($can_manage_locations ?? false);
 $can_create_post = (bool) ($can_create_post ?? mg_is_authenticated());
+
+$mgCreateCampaignTypes = [];
+if ($can_create_campaigns) {
+    $mgCreateMenuUser = mg_current_user() ?? [];
+    $mgCreateCampaignTypes = mg_public_donations_campaign_type_options(
+        (int) ($mgCreateMenuUser['id'] ?? 0),
+        $mgCreateMenuUser,
+        true
+    );
+}
 
 $mgCreateTools = [];
 if ($can_create_microgift) {
@@ -139,10 +152,10 @@ $renderCreateTool = static function (array $tool, string $variant = 'card'): voi
 
         <?php if ($can_create_campaigns): ?>
         <section class="mg-create-center-view" id="mg-create-center-campaign" data-create-center-view="campaign" hidden>
-          <div class="mg-create-inline-head"><div><span class="mg-create-menu-eyebrow">Campaign</span><h3>Create a campaign</h3><p>Launch a signup, QR drop, contest, referral, birthday, or agent-offer campaign.</p></div><a href="/merchant-campaigns.php#campaign-create">Open campaign studio</a></div>
+          <div class="mg-create-inline-head"><div><span class="mg-create-menu-eyebrow">Campaign</span><h3>Create a campaign</h3><p>Choose from the complete Campaign Center registry and save a campaign draft without leaving this modal.</p></div><a href="/merchant-campaigns.php#campaign-create">Open campaign studio</a></div>
           <div class="mg-create-inline-success" data-create-inline-success="campaign" hidden><strong>Campaign saved successfully.</strong><p data-create-success-message></p><div><a href="/merchant-campaigns.php" data-create-success-link>View campaigns</a><button type="button" data-create-inline-reset="campaign">Create another</button></div></div>
           <form class="mg-create-inline-form" data-create-inline-form="campaign">
-            <div class="mg-create-form-grid mg-create-form-grid-3"><label>Campaign type<select name="campaign_type"><option value="newsletter_signup">Newsletter signup</option><option value="qr_reward_drop">QR reward drop</option><option value="contest_giveaway">Contest / giveaway</option><option value="referral_reward">Referral reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent offer</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option></select></label><label>Reward template<select name="reward_template_id" data-create-campaign-rewards><option value="">No reward attached</option></select></label></div>
+            <div class="mg-create-form-grid mg-create-form-grid-3"><label>Campaign type<select name="campaign_type" data-create-campaign-types><?php foreach ($mgCreateCampaignTypes as $mgCreateCampaignType): ?><option value="<?= mg_e((string) ($mgCreateCampaignType['key'] ?? '')) ?>"><?= mg_e((string) ($mgCreateCampaignType['label'] ?? 'Campaign')) ?></option><?php endforeach; ?></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option></select></label><label>Reward template<select name="reward_template_id" data-create-campaign-rewards><option value="">No reward attached</option></select></label></div>
             <label>Campaign title<input name="title" maxlength="180" required placeholder="Join the list and get a reward"></label>
             <div class="mg-create-form-grid mg-create-form-grid-2"><label>Public headline<input name="form_headline" maxlength="240" placeholder="Join our rewards list"></label><label>Success message<input name="success_message" maxlength="500" placeholder="Campaign response submitted."></label></div>
             <label>Description<textarea name="description" rows="4" placeholder="Explain the campaign and reward."></textarea></label>

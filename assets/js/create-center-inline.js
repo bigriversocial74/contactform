@@ -229,23 +229,43 @@ window.Microgifter = window.Microgifter || {};
     if (loaded.campaign && !force) return;
     var form = formFor('campaign');
     if (!form) return;
-    var select = form.querySelector('[data-create-campaign-rewards]');
+    var rewardSelect = form.querySelector('[data-create-campaign-rewards]');
+    var typeSelect = form.querySelector('[data-create-campaign-types]');
     try {
-      var response = await MG.get('/api/merchant/reward-templates.php?status=active');
-      var templates = (unwrap(response) || {}).templates || [];
-      if (select) {
-        select.innerHTML = '<option value="">No reward attached</option>';
+      var responses = await Promise.all([
+        MG.get('/api/merchant/reward-templates.php?status=active'),
+        MG.get('/api/merchant/campaigns.php?status=all')
+      ]);
+      var templates = (unwrap(responses[0]) || {}).templates || [];
+      var campaignTypes = (unwrap(responses[1]) || {}).campaign_types || [];
+      if (rewardSelect) {
+        rewardSelect.innerHTML = '<option value="">No reward attached</option>';
         templates.forEach(function (template) {
           var option = document.createElement('option');
           option.value = String(template.id || '');
           option.textContent = String(template.title || 'Reward template');
-          select.appendChild(option);
+          rewardSelect.appendChild(option);
         });
       }
+      if (typeSelect && campaignTypes.length) {
+        var selectedType = String(typeSelect.value || '');
+        typeSelect.replaceChildren();
+        campaignTypes.forEach(function (campaignType) {
+          var option = document.createElement('option');
+          option.value = String(campaignType.key || '');
+          option.textContent = String(campaignType.label || 'Campaign');
+          if (campaignType.internal_only) option.dataset.internalOnly = 'true';
+          typeSelect.appendChild(option);
+        });
+        if (selectedType && Array.from(typeSelect.options).some(function (option) { return option.value === selectedType; })) {
+          typeSelect.value = selectedType;
+        }
+      }
       loaded.campaign = true;
-      setStatus('campaign', templates.length ? 'Campaign form ready.' : 'No active rewards found. Draft campaigns can still be saved.', templates.length ? 'ready' : 'warning');
+      var readiness = campaignTypes.length + ' campaign types · ' + templates.length + ' active rewards';
+      setStatus('campaign', 'Campaign form ready · ' + readiness + '.', campaignTypes.length ? 'ready' : 'warning');
     } catch (error) {
-      setStatus('campaign', error.message || 'Unable to load reward templates.', 'error');
+      setStatus('campaign', error.message || 'Unable to load campaign types and reward templates.', 'error');
     }
   }
 
@@ -256,9 +276,6 @@ window.Microgifter = window.Microgifter || {};
     data.campaign_id = '';
     data.agent_discoverable = form.elements.agent_discoverable && form.elements.agent_discoverable.checked ? 1 : 0;
     if (!String(data.title || '').trim()) return setStatus('campaign', 'Enter a campaign title.', 'error');
-    if (String(data.status || '') === 'active' && !String(data.reward_template_id || '').trim()) {
-      return setStatus('campaign', 'Choose an active reward template before activating the campaign.', 'error');
-    }
     setBusy(button, true, 'Saving…');
     setStatus('campaign', 'Saving campaign…', 'working');
     try {

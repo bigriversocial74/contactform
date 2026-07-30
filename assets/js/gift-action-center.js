@@ -467,23 +467,52 @@ document.addEventListener('DOMContentLoaded', function () {
     modalBody.innerHTML = '';
   }
 
+  function normalizeFolderItems(items) {
+    var values = Array.isArray(items) ? items : [];
+    var contract = window.MicrogifterActionCenterContract;
+    if (contract && typeof contract.views === 'function') values = contract.views(values);
+    return values.map(normalize);
+  }
+
+  async function fetchFolderPayload(folder, attempt) {
+    var freshness = Date.now() + '-' + String(attempt || 0);
+    var response = await Microgifter.get('/api/account/action-center.php?folder=' + encodeURIComponent(folder) + '&limit=100&_mg_fresh=' + encodeURIComponent(freshness));
+    return response.data || response;
+  }
+
+  function payloadFolderTotal(data, folder) {
+    var source = data && data.counts && data.counts[folder];
+    return Number(source && typeof source === 'object' ? source.total : source || 0);
+  }
+
   async function loadFolder(folder, force) {
     if (state.loading) return;
     state.folder = folder;
     state.loading = true;
     updateFolderText();
     list.innerHTML = '<div class="mg-gift-empty-list"><strong>Loading gifts…</strong></div>';
+    var loadError = '';
     try {
       if (window.Microgifter && (force || !state.folders[folder].length)) {
-        var response = await Microgifter.get('/api/account/action-center.php?folder=' + encodeURIComponent(folder) + '&limit=100');
-        var data = response.data || response;
-        state.folders[folder] = (data.items || []).map(normalize);
+        var data = await fetchFolderPayload(folder, 0);
+        var items = normalizeFolderItems(data.items || []);
+        var total = payloadFolderTotal(data, folder);
+        if (total > 0 && !items.length) {
+          data = await fetchFolderPayload(folder, 1);
+          items = normalizeFolderItems(data.items || []);
+          total = payloadFolderTotal(data, folder);
+        }
+        if (total > 0 && !items.length) {
+          throw new Error('The ' + folder + ' count reports ' + total + ' gift' + (total === 1 ? '' : 's') + ', but the gift rows could not be loaded.');
+        }
+        state.folders[folder] = items;
         setCounts(data.counts || state.counts);
       }
     } catch (error) {
       console.error(error);
+      loadError = error && error.message ? error.message : 'Unable to load gifts.';
     }
-    if (demoEnabled && !state.folders[folder].length) {
+    if (demoEnabled && !state.folders[folder].length && !loadError) {
       state.folders[folder] = (demos[folder] || []).map(normalize);
       state.counts[folder] = state.folders[folder].length;
       state.unread[folder] = folder === 'inbox' ? state.folders[folder].length : 0;
@@ -495,6 +524,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     state.loading = false;
     state.selected = null;
+    if (loadError && !state.folders[folder].length) {
+      updateFolderText();
+      list.innerHTML = '<div class="mg-gift-empty-list is-error"><strong>Unable to load ' + esc(folder) + ' gifts</strong><p>' + esc(loadError) + '</p><button type="button" class="mg-btn mg-btn-soft" data-gift-refresh>Try again</button></div>';
+      var retry = list.querySelector('[data-gift-refresh]');
+      if (retry) retry.addEventListener('click', function () { state.folders[folder] = []; loadFolder(folder, true); });
+      return;
+    }
     renderList();
   }
 
