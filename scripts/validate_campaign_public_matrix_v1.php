@@ -147,13 +147,14 @@ foreach ($matrix as $type => [$route, $submit, $family, $expectedMode]) {
     $check($imageSupported, $type . ': campaign image or reporting image supported');
 
     if ($submit !== '') {
-        $routesToEngage = $submit === '/api/public/campaigns/engage.php'
+        $delegatesToEngage = ($submit === '/api/public/campaigns/engage.php'
+                || str_contains($endpoint, "require __DIR__ . '/engage.php'"))
             && str_contains($engageWrapper, "require __DIR__ . '/engage-core.php'")
             && (str_contains($engageCore, "mg_require_method('POST')") || str_contains($engageCore, 'mg_require_method("POST")'));
         $postProtected = str_contains($endpoint, "mg_require_method('POST')")
             || str_contains($endpoint, 'mg_require_method("POST")')
             || str_contains($endpoint, 'mg_media_reward_progress_v2')
-            || $routesToEngage;
+            || $delegatesToEngage;
         $check($postProtected, $type . ': endpoint enforces POST contract');
 
         if ($submit === '/api/public/campaigns/engage.php') {
