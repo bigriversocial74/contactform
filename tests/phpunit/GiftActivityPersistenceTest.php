@@ -55,7 +55,7 @@ final class GiftActivityPersistenceTest extends TestCase
         self::assertStringContainsString('mg_gift_require_accessible', $send);
     }
 
-    public function testNotificationEndpointsAreUserScopedAndBadgesHideAtZero(): void
+    public function testNotificationEndpointsAreUserScopedAndHeaderKeepsOneBadge(): void
     {
         $root = dirname(__DIR__, 2);
         $index = file_get_contents($root . '/api/notifications/index.php');
@@ -73,7 +73,8 @@ final class GiftActivityPersistenceTest extends TestCase
         self::assertStringContainsString('app-header.php', $header);
         self::assertStringContainsString('logged-in.php', $appHeader);
         self::assertStringContainsString('data-notification-badge hidden>0', $loggedInHeader);
-        self::assertStringContainsString('data-message-badge hidden>0', $loggedInHeader);
+        self::assertStringNotContainsString('data-message-badge hidden>0', $loggedInHeader);
+        self::assertStringNotContainsString('data-header-signal="messages"', $loggedInHeader);
     }
 
     public function testGiftActivityUiUsesApisInsteadOfServerPlaceholderRows(): void
