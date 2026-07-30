@@ -64,14 +64,55 @@
   align-self: flex-start;
 }
 
+/* Campaign pages use one footer presentation regardless of auth state. */
+.mg-site-footer.mg-universal-footer {
+  position: relative !important;
+  overflow: hidden !important;
+  border-top: 1px solid rgba(255, 255, 255, .12) !important;
+  background: linear-gradient(135deg, #071c33 0%, #0d3459 100%) !important;
+  color: #fff !important;
+}
+
+.mg-site-footer.mg-universal-footer .mg-footer-logo,
+.mg-site-footer.mg-universal-footer .mg-footer-brand-panel p,
+.mg-site-footer.mg-universal-footer .mg-footer-market-strip span,
+.mg-site-footer.mg-universal-footer .mg-footer-market-strip strong,
+.mg-site-footer.mg-universal-footer .mg-footer-column h2,
+.mg-site-footer.mg-universal-footer .mg-footer-column a,
+.mg-site-footer.mg-universal-footer .mg-footer-column a:visited,
+.mg-site-footer.mg-universal-footer .mg-footer-bottom p,
+.mg-site-footer.mg-universal-footer .mg-footer-bottom-links a,
+.mg-site-footer.mg-universal-footer .mg-footer-bottom-links a:visited,
+.mg-site-footer.mg-universal-footer a:not(.mg-footer-logo),
+.mg-site-footer.mg-universal-footer a:not(.mg-footer-logo):visited,
+.mg-site-footer.mg-universal-footer .mg-footer-cookie-settings {
+  color: #fff !important;
+}
+
+.mg-site-footer.mg-universal-footer .mg-footer-logo img {
+  filter: brightness(0) invert(1) !important;
+}
+
+.mg-site-footer.mg-universal-footer .mg-footer-column a:hover,
+.mg-site-footer.mg-universal-footer .mg-footer-bottom-links a:hover,
+.mg-site-footer.mg-universal-footer a:not(.mg-footer-logo):hover,
+.mg-site-footer.mg-universal-footer .mg-footer-cookie-settings:hover {
+  color: #fff !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+.mg-site-footer.mg-universal-footer .mg-footer-bottom {
+  border-top-color: rgba(255, 255, 255, .18) !important;
+}
+
 @media (min-width: 1181px) {
-  /* The old 98px rule pushed this column below the campaign canvas.
-     Keep the sticky behavior while matching the compact campaign top edge. */
+  /* Match the sticky participation column to the compact campaign canvas top edge. */
   .mg-rl-page .mg-rl-wrap > .mg-rl-join-desktop,
   .mg-rl-page[data-public-campaign-page] .mg-rl-wrap > .mg-rl-join-desktop,
   .mg-rl-page[data-public-campaign-page] .mg-rl-wrap:has(> .mg-rl-join-desktop .mg-campaign-user-details[open]) > .mg-rl-join-desktop {
     align-self: start !important;
-    top: 72px !important;
+    top: 28px !important;
     bottom: auto !important;
     margin-top: 0 !important;
   }
