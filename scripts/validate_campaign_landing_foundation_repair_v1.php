@@ -22,14 +22,26 @@ $header = $read('includes/header.php');
 $foundationCss = $read('assets/css/campaign-landing-foundation.css');
 $simpleCss = $read('assets/css/public-campaign-rl-landing-v1.css');
 
-$assert('Campaign registry exposes 14 public campaign types', count($publicTypes) === 14);
+$assert('Campaign registry exposes 15 public campaign types', count($publicTypes) === 15);
 $assert('Loyalty Quest is registered as a public campaign', isset($registry['loyalty_quest']) && !empty($registry['loyalty_quest']['public_enabled']) && ($registry['loyalty_quest']['public_path'] ?? '') === '/loyalty-quest.php');
 $assert('Customer Refund remains internal-only', isset($registry['customer_refund']) && empty($registry['customer_refund']['public_enabled']) && !empty($registry['customer_refund']['internal_only']));
+$assert('Public Donations remains informational-only', isset($registry['public_donation'])
+    && !empty($registry['public_donation']['public_enabled'])
+    && empty($registry['public_donation']['public_transactional'])
+    && ($registry['public_donation']['public_mode'] ?? '') === 'informational'
+    && ($registry['public_donation']['submit_endpoint'] ?? null) === '');
 
 foreach ($publicTypes as $type => $definition) {
     $path = ltrim((string)($definition['public_path'] ?? ''), '/');
     $assert('Public route exists for ' . $type, $path !== '' && is_file($root . '/' . $path));
-    $assert('Submit endpoint is registered for ' . $type, trim((string)($definition['submit_endpoint'] ?? '')) !== '');
+    if (mg_campaign_type_public_transactional((string)$type)) {
+        $endpoint = ltrim((string)($definition['submit_endpoint'] ?? ''), '/');
+        $assert('Transactional submit endpoint exists for ' . $type, $endpoint !== '' && is_file($root . '/' . $endpoint));
+    } else {
+        $assert('Informational campaign exposes no submit endpoint for ' . $type,
+            trim((string)($definition['submit_endpoint'] ?? '')) === ''
+            && mg_campaign_type_public_mode((string)$type) === 'informational');
+    }
 }
 
 foreach ([
@@ -66,6 +78,12 @@ foreach ($simplePages as $file => $type) {
     $assert($file . ' pins its expected registry type', str_contains($source, "\$mgCampaignExpectedType = '" . $type . "'"));
     $assert($file . ' emits dynamic page metadata', str_contains($source, "\$page_meta = is_array(\$mgCampaignBootstrap['page_meta'])"));
 }
+
+$publicDonationPage = $read('public-donations.php');
+$assert('Public Donations uses its governed informational payload',
+    str_contains($publicDonationPage, 'mg_public_donations_public_payload')
+    && str_contains($publicDonationPage, 'public-donations-public-view.php')
+    && !str_contains($publicDonationPage, '<form'));
 
 $assert('Shared renderer consumes canonical state evaluation', str_contains($renderer, 'mg_campaign_landing_state'));
 $assert('Shared renderer consumes canonical profile component', str_contains($renderer, 'mg_campaign_landing_render_profile'));
