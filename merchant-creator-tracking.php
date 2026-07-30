@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/includes/app.php';
 $page_title='Creator Tracking | Microgifter';$page_section='merchant';$header_mode='account';$page_body_class='mg-creator-tracking-page';
 $page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-creator-campaigns.css?v=2.0.0','/assets/css/creator-campaign-tracking.css?v=5.0.0'];
-$page_scripts=['/assets/js/merchant-creator-campaign-tracking.js?v=5.0.0'];$merchantView='creator_campaigns';
+$page_scripts=['/assets/js/merchant-creator-campaign-tracking.js?v=5.0.0','/assets/js/creator-campaign-context-filter.js?v=20260723-audit-v1'];$merchantView='creator_campaigns';
 require __DIR__.'/includes/header.php';require_once __DIR__.'/includes/merchant-navigation.php';
 $user=mg_current_user();$mg_package_context=is_array($mg_package_context??null)?$mg_package_context:mg_user_package_context(null,$user);
 $canMerchantAccess=(bool)($can_merchant_nav??!empty($mg_package_context['merchant_access']));

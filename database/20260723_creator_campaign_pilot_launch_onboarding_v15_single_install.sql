@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS creator_campaign_onboarding_receipts (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_creator_campaign_onboarding_receipt_public (public_id),
-  UNIQUE KEY uq_creator_campaign_onboarding_receipt_snapshot (onboarding_id,receipt_type,snapshot_hash),
+  UNIQUE KEY uq_creator_campaign_onboarding_receipt_snapshot (onboarding_id,receipt_type,snapshot_hash,status),
   KEY idx_creator_campaign_onboarding_receipt (onboarding_id,status,created_at,id),
   KEY idx_creator_campaign_onboarding_receipt_campaign (campaign_id,created_at,id),
   CONSTRAINT fk_creator_campaign_onboarding_receipt_onboarding FOREIGN KEY (onboarding_id) REFERENCES creator_campaign_merchant_onboarding(id) ON DELETE CASCADE,

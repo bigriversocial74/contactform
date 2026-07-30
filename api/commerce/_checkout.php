@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_foundation.php';
 require_once dirname(__DIR__) . '/payments/_commissions.php';
+require_once dirname(__DIR__, 2) . '/includes/creator-campaigns.php';
 
 final class MgCheckoutWorkflowException extends RuntimeException
 {
@@ -63,9 +64,28 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
     $items=json_decode((string)$draft['items_json'],true,512,JSON_THROW_ON_ERROR);
     if(!is_array($items)||$items===[])throw new MgCheckoutWorkflowException('Checkout draft has no items.',409);
 
+    $creatorAffiliateContext=null;
+    try{
+        $creatorAffiliateContext=mg_creator_campaign_affiliate_checkout_context(
+            $pdo,
+            (int)$draft['merchant_user_id'],
+            $items
+        );
+    }catch(Throwable $affiliateError){
+        if(function_exists('mg_security_log')){
+            mg_security_log('warning','creator_campaign.affiliate_checkout_context_failed','Creator affiliate checkout context could not be captured.',[
+                'checkout_draft_id'=>$draftPublicId,
+                'exception_class'=>$affiliateError::class,
+                'message'=>$affiliateError->getMessage(),
+            ],$buyerUserId);
+        }
+    }
+
     $orderPublicId=mg_public_uuid();
+    $orderMetadata=['checkout_draft_id'=>$draftPublicId,'cart_id'=>(int)$draft['cart_id'],'commission_rule_version'=>MG_COMMISSION_RULE_VERSION];
+    if(is_array($creatorAffiliateContext))$orderMetadata['creator_affiliate']=$creatorAffiliateContext;
     $pdo->prepare("INSERT INTO commerce_orders (public_id,buyer_user_id,merchant_user_id,currency,subtotal_cents,discount_cents,tax_cents,platform_fee_cents,total_cents,payment_status,fulfillment_status,source_type,source_reference,idempotency_key,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,'unpaid','pending','checkout_draft',?,?,?,NOW(),NOW())")
-        ->execute([$orderPublicId,$buyerUserId,(int)$draft['merchant_user_id'],$draft['currency'],(int)$draft['subtotal_cents'],(int)$draft['discount_cents'],(int)$draft['tax_cents'],(int)$draft['platform_fee_cents'],(int)$draft['total_cents'],$draftPublicId,$idempotencyKey,mg_commerce_json(['checkout_draft_id'=>$draftPublicId,'cart_id'=>(int)$draft['cart_id'],'commission_rule_version'=>MG_COMMISSION_RULE_VERSION])]);
+        ->execute([$orderPublicId,$buyerUserId,(int)$draft['merchant_user_id'],$draft['currency'],(int)$draft['subtotal_cents'],(int)$draft['discount_cents'],(int)$draft['tax_cents'],(int)$draft['platform_fee_cents'],(int)$draft['total_cents'],$draftPublicId,$idempotencyKey,mg_commerce_json($orderMetadata)]);
     $orderId=(int)$pdo->lastInsertId();
 
     if(mg_checkout_order_items_have_merchant($pdo)){
@@ -108,6 +128,8 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
         'commission_rate_bps'=>(int)$commissionSnapshot['commission_rate_bps'],
         'commission_rate_source'=>(string)$commissionSnapshot['rate_source'],
         'commission_rule_version'=>MG_COMMISSION_RULE_VERSION,
+        'creator_affiliate_campaign_id'=>(string)($creatorAffiliateContext['campaign_id']??''),
+        'creator_affiliate_source_id'=>(string)($creatorAffiliateContext['source_id']??''),
     ]);
 
     $buyerStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');

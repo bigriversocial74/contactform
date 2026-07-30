@@ -94,6 +94,7 @@ $removedDropdownHrefs = [
 ];
 $keptDropdownHrefs = [
     '/merchant.php',
+    '/merchant-creator-campaigns.php',
     '/merchant-notifications.php',
     '/merchant-pppm.php',
     '/merchant-stamps.php',

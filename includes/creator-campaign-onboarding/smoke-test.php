@@ -15,7 +15,7 @@ function mg_creator_campaign_onboarding_run_smoke_test(
 ): array {
     $products = mg_creator_campaign_onboarding_products($pdo, (int)$workspace['merchant_user_id']);
     $campaigns = mg_creator_campaign_onboarding_campaigns($pdo, (int)$workspace['id']);
-    $existingReceipts = mg_creator_campaign_onboarding_receipts($pdo, (int)$onboarding['id'], 20);
+    $existingReceipts = mg_creator_campaign_onboarding_receipts($pdo, (int)$onboarding['id'], 100);
     $readiness = mg_creator_campaign_onboarding_readiness(
         $pdo,$user,$workspace,$pilot,$onboarding,$products,$campaigns,$existingReceipts
     );
@@ -23,12 +23,6 @@ function mg_creator_campaign_onboarding_run_smoke_test(
     $campaign = is_array($campaignState['campaign'] ?? null) ? $campaignState['campaign'] : null;
     $campaignChecks = (array)($campaignState['checks'] ?? []);
     $step = static fn(int $number): bool => !empty($readiness['steps'][$number]['complete']);
-
-    $automaticAcceptanceOff = false;
-    if ($campaign) {
-        $raw = mg_creator_campaign_onboarding_campaign_row($pdo, (int)$workspace['id'], (string)$campaign['public_id']);
-        $automaticAcceptanceOff = empty($raw['automatic_acceptance']);
-    }
 
     $checks = [
         mg_creator_campaign_onboarding_smoke_check('owner_authority','Merchant owner authority',
@@ -41,17 +35,17 @@ function mg_creator_campaign_onboarding_run_smoke_test(
             empty($pilot['emergency_disabled']),
             empty($pilot['emergency_disabled']) ? 'The workspace emergency stop is clear.' : 'Clear the emergency stop before launch.'),
         mg_creator_campaign_onboarding_smoke_check('enrollment','Pilot enrollment complete',$step(1),
-            'Primary operator, support, target date, goal, and pilot boundaries are recorded.'),
+            'The primary operator is current and support, target date, goal, and pilot boundaries are recorded.'),
         mg_creator_campaign_onboarding_smoke_check('business_defaults','Business defaults complete',$step(2),
             'Brand, target customer, platform, disclosure, and review defaults are reusable.'),
         mg_creator_campaign_onboarding_smoke_check('product_readiness','Selected products ready',$step(3),
-            'Selected products are published, priced, imaged, and claim-ready.'),
+            'Selected products are currently published, priced, imaged, and claim-ready.'),
         mg_creator_campaign_onboarding_smoke_check('financial_guardrails','Financial guardrails valid',$step(4),
             'Compensation exposure stays within the merchant-configured budget ceiling.'),
         mg_creator_campaign_onboarding_smoke_check('creator_preferences','Creator preferences complete',$step(5),
             'Only approved Creators are eligible under the saved participation defaults.'),
-        mg_creator_campaign_onboarding_smoke_check('operator_roles','Operator roles complete',$step(6),
-            'Campaign, review, finance, payout-record, and emergency responsibilities are assigned.'),
+        mg_creator_campaign_onboarding_smoke_check('operator_roles','Operator roles current',$step(6),
+            'Campaign, review, finance, payout-record, and emergency responsibilities belong to current active workspace members.'),
         mg_creator_campaign_onboarding_smoke_check('campaign_selected','First campaign selected',$campaign !== null,
             $campaign ? 'Campaign ' . (string)$campaign['public_id'] . ' is scoped to this workspace.' : 'Select or create a first campaign.'),
         mg_creator_campaign_onboarding_smoke_check('builder_ready','Canonical builder ready',!empty($campaignChecks['builder_ready']),
@@ -66,9 +60,9 @@ function mg_creator_campaign_onboarding_run_smoke_test(
             'A campaign budget record exists and remains the canonical financial ceiling.'),
         mg_creator_campaign_onboarding_smoke_check('tracking_configured','Tracking configured',!empty($campaignChecks['tracking_configured']),
             'At least one active tracking source is available for attribution.'),
-        mg_creator_campaign_onboarding_smoke_check('agreement_service','Agreement service ready',!empty($campaignChecks['agreement_service_ready']),
-            'Immutable participant agreement versions are available when a Creator is approved.'),
-        mg_creator_campaign_onboarding_smoke_check('manual_approval','Automatic Creator acceptance disabled',$automaticAcceptanceOff,
+        mg_creator_campaign_onboarding_smoke_check('agreement_service','Agreement infrastructure ready',!empty($campaignChecks['agreement_service_ready']),
+            'Immutable participant agreement versions can be created after a Creator is approved.'),
+        mg_creator_campaign_onboarding_smoke_check('manual_approval','Automatic Creator acceptance disabled',!empty($campaignChecks['automatic_acceptance_disabled']),
             'Creator applications and agreements remain under explicit merchant approval.'),
         mg_creator_campaign_onboarding_smoke_check('non_execution','Read-only smoke test boundary',true,
             'This test did not publish a campaign, approve a Creator, send outreach, approve content, alter earnings, record a payout, or call a payment provider.'),
@@ -77,14 +71,15 @@ function mg_creator_campaign_onboarding_run_smoke_test(
     $passedCount = count(array_filter($checks, static fn(array $check): bool => !empty($check['ok'])));
     $score = (int)round(($passedCount / max(1, count($checks))) * 100);
     $passed = $passedCount === count($checks);
+    $status = $passed ? 'passed' : 'failed';
     $snapshot = [
-        'version'=>'creator_campaign_onboarding_smoke_v15',
+        'version'=>'creator_campaign_onboarding_smoke_v15_1',
         'onboarding_id'=>(string)$onboarding['public_id'],
         'workspace_id'=>(string)$workspace['public_id'],
         'campaign_id'=>(string)($campaign['public_id'] ?? ''),
         'checks'=>$checks,
         'score'=>$score,
-        'status'=>$passed ? 'passed' : 'failed',
+        'status'=>$status,
         'automatic_execution'=>false,
         'campaign_published'=>false,
         'payment_provider_called'=>false,
@@ -97,9 +92,9 @@ function mg_creator_campaign_onboarding_run_smoke_test(
         if (!$current) throw new MgCreatorCampaignOnboardingException('Merchant onboarding was not found.', 404);
         $existing = $pdo->prepare(
             'SELECT * FROM creator_campaign_onboarding_receipts
-             WHERE onboarding_id=? AND receipt_type=\'readiness_smoke_test\' AND snapshot_hash=? LIMIT 1'
+             WHERE onboarding_id=? AND receipt_type=\'readiness_smoke_test\' AND snapshot_hash=? AND status=? LIMIT 1 FOR UPDATE'
         );
-        $existing->execute([(int)$current['id'], $snapshotHash]);
+        $existing->execute([(int)$current['id'], $snapshotHash, $status]);
         $receipt = $existing->fetch(PDO::FETCH_ASSOC);
         if (!$receipt) {
             $publicId = mg_public_uuid();
@@ -112,12 +107,12 @@ function mg_creator_campaign_onboarding_run_smoke_test(
                 (int)$current['id'],
                 $campaign ? (int)$campaign['id'] : null,
                 (int)$user['id'],
-                $passed ? 'passed' : 'failed',
+                $status,
                 $score,
                 mg_creator_campaign_onboarding_encode($checks),
                 $snapshotHash,
             ]);
-            $receipt = ['public_id'=>$publicId,'status'=>$passed ? 'passed' : 'failed','score'=>$score,'snapshot_hash'=>$snapshotHash];
+            $receipt = ['public_id'=>$publicId,'status'=>$status,'score'=>$score,'snapshot_hash'=>$snapshotHash];
         }
         $pdo->prepare(
             "UPDATE creator_campaign_merchant_onboarding
@@ -129,7 +124,7 @@ function mg_creator_campaign_onboarding_run_smoke_test(
         $after = mg_creator_campaign_onboarding_row($pdo, (int)$user['id'], (int)$workspace['id']) ?? $current;
         mg_creator_campaign_onboarding_event(
             $pdo,$after,(int)$user['id'],
-            'creator_campaign.onboarding.smoke_test_' . ($passed ? 'passed' : 'failed'),
+            'creator_campaign.onboarding.smoke_test_' . $status,
             'smoke_test',
             $passed ? 'info' : 'high',
             $passed ? 'Production onboarding smoke test passed.' : 'Production onboarding smoke test found launch blockers.',
@@ -139,7 +134,7 @@ function mg_creator_campaign_onboarding_run_smoke_test(
             ))]
         );
         $pdo->commit();
-        mg_creator_campaign_onboarding_audit($after, (int)$user['id'], 'smoke_test_' . ($passed ? 'passed' : 'failed'), [
+        mg_creator_campaign_onboarding_audit($after, (int)$user['id'], 'smoke_test_' . $status, [
             'receipt_id'=>(string)$receipt['public_id'],'score'=>$score,
         ]);
         return [
