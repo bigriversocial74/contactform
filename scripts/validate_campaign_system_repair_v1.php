@@ -95,8 +95,8 @@ $check(
     '6. Quick-create defers specialized activation requirements to the canonical API',
     !str_contains($createRuntime, 'Choose an active reward template before activating the campaign.')
     && str_contains($campaignCore, 'mg_campaign_requires_reward_template($campaignType, $status)')
-    && str_contains($campaignCore, "$campaignType === 'watch_video_reward'")
-    && str_contains($campaignCore, "$campaignType === 'listen_music_reward'")
+    && str_contains($campaignCore, "\$campaignType === 'watch_video_reward'")
+    && str_contains($campaignCore, "\$campaignType === 'listen_music_reward'")
     && str_contains($campaignApi, "require __DIR__ . '/campaigns-core.php'")
 );
 
