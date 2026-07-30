@@ -29,7 +29,7 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
         $payout=$this->source('includes/creator-campaigns/payout-service.php');
         self::assertStringContainsString("'manual_approval_required'=>1",$service);
         self::assertStringContainsString('manual_approval_required=1',$service);
-        self::assertStringContainsString("$total,'draft'",$payout);
+        self::assertStringContainsString("\$total,'draft'",$payout);
         self::assertStringContainsString('provider_reference is required before marking a payout paid',$payout);
         self::assertStringNotContainsString('stripe.transfers',$service);
         self::assertStringNotContainsString('Transfer::create',$service);
@@ -39,7 +39,7 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
     {
         $source=$this->source('includes/creator-campaigns/payout-service.php');
         self::assertStringContainsString('r.committed_at<=?',$source);
-        self::assertStringContainsString("max((int)$profile['minimum_payout_minor'],$policyMinimum)",$source);
+        self::assertStringContainsString("max((int)\$profile['minimum_payout_minor'],\$policyMinimum)",$source);
         self::assertStringContainsString('The merchant payout policy is paused.',$source);
         self::assertStringContainsString('completed the payout hold period',$source);
     }
