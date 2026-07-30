@@ -1,0 +1,45 @@
+name: Apply Campaign System Repair Temp
+
+on:
+  push:
+    branches:
+      - fix/campaign-system-inbox-listen-create-center-20260729
+    paths:
+      - .campaign-system-repair-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/campaign-system-inbox-listen-create-center-20260729
+          fetch-depth: 0
+
+      - name: Apply guarded source patches
+        run: python3 scripts/apply_campaign_system_repair_temp.py
+
+      - name: Validate repaired sources
+        run: |
+          php -l includes/header-templates/create-menu.php
+          php -l api/public/campaigns/listen-progress.php
+          php -l api/account/action-center.php
+          node --check assets/js/create-center-inline.js
+          node --check assets/js/gift-action-center.js
+
+      - name: Commit repaired source files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add includes/header-templates/create-menu.php assets/js/create-center-inline.js assets/js/gift-action-center.js
+          if git diff --cached --quiet; then
+            echo "No source changes were produced."
+            exit 1
+          fi
+          git commit -m "Repair campaign registry modal and Inbox rendering"
+          git push origin HEAD:fix/campaign-system-inbox-listen-create-center-20260729
