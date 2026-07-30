@@ -12,6 +12,8 @@ mg_require_csrf_for_write($input);
 $email=mg_identity_normalize_email((string)($input['email']??''));
 $accountType=strtolower(trim((string)($input['account_type']??'customer')));
 if(!in_array($accountType,['customer','merchant'],true))mg_fail('Invalid account type.',422);
+$requestedReturn=trim((string)($input['return']??''));
+$returnPath=$requestedReturn!==''?mg_safe_return_path($requestedReturn):null;
 
 $availablePlans=[];
 foreach(mg_public_pricing_packages() as $package){
@@ -55,6 +57,8 @@ try{
         $postVerifyRedirect='/learn-more.php?plan=enterprise&source=signup';
     }elseif($selectedPlan!==''){
         $postVerifyRedirect='/account-subscriptions.php?plan='.rawurlencode($selectedPlan).'&source=signup';
+    }elseif($returnPath!==null){
+        $postVerifyRedirect=$returnPath;
     }else{
         $postVerifyRedirect='/agent.php';
     }
@@ -67,11 +71,13 @@ try{
         'account_type'=>$accountType,
         'selected_plan'=>$selectedPlan!==''?$selectedPlan:null,
         'initial_entitlement'=>'free_wallet',
+        'return_path'=>$returnPath,
     ],(int)$result['user_id']);
     mg_event('user.registration_intent',[
         'account_type'=>$accountType,
         'selected_plan'=>$selectedPlan!==''?$selectedPlan:null,
         'initial_entitlement'=>'free_wallet',
+        'return_path'=>$returnPath,
     ],(int)$result['user_id']);
 
     mg_ok([

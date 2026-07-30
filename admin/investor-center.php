@@ -11,7 +11,7 @@ $page_title = 'Investor Center | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-investor-center-page';
-$page_styles = ['/assets/css/admin-shell.css', '/assets/css/investment-system-v1.css?v=1.0.0', '/assets/css/investor-center-v6.css?v=6.0.0'];
+$page_styles = ['/assets/css/admin-shell.css', '/assets/css/investment-system-v1.css?v=1.0.0', '/assets/css/investor-center-v6.css?v=6.1.0'];
 $adminActive = 'investor-center';
 
 $money = static fn(int $cents): string => '$' . number_format($cents / 100, 0);
@@ -30,12 +30,13 @@ require dirname(__DIR__) . '/includes/header.php';
           <a href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-investor-center-kicker">Private capital operations</span>
           <h1>Investor Center</h1>
-          <p>One command view for investor access, pipeline activity, governed diligence, closing readiness, funded-investor relations, and post-close governance.</p>
+          <p>One command view for governed outreach, Investor onboarding, access approval, pipeline activity, diligence, closing readiness, funded-investor relations, and post-close governance.</p>
         </div>
         <div class="mg-investor-center-actions">
           <div class="mg-investor-score"><span>Certification target</span><strong>10/10</strong><small>End-to-end Investor lifecycle</small></div>
-          <a class="mg-btn mg-btn-primary" href="/admin/investor-access-requests.php">Review access</a>
-          <a class="mg-btn mg-btn-soft" href="/admin/investor-pipeline.php">Open pipeline</a>
+          <a class="mg-btn mg-btn-primary" href="/admin/investor-invitations.php">Invite investor</a>
+          <a class="mg-btn mg-btn-soft" href="/admin/investor-access-requests.php">Review access</a>
+          <a class="mg-btn mg-btn-ghost" href="/admin/investor-pipeline.php">Open pipeline</a>
         </div>
       </header>
 
@@ -47,6 +48,16 @@ require dirname(__DIR__) . '/includes/header.php';
             <?php $metric('More information', $snapshot['access']['more_information']); ?>
             <?php $metric('Active profiles', $snapshot['access']['active']); ?>
             <?php $metric('Role/profile repairs', $snapshot['access']['inconsistent']); ?>
+          </div>
+        </article>
+
+        <article class="mg-investor-center-card">
+          <header><div><span class="mg-investor-center-kicker">Governed outreach</span><h2>Investor Invitations</h2></div><a href="/admin/investor-invitations.php">Manage →</a></header>
+          <div class="mg-investor-metrics">
+            <?php $metric('Active invitations', $snapshot['invitations']['active']); ?>
+            <?php $metric('Viewed invitations', $snapshot['invitations']['viewed']); ?>
+            <?php $metric('Accepted awaiting review', $snapshot['invitations']['accepted_pending']); ?>
+            <?php $metric('Failed email delivery', $snapshot['invitations']['failed_delivery']); ?>
           </div>
         </article>
 
@@ -121,6 +132,7 @@ require dirname(__DIR__) . '/includes/header.php';
       <section class="mg-investor-center-section">
         <header><div><span class="mg-investor-center-kicker">Specialist workspaces</span><h2>Investor operations modules</h2><p>Each module remains authoritative for its own controlled records and actions.</p></div></header>
         <div class="mg-investor-module-grid">
+          <a class="mg-investor-module" href="/admin/investor-invitations.php"><strong>Investor Invitations</strong><span>Issue email-bound, expiring onboarding links and manage delivery, views, resends, revocation, and acceptance.</span></a>
           <a class="mg-investor-module" href="/admin/investor-access-requests.php"><strong>Access Requests</strong><span>Review identity, approve, request information, deny, revoke, and repair access.</span></a>
           <a class="mg-investor-module" href="/admin/investment-wizard.php"><strong>Investment Wizard</strong><span>Model scenarios, dilution, runway, official terms, evidence, and round publication.</span></a>
           <a class="mg-investor-module" href="/admin/investor-pipeline.php"><strong>Investor Pipeline</strong><span>Manage stage, priority, follow-ups, selected-round access, metrics, and publication.</span></a>

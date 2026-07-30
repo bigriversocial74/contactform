@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/investment-access.php';
+require_once __DIR__ . '/investor-invitations.php';
 require_once __DIR__ . '/investor-access-state.php';
 require_once __DIR__ . '/investor-center-dashboard.php';
 require_once __DIR__ . '/investment-planning.php';
