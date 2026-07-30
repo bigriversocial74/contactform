@@ -62,10 +62,6 @@ jobs:
           php -l signin.php
           php -l signup.php
           php -l includes/investment/investor-invitations.php
-          php -l includes/investment/investor-invitations-core.php
-          php -l includes/investment/investor-invitations-admin.php
-          php -l includes/investment/investor-invitations-lifecycle.php
-          php -l includes/investment/investor-invitations-acceptance.php
           php -l includes/investment/investment-service.php
           php -l includes/investment/investor-center-dashboard.php
           php -l scripts/validate_investor_invite_onboarding_v1.php
@@ -96,10 +92,6 @@ jobs:
             signin.php
             signup.php
             includes/investment/investor-invitations.php
-            includes/investment/investor-invitations-core.php
-            includes/investment/investor-invitations-admin.php
-            includes/investment/investor-invitations-lifecycle.php
-            includes/investment/investor-invitations-acceptance.php
             includes/investment/investment-service.php
             includes/investment/investor-center-dashboard.php
             assets/js/admin-investor-invitations-v1.js
