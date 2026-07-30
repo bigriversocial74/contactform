@@ -16,6 +16,7 @@ on:
       - 'signin.php'
       - 'signup.php'
       - 'includes/investment/investor-invitations.php'
+      - 'includes/investment/investor-invitation-viewer.php'
       - 'includes/investment/investment-service.php'
       - 'includes/investment/investor-center-dashboard.php'
       - 'assets/js/admin-investor-invitations-v1.js'
@@ -62,6 +63,7 @@ jobs:
           php -l signin.php
           php -l signup.php
           php -l includes/investment/investor-invitations.php
+          php -l includes/investment/investor-invitation-viewer.php
           php -l includes/investment/investment-service.php
           php -l includes/investment/investor-center-dashboard.php
           php -l scripts/validate_investor_invite_onboarding_v1.php
@@ -92,6 +94,7 @@ jobs:
             signin.php
             signup.php
             includes/investment/investor-invitations.php
+            includes/investment/investor-invitation-viewer.php
             includes/investment/investment-service.php
             includes/investment/investor-center-dashboard.php
             assets/js/admin-investor-invitations-v1.js
