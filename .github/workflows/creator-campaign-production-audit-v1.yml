@@ -7,6 +7,9 @@ on:
       - 'api/creator/**'
       - 'api/merchant/creator-campaign**'
       - 'api/internal/**creator_campaign**'
+      - 'api/commerce/_checkout.php'
+      - 'api/payments/_capture.php'
+      - 'api/payments/_refund.php'
       - 'assets/js/*creator-campaign*'
       - 'database/*creator_campaign*'
       - 'docs/creator-campaigns/**'
@@ -43,10 +46,19 @@ jobs:
         run: |
           php -l includes/creator-campaigns/compensation-definitions.php
           php -l includes/creator-campaigns/compensation-service.php
+          php -l includes/creator-campaigns/commerce-affiliate-foundation.php
+          php -l includes/creator-campaigns/commerce-affiliate-checkout.php
+          php -l includes/creator-campaigns/commerce-affiliate-earning.php
+          php -l includes/creator-campaigns/commerce-affiliate-payment.php
+          php -l includes/creator-campaigns/commerce-affiliate-refund.php
+          php -l includes/creator-campaigns/commerce-affiliate-refund-reconciliation.php
           php -l includes/creator-campaign-onboarding/repository.php
           php -l includes/creator-campaign-onboarding/readiness.php
           php -l includes/creator-campaign-onboarding/smoke-test.php
           php -l includes/creator-campaign-onboarding/page-view-launch.php
+          php -l api/commerce/_checkout.php
+          php -l api/payments/_capture.php
+          php -l api/payments/_refund.php
           php -l merchant-creator-campaign-builder.php
           php -l merchant-creator-campaign-detail.php
           php -l merchant-creator-participation.php
@@ -55,11 +67,16 @@ jobs:
           php -l merchant-creator-compensation.php
           php -l merchant-creator-budgets.php
           php -l scripts/validate_creator_campaign_production_audit_v1.php
+          php -l scripts/validate_creator_campaign_affiliate_commerce_bridge_v1.php
+          php -l scripts/validate_creator_campaign_affiliate_commerce_bridge_mysql.php
           php -l tests/phpunit/CreatorCampaignProductionAuditV1ContractTest.php
+          php -l tests/phpunit/CreatorCampaignAffiliateCommerceBridgeV1ContractTest.php
       - name: JavaScript syntax
         run: node --check assets/js/creator-campaign-context-filter.js
       - name: Production audit score
         run: php scripts/validate_creator_campaign_production_audit_v1.php
+      - name: Affiliate commerce bridge score
+        run: php scripts/validate_creator_campaign_affiliate_commerce_bridge_v1.php
       - name: Phase 1-15 scored validators
         run: |
           php scripts/validate_creator_campaign_native_foundation_v1.php
@@ -140,6 +157,8 @@ jobs:
         run: mysql -N -B -h 127.0.0.1 -uroot -proot microgifter -e "SELECT COUNT(*) FROM mcp_scope_catalog;" > /tmp/creator-campaign-scope-count-before
       - name: Apply production audit repair
         run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260723_creator_campaign_phases_1_15_production_audit_repair_v1.sql
+      - name: Verify affiliate commerce schema contracts
+        run: php scripts/validate_creator_campaign_affiliate_commerce_bridge_mysql.php
       - name: Verify permission, receipt, migration, and authority contracts
         shell: bash
         run: |

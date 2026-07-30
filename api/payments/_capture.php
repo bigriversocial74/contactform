@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_payments.php';
 require_once __DIR__ . '/_issuance_reconciliation.php';
 require_once dirname(__DIR__) . '/finance/_posting.php';
+require_once dirname(__DIR__, 2) . '/includes/creator-campaigns.php';
 
 final class MgCaptureWorkflowException extends RuntimeException
 {
@@ -50,12 +51,17 @@ function mg_finance_record_paid_order(PDO $pdo,int $orderDbId,int $intentDbId,st
         $pdo->prepare("UPDATE receipts SET status='finalized',finalized_at=COALESCE(finalized_at,NOW()),updated_at=NOW() WHERE order_id=? AND status='pending'")
             ->execute([$orderDbId]);
         $paymentTransitioned=true;
+        $order['payment_status']='paid';
+        $order['paid_at']=$order['paid_at']?:gmdate('Y-m-d H:i:s');
     }
 
     $reconciliation=mg_payment_reconcile_paid_order($pdo,$orderDbId,$actorUserId ?: (int)$order['buyer_user_id'],$paymentTransitioned?'payment_capture':'capture_replay');
     $issued=$reconciliation['pppm']??[];
     $microgifts=$reconciliation['microgifts']??[];
     if($failureHook)$failureHook('after_fulfillment',['order'=>$order,'intent'=>$intent,'reconciliation'=>$reconciliation,'issued'=>$issued,'microgifts'=>$microgifts]);
+
+    $creatorAffiliate=mg_creator_campaign_affiliate_record_paid_order($pdo,$order);
+    if($failureHook)$failureHook('after_creator_affiliate',['order'=>$order,'creator_affiliate'=>$creatorAffiliate]);
 
     if($paymentTransitioned){
         $ready=!empty($reconciliation['complete']);
@@ -75,5 +81,6 @@ function mg_finance_record_paid_order(PDO $pdo,int $orderDbId,int $intentDbId,st
         'fulfillment_status'=>$reconciliation['fulfillment_status']??null,
         'payment_transitioned'=>$paymentTransitioned,
         'provider_reference'=>$providerReference,
+        'creator_affiliate'=>$creatorAffiliate,
     ];
 }
