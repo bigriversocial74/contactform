@@ -50,12 +50,16 @@ $checks = [
         && str_contains($service, "status='accepted'")
         && str_contains($service, 'request_id=?')
         && !str_contains($service, 'INSERT IGNORE INTO user_roles'),
-    'expiry, resend rotation, single-use acceptance, and revocation are enforced' =>
+    'expiry, resend rotation, single-use acceptance, revocation, and consumed-link privacy are enforced' =>
         str_contains($service, "status IN ('created','sent','viewed')")
         && str_contains($service, "status='expired'")
         && str_contains($service, "token_hash=?")
         && str_contains($service, "status='revoked'")
-        && str_contains($service, 'Accepted or revoked invitations cannot be resent.'),
+        && str_contains($service, 'Accepted or revoked invitations cannot be resent.')
+        && str_contains($service, 'This Investor invitation has already been used.')
+        && str_contains($service, 'This Investor invitation has expired.')
+        && str_contains($service, 'This Investor invitation has been revoked.')
+        && str_contains($service, "throw new MgInvestmentException('This Investor invitation is no longer available.', 410)"),
     'sign-in, sign-up, verification, and safe return preserve onboarding continuity' =>
         str_contains($signin, 'name="return"')
         && str_contains($signup, 'name="return"')
