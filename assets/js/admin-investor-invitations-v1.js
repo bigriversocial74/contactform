@@ -65,24 +65,23 @@
     }
   };
   const exposeLink = (data) => {
-    if (!data?.invite_url) return;
+    if (!data?.share_url) return;
     share.hidden = false;
-    shareUrl.value = data.invite_url;
-    shareStatus.textContent = data.delivered ? 'Email delivered; link available for manual copy.' : 'Email was not delivered; copy this link securely.';
+    shareUrl.value = data.share_url;
+    shareStatus.textContent = data.email_sent ? 'Email delivered; link available for manual copy.' : 'Email was not delivered; copy this link securely.';
   };
   createForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!canManage || !schemaReady || !createForm.reportValidity()) return;
     const payload = Object.fromEntries(new FormData(createForm).entries());
     payload.action = 'create';
-    payload.send_email = Boolean(createForm.elements.send_email.checked);
     createButton.disabled = true;
     set(createNotice, 'Creating token-hashed Investor invitation…');
     try {
       const data = await request('/api/admin/investor-invitations.php', {method:'POST', body:JSON.stringify(payload)});
       exposeLink(data);
       createForm.reset();
-      set(createNotice, data.delivered ? 'Investor invitation created and emailed.' : 'Investor invitation created. Email delivery was not confirmed; use the secure link below.', data.delivered ? 'success' : 'error');
+      set(createNotice, data.email_sent ? 'Investor invitation created and emailed.' : 'Investor invitation created. Email delivery was not confirmed; use the secure link below.', data.email_sent ? 'success' : 'error');
       await load();
     } catch (error) {
       set(createNotice, error.message, 'error');
@@ -96,7 +95,7 @@
     try {
       const data = await request('/api/admin/investor-invitations.php', {method:'POST', body:JSON.stringify({action:'resend', invitation_id:id, expires_in_days:14})});
       exposeLink(data);
-      set(notice, data.delivered ? 'Invitation resent with a new secure link.' : 'Invitation link rotated, but email delivery was not confirmed.', data.delivered ? 'success' : 'error');
+      set(notice, data.email_sent ? 'Invitation resent with a new secure link.' : 'Invitation link rotated, but email delivery was not confirmed.', data.email_sent ? 'success' : 'error');
       await load();
     } catch (error) { set(notice, error.message, 'error'); }
   };
