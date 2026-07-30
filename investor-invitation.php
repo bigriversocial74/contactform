@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/investment/investor-invitations.php';
+require_once __DIR__ . '/includes/investment/investor-invitation-viewer.php';
 
 header('Cache-Control: private, no-store, max-age=0');
 header('Pragma: no-cache');
@@ -11,10 +12,7 @@ header('X-Robots-Tag: noindex, nofollow');
 
 $token = strtolower(trim((string)($_GET['token'] ?? '')));
 $returnPath = '/investor-invitation.php' . ($token !== '' ? '?token=' . rawurlencode($token) : '');
-$user = mg_authenticated_user(true);
-if ($user !== null) {
-    $user = mg_require_auth('/signin.php', $returnPath);
-}
+$user = mg_investment_invitation_optional_viewer($returnPath);
 
 $invitation = null;
 $invitationError = null;
