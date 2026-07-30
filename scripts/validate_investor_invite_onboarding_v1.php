@@ -11,6 +11,7 @@ $read = static function (string $path) use ($root): string {
 };
 
 $sql = $read('database/20260729_investor_invite_onboarding_v1.sql');
+$migrationManifest = $read('config/migrations.php');
 $service = $read('includes/investment/investor-invitations.php');
 $adminPage = $read('admin/investor-invitations.php');
 $adminApi = $read('api/admin/investor-invitations.php');
@@ -28,10 +29,11 @@ $adminInvitationJs = $read('assets/js/admin-investor-invitations-v1.js');
 $workflow = $read('.github/workflows/investor-invite-onboarding-v1.yml');
 
 $checks = [
-    'additive invitation and event schema is present' =>
+    'additive schema is present and registered in canonical migration order' =>
         str_contains($sql, 'CREATE TABLE IF NOT EXISTS investor_invitations')
         && str_contains($sql, 'CREATE TABLE IF NOT EXISTS investor_invitation_events')
-        && str_contains($sql, '20260729_investor_invite_onboarding_v1'),
+        && str_contains($sql, '20260729_investor_invite_onboarding_v1')
+        && str_contains($migrationManifest, "'20260729_investor_invite_onboarding_v1.sql'"),
     'bearer tokens are random, hashed, unique, and never stored raw' =>
         str_contains($service, 'bin2hex(random_bytes(32))')
         && str_contains($service, "hash('sha256', \$token)")
@@ -85,10 +87,12 @@ $checks = [
         && str_contains($adminInvitationJs, 'data.email_sent')
         && !str_contains($adminInvitationJs, 'data?.invite_url')
         && !str_contains($adminInvitationJs, 'data.delivered'),
-    'PHP 8.2/8.3, JavaScript, contract, and deployment-package CI are configured' =>
+    'PHP 8.2/8.3, migration, JavaScript, contract, and deployment-package CI are configured' =>
         str_contains($workflow, "php: ['8.2', '8.3']")
+        && str_contains($workflow, 'Canonical migration manifest')
         && str_contains($workflow, 'Investor invitation 10-point contract')
         && str_contains($workflow, 'node --check')
+        && str_contains($workflow, 'config/migrations.php')
         && str_contains($workflow, 'microgifter-investor-invite-onboarding-v1.zip'),
 ];
 
