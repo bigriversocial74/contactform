@@ -1,0 +1,43 @@
+name: Gift Center Header Create Layout v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/header-components/app-header.php'
+      - 'includes/header-templates/logged-in.php'
+      - 'assets/css/gift-center-header-create-fix-v1.css'
+      - 'scripts/validate_gift_center_header_create_layout_v1.php'
+      - '.github/workflows/gift-center-header-create-layout-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l includes/header-components/app-header.php
+          php -l includes/header-templates/logged-in.php
+          php -l scripts/validate_gift_center_header_create_layout_v1.php
+
+      - name: Gift Center header contract
+        run: php scripts/validate_gift_center_header_create_layout_v1.php
