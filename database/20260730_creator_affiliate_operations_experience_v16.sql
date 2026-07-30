@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS creator_campaign_payout_policies (
   UNIQUE KEY uq_cc_payout_policy_public (public_id),
   UNIQUE KEY uq_cc_payout_policy_workspace_currency (workspace_id,currency),
   KEY idx_cc_payout_policy_status (workspace_id,status,updated_at,id),
+  CONSTRAINT fk_cc_payout_policy_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE RESTRICT,
   CONSTRAINT fk_cc_payout_policy_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_cc_payout_policy_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT chk_cc_payout_policy_weekday CHECK (payout_weekday IS NULL OR payout_weekday BETWEEN 1 AND 7),
@@ -64,7 +65,17 @@ CREATE TABLE IF NOT EXISTS creator_campaign_reconciliation_cases (
   UNIQUE KEY uq_cc_reconciliation_fingerprint (workspace_id,fingerprint),
   KEY idx_cc_reconciliation_queue (workspace_id,status,severity,last_seen_at,id),
   KEY idx_cc_reconciliation_source (source_type,source_public_id,status,id),
+  CONSTRAINT fk_cc_reconciliation_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE RESTRICT,
   CONSTRAINT fk_cc_reconciliation_assignee FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES (
+  '20260730_creator_affiliate_operations_experience_v16',
+  'Add merchant Creator affiliate payout policy, reconciliation cases, guided operations, and Creator finance visibility.',
+  NULL,
+  NOW()
+)
+ON DUPLICATE KEY UPDATE description=VALUES(description);
 
 COMMIT;
