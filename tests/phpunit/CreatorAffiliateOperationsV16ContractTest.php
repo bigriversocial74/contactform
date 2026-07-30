@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+require_once dirname(__DIR__,2).'/includes/creator-campaigns/operations-service.php';
+
 final class CreatorAffiliateOperationsV16ContractTest extends TestCase
 {
     private function source(string $path): string
@@ -42,6 +44,15 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
         self::assertStringContainsString("max((int)\$profile['minimum_payout_minor'],\$policyMinimum)",$source);
         self::assertStringContainsString('The merchant payout policy is paused.',$source);
         self::assertStringContainsString('completed the payout hold period',$source);
+    }
+
+    public function testPayoutScheduleDatesAreStable(): void
+    {
+        $now=new DateTimeImmutable('2026-07-30 15:00:00',new DateTimeZone('UTC'));
+        self::assertSame('2026-07-31',mg_creator_campaign_operations_next_payout_date(['status'=>'active','cadence'=>'weekly','payout_weekday'=>5],$now));
+        self::assertSame('2026-07-31',mg_creator_campaign_operations_next_payout_date(['status'=>'active','cadence'=>'biweekly','payout_weekday'=>5,'created_at'=>'2026-07-01 00:00:00'],$now));
+        self::assertSame('2026-08-15',mg_creator_campaign_operations_next_payout_date(['status'=>'active','cadence'=>'monthly','payout_day_of_month'=>15],$now));
+        self::assertNull(mg_creator_campaign_operations_next_payout_date(['status'=>'active','cadence'=>'manual'],$now));
     }
 
     public function testReconciliationCoversAffiliateMoneyLifecycle(): void
