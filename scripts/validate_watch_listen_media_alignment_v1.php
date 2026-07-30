@@ -66,12 +66,19 @@ $assert('Watch progress runtime and milestone issuance remain connected',
     str_contains($watchJs, 'watch-progress-v2.php')
     && str_contains($watchJs, 'progress_percent')
     && str_contains($watchApi, "mg_media_reward_progress_v2('watch_video_reward'")
-    && str_contains($sharedMediaApi, "'issued_rewards'=>$issued"));
+    && str_contains($sharedMediaApi, '\'issued_rewards\'=>$issued'));
 $assert('Listen progress runtime and milestone issuance remain connected',
     str_contains($listenJs, 'listen-progress.php')
     && str_contains($listenJs, 'progress_percent')
-    && str_contains($listenApi, 'mg_listen_reward_issue')
-    && str_contains($listenApi, "'issued_rewards'"));
+    && str_contains($listenApi, "require_once __DIR__ . '/_media_progress_v2.php'")
+    && str_contains($listenApi, "mg_media_reward_progress_v2('listen_music_reward'")
+    && str_contains($sharedMediaApi, 'function mg_media_reward_issue_v2')
+    && str_contains($sharedMediaApi, '\'issued_rewards\'=>$issued'));
+$assert('Watch and Listen share the same participation, CRM, wallet, and Inbox authority',
+    str_contains($sharedMediaApi, 'mg_public_campaign_policy_resolve')
+    && str_contains($sharedMediaApi, 'mg_merchant_crm_record_event')
+    && str_contains($sharedMediaApi, 'mg_zero_reward_issue_from_wallet')
+    && str_contains($sharedMediaApi, "'pppm_destination'=>'inbox'"));
 $assert('Pages load one scoped media stylesheet instead of two legacy polish files',
     str_contains($watch, 'campaign-media-alignment-v1.css')
     && str_contains($listen, 'campaign-media-alignment-v1.css')
