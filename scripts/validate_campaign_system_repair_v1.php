@@ -80,21 +80,24 @@ $check('4. Every transactional campaign type has an existing submit endpoint', $
 $createMenu = $read('includes/header-templates/create-menu.php');
 $createRuntime = $read('assets/js/create-center-inline.js');
 $campaignApi = $read('api/merchant/campaigns.php');
+$campaignCore = $read('api/merchant/campaigns-core.php');
 $check(
     '5. Create Center uses the canonical Campaign Center registry instead of a six-type list',
     str_contains($createMenu, 'mg_public_donations_campaign_type_options')
     && str_contains($createMenu, 'data-create-campaign-types')
+    && str_contains($createMenu, '$mgCreateCampaignTypes as $mgCreateCampaignType')
     && !str_contains($createMenu, '<option value="newsletter_signup">Newsletter signup</option><option value="qr_reward_drop">')
     && str_contains($createRuntime, "MG.get('/api/merchant/campaigns.php?status=all')")
     && str_contains($createRuntime, '.campaign_types || []')
-    && str_contains($campaignApi, 'mg_public_donations_campaign_type_options($merchantId, $user, true)')
+    && str_contains($campaignCore, "'campaign_types' => mg_public_donations_campaign_type_options($merchantId, $user, true)")
 );
 $check(
     '6. Quick-create defers specialized activation requirements to the canonical API',
     !str_contains($createRuntime, 'Choose an active reward template before activating the campaign.')
-    && str_contains($campaignApi, 'mg_campaign_requires_reward_template')
-    && str_contains($campaignApi, "campaignType === 'watch_video_reward'")
-    && str_contains($campaignApi, "campaignType === 'listen_music_reward'")
+    && str_contains($campaignCore, 'mg_campaign_requires_reward_template($campaignType, $status)')
+    && str_contains($campaignCore, "\$campaignType === 'watch_video_reward'")
+    && str_contains($campaignCore, "\$campaignType === 'listen_music_reward'")
+    && str_contains($campaignApi, "require __DIR__ . '/campaigns-core.php'")
 );
 
 $watchProgress = $read('api/public/campaigns/watch-progress-v2.php');
