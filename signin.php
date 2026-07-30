@@ -27,7 +27,7 @@ require __DIR__ . '/includes/header.php';
       <span><strong><?= $invitePrefill ? 'Approval' : 'Campaigns' ?></strong><small><?= $invitePrefill ? 'Super Admin approval remains required.' : 'Continue creating measurable local value.' ?></small></span>
     </div>
   </aside>
-  <form class="mg-auth-card" method="post" action="/api/auth/login.php" data-auth-form="signin" data-success-redirect="<?= mg_e($returnPath) ?>">
+  <form class="mg-auth-card" method="post" action="/api/auth/login.php" data-auth-form="signin" <?= $requestedReturn === '' ? 'data-success-redirect="/agent.php"' : 'data-success-redirect="' . mg_e($returnPath) . '"' ?>>
     <?= mg_csrf_field() ?>
     <input type="hidden" name="return" value="<?= mg_e($returnPath) ?>">
     <span class="mg-auth-kicker">Account access</span>
