@@ -19,7 +19,7 @@ $checks = [
         && str_contains($css, 'display: none !important')
         && str_contains($css, 'background-image: none !important'),
     'campaign page keeps neutral surface' => str_contains($css, 'background: #f2f5f8 !important'),
-    'desktop participation column aligns with campaign canvas' => str_contains($css, 'top: 72px !important')
+    'desktop participation column aligns with campaign canvas' => str_contains($css, 'top: 28px !important')
         && str_contains($css, 'align-self: start !important')
         && str_contains($css, 'bottom: auto !important'),
     'legacy expanded-details offset is explicitly overridden' => str_contains($css, ':has(> .mg-rl-join-desktop .mg-campaign-user-details[open])'),

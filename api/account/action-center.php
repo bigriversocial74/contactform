@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center_contract.php';
 
+header('Cache-Control: private, no-store, max-age=0, must-revalidate');
+header('Pragma: no-cache');
+
 function mg_action_center_counts_plus_wallet(PDO $pdo, int $userId, string $email): array
 {
     return mg_ac_wallet_counts_merge(
@@ -49,5 +52,5 @@ mg_ok([
     'query' => $search,
     'counts' => mg_action_center_counts_plus_wallet($pdo, $userId, $userEmail),
     'items' => $page['items'],
-    'page'=>$page['page'],
+    'page' => $page['page'],
 ]);
