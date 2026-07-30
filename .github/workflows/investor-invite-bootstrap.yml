@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/investor-invite-onboarding-v1-20260729
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
 
 permissions:
   contents: write
@@ -23,6 +26,7 @@ jobs:
           set -euo pipefail
           tar -xzf .github/bootstrap/investor-invite-onboarding-v1.tar.gz
           rm -f .github/bootstrap/investor-invite-onboarding-v1.tar.gz
+          rm -f .github/bootstrap/investor-invite-trigger.txt
           rm -f .github/workflows/investor-invite-bootstrap.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
