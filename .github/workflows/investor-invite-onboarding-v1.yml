@@ -24,6 +24,7 @@ on:
       - 'assets/js/investor-invitation-v1.js'
       - 'assets/css/investor-invitations-v1.css'
       - 'assets/css/investor-invitation-v1.css'
+      - 'config/migrations.php'
       - 'database/20260729_investor_invite_onboarding_v1.sql'
       - 'scripts/validate_investor_invite_onboarding_v1.php'
       - '.github/workflows/investor-invite-onboarding-v1.yml'
@@ -66,7 +67,11 @@ jobs:
           php -l includes/investment/investor-invitation-viewer.php
           php -l includes/investment/investment-service.php
           php -l includes/investment/investor-center-dashboard.php
+          php -l config/migrations.php
           php -l scripts/validate_investor_invite_onboarding_v1.php
+
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
 
       - name: JavaScript syntax
         run: |
@@ -102,6 +107,7 @@ jobs:
             assets/js/investor-invitation-v1.js
             assets/css/investor-invitations-v1.css
             assets/css/investor-invitation-v1.css
+            config/migrations.php
             database/20260729_investor_invite_onboarding_v1.sql
             docs/investor-invite-onboarding-v1.md
           )
