@@ -28,7 +28,7 @@ $add('Payout policy table', $contains($migration,'CREATE TABLE IF NOT EXISTS cre
 $add('Persistent reconciliation table', $contains($migration,'CREATE TABLE IF NOT EXISTS creator_campaign_reconciliation_cases'));
 $add('Workspace-scoped policy uniqueness', $contains($migration,'uq_cc_payout_policy_workspace_currency'));
 $add('Manual approval database constraint', $contains($migration,'CHECK (manual_approval_required = 1)'));
-$add('Idempotent migration receipt', $contains($migration,"20260730_creator_affiliate_operations_experience_v16")&&$contains($migration,'ON DUPLICATE KEY UPDATE'));
+$add('Idempotent migration receipt', $contains($migration,'20260730_creator_affiliate_operations_experience_v16')&&$contains($migration,'ON DUPLICATE KEY UPDATE'));
 
 $add('Safe default hold period', $contains($service,"'hold_days'=>7"));
 $add('Safe default minimum payout', $contains($service,"'minimum_payout_minor'=>2500"));
@@ -47,11 +47,11 @@ $add('Scanner failure is fail-safe', $contains($service,'reconciliation_scan_err
 $add('Persistent fingerprinted cases', $contains($service,"hash('sha256',\$candidate['type'].'|'.\$candidate['sourceType'].'|'.\$candidate['sourcePublicId'])"));
 $add('Clean scan resolves stale cases', $contains($service,"status='resolved',resolved_at=NOW()"));
 
-$add('Hold period enforced in payout assembly', $contains($payoutService,"r.committed_at<=?")&&$contains($payoutService,'hold_days'));
-$add('Effective minimum uses policy and profile', $contains($payoutService,'max((int)$profile[\'minimum_payout_minor\'],$policyMinimum)'));
+$add('Hold period enforced in payout assembly', $contains($payoutService,'r.committed_at<=?')&&$contains($payoutService,'hold_days'));
+$add('Effective minimum uses policy and profile', $contains($payoutService,"max((int)\$profile['minimum_payout_minor'],\$policyMinimum)"));
 $add('Paused policy blocks payout assembly', $contains($payoutService,'The merchant payout policy is paused.'));
-$add('Payout starts in draft', $contains($payoutService,"$total,'draft'"));
-$add('Provider reference remains required', $contains($payoutService,"provider_reference is required before marking a payout paid"));
+$add('Payout starts in draft', $contains($payoutService,"\$total,'draft'"));
+$add('Provider reference remains required', $contains($payoutService,'provider_reference is required before marking a payout paid'));
 
 $add('Merchant operations page', is_file($root.'/merchant-creator-affiliate-operations.php'));
 $add('Payout policy form', $contains($merchantView,'data-caops-policy-form'));
