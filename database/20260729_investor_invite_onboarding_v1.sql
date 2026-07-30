@@ -3,6 +3,9 @@
 -- Invitations are token-hashed, email-bound, expiring, revocable, and convert into
 -- the existing investor_access_requests approval workflow. They do not grant
 -- Investor role, portal, Data Room, round, or securities access automatically.
+-- round_id and request_id are intentionally indexed without foreign-key constraints
+-- so the canonical migration chain remains installable before optional Investor
+-- phase tables are present. Application services enforce those relationships.
 
 CREATE TABLE IF NOT EXISTS investor_invitations (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -44,10 +47,8 @@ CREATE TABLE IF NOT EXISTS investor_invitations (
   KEY idx_investor_invitation_queue (status,expires_at,created_at),
   KEY idx_investor_invitation_round (round_id,status,created_at),
   KEY idx_investor_invitation_request (request_id),
-  CONSTRAINT fk_investor_invitation_round FOREIGN KEY (round_id) REFERENCES investment_rounds(id) ON DELETE SET NULL,
   CONSTRAINT fk_investor_invitation_inviter FOREIGN KEY (invited_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_investor_invitation_acceptor FOREIGN KEY (accepted_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_investor_invitation_request FOREIGN KEY (request_id) REFERENCES investor_access_requests(id) ON DELETE SET NULL,
   CONSTRAINT fk_investor_invitation_revoker FOREIGN KEY (revoked_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
