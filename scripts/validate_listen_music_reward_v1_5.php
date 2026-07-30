@@ -44,7 +44,7 @@ $assert('Progress API records and issues music rewards',
     && str_contains($progressApi, "mg_media_reward_progress_v2('listen_music_reward'")
     && str_contains($sharedProgressApi, 'mg_media_reward_event_v2')
     && str_contains($sharedProgressApi, 'mg_media_reward_issue_v2')
-    && str_contains($sharedProgressApi, "'issued_rewards'=>$issued")
+    && str_contains($sharedProgressApi, "'issued_rewards'=>" . '$issued')
 );
 $assert('Progress API prevents duplicate milestone rewards',
     str_contains($sharedProgressApi, 'mg_media_reward_already_v2')
