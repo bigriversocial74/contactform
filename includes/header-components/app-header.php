@@ -16,7 +16,8 @@ $giftCenterHeaderTabs = [
 $gift_center_tabs = array_column($giftCenterHeaderTabs, 0);
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
 $is_gift_center_header = $header_mode === 'agent' && in_array((string) $agent_tab, $gift_center_tabs, true);
-$show_header_create = !$is_agent_workspace_header;
+$show_header_create = !$is_agent_workspace_header && !$is_gift_center_header;
+$show_gift_center_create = $is_gift_center_header && $is_authenticated_user;
 $show_header_signals = true;
 $show_header_cart = true;
 $multiAgentHeaderAgents = [];
@@ -66,6 +67,9 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
                 </span>
               <?php endforeach; ?>
             </div>
+            <?php if ($show_gift_center_create): ?>
+              <a class="mg-header-create mg-header-build-link mg-gift-center-create" href="/lists.php?action=create" data-header-create data-global-create aria-label="Create" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
+            <?php endif; ?>
           </div>
         <?php elseif ($header_mode === 'builder'): ?>
           <div class="mg-builder-header-toggle" aria-label="Preview size">
@@ -81,6 +85,7 @@ if ($is_agent_workspace_header && $is_authenticated_user) {
   </div>
 </header>
 <link rel="stylesheet" href="/assets/css/homeserver-status-indicator.css?v=1.2.1">
+<link rel="stylesheet" href="/assets/css/gift-center-header-create-fix-v1.css?v=1.0.0">
 <script src="/assets/js/homeserver-status-indicator.js?v=1.2.0" defer></script>
 <style>
 html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"]{display:inline-flex!important;visibility:visible!important;flex:0 0 auto!important}
