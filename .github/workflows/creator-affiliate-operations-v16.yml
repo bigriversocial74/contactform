@@ -9,6 +9,7 @@ on:
       - 'assets/js/merchant-creator-affiliate-operations.js'
       - 'assets/js/creator-campaign-earnings.js'
       - 'assets/js/creator-campaign-payouts.js'
+      - 'config/migrations.php'
       - 'creator-campaign-earnings.php'
       - 'creator-campaign-payouts.php'
       - 'database/20260730_creator_affiliate_operations_experience_v16.sql'
@@ -25,6 +26,7 @@ on:
       - 'includes/merchant-navigation.php'
       - 'merchant-creator-affiliate-operations.php'
       - 'scripts/validate_creator_affiliate_operations_v16.php'
+      - 'scripts/validate_merchant_navigation_groups_v1.php'
       - 'tests/phpunit/CreatorAffiliateOperationsV16ContractTest.php'
       - '.github/workflows/creator-affiliate-operations-v16.yml'
   workflow_dispatch:
@@ -44,9 +46,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with: {php-version: '${{ matrix.php }}', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - uses: actions/setup-node@v4
       - run: composer install --no-interaction --prefer-dist --no-progress
       - name: PHP syntax
         run: |
+          php -l config/migrations.php
           php -l includes/creator-campaigns/operations-service.php
           php -l includes/creator-campaigns/payout-service.php
           php -l includes/creator-campaigns/payout-query.php
@@ -62,6 +66,7 @@ jobs:
           php -l includes/creator-campaign-payouts-view.php
           php -l includes/merchant-navigation.php
           php -l scripts/validate_creator_affiliate_operations_v16.php
+          php -l scripts/validate_merchant_navigation_groups_v1.php
           php -l tests/phpunit/CreatorAffiliateOperationsV16ContractTest.php
       - name: JavaScript syntax
         run: |
@@ -70,6 +75,8 @@ jobs:
           node --check assets/js/creator-campaign-payouts.js
       - name: Creator affiliate operations score
         run: php scripts/validate_creator_affiliate_operations_v16.php
+      - name: Merchant navigation contract
+        run: php scripts/validate_merchant_navigation_groups_v1.php
       - name: Retained compensation, budget, and payout contracts
         run: |
           php scripts/validate_creator_campaign_compensation_v6.php
@@ -80,6 +87,8 @@ jobs:
         run: vendor/bin/phpunit tests/phpunit --filter CreatorAffiliateOperationsV16ContractTest
       - name: Retained Creator Campaign finance PHPUnit
         run: vendor/bin/phpunit tests/phpunit --filter 'CreatorCampaign(Compensation|Budget|Payout|AffiliateCommerce)'
+      - name: Migration manifest
+        run: composer validate-migration-manifest
       - name: Repository production quality
         run: composer audit-repository-quality
 
@@ -140,6 +149,7 @@ jobs:
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='creator_campaign_payout_policies' AND index_name='uq_cc_payout_policy_workspace_currency' AND non_unique=0;")" = "2"
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='creator_campaign_reconciliation_cases' AND index_name='uq_cc_reconciliation_fingerprint' AND non_unique=0;")" = "2"
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('fk_cc_payout_policy_workspace','fk_cc_reconciliation_workspace');")" = "2"
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name='chk_cc_payout_policy_manual' AND check_clause LIKE '%manual_approval_required%1%';")" = "1"
       - name: Verify v16 re-import idempotency
         run: |
           mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260730_creator_affiliate_operations_experience_v16.sql
