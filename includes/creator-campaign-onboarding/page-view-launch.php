@@ -25,16 +25,17 @@
             <button type="submit">Use selected campaign</button>
           </form>
         </div>
-        <?php if ($selectedCampaign): $campaignChecks = (array)($readiness['campaign']['checks'] ?? []); ?>
+        <?php if ($selectedCampaign): $campaignChecks = (array)($readiness['campaign']['checks'] ?? []); $campaignQuery = rawurlencode((string)$selectedCampaign['public_id']); ?>
           <div class="mg-onboarding-domain-grid">
             <?php foreach ([
-              'builder_ready'=>['Builder foundation','/merchant-creator-campaign-builder.php?campaign=' . rawurlencode((string)$selectedCampaign['public_id'])],
-              'product_attached'=>['Products','/merchant-creator-campaign-builder.php?campaign=' . rawurlencode((string)$selectedCampaign['public_id'])],
-              'deliverable_defined'=>['Deliverables','/merchant-creator-deliverables.php'],
-              'compensation_active'=>['Compensation','/merchant-creator-compensation.php'],
-              'budget_configured'=>['Budget','/merchant-creator-budgets.php'],
-              'tracking_configured'=>['Tracking & attribution','/merchant-creator-tracking.php'],
-              'agreement_service_ready'=>['Rights, terms & agreements','/merchant-creator-participation.php'],
+              'builder_ready'=>['Builder foundation','/merchant-creator-campaign-builder.php?campaign=' . $campaignQuery],
+              'product_attached'=>['Products','/merchant-creator-campaign-builder.php?campaign=' . $campaignQuery],
+              'deliverable_defined'=>['Deliverables','/merchant-creator-deliverables.php?campaign=' . $campaignQuery],
+              'compensation_active'=>['Compensation','/merchant-creator-compensation.php?campaign=' . $campaignQuery],
+              'budget_configured'=>['Budget','/merchant-creator-budgets.php?campaign=' . $campaignQuery],
+              'tracking_configured'=>['Tracking & attribution','/merchant-creator-tracking.php?campaign=' . $campaignQuery],
+              'agreement_service_ready'=>['Rights, terms & agreements','/merchant-creator-participation.php?campaign=' . $campaignQuery],
+              'automatic_acceptance_disabled'=>['Manual Creator approval','/merchant-creator-campaign-builder.php?campaign=' . $campaignQuery],
             ] as $key=>[$label,$href]): ?>
               <a class="<?= !empty($campaignChecks[$key]) ? 'is-ready' : 'is-blocked' ?>" href="<?= mg_e($href) ?>"><i><?= !empty($campaignChecks[$key]) ? '✓' : '!' ?></i><span><strong><?= mg_e($label) ?></strong><small><?= !empty($campaignChecks[$key]) ? 'Ready' : 'Complete setup' ?></small></span></a>
             <?php endforeach; ?>
@@ -46,7 +47,7 @@
         <header><i>8</i><div><span>Evidence-based launch check</span><h2>Production smoke test</h2><p>Run a read-only validation across onboarding, product, campaign, operator, and safety records. The test writes only a durable receipt and event evidence.</p></div></header>
         <form method="post" class="mg-onboarding-smoke-action">
           <input type="hidden" name="csrf_token" value="<?= mg_e(mg_csrf_token()) ?>"><input type="hidden" name="action" value="run_smoke_test"><input type="hidden" name="return_step" value="8">
-          <div><strong><?= $latestSmoke ? mg_e(ucfirst((string)$latestSmoke['status'])) . ' · ' . (int)$latestSmoke['score'] . '%' : 'Not run' ?></strong><small><?= $latestSmoke ? mg_e($formatDate((string)$latestSmoke['created_at'])) : 'Complete Steps 1–7, then run the launch validation.' ?></small></div>
+          <div><strong><?= $latestSmoke ? mg_e(ucfirst((string)$latestSmoke['status'])) . ' · ' . (int)$latestSmoke['score'] . '%' : 'Not run' ?></strong><small><?= $latestSmoke ? mg_e($formatDate((string)$latestSmoke['created_at'])) . (empty($readiness['latest_smoke_test_current']) ? ' · State changed; run again' : '') : 'Complete Steps 1–7, then run the launch validation.' ?></small></div>
           <button type="submit">Run production smoke test</button>
         </form>
         <?php if ($latestSmoke): ?>
@@ -60,7 +61,7 @@
         <header><i>9</i><div><span>Merchant launch dashboard</span><h2>Activate onboarding</h2><p>Activation confirms the merchant launch process is ready. It does not publish the campaign, approve Creators, send messages, alter earnings, issue payouts, or enable automation.</p></div></header>
         <div class="mg-onboarding-launch-summary">
           <article><span>Setup</span><strong><?= !empty($readiness['setup_ready']) ? 'Ready' : 'Incomplete' ?></strong></article>
-          <article><span>Smoke test</span><strong><?= $latestSmoke ? mg_e(ucfirst((string)$latestSmoke['status'])) : 'Not run' ?></strong></article>
+          <article><span>Smoke test</span><strong><?= !empty($readiness['current_passing_smoke_test']) ? 'Passed · current' : ($latestSmoke ? 'Run again' : 'Not run') ?></strong></article>
           <article><span>Emergency control</span><strong><?= !empty($readiness['pilot_emergency_clear']) ? 'Clear' : 'Stop active' ?></strong></article>
           <article><span>Activation</span><strong><?= mg_e(mg_creator_campaign_onboarding_status_label((string)$onboarding['status'])) ?></strong></article>
         </div>

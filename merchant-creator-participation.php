@@ -12,7 +12,10 @@ $page_styles = [
     '/assets/css/creator-campaign-ui-v11.css?v=11.0.0',
     '/assets/css/creator-campaign-ui-v11-components.css?v=11.0.0',
 ];
-$page_scripts = ['/assets/js/merchant-creator-campaign-participation.js?v=3.0.1'];
+$page_scripts = [
+    '/assets/js/merchant-creator-campaign-participation.js?v=3.0.1',
+    '/assets/js/creator-campaign-context-filter.js?v=20260723-audit-v1',
+];
 $merchantView = 'creator_campaigns';
 require __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/merchant-navigation.php';
