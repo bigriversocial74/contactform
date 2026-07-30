@@ -1,0 +1,31 @@
+name: Investor Invite Bootstrap
+
+on:
+  push:
+    branches:
+      - feature/investor-invite-onboarding-v1-20260729
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/investor-invite-onboarding-v1-20260729
+          fetch-depth: 0
+
+      - name: Install complete Investor Invite build
+        run: |
+          set -euo pipefail
+          tar -xzf .github/bootstrap/investor-invite-onboarding-v1.tar.gz
+          rm -f .github/bootstrap/investor-invite-onboarding-v1.tar.gz
+          rm -f .github/workflows/investor-invite-bootstrap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build Investor Invite and Onboarding v1"
+          git push origin HEAD:feature/investor-invite-onboarding-v1-20260729
