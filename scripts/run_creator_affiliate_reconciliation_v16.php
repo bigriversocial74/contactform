@@ -14,7 +14,7 @@ if(!is_array($db))throw new RuntimeException('Database configuration is unavaila
 $dsn=sprintf(
     'mysql:host=%s;port=%s;dbname=%s;charset=%s',
     (string)($db['host']??'127.0.0.1'),
-    (string)($db['port']??'3306'),
+    (string)($db['port']??mg_env('MG_DB_PORT','3306')),
     (string)($db['name']??''),
     (string)($db['charset']??'utf8mb4')
 );
@@ -41,7 +41,9 @@ $summary=[
     'cases_detected'=>0,
     'detector_errors'=>[],
     'workspace_failures'=>[],
+    'fatal_error'=>null,
 ];
+$exitCode=1;
 
 try{
     if(!mg_creator_campaign_operations_installed($pdo)){
@@ -69,14 +71,23 @@ try{
     }
 
     $summary['ok']=$summary['workspace_failures']===[]&&$summary['detector_errors']===[];
+    $exitCode=$summary['ok']?0:1;
+}catch(Throwable $e){
+    $summary['ok']=false;
+    $summary['fatal_error']=[
+        'exception_class'=>$e::class,
+        'message'=>$e->getMessage(),
+    ];
+    $exitCode=1;
+}finally{
     $summary['completed_at']=gmdate('c');
     echo json_encode($summary,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL;
-    exit($summary['ok']?0:1);
-}finally{
     try{
         $release=$pdo->prepare('SELECT RELEASE_LOCK(?)');
         $release->execute([$lockName]);
     }catch(Throwable){
-        // Process termination releases the connection-scoped advisory lock.
+        // Closing the PDO connection releases the connection-scoped advisory lock.
     }
 }
+
+exit($exitCode);
