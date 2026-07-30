@@ -30,42 +30,37 @@ function mg_investment_invitation_normalize_email(mixed $value): string
 {
     $email = strtolower(trim((string)$value));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 254) {
-        throw new MgInvestmentException('Enter a valid invitation email address.');
+        throw new MgInvestmentException('Enter a valid recipient email address.');
     }
     return $email;
+}
+
+function mg_investment_invitation_is_uuid(string $value): bool
+{
+    return preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $value) === 1;
+}
+
+function mg_investment_invitation_token(string $raw): string
+{
+    $token = trim($raw);
+    if (!preg_match('/^[a-f0-9]{64}$/i', $token)) {
+        throw new MgInvestmentException('Investor invitation link is invalid.', 404);
+    }
+    return strtolower($token);
 }
 
 function mg_investment_invitation_mask_email(string $email): string
 {
     [$local, $domain] = array_pad(explode('@', $email, 2), 2, '');
     if ($local === '' || $domain === '') return 'Private recipient';
-    $visible = mb_substr($local, 0, min(2, max(1, mb_strlen($local))));
-    return $visible . str_repeat('•', max(3, mb_strlen($local) - mb_strlen($visible))) . '@' . $domain;
-}
-
-function mg_investment_invitation_token(): string
-{
-    return bin2hex(random_bytes(32));
-}
-
-function mg_investment_invitation_token_hash(string $token): string
-{
-    $token = strtolower(trim($token));
-    if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
-        throw new MgInvestmentException('Investor invitation link is invalid.', 404);
-    }
-    return hash('sha256', $token);
-}
-
-function mg_investment_invitation_url(string $token): string
-{
-    return mg_app_base_url() . '/investor-invitation.php?token=' . rawurlencode($token);
+    $visible = mb_substr($local, 0, 1);
+    return $visible . str_repeat('•', max(3, min(8, mb_strlen($local) - 1))) . '@' . $domain;
 }
 
 function mg_investment_invitation_event(PDO $pdo, int $invitationId, ?int $actorUserId, string $eventType, array $details = []): void
 {
     $stmt = $pdo->prepare('INSERT INTO investor_invitation_events (invitation_id,actor_user_id,event_type,details_json,created_at) VALUES (?,?,?,?,NOW())');
-    $stmt->execute([$invitationId, $actorUserId, $eventType, $details ? mg_investment_json_encode($details) : null]);
+    $stmt->execute([$invitationId,$actorUserId,$eventType,$details === [] ? null : mg_investment_json($details)]);
 }
 
 function mg_investment_invitation_expire_stale(PDO $pdo): void
@@ -74,20 +69,24 @@ function mg_investment_invitation_expire_stale(PDO $pdo): void
     $pdo->exec("UPDATE investor_invitations SET status='expired',updated_at=NOW() WHERE status IN ('created','sent','viewed') AND expires_at<=NOW()");
 }
 
-function mg_investment_invitation_row_by_public_id(PDO $pdo, string $publicId, bool $lock = false): array
+function mg_investment_invitation_select_sql(string $where): string
 {
-    mg_investment_invitation_require_schema($pdo);
-    $sql = 'SELECT i.*,r.public_id AS round_public_id,r.public_name AS round_name,
-                   inviter.full_name AS inviter_name,inviter.display_name AS inviter_display_name,
-                   accepted.full_name AS accepted_name,accepted.display_name AS accepted_display_name,accepted.email AS accepted_email,
-                   req.public_id AS request_public_id,req.status AS request_status
+    return "SELECT i.*,r.public_id round_public_id,r.public_name round_name,r.status round_status,
+                   inviter.full_name inviter_name,inviter.display_name inviter_display_name,
+                   accepted.full_name accepted_name,accepted.display_name accepted_display_name,
+                   ar.public_id request_public_id,ar.status request_status
             FROM investor_invitations i
             LEFT JOIN investment_rounds r ON r.id=i.round_id
             INNER JOIN users inviter ON inviter.id=i.invited_by_user_id
             LEFT JOIN users accepted ON accepted.id=i.accepted_by_user_id
-            LEFT JOIN investor_access_requests req ON req.id=i.request_id
-            WHERE i.public_id=? LIMIT 1';
-    if ($lock) $sql .= ' FOR UPDATE';
+            LEFT JOIN investor_access_requests ar ON ar.id=i.request_id
+            WHERE {$where}";
+}
+
+function mg_investment_invitation_row_by_public_id(PDO $pdo, string $publicId, bool $forUpdate = false): array
+{
+    if (!mg_investment_invitation_is_uuid($publicId)) throw new MgInvestmentException('Investor invitation not found.', 404);
+    $sql = mg_investment_invitation_select_sql('i.public_id=?') . ' LIMIT 1' . ($forUpdate ? ' FOR UPDATE' : '');
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$publicId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -95,25 +94,15 @@ function mg_investment_invitation_row_by_public_id(PDO $pdo, string $publicId, b
     return $row;
 }
 
-function mg_investment_invitation_row_by_token(PDO $pdo, string $token, bool $lock = false): array
+function mg_investment_invitation_row_by_token(PDO $pdo, string $token, bool $forUpdate = false): array
 {
     mg_investment_invitation_require_schema($pdo);
-    $hash = mg_investment_invitation_token_hash($token);
-    $sql = 'SELECT i.*,r.public_id AS round_public_id,r.public_name AS round_name,
-                   inviter.full_name AS inviter_name,inviter.display_name AS inviter_display_name,
-                   accepted.full_name AS accepted_name,accepted.display_name AS accepted_display_name,accepted.email AS accepted_email,
-                   req.public_id AS request_public_id,req.status AS request_status
-            FROM investor_invitations i
-            LEFT JOIN investment_rounds r ON r.id=i.round_id
-            INNER JOIN users inviter ON inviter.id=i.invited_by_user_id
-            LEFT JOIN users accepted ON accepted.id=i.accepted_by_user_id
-            LEFT JOIN investor_access_requests req ON req.id=i.request_id
-            WHERE i.token_hash=? LIMIT 1';
-    if ($lock) $sql .= ' FOR UPDATE';
+    $hash = hash('sha256', mg_investment_invitation_token($token));
+    $sql = mg_investment_invitation_select_sql('i.token_hash=?') . ' LIMIT 1' . ($forUpdate ? ' FOR UPDATE' : '');
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$hash]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) throw new MgInvestmentException('Investor invitation link is invalid.', 404);
+    if (!$row) throw new MgInvestmentException('Investor invitation not found.', 404);
     return $row;
 }
 
@@ -176,147 +165,108 @@ function mg_investment_invitation_admin_list(PDO $pdo, array $filters = []): arr
         $params[] = $status;
     }
     if ($search !== '') {
-        $where[] = '(i.invited_email LIKE ? OR i.contact_name LIKE ? OR i.firm_name LIKE ? OR r.public_name LIKE ?)';
-        $like = '%' . $search . '%';
-        array_push($params, $like, $like, $like, $like);
+        $where[] = '(i.invited_email LIKE ? OR i.contact_name LIKE ? OR i.firm_name LIKE ?)';
+        $needle = '%' . mb_substr($search, 0, 120) . '%';
+        array_push($params, $needle, $needle, $needle);
     }
-    $sql = 'SELECT i.*,r.public_id AS round_public_id,r.public_name AS round_name,
-                   inviter.full_name AS inviter_name,inviter.display_name AS inviter_display_name,
-                   accepted.full_name AS accepted_name,accepted.display_name AS accepted_display_name,accepted.email AS accepted_email,
-                   req.public_id AS request_public_id,req.status AS request_status
-            FROM investor_invitations i
-            LEFT JOIN investment_rounds r ON r.id=i.round_id
-            INNER JOIN users inviter ON inviter.id=i.invited_by_user_id
-            LEFT JOIN users accepted ON accepted.id=i.accepted_by_user_id
-            LEFT JOIN investor_access_requests req ON req.id=i.request_id
-            WHERE ' . implode(' AND ', $where) . '
-            ORDER BY FIELD(i.status,"created","sent","viewed","accepted","expired","revoked"),i.created_at DESC LIMIT 500';
+    $sql = mg_investment_invitation_select_sql(implode(' AND ', $where)) . ' ORDER BY i.created_at DESC LIMIT 250';
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     return array_map(static fn(array $row): array => mg_investment_invitation_public($row, true), $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
 }
 
-function mg_investment_invitation_payload(PDO $pdo, array $input): array
+function mg_investment_invitation_events(PDO $pdo, string $publicId): array
 {
-    $email = mg_investment_invitation_normalize_email($input['email'] ?? '');
-    $investorTypes = ['individual','angel','investment_firm','venture_fund','family_office','strategic_partner','company_entity','other'];
-    $ranges = ['undecided','under_10k','10k_25k','25k_50k','50k_100k','100k_250k','over_250k'];
-    $type = strtolower(mg_investment_text($input['investor_type'] ?? 'individual', 60, 1, 'Investor type'));
-    $range = strtolower(mg_investment_text($input['expected_investment_range'] ?? 'undecided', 60, 1, 'Expected investment range'));
-    if (!in_array($type, $investorTypes, true) || !in_array($range, $ranges, true)) {
-        throw new MgInvestmentException('Invalid investor type or expected range.');
+    $row = mg_investment_invitation_row_by_public_id($pdo, $publicId);
+    $stmt = $pdo->prepare('SELECT e.event_type,e.details_json,e.created_at,u.full_name actor_name,u.display_name actor_display_name FROM investor_invitation_events e LEFT JOIN users u ON u.id=e.actor_user_id WHERE e.invitation_id=? ORDER BY e.id DESC LIMIT 100');
+    $stmt->execute([(int)$row['id']]);
+    $items = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $event) {
+        $items[] = [
+            'event_type' => (string)$event['event_type'],
+            'details' => mg_investment_decode_json($event['details_json'] ?? null),
+            'actor_name' => (string)($event['actor_display_name'] ?? $event['actor_name'] ?? 'System'),
+            'created_at' => (string)$event['created_at'],
+        ];
     }
-    $roundId = null;
-    $roundPublicId = trim((string)($input['round_id'] ?? ''));
-    if ($roundPublicId !== '') {
-        $stmt = $pdo->prepare('SELECT id FROM investment_rounds WHERE public_id=? AND status<>"cancelled" LIMIT 1');
-        $stmt->execute([$roundPublicId]);
-        $roundId = (int)$stmt->fetchColumn();
-        if ($roundId < 1) throw new MgInvestmentException('Selected funding round is unavailable.');
-    }
-    $days = max(1, min(60, (int)($input['expires_in_days'] ?? 14)));
-    return [
-        'email' => $email,
-        'email_hash' => hash('sha256', $email),
-        'contact_name' => mg_investment_text($input['contact_name'] ?? '', 180),
-        'firm_name' => mg_investment_text($input['firm_name'] ?? '', 180),
-        'investor_type' => $type,
-        'expected_investment_range' => $range,
-        'round_id' => $roundId,
-        'personal_message' => mg_investment_long_text($input['personal_message'] ?? '', 4000),
-        'expires_at' => date('Y-m-d H:i:s', time() + ($days * 86400)),
-        'expires_in_days' => $days,
-        'send_email' => mg_investment_bool($input['send_email'] ?? true),
-    ];
+    return $items;
 }
 
-function mg_investment_invitation_assert_account_available(PDO $pdo, string $email): void
-{
-    $stmt = $pdo->prepare('SELECT u.id,ip.status AS investor_profile_status,
-        (SELECT iar.status FROM investor_access_requests iar WHERE iar.user_id=u.id ORDER BY iar.id DESC LIMIT 1) AS request_status
-        FROM users u LEFT JOIN investor_profiles ip ON ip.user_id=u.id WHERE LOWER(u.email)=? LIMIT 1');
-    $stmt->execute([$email]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) return;
-    if ((string)($row['investor_profile_status'] ?? '') === 'active') {
-        throw new MgInvestmentException('This email already belongs to an active Investor account.', 409);
-    }
-    if (in_array((string)($row['request_status'] ?? ''), ['pending','more_information_requested','approved'], true)) {
-        throw new MgInvestmentException('This account already has an active Investor Access workflow. Review that request instead of sending a new invitation.', 409);
-    }
-}
-
-function mg_investment_invitation_email(array $row, string $inviteUrl): array
+function mg_investment_invitation_email(array $row, string $url): array
 {
     $name = trim((string)($row['contact_name'] ?? '')) ?: 'there';
-    $inviter = trim((string)($row['inviter_display_name'] ?? $row['inviter_name'] ?? 'Microgifter')) ?: 'Microgifter';
+    $firm = trim((string)($row['firm_name'] ?? ''));
     $round = trim((string)($row['round_name'] ?? ''));
     $message = trim((string)($row['personal_message'] ?? ''));
-    $body = '<p style="margin:0 0 16px;color:#334155;font-size:16px;line-height:1.6;">Hi ' . mg_mail_escape($name) . ', ' . mg_mail_escape($inviter) . ' invited you to begin Microgifter’s governed Investor onboarding process.</p>'
-        . ($round !== '' ? '<p style="margin:0 0 16px;color:#071225;font-size:16px;line-height:1.6;"><strong>Round context:</strong> ' . mg_mail_escape($round) . '</p>' : '')
-        . ($message !== '' ? '<div style="margin:0 0 16px;padding:16px 18px;border-radius:16px;background:#f4f7fb;color:#334155;font-size:15px;line-height:1.6;">' . nl2br(mg_mail_escape($message)) . '</div>' : '')
-        . mg_email_button($inviteUrl, 'Continue Investor onboarding')
-        . '<p style="margin:0 0 10px;color:#64748b;font-size:13px;line-height:1.6;">Create or sign in to a Microgifter account using this same email address. You will complete professional information and disclosures before a Super Admin reviews the request.</p>'
-        . '<p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">This invitation does not create an investment commitment, allocation, approval, securities offer, or automatic Data Room access.</p>';
+    $body = '<p style="margin:0 0 16px;color:#334155;font-size:16px;line-height:1.6;">Hi ' . mg_mail_escape($name) . ', you have been invited to complete Microgifter’s governed Investor onboarding process.</p>'
+        . ($firm !== '' ? '<p style="margin:0 0 14px;color:#334155;font-size:15px;line-height:1.6;"><strong>Organization:</strong> ' . mg_mail_escape($firm) . '</p>' : '')
+        . ($round !== '' ? '<p style="margin:0 0 14px;color:#334155;font-size:15px;line-height:1.6;"><strong>Round context:</strong> ' . mg_mail_escape($round) . '</p>' : '')
+        . ($message !== '' ? '<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.6;">' . nl2br(mg_mail_escape($message)) . '</p>' : '')
+        . mg_email_button($url, 'Review Investor invitation')
+        . '<p style="margin:14px 0 0;color:#64748b;font-size:13px;line-height:1.6;">This private link is bound to the invited email address, expires at ' . mg_mail_escape((string)$row['expires_at']) . ', and does not grant Investor or securities access by itself.</p>';
     return [
-        'subject' => 'You are invited to Microgifter Investor onboarding',
-        'html' => mg_email_layout('Investor onboarding invitation', $body, 'Complete Microgifter Investor onboarding.'),
-        'text' => "Hi {$name},\n\n{$inviter} invited you to begin Microgifter Investor onboarding.\n\nContinue: {$inviteUrl}\n\nThis invitation does not create an investment commitment, allocation, approval, securities offer, or automatic Data Room access.",
+        'subject' => 'Private Microgifter Investor invitation',
+        'html' => mg_email_layout('Investor invitation', $body, 'Review your private Microgifter Investor invitation.'),
+        'text' => "Hi {$name},\n\nYou have been invited to complete Microgifter Investor onboarding.\n\nReview invitation: {$url}\n\nThis link expires at {$row['expires_at']} and does not grant Investor or securities access by itself.",
     ];
 }
 
-function mg_investment_invitation_deliver(PDO $pdo, int $invitationId, string $inviteUrl): bool
+function mg_investment_invitation_send_email(PDO $pdo, array $row, string $token, int $actorId): bool
 {
-    $stmt = $pdo->prepare('SELECT i.*,r.public_name AS round_name,inviter.full_name AS inviter_name,inviter.display_name AS inviter_display_name FROM investor_invitations i LEFT JOIN investment_rounds r ON r.id=i.round_id INNER JOIN users inviter ON inviter.id=i.invited_by_user_id WHERE i.id=? LIMIT 1');
-    $stmt->execute([$invitationId]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) throw new MgInvestmentException('Investor invitation not found.', 404);
-    $email = mg_investment_invitation_email($row, $inviteUrl);
+    $url = mg_app_base_url() . '/investor-invitation.php?token=' . rawurlencode($token);
+    $email = mg_investment_invitation_email($row, $url);
     $sent = mg_send_email((string)$row['invited_email'], $email['subject'], $email['html'], $email['text'], [
         'template' => 'investor_invitation',
         'invitation_id' => (string)$row['public_id'],
-        'round_id' => $row['round_id'] !== null ? (int)$row['round_id'] : null,
+        'round_id' => $row['round_public_id'] ?? null,
     ]);
-    if ($sent) {
-        $pdo->prepare("UPDATE investor_invitations SET status='sent',delivery_status='sent',sent_at=COALESCE(sent_at,NOW()),last_sent_at=NOW(),send_count=send_count+1,updated_at=NOW() WHERE id=? AND status IN ('created','sent','viewed','expired')")->execute([$invitationId]);
-        mg_investment_invitation_event($pdo, $invitationId, null, 'email_sent', ['provider' => mg_mail_provider()]);
-    } else {
-        $pdo->prepare("UPDATE investor_invitations SET delivery_status='failed',updated_at=NOW() WHERE id=?")->execute([$invitationId]);
-        mg_investment_invitation_event($pdo, $invitationId, null, 'email_failed', ['provider' => mg_mail_provider()]);
-    }
+    $pdo->prepare('UPDATE investor_invitations SET delivery_status=?,status=CASE WHEN status="created" THEN "sent" ELSE status END,sent_at=COALESCE(sent_at,IF(?=1,NOW(),NULL)),last_sent_at=IF(?=1,NOW(),last_sent_at),send_count=send_count+1,updated_at=NOW() WHERE id=?')->execute([$sent ? 'sent' : 'failed',$sent ? 1 : 0,$sent ? 1 : 0,(int)$row['id']]);
+    mg_investment_invitation_event($pdo, (int)$row['id'], $actorId, $sent ? 'email_sent' : 'email_failed', ['recipient' => mg_investment_invitation_mask_email((string)$row['invited_email'])]);
     return $sent;
 }
 
 function mg_investment_invitation_create(PDO $pdo, array $actor, array $input): array
 {
     mg_investment_require_permission($actor, 'admin.investor_access.manage');
-    if (!mg_investment_is_super($actor)) throw new MgInvestmentException('Only a Super Admin can send Investor invitations.', 403);
+    if (!mg_investment_is_super($actor)) throw new MgInvestmentException('Only a Super Admin can create Investor invitations.', 403);
     mg_investment_invitation_require_schema($pdo);
-    $payload = mg_investment_invitation_payload($pdo, $input);
-    mg_investment_invitation_assert_account_available($pdo, $payload['email']);
-    $token = mg_investment_invitation_token();
-    $inviteUrl = mg_investment_invitation_url($token);
-    $publicId = mg_investment_uuid();
-    $actorId = (int)$actor['id'];
-    $pdo->beginTransaction();
-    try {
-        $existing = $pdo->prepare("SELECT id FROM investor_invitations WHERE invited_email_hash=? AND status IN ('created','sent','viewed') AND expires_at>NOW() LIMIT 1 FOR UPDATE");
-        $existing->execute([$payload['email_hash']]);
-        if ($existing->fetchColumn()) throw new MgInvestmentException('An active invitation already exists for this email. Resend or revoke the existing invitation.', 409);
-        $stmt = $pdo->prepare("INSERT INTO investor_invitations (public_id,invited_email,invited_email_hash,contact_name,firm_name,investor_type,expected_investment_range,round_id,personal_message,status,delivery_status,token_hash,token_created_at,expires_at,invited_by_user_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,'created','not_sent',?,NOW(),?,?,NOW(),NOW())");
-        $stmt->execute([$publicId,$payload['email'],$payload['email_hash'],$payload['contact_name'] ?: null,$payload['firm_name'] ?: null,$payload['investor_type'],$payload['expected_investment_range'],$payload['round_id'],$payload['personal_message'] ?: null,hash('sha256',$token),$payload['expires_at'],$actorId]);
-        $invitationId = (int)$pdo->lastInsertId();
-        mg_investment_invitation_event($pdo, $invitationId, $actorId, 'created', ['expires_at' => $payload['expires_at'], 'round_id' => $payload['round_id']]);
-        $pdo->commit();
-    } catch (Throwable $error) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
-        throw $error;
+    $email = mg_investment_invitation_normalize_email($input['email'] ?? '');
+    $contactName = mg_investment_optional_text($input['contact_name'] ?? null, 180, 'Contact name');
+    $firmName = mg_investment_optional_text($input['firm_name'] ?? null, 180, 'Firm name');
+    $investorType = mg_investment_enum($input['investor_type'] ?? 'individual', ['individual','angel','investment_firm','venture_fund','family_office','strategic_partner','company_entity','other'], 'Investor type');
+    $range = mg_investment_enum($input['expected_investment_range'] ?? 'undecided', ['undecided','under_10k','10k_25k','25k_50k','50k_100k','100k_250k','over_250k'], 'Expected investment range');
+    $message = mg_investment_optional_long_text($input['personal_message'] ?? null, 3000, 'Personal message');
+    $days = max(1, min(30, (int)($input['expires_in_days'] ?? 7)));
+    $roundId = null;
+    $roundPublicId = trim((string)($input['round_id'] ?? ''));
+    if ($roundPublicId !== '') {
+        $round = mg_investment_round_by_public_id($pdo, $roundPublicId);
+        $roundId = (int)$round['id'];
     }
-    $delivered = $payload['send_email'] ? mg_investment_invitation_deliver($pdo, $invitationId, $inviteUrl) : false;
-    mg_audit('investor_invitation_created', 'investor_invitation', ['invitation_id' => $publicId, 'delivery_status' => $delivered ? 'sent' : ($payload['send_email'] ? 'failed' : 'not_sent')], $actorId);
-    mg_event('investment.invitation.created', ['invitation_id' => $publicId, 'delivery_status' => $delivered ? 'sent' : ($payload['send_email'] ? 'failed' : 'not_sent')], $actorId);
+    $active = $pdo->prepare("SELECT public_id FROM investor_invitations WHERE invited_email_hash=? AND status IN ('created','sent','viewed') AND expires_at>NOW() LIMIT 1");
+    $active->execute([hash('sha256', $email)]);
+    if ($active->fetchColumn()) throw new MgInvestmentException('An active Investor invitation already exists for this email.', 409);
+    $existingUser = $pdo->prepare('SELECT u.id FROM users u INNER JOIN user_roles ur ON ur.user_id=u.id INNER JOIN roles r ON r.id=ur.role_id LEFT JOIN investor_profiles ip ON ip.user_id=u.id WHERE LOWER(u.email)=? AND r.slug="investor" AND ip.status="active" LIMIT 1');
+    $existingUser->execute([$email]);
+    if ($existingUser->fetchColumn()) throw new MgInvestmentException('This email already has active Investor access.', 409);
+    $publicId = mg_investment_uuid();
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $token);
+    $expiresAt = date('Y-m-d H:i:s', time() + ($days * 86400));
+    $actorId = (int)$actor['id'];
+    $stmt = $pdo->prepare('INSERT INTO investor_invitations (public_id,invited_email,invited_email_hash,contact_name,firm_name,investor_type,expected_investment_range,round_id,personal_message,status,delivery_status,token_hash,token_created_at,expires_at,invited_by_user_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,"created","not_sent",?,NOW(),?,?,NOW(),NOW())');
+    $stmt->execute([$publicId,$email,hash('sha256',$email),$contactName,$firmName,$investorType,$range,$roundId,$message,$tokenHash,$expiresAt,$actorId]);
+    $invitationId = (int)$pdo->lastInsertId();
+    mg_investment_invitation_event($pdo, $invitationId, $actorId, 'created', ['expires_at' => $expiresAt, 'round_id' => $roundPublicId !== '' ? $roundPublicId : null]);
     $row = mg_investment_invitation_row_by_public_id($pdo, $publicId);
-    return ['invitation' => mg_investment_invitation_public($row, true), 'invite_url' => $inviteUrl, 'delivered' => $delivered];
+    $sent = mg_investment_invitation_send_email($pdo, $row, $token, $actorId);
+    mg_audit('investor_invitation_created', 'investor_invitation', ['invitation_id' => $publicId, 'round_id' => $roundPublicId !== '' ? $roundPublicId : null, 'delivery_status' => $sent ? 'sent' : 'failed'], $actorId);
+    $current = mg_investment_invitation_row_by_public_id($pdo, $publicId);
+    return [
+        'invitation' => mg_investment_invitation_public($current, true),
+        'share_url' => mg_app_base_url() . '/investor-invitation.php?token=' . $token,
+        'email_sent' => $sent,
+    ];
 }
 
 function mg_investment_invitation_resend(PDO $pdo, array $actor, array $input): array
@@ -324,27 +274,30 @@ function mg_investment_invitation_resend(PDO $pdo, array $actor, array $input): 
     mg_investment_require_permission($actor, 'admin.investor_access.manage');
     if (!mg_investment_is_super($actor)) throw new MgInvestmentException('Only a Super Admin can resend Investor invitations.', 403);
     $publicId = mg_investment_text($input['invitation_id'] ?? '', 36, 36, 'Invitation identifier');
-    $days = max(1, min(60, (int)($input['expires_in_days'] ?? 14)));
-    $token = mg_investment_invitation_token();
-    $inviteUrl = mg_investment_invitation_url($token);
+    $days = max(1, min(30, (int)($input['expires_in_days'] ?? 7)));
     $actorId = (int)$actor['id'];
     $pdo->beginTransaction();
     try {
         $row = mg_investment_invitation_row_by_public_id($pdo, $publicId, true);
-        if (in_array((string)$row['status'], ['accepted','revoked'], true)) {
-            throw new MgInvestmentException('Accepted or revoked invitations cannot be resent.', 409);
-        }
+        if (in_array((string)$row['status'], ['accepted','revoked'], true)) throw new MgInvestmentException('Accepted or revoked invitations cannot be resent.', 409);
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
         $expiresAt = date('Y-m-d H:i:s', time() + ($days * 86400));
-        $pdo->prepare("UPDATE investor_invitations SET status='created',delivery_status='not_sent',token_hash=?,token_created_at=NOW(),expires_at=?,revoked_by_user_id=NULL,revoked_at=NULL,revocation_reason=NULL,updated_at=NOW() WHERE id=?")->execute([hash('sha256',$token),$expiresAt,(int)$row['id']]);
-        mg_investment_invitation_event($pdo, (int)$row['id'], $actorId, 'resent', ['expires_at' => $expiresAt]);
+        $pdo->prepare("UPDATE investor_invitations SET token_hash=?,token_created_at=NOW(),expires_at=?,status='created',delivery_status='not_sent',first_viewed_at=NULL,last_viewed_at=NULL,view_count=0,updated_at=NOW() WHERE id=?")->execute([$tokenHash,$expiresAt,(int)$row['id']]);
+        mg_investment_invitation_event($pdo, (int)$row['id'], $actorId, 'token_rotated', ['expires_at' => $expiresAt]);
         $pdo->commit();
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
-    $delivered = mg_investment_invitation_deliver($pdo, (int)$row['id'], $inviteUrl);
-    mg_audit('investor_invitation_resent', 'investor_invitation', ['invitation_id' => $publicId, 'delivered' => $delivered], $actorId);
-    return ['invitation' => mg_investment_invitation_public(mg_investment_invitation_row_by_public_id($pdo, $publicId), true), 'invite_url' => $inviteUrl, 'delivered' => $delivered];
+    $row = mg_investment_invitation_row_by_public_id($pdo, $publicId);
+    $sent = mg_investment_invitation_send_email($pdo, $row, $token, $actorId);
+    mg_audit('investor_invitation_resent', 'investor_invitation', ['invitation_id' => $publicId, 'delivery_status' => $sent ? 'sent' : 'failed'], $actorId);
+    return [
+        'invitation' => mg_investment_invitation_public(mg_investment_invitation_row_by_public_id($pdo, $publicId), true),
+        'share_url' => mg_app_base_url() . '/investor-invitation.php?token=' . $token,
+        'email_sent' => $sent,
+    ];
 }
 
 function mg_investment_invitation_revoke(PDO $pdo, array $actor, array $input): array
@@ -373,14 +326,29 @@ function mg_investment_invitation_revoke(PDO $pdo, array $actor, array $input): 
 function mg_investment_invitation_view(PDO $pdo, string $token, ?array $viewer = null, bool $recordView = true): array
 {
     $row = mg_investment_invitation_row_by_token($pdo, $token, false);
-    $now = time();
-    $expired = strtotime((string)$row['expires_at']) <= $now;
-    if ($expired && in_array((string)$row['status'], ['created','sent','viewed'], true)) {
+    $status = (string)$row['status'];
+    $activeStatuses = ['created', 'sent', 'viewed'];
+    $expired = strtotime((string)$row['expires_at']) <= time();
+
+    if ($expired && in_array($status, $activeStatuses, true)) {
         $pdo->prepare("UPDATE investor_invitations SET status='expired',updated_at=NOW() WHERE id=?")->execute([(int)$row['id']]);
-        $row['status'] = 'expired';
         mg_investment_invitation_event($pdo, (int)$row['id'], $viewer ? (int)$viewer['id'] : null, 'expired');
+        throw new MgInvestmentException('This Investor invitation has expired.', 410);
     }
-    if ($recordView && !$expired && in_array((string)$row['status'], ['created','sent','viewed'], true)) {
+    if ($status === 'accepted') {
+        throw new MgInvestmentException('This Investor invitation has already been used.', 410);
+    }
+    if ($status === 'revoked') {
+        throw new MgInvestmentException('This Investor invitation has been revoked.', 410);
+    }
+    if ($status === 'expired') {
+        throw new MgInvestmentException('This Investor invitation has expired.', 410);
+    }
+    if (!in_array($status, $activeStatuses, true)) {
+        throw new MgInvestmentException('This Investor invitation is no longer available.', 410);
+    }
+
+    if ($recordView) {
         $pdo->prepare("UPDATE investor_invitations SET status='viewed',first_viewed_at=COALESCE(first_viewed_at,NOW()),last_viewed_at=NOW(),view_count=view_count+1,updated_at=NOW() WHERE id=?")->execute([(int)$row['id']]);
         mg_investment_invitation_event($pdo, (int)$row['id'], $viewer ? (int)$viewer['id'] : null, 'viewed', ['authenticated' => $viewer !== null]);
         $row = mg_investment_invitation_row_by_token($pdo, $token, false);
@@ -388,7 +356,7 @@ function mg_investment_invitation_view(PDO $pdo, string $token, ?array $viewer =
     $viewerEmail = strtolower(trim((string)($viewer['email'] ?? '')));
     $matches = $viewerEmail !== '' && hash_equals((string)$row['invited_email_hash'], hash('sha256', $viewerEmail));
     $public = mg_investment_invitation_public($row, $matches);
-    $public['actionable'] = in_array((string)$row['status'], ['created','sent','viewed'], true) && !$expired;
+    $public['actionable'] = true;
     $public['authenticated'] = $viewer !== null;
     $public['email_matches'] = $matches;
     return $public;
@@ -470,18 +438,35 @@ function mg_investment_invitation_accept(PDO $pdo, array $user, array $input): a
 function mg_investment_invitation_enrich_access_items(PDO $pdo, array $items): array
 {
     if ($items === [] || !mg_investment_invitation_tables_ready($pdo)) return $items;
-    $ids = array_values(array_filter(array_map(static fn(array $item): string => (string)($item['id'] ?? ''), $items)));
-    if ($ids === []) return $items;
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare('SELECT req.public_id AS request_public_id,i.public_id AS invitation_public_id,i.round_id,r.public_name AS round_name FROM investor_invitations i INNER JOIN investor_access_requests req ON req.id=i.request_id LEFT JOIN investment_rounds r ON r.id=i.round_id WHERE req.public_id IN (' . $placeholders . ')');
-    $stmt->execute($ids);
-    $map = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) $map[(string)$row['request_public_id']] = $row;
+    $requestIds = [];
+    foreach ($items as $item) {
+        $id = (string)($item['id'] ?? '');
+        if ($id !== '') $requestIds[$id] = true;
+    }
+    if ($requestIds === []) return $items;
+    $placeholders = implode(',', array_fill(0, count($requestIds), '?'));
+    $stmt = $pdo->prepare("SELECT i.public_id invitation_public_id,i.request_id,i.invited_email,i.contact_name,i.firm_name,i.round_id,i.accepted_at,r.public_id round_public_id,r.public_name round_name,ar.public_id request_public_id FROM investor_invitations i INNER JOIN investor_access_requests ar ON ar.id=i.request_id LEFT JOIN investment_rounds r ON r.id=i.round_id WHERE ar.public_id IN ({$placeholders})");
+    $stmt->execute(array_keys($requestIds));
+    $byRequest = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) $byRequest[(string)$row['request_public_id']] = $row;
     foreach ($items as &$item) {
-        $context = $map[(string)($item['id'] ?? '')] ?? null;
-        $item['source'] = $context ? 'admin_invitation' : 'profile_request';
-        $item['invitation_id'] = $context ? (string)$context['invitation_public_id'] : null;
-        $item['invitation_round_name'] = $context && $context['round_name'] !== null ? (string)$context['round_name'] : null;
+        $requestId = (string)($item['id'] ?? '');
+        if (!isset($byRequest[$requestId])) {
+            $item['source'] = 'profile_request';
+            $item['invitation'] = null;
+            continue;
+        }
+        $row = $byRequest[$requestId];
+        $item['source'] = 'admin_invitation';
+        $item['invitation'] = [
+            'id' => (string)$row['invitation_public_id'],
+            'email' => (string)$row['invited_email'],
+            'contact_name' => $row['contact_name'] !== null ? (string)$row['contact_name'] : null,
+            'firm_name' => $row['firm_name'] !== null ? (string)$row['firm_name'] : null,
+            'round_id' => $row['round_public_id'] !== null ? (string)$row['round_public_id'] : null,
+            'round_name' => $row['round_name'] !== null ? (string)$row['round_name'] : null,
+            'accepted_at' => $row['accepted_at'] !== null ? (string)$row['accepted_at'] : null,
+        ];
     }
     unset($item);
     return $items;
