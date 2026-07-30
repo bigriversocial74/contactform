@@ -24,6 +24,7 @@ $center = $read('admin/investor-center.php');
 $centerData = $read('includes/investment/investor-center-dashboard.php');
 $adminAccess = $read('api/admin/investor-access.php');
 $adminAccessJs = $read('assets/js/admin-investor-access-v1.js');
+$adminInvitationJs = $read('assets/js/admin-investor-invitations-v1.js');
 $workflow = $read('.github/workflows/investor-invite-onboarding-v1.yml');
 
 $checks = [
@@ -75,11 +76,15 @@ $checks = [
         && str_contains($centerData, "'failed_delivery'")
         && str_contains($adminAccess, 'mg_investment_invitation_enrich_access_items')
         && str_contains($adminAccessJs, "item.source === 'admin_invitation'"),
-    'email delivery is auditable and manual secure-link delivery remains available' =>
+    'email delivery is auditable and the browser consumes the authoritative secure-link response' =>
         str_contains($service, "'template' => 'investor_invitation'")
         && str_contains($service, "'email_sent'")
         && str_contains($service, "'email_failed'")
-        && str_contains($adminPage, 'data-invitation-share-url'),
+        && str_contains($adminPage, 'data-invitation-share-url')
+        && str_contains($adminInvitationJs, 'data?.share_url')
+        && str_contains($adminInvitationJs, 'data.email_sent')
+        && !str_contains($adminInvitationJs, 'data?.invite_url')
+        && !str_contains($adminInvitationJs, 'data.delivered'),
     'PHP 8.2/8.3, JavaScript, contract, and deployment-package CI are configured' =>
         str_contains($workflow, "php: ['8.2', '8.3']")
         && str_contains($workflow, 'Investor invitation 10-point contract')
