@@ -89,14 +89,14 @@ $check(
     && !str_contains($createMenu, '<option value="newsletter_signup">Newsletter signup</option><option value="qr_reward_drop">')
     && str_contains($createRuntime, "MG.get('/api/merchant/campaigns.php?status=all')")
     && str_contains($createRuntime, '.campaign_types || []')
-    && str_contains($campaignCore, "'campaign_types' => mg_public_donations_campaign_type_options($merchantId, $user, true)")
+    && str_contains($campaignCore, 'mg_public_donations_campaign_type_options($merchantId, $user, true)')
 );
 $check(
     '6. Quick-create defers specialized activation requirements to the canonical API',
     !str_contains($createRuntime, 'Choose an active reward template before activating the campaign.')
     && str_contains($campaignCore, 'mg_campaign_requires_reward_template($campaignType, $status)')
-    && str_contains($campaignCore, "\$campaignType === 'watch_video_reward'")
-    && str_contains($campaignCore, "\$campaignType === 'listen_music_reward'")
+    && str_contains($campaignCore, "$campaignType === 'watch_video_reward'")
+    && str_contains($campaignCore, "$campaignType === 'listen_music_reward'")
     && str_contains($campaignApi, "require __DIR__ . '/campaigns-core.php'")
 );
 
