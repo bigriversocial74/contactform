@@ -1,17 +1,6 @@
 name: Creator Campaign Native Foundation v1
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260721_creator_campaign_native_foundation_v1.sql'
-      - 'config/migrations.php'
-      - 'includes/creator-campaigns.php'
-      - 'includes/creator-campaigns/**'
-      - 'scripts/validate_creator_campaign_native_foundation_v1.php'
-      - 'tests/phpunit/CreatorCampaignNativeFoundationV1ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE1_REPOSITORY_ALIGNMENT.md'
-      - '.github/workflows/creator-campaign-native-foundation-v1.yml'
   workflow_dispatch:
 
 permissions:

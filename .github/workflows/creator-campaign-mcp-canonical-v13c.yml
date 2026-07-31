@@ -1,30 +1,6 @@
 name: Creator Campaign MCP Canonical v13C
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'api/internal/_mcp_creator_campaign_action_bridge.php'
-      - 'api/internal/_mcp_draft_bridge.php'
-      - 'api/internal/mcp-bridge.php'
-      - 'includes/mcp-creator-campaign-actions/**'
-      - 'includes/mcp-creator-campaign-actions.php'
-      - 'includes/creator-campaigns/earning-service.php'
-      - 'includes/creator-campaigns/bootstrap.php'
-      - 'includes/mcp-automations/**'
-      - 'includes/mcp-oauth/**'
-      - 'admin/mcp-oauth-clients.php'
-      - 'account-creator-campaign-actions.php'
-      - 'assets/css/mcp-creator-campaign-actions.css'
-      - 'services/mcp/src/bridge/canonicalBridge.ts'
-      - 'services/mcp/src/tools/creatorCampaignActions.ts'
-      - 'services/mcp/src/tools/registry.ts'
-      - 'services/mcp/tests/creatorCampaignActions.test.mjs'
-      - 'database/20260722_creator_campaign_mcp_canonical_actions_v13c_single_install.sql'
-      - 'scripts/validate_creator_campaign_mcp_v13c.php'
-      - 'tests/phpunit/CreatorCampaignMcpCanonicalV13cContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE13C_MCP_CANONICAL_ACTIONS.md'
-      - '.github/workflows/creator-campaign-mcp-canonical-v13c.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

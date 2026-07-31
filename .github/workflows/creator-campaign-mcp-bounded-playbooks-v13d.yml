@@ -1,27 +1,6 @@
 name: Creator Campaign MCP Bounded Playbooks v13D
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'api/internal/_mcp_creator_campaign_playbook_bridge.php'
-      - 'api/internal/mcp-bridge.php'
-      - 'includes/mcp-creator-campaign-playbooks/**'
-      - 'includes/mcp-creator-campaign-playbooks.php'
-      - 'includes/mcp-automations/bootstrap.php'
-      - 'includes/mcp-automations/definitions.php'
-      - 'includes/mcp-automations/definitions-repository.php'
-      - 'includes/mcp-automations/definitions-page-view.php'
-      - 'includes/mcp-drafts/account-page-phase3b-view.php'
-      - 'services/mcp/src/bridge/canonicalBridge.ts'
-      - 'services/mcp/src/tools/creatorCampaignPlaybooks.ts'
-      - 'services/mcp/src/tools/registry.ts'
-      - 'services/mcp/tests/creatorCampaignPlaybooks.test.mjs'
-      - 'database/20260722_creator_campaign_mcp_bounded_playbooks_v13d_single_install.sql'
-      - 'scripts/validate_creator_campaign_mcp_v13d.php'
-      - 'tests/phpunit/CreatorCampaignMcpBoundedPlaybooksV13dContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE13D_MCP_BOUNDED_PLAYBOOKS.md'
-      - '.github/workflows/creator-campaign-mcp-bounded-playbooks-v13d.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

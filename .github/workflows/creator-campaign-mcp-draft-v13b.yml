@@ -1,21 +1,6 @@
 name: Creator Campaign MCP Draft v13B
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'api/internal/_mcp_creator_campaign_draft_*.php'
-      - 'api/internal/_mcp_draft_bridge.php'
-      - 'services/mcp/src/tools/creatorCampaignDrafts.ts'
-      - 'services/mcp/src/tools/registry.ts'
-      - 'services/mcp/tests/creatorCampaignDrafts.test.mjs'
-      - 'includes/mcp-drafts/account-page-phase3b.php'
-      - 'includes/mcp-drafts/account-page-phase3b-view.php'
-      - 'database/20260722_creator_campaign_mcp_draft_scopes_v13b_single_install.sql'
-      - 'scripts/validate_creator_campaign_mcp_v13b.php'
-      - 'tests/phpunit/CreatorCampaignMcpDraftV13bContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE13B_MCP_DRAFT_PROPOSALS.md'
-      - '.github/workflows/creator-campaign-mcp-draft-v13b.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

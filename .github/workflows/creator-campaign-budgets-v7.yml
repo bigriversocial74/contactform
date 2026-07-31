@@ -1,22 +1,7 @@
 name: Creator Campaign Budgets v7
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260722_creator_campaign_budget_controls_v7_single_install.sql'
-      - 'includes/creator-campaigns/**'
-      - 'api/merchant/creator-campaign-budgets.php'
-      - 'merchant-creator-budgets.php'
-      - 'includes/merchant-creator-campaign-budgets-view.php'
-      - 'includes/merchant-creator-campaign-compensation-view.php'
-      - 'assets/css/creator-campaign-budgets.css'
-      - 'assets/js/merchant-creator-campaign-budgets.js'
-      - 'scripts/validate_creator_campaign_budgets_v7.php'
-      - 'scripts/validate_creator_campaign_budgets_v7_mysql.php'
-      - 'tests/phpunit/CreatorCampaignBudgetsV7ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE7_BUDGETS.md'
-      - '.github/workflows/creator-campaign-budgets-v7.yml'
   workflow_dispatch:
+
 permissions: {contents: read}
 concurrency:
   group: creator-campaign-budgets-${{ github.workflow }}-${{ github.ref }}

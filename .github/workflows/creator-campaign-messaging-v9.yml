@@ -1,30 +1,7 @@
 name: Creator Campaign Messaging v9
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260722_creator_campaign_messaging_notifications_v9_single_install.sql'
-      - 'includes/creator-campaigns/**'
-      - 'api/merchant/creator-campaign-messages.php'
-      - 'api/creator/campaign-messages.php'
-      - 'api/messages/send.php'
-      - 'api/messages/thread.php'
-      - 'merchant-creator-messages.php'
-      - 'creator-campaign-messages.php'
-      - 'includes/merchant-creator-campaign-messages-view.php'
-      - 'includes/creator-campaign-messages-view.php'
-      - 'includes/merchant-creator-campaign-payouts-view.php'
-      - 'includes/creator-campaign-payouts-view.php'
-      - 'assets/css/creator-campaign-messages.css'
-      - 'assets/js/merchant-creator-campaign-messages.js'
-      - 'assets/js/creator-campaign-messages.js'
-      - 'scripts/validate_creator_campaign_messaging_v9.php'
-      - 'scripts/validate_creator_campaign_messaging_v9_mysql.php'
-      - 'scripts/validate_message_delivery_verification.php'
-      - 'tests/phpunit/CreatorCampaignMessagingV9ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE9_MESSAGING.md'
-      - '.github/workflows/creator-campaign-messaging-v9.yml'
   workflow_dispatch:
+
 permissions: {contents: read}
 concurrency:
   group: creator-campaign-messaging-${{ github.workflow }}-${{ github.ref }}

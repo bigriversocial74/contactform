@@ -1,30 +1,6 @@
 name: Creator Campaign CRM v12
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260722_creator_campaign_crm_lifecycle_v12_single_install.sql'
-      - 'includes/creator-campaigns/crm-*.php'
-      - 'includes/creator-campaigns/bootstrap.php'
-      - 'includes/creator-campaigns/participation-repository.php'
-      - 'includes/creator-campaigns/tracking-service.php'
-      - 'includes/merchant-crm-creator-campaign-bridge.php'
-      - 'api/merchant/creator-campaign-crm.php'
-      - 'api/merchant/merchant-crm.php'
-      - 'merchant-creator-crm.php'
-      - 'merchant-crm.php'
-      - 'includes/merchant-creator-campaign-crm-view.php'
-      - 'includes/merchant-creator-campaigns-view.php'
-      - 'includes/merchant-creator-campaign-detail-view.php'
-      - 'assets/css/creator-campaign-crm-v12.css'
-      - 'assets/css/merchant-crm-creator-campaign-v12.css'
-      - 'assets/js/merchant-creator-campaign-crm-v12.js'
-      - 'assets/js/merchant-crm-creator-campaign-bridge-v12.js'
-      - 'scripts/validate_creator_campaign_crm_v12*.php'
-      - 'tests/phpunit/CreatorCampaignCrmV12ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE12_CRM.md'
-      - '.github/workflows/creator-campaign-crm-v12.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

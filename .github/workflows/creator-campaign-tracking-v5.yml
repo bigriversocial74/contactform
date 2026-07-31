@@ -1,34 +1,6 @@
 name: Creator Campaign Tracking v5
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260722_creator_campaign_tracking_attribution_v5.sql'
-      - 'config/migrations.php'
-      - 'includes/creator-campaigns/**'
-      - 'api/merchant/creator-campaign-tracking.php'
-      - 'api/creator/campaign-tracking.php'
-      - 'api/public/creator-campaign-events.php'
-      - 'creator-campaign-track.php'
-      - 'merchant-creator-tracking.php'
-      - 'creator-campaign-tracking.php'
-      - 'includes/merchant-creator-campaign-tracking-view.php'
-      - 'includes/creator-campaign-tracking-view.php'
-      - 'includes/merchant-creator-campaign-participation-view.php'
-      - 'includes/creator-campaigns-participation-view.php'
-      - 'assets/css/creator-campaign-tracking.css'
-      - 'assets/js/merchant-creator-campaign-tracking.js'
-      - 'assets/js/creator-campaign-tracking.js'
-      - 'scripts/validate_creator_campaign_tracking_v5.php'
-      - 'scripts/validate_creator_campaign_tracking_v5_mysql.php'
-      - 'scripts/validate_creator_campaign_participation_v3_mysql.php'
-      - 'scripts/validate_creator_campaign_deliverables_v4_mysql.php'
-      - 'tests/phpunit/CreatorCampaignTrackingV5ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE5_TRACKING.md'
-      - '.github/workflows/creator-campaign-tracking-v5.yml'
-      - '.github/workflows/creator-campaign-participation-v3.yml'
-      - '.github/workflows/creator-campaign-deliverables-v4.yml'
   workflow_dispatch:
 
 permissions:

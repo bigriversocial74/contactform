@@ -1,24 +1,6 @@
 name: Creator Campaign Production Pilot v14
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'account-creator-campaign-pilot.php'
-      - 'includes/creator-campaign-pilot/**'
-      - 'includes/creator-campaign-pilot.php'
-      - 'api/internal/_mcp_creator_campaign_playbook_bridge.php'
-      - 'includes/mcp-automations/definitions-page-view.php'
-      - 'includes/mcp-drafts/account-page-phase3b-view.php'
-      - 'includes/mcp-creator-campaign-actions/owner-page-view.php'
-      - 'includes/agent-sidebar.php'
-      - 'assets/css/creator-campaign-pilot.css'
-      - 'assets/css/creator-campaign-pilot-components.css'
-      - 'database/20260722_creator_campaign_production_pilot_v14_single_install.sql'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE14_PRODUCTION_PILOT_OPERATOR.md'
-      - 'scripts/validate_creator_campaign_pilot_v14.php'
-      - 'tests/phpunit/CreatorCampaignProductionPilotV14ContractTest.php'
-      - '.github/workflows/creator-campaign-production-pilot-v14.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

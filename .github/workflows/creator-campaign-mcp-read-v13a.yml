@@ -1,20 +1,6 @@
 name: Creator Campaign MCP Read v13A
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'api/internal/_mcp_creator_campaign_bridge.php'
-      - 'api/internal/mcp-bridge.php'
-      - 'services/mcp/src/bridge/canonicalBridge.ts'
-      - 'services/mcp/src/tools/creatorCampaigns.ts'
-      - 'services/mcp/src/tools/registry.ts'
-      - 'services/mcp/tests/creatorCampaigns.test.mjs'
-      - 'database/20260722_creator_campaign_mcp_read_scopes_v13a_single_install.sql'
-      - 'scripts/validate_creator_campaign_mcp_v13a.php'
-      - 'tests/phpunit/CreatorCampaignMcpReadV13aContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE13A_MCP_READ_TOOLS.md'
-      - '.github/workflows/creator-campaign-mcp-read-v13a.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

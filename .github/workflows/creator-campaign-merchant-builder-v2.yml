@@ -1,27 +1,6 @@
 name: Creator Campaign Merchant Builder v2
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260721_creator_campaign_merchant_builder_v2.sql'
-      - 'config/migrations.php'
-      - 'includes/creator-campaigns/**'
-      - 'api/merchant/creator-campaigns.php'
-      - 'merchant-creator-campaigns.php'
-      - 'merchant-creator-campaign-builder.php'
-      - 'includes/merchant-creator-campaigns-view.php'
-      - 'includes/merchant-creator-campaign-builder-view.php'
-      - 'includes/merchant-navigation.php'
-      - 'includes/merchant-view.php'
-      - 'assets/css/merchant-creator-campaigns.css'
-      - 'assets/js/merchant-creator-campaigns.js'
-      - 'assets/js/merchant-creator-campaign-builder.js'
-      - 'scripts/validate_creator_campaign_merchant_builder_v2.php'
-      - 'scripts/validate_creator_campaign_merchant_builder_v2_mysql.php'
-      - 'tests/phpunit/CreatorCampaignMerchantBuilderV2ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE2_MERCHANT_BUILDER.md'
-      - '.github/workflows/creator-campaign-merchant-builder-v2.yml'
   workflow_dispatch:
 
 permissions:

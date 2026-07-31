@@ -1,27 +1,6 @@
 name: Creator Campaign Deliverables v4
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260721_creator_campaign_deliverables_v4.sql'
-      - 'config/migrations.php'
-      - 'includes/creator-campaigns/**'
-      - 'api/merchant/creator-campaign-deliverables.php'
-      - 'api/creator/campaign-deliverables.php'
-      - 'merchant-creator-deliverables.php'
-      - 'creator-campaign-deliverables.php'
-      - 'includes/merchant-creator-campaign-deliverables-view.php'
-      - 'includes/creator-campaign-deliverables-view.php'
-      - 'assets/css/creator-campaign-deliverables.css'
-      - 'assets/js/merchant-creator-campaign-deliverables.js'
-      - 'assets/js/creator-campaign-deliverables.js'
-      - 'scripts/validate_creator_campaign_deliverables_v4.php'
-      - 'scripts/validate_creator_campaign_deliverables_v4_mysql.php'
-      - 'tests/phpunit/CreatorCampaignDeliverablesV4ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE4_DELIVERABLES.md'
-      - '.github/workflows/creator-campaign-deliverables-v4.yml'
-      - '.github/workflows/creator-campaign-participation-v3.yml'
   workflow_dispatch:
 
 permissions:

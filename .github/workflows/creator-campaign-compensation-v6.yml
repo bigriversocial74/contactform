@@ -1,27 +1,7 @@
 name: Creator Campaign Compensation v6
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'database/20260722_creator_campaign_compensation_earnings_v6_single_install.sql'
-      - 'config/migrations.php'
-      - 'includes/creator-campaigns/**'
-      - 'api/merchant/creator-campaign-compensation.php'
-      - 'api/creator/campaign-earnings.php'
-      - 'merchant-creator-compensation.php'
-      - 'creator-campaign-earnings.php'
-      - 'includes/merchant-creator-campaign-compensation-view.php'
-      - 'includes/creator-campaign-earnings-view.php'
-      - 'assets/css/creator-campaign-compensation.css'
-      - 'assets/js/merchant-creator-campaign-compensation.js'
-      - 'assets/js/creator-campaign-earnings.js'
-      - 'scripts/validate_creator_campaign_compensation_v6.php'
-      - 'scripts/validate_creator_campaign_compensation_v6_mysql.php'
-      - 'tests/phpunit/CreatorCampaignCompensationV6ContractTest.php'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE6_COMPENSATION.md'
-      - '.github/workflows/creator-campaign-compensation-v6.yml'
-      - '.github/workflows/creator-campaign-tracking-v5.yml'
   workflow_dispatch:
+
 permissions: {contents: read}
 concurrency:
   group: creator-campaign-compensation-${{ github.workflow }}-${{ github.ref }}
