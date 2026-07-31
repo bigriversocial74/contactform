@@ -24,6 +24,7 @@ $runner='scripts/run_creator_affiliate_reconciliation_v16.php';
 $payoutService='includes/creator-campaigns/payout-service.php';
 $merchantApi='api/merchant/creator-affiliate-operations.php';
 $merchantView='includes/merchant-creator-affiliate-operations-view.php';
+$merchantPayoutView='includes/merchant-creator-campaign-payouts-view.php';
 $merchantJs='assets/js/merchant-creator-affiliate-operations.js';
 $earningsQuery='includes/creator-campaigns/compensation-query.php';
 $payoutQuery='includes/creator-campaigns/payout-query.php';
@@ -78,7 +79,7 @@ $add('Campaign readiness workspace', $contains($merchantView,'Campaign readiness
 $add('Guided Creator eligibility', $contains($merchantJs,'data-profile-participant'));
 $add('Guided payout creation', $contains($merchantJs,'data-payout-participant'));
 $add('Reconciliation action queue', $contains($merchantJs,'data-case-action'));
-$add('Merchant navigation entry', $contains('includes/merchant-navigation.php','Affiliate Operations'));
+$add('Operations Center linked from payout workspace', $contains($merchantPayoutView,'/merchant-creator-affiliate-operations.php'));
 $add('Payout form carries idempotency key', $contains($merchantView,'name="idempotency_key"'));
 $add('Payout action key is unique and retry-safe', $contains($merchantJs,'randomUUID')&&$contains($merchantJs,'payoutForm.elements.idempotency_key.value=requestKey()'));
 $add('Daily payout key limitation removed', !$contains($merchantJs,"new Date().toISOString().slice(0,10)"));
