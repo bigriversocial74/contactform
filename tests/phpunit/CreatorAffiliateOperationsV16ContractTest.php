@@ -32,6 +32,8 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
         self::assertStringContainsString("'manual_approval_required'=>1",$service);
         self::assertStringContainsString('manual_approval_required=1',$service);
         self::assertStringContainsString("\$total,'draft'",$payout);
+        self::assertStringContainsString("in_array(\$toStatus,['approved','processing'],true)&&function_exists",$payout);
+        self::assertStringNotContainsString("in_array(\$toStatus,['approved','processing','paid'],true)&&function_exists",$payout);
         self::assertStringContainsString('provider_reference is required before marking a payout paid',$payout);
         self::assertStringNotContainsString('stripe.transfers',$service);
         self::assertStringNotContainsString('Transfer::create',$service);
