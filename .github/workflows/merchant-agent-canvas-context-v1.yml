@@ -4,6 +4,18 @@ on:
   pull_request:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'merchant-agent-chat.php'
+      - 'includes/merchant-agent-chat-view.php'
+      - 'api/ai/merchant-agent-chat.php'
+      - 'includes/ai/merchant-agent-crm-contact-context.php'
+      - 'includes/ai/merchant-agent-crm-contact-chat.php'
+      - 'includes/ai/merchant-agent-thread-delete.php'
+      - 'assets/js/merchant-agent-sidebar-history.js'
+      - 'assets/js/merchant-agent-crm-mention-search.js'
+      - 'scripts/validate_merchant_agent_canvas_context_v1.php'
+      - 'tests/phpunit/MerchantAgentCanvasContactContextV1Test.php'
+      - '.github/workflows/merchant-agent-canvas-context-v1.yml'
   workflow_dispatch:
 
 permissions:
