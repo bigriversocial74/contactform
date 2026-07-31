@@ -19,9 +19,11 @@ $migration='database/20260730_creator_affiliate_operations_experience_v16.sql';
 $manifest='config/migrations.php';
 $service='includes/creator-campaigns/operations-service.php';
 $policyQuery='includes/creator-campaigns/operations-policy-query.php';
+$readinessQuery='includes/creator-campaigns/operations-readiness-query.php';
 $monitor='includes/creator-campaigns/operations-monitor.php';
 $runner='scripts/run_creator_affiliate_reconciliation_v16.php';
 $payoutService='includes/creator-campaigns/payout-service.php';
+$merchantApi='api/merchant/creator-affiliate-operations.php';
 $merchantView='includes/merchant-creator-affiliate-operations-view.php';
 $merchantJs='assets/js/merchant-creator-affiliate-operations.js';
 $earningsQuery='includes/creator-campaigns/compensation-query.php';
@@ -65,6 +67,10 @@ $add('Effective minimum uses policy and profile', $contains($payoutService,"max(
 $add('Paused policy blocks payout assembly', $contains($payoutService,'The merchant payout policy is paused.'));
 $add('Payout starts in draft', $contains($payoutService,"\$total,'draft'"));
 $add('Provider reference remains required', $contains($payoutService,'provider_reference is required before marking a payout paid'));
+$add('Dashboard is hold-aware', $contains($readinessQuery,'payout_ready_minor')&&$contains($readinessQuery,'r.committed_at<=?'));
+$add('Dashboard uses effective minimum', $contains($readinessQuery,'effective_minimum_payout_minor')&&$contains($readinessQuery,'can_create_payout'));
+$add('Eligible Creator metric is distinct', $contains($readinessQuery,'eligibleCreatorIds'));
+$add('Merchant API uses enriched readiness', $contains($merchantApi,'operations_dashboard_with_readiness'));
 
 $add('Merchant operations page', is_file($root.'/merchant-creator-affiliate-operations.php'));
 $add('Payout policy form', $contains($merchantView,'data-caops-policy-form'));
@@ -73,6 +79,10 @@ $add('Guided Creator eligibility', $contains($merchantJs,'data-profile-participa
 $add('Guided payout creation', $contains($merchantJs,'data-payout-participant'));
 $add('Reconciliation action queue', $contains($merchantJs,'data-case-action'));
 $add('Merchant navigation entry', $contains('includes/merchant-navigation.php','Affiliate Operations'));
+$add('Payout form carries idempotency key', $contains($merchantView,'name="idempotency_key"'));
+$add('Payout action key is unique and retry-safe', $contains($merchantJs,'randomUUID')&&$contains($merchantJs,'payoutForm.elements.idempotency_key.value=requestKey()'));
+$add('Daily payout key limitation removed', !$contains($merchantJs,"new Date().toISOString().slice(0,10)"));
+$add('Payout button uses matured balance', $contains($merchantJs,'payout_ready_minor')&&$contains($merchantJs,'can_create_payout'));
 
 $add('Creator earning reservation visibility', $contains($earningsQuery,'reservation_status'));
 $add('Creator earning payout visibility', $contains($earningsQuery,'payout_status'));
