@@ -2,6 +2,18 @@ name: MCP Automation Grants Phase 4A
 on:
   pull_request:
     branches: [integration-from-repair-20260628]
+    paths:
+      - 'includes/mcp-automations.php'
+      - 'includes/mcp-automations/**'
+      - 'account-agent-automations.php'
+      - 'config/mcp_automation_grants_phase4a_release.php'
+      - 'database/20260720_microgifter_mcp_automation_foundation_v1.sql'
+      - 'scripts/validate_mcp_automation_grants_phase4a.php'
+      - 'tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php'
+      - 'tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php'
+      - 'tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php'
+      - 'tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php'
+      - '.github/workflows/mcp-automation-grants-phase4a.yml'
   workflow_dispatch:
 permissions:
   contents: read

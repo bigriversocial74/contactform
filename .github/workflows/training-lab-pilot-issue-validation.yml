@@ -4,9 +4,20 @@ on:
   pull_request:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'api/integrations/_training_lab_reward_pilot_issue.php'
+      - 'api/integrations/training-lab-reward-pilot-issue.php'
+      - 'scripts/validate_training_lab_pilot_issue_v1.php'
+      - '.github/workflows/training-lab-pilot-issue-validation.yml'
   push:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'api/integrations/_training_lab_reward_pilot_issue.php'
+      - 'api/integrations/training-lab-reward-pilot-issue.php'
+      - 'scripts/validate_training_lab_pilot_issue_v1.php'
+      - '.github/workflows/training-lab-pilot-issue-validation.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

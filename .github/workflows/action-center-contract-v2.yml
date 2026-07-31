@@ -4,6 +4,24 @@ on:
   pull_request:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'api/account/_action_center.php'
+      - 'api/account/_action_center_wallet.php'
+      - 'api/account/_action_center_product_media.php'
+      - 'api/account/_action_center_contract.php'
+      - 'api/account/action-center.php'
+      - 'api/account/action-center-detail.php'
+      - 'api/account/action-center-product-media.php'
+      - 'includes/personal-agent/gift-result-cards.php'
+      - 'assets/js/action-center-contract-v2.js'
+      - 'assets/js/gift-action-center-feed-v3.js'
+      - 'assets/js/gift-product-media-view.js'
+      - 'assets/js/gift-action-center-reward-images.js'
+      - 'scripts/validate_action_center_contract_v2.php'
+      - 'scripts/validate_gift_product_image_consistency_v1.php'
+      - 'tests/phpunit/ActionCenterContractV2Test.php'
+      - 'tests/phpunit/GiftProductImageConsistencyV1Test.php'
+      - '.github/workflows/action-center-contract-v2.yml'
   workflow_dispatch:
 
 permissions:

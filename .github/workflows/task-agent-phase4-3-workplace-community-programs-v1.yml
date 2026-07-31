@@ -2,6 +2,22 @@ name: Task Agent Phase 4.3 Workplace Community Programs v1
 
 on:
   pull_request:
+    paths:
+      - 'includes/task-agent-program-coordination.php'
+      - 'includes/task-agent-program-coordination-router.php'
+      - 'includes/multi-agent-workspace-data.php'
+      - 'api/agents/runtime.php'
+      - 'agent.php'
+      - 'assets/js/task-agent-program-coordination-runtime.js'
+      - 'config/migrations.php'
+      - 'scripts/validate_migration_manifest.php'
+      - 'tests/phpunit/TaskAgentPhase43WorkplaceCommunityProgramsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase42GroupGiftingV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36SafetyBoundaryV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php'
+      - '.github/workflows/task-agent-phase4-3-workplace-community-programs-v1.yml'
   workflow_dispatch:
 
 permissions:

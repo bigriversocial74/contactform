@@ -2,6 +2,20 @@ name: MCP Automation Schedules Phase 4C
 on:
   pull_request:
     branches: [integration-from-repair-20260628]
+    paths:
+      - 'account-agent-automation-schedules.php'
+      - 'includes/mcp-automations/**'
+      - 'config/mcp_automation_schedules_phase4c_release.php'
+      - 'database/20260720_microgifter_mcp_automation_foundation_v1.sql'
+      - 'scripts/validate_mcp_automation_schedules_phase4c.php'
+      - 'scripts/test_mcp_automation_schedules_phase4c.php'
+      - 'tests/phpunit/McpAutomationSchedulesPhase4cV1ContractTest.php'
+      - 'tests/phpunit/McpAutomationDefinitionsPhase4bV1ContractTest.php'
+      - 'tests/phpunit/McpAutomationGrantsPhase4aV1ContractTest.php'
+      - 'tests/phpunit/McpApprovalGatedDraftsPhase3aV1ContractTest.php'
+      - 'tests/phpunit/McpApprovedDraftConversionPhase3bV1ContractTest.php'
+      - 'tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php'
+      - '.github/workflows/mcp-automation-schedules-phase4c.yml'
   workflow_dispatch:
 permissions:
   contents: read
