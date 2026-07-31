@@ -11,6 +11,7 @@ on:
 permissions:
   actions: write
   contents: read
+  issues: write
 
 concurrency:
   group: creator-affiliate-emergency-queue-cleanup
@@ -26,6 +27,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           TARGET_BRANCH: feature/creator-affiliate-operations-v16-20260730
           TARGET_HEAD: 6ba96ac1eb7cebbe609cbf4cc6377a0597852081
+          TARGET_PR: '1382'
         run: |
           set -euo pipefail
 
@@ -82,6 +84,15 @@ jobs:
             page=$((page + 1))
           done
 
-          echo "Cancelled ${cancelled} obsolete or nonessential runs."
-          echo "Preserved exact head ${TARGET_HEAD}."
-          echo "Preserved Creator Affiliate Operations v16, retained production audit, repository quality, and merchant navigation only."
+          receipt="Actions queue cleanup completed: cancelled ${cancelled} obsolete or nonessential runs. Preserved exact head \`${TARGET_HEAD}\` and only Creator Affiliate Operations v16, Creator Campaign Phases 1-15 Production Audit v1, Repository Production Quality, and Merchant Navigation Groups v1."
+          payload="$(jq -n --arg body "${receipt}" '{body:$body}')"
+          curl --fail --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d "${payload}" \
+            "https://api.github.com/repos/${REPOSITORY}/issues/${TARGET_PR}/comments" \
+            >/dev/null
+
+          echo "${receipt}"
