@@ -18,6 +18,7 @@ $add=static function(string $name,bool $passed,string $detail='')use(&$checks):v
 $migration='database/20260730_creator_affiliate_operations_experience_v16.sql';
 $manifest='config/migrations.php';
 $service='includes/creator-campaigns/operations-service.php';
+$policyQuery='includes/creator-campaigns/operations-policy-query.php';
 $monitor='includes/creator-campaigns/operations-monitor.php';
 $runner='scripts/run_creator_affiliate_reconciliation_v16.php';
 $payoutService='includes/creator-campaigns/payout-service.php';
@@ -25,6 +26,8 @@ $merchantView='includes/merchant-creator-affiliate-operations-view.php';
 $merchantJs='assets/js/merchant-creator-affiliate-operations.js';
 $earningsQuery='includes/creator-campaigns/compensation-query.php';
 $payoutQuery='includes/creator-campaigns/payout-query.php';
+$earningsJs='assets/js/creator-campaign-earnings.js';
+$payoutJs='assets/js/creator-campaign-payouts.js';
 $docs='docs/creator-campaigns/CREATOR_AFFILIATE_OPERATIONS_EXPERIENCE_V16.md';
 $runnerDocs='docs/creator-campaigns/CREATOR_AFFILIATE_RECONCILIATION_RUNNER_V16.md';
 
@@ -75,7 +78,10 @@ $add('Creator earning reservation visibility', $contains($earningsQuery,'reserva
 $add('Creator earning payout visibility', $contains($earningsQuery,'payout_status'));
 $add('Creator lifecycle status', $contains($earningsQuery,'lifecycle_status'));
 $add('Creator paid total', $contains($earningsQuery,"'paid_minor'"));
-$add('Creator payout policy visibility', $contains($payoutQuery,'operations_creator_policies'));
+$add('Creator policy view helper', $contains($policyQuery,'mg_creator_campaign_operations_creator_policy_views'));
+$add('Creator policy merchant label', $contains($policyQuery,"'merchant_name'")&&$contains($policyQuery,'merchant_workspaces'));
+$add('Creator earnings use labeled policies', $contains($earningsQuery,'operations_creator_policy_views')&&$contains($earningsJs,'merchant_name'));
+$add('Creator payouts use labeled policies', $contains($payoutQuery,'operations_creator_policy_views')&&$contains($payoutJs,'merchant_name'));
 $add('Creator payout timeline fields', $contains($payoutQuery,'processing_at')&&$contains($payoutQuery,'paid_at'));
 $add('Creator plain-language status guide', $contains($payoutQuery,'status_guide'));
 
