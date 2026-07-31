@@ -1,0 +1,108 @@
+name: Creator Campaign Budgets v7
+on:
+  workflow_dispatch:
+
+permissions: {contents: read}
+concurrency:
+  group: creator-campaign-budgets-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    strategy: {fail-fast: false, matrix: {php: ['8.2','8.3']}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '${{ matrix.php }}', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l includes/creator-campaigns/budget-definitions.php
+          php -l includes/creator-campaigns/budget-context.php
+          php -l includes/creator-campaigns/budget-repository.php
+          php -l includes/creator-campaigns/budget-service.php
+          php -l includes/creator-campaigns/budget-query.php
+          php -l api/merchant/creator-campaign-budgets.php
+          php -l merchant-creator-budgets.php
+          php -l includes/merchant-creator-campaign-budgets-view.php
+          php -l scripts/validate_creator_campaign_budgets_v7.php
+          php -l scripts/validate_creator_campaign_budgets_v7_mysql.php
+          php -l tests/phpunit/CreatorCampaignBudgetsV7ContractTest.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-creator-campaign-budgets.js
+      - name: Phase 2 compatibility
+        run: php scripts/validate_creator_campaign_merchant_builder_v2.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignMerchantBuilderV2ContractTest.php
+      - name: Phase 3 compatibility
+        run: php scripts/validate_creator_campaign_participation_v3.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignParticipationV3ContractTest.php
+      - name: Phase 4 compatibility
+        run: php scripts/validate_creator_campaign_deliverables_v4.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignDeliverablesV4ContractTest.php
+      - name: Phase 5 compatibility
+        run: php scripts/validate_creator_campaign_tracking_v5.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignTrackingV5ContractTest.php
+      - name: Phase 6 compatibility
+        run: php scripts/validate_creator_campaign_compensation_v6.php && vendor/bin/phpunit tests/phpunit/CreatorCampaignCompensationV6ContractTest.php
+      - name: Phase 7 score
+        run: php scripts/validate_creator_campaign_budgets_v7.php
+      - name: Phase 7 PHPUnit
+        run: vendor/bin/phpunit tests/phpunit/CreatorCampaignBudgetsV7ContractTest.php
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+  mysql-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      mysql:
+        image: mysql:8.0
+        env: {MYSQL_DATABASE: microgifter, MYSQL_USER: microgifter, MYSQL_PASSWORD: microgifter, MYSQL_ROOT_PASSWORD: root}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_PORT: '3306'
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: creator-campaign-budgets-v7
+      MG_TRACKING_HASH_PEPPER: creator-campaign-budgets-v7-tracking
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '1'
+      MG_STRIPE_STUB_ACCOUNT_ACTIVE: '1'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: pk_test_creator_campaign_budgets
+      MG_STRIPE_SECRET_KEY_TEST: sk_test_creator_campaign_budgets
+      MG_STRIPE_WEBHOOK_SECRET_TEST: whsec_creator_campaign_budgets
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-creator-campaign-budgets-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', extensions: 'json,mbstring,pdo,pdo_mysql', coverage: none, tools: 'composer:v2'}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Wait for MySQL
+        run: for attempt in {1..30}; do mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0; sleep 1; done; exit 1
+      - name: Apply canonical migration chain
+        run: composer migrate
+      - name: Apply Phase 6 SQL
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_compensation_earnings_v6_single_install.sql
+      - name: Verify Phase 6 compatibility
+        run: php scripts/validate_creator_campaign_compensation_v6_mysql.php
+      - name: Apply Phase 7 SQL
+        run: mysql -h 127.0.0.1 -uroot -proot microgifter < database/20260722_creator_campaign_budget_controls_v7_single_install.sql
+      - name: Verify Phase 7 schema
+        run: |
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='microgifter' AND table_name IN ('creator_campaign_budgets','creator_campaign_budget_reservations','creator_campaign_budget_events');")" = "3"
+          test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='microgifter' AND table_name IN ('creator_campaign_payouts','creator_campaign_disputes');")" = "0"
+      - name: Phase 7 lifecycle
+        run: php scripts/validate_creator_campaign_budgets_v7_mysql.php
