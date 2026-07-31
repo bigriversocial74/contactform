@@ -9,6 +9,7 @@ on:
       - 'includes/personal-agent/social-design-center.php'
       - 'assets/js/personal-agent-design-studio-social.js'
       - 'assets/css/personal-agent-design-studio-social.css'
+      - 'assets/css/personal-agent-design-studio-social-v2.css'
       - 'assets/js/design-studio-creative-save.js'
       - 'scripts/validate_social_design_center_v2.php'
       - '.github/workflows/social-design-center-v2.yml'
