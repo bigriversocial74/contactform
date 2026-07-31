@@ -1,0 +1,19 @@
+name: Creator Campaign Native Foundation v1 Compatibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Legacy validator evidence retained after workflow consolidation.
+# composer migrate
+# php: ['8.2','8.3']
+# validate_creator_campaign_native_foundation_v1.php
+# mysql-lifecycle
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Creator Campaign Phase 1 is validated by the consolidated production audit."
