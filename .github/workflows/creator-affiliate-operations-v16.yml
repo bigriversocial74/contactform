@@ -16,6 +16,7 @@ on:
       - 'docs/creator-campaigns/CREATOR_AFFILIATE_OPERATIONS_EXPERIENCE_V16.md'
       - 'docs/creator-campaigns/CREATOR_AFFILIATE_RECONCILIATION_RUNNER_V16.md'
       - 'includes/creator-campaigns/operations-service.php'
+      - 'includes/creator-campaigns/operations-policy-query.php'
       - 'includes/creator-campaigns/operations-monitor.php'
       - 'includes/creator-campaigns/payout-service.php'
       - 'includes/creator-campaigns/payout-query.php'
@@ -55,6 +56,7 @@ jobs:
         run: |
           php -l config/migrations.php
           php -l includes/creator-campaigns/operations-service.php
+          php -l includes/creator-campaigns/operations-policy-query.php
           php -l includes/creator-campaigns/operations-monitor.php
           php -l includes/creator-campaigns/payout-service.php
           php -l includes/creator-campaigns/payout-query.php
