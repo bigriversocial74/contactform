@@ -1,11 +1,6 @@
-name: Repair Consolidated Creator Validator Contracts
+name: Build Creator Compatibility Workflow Bundle
 
 on:
-  push:
-    branches:
-      - ci/repair-consolidated-validator-contracts-20260731
-    paths:
-      - .github/workflows/repair-consolidated-validator-contracts.yml
   pull_request:
     branches:
       - integration-from-repair-20260628
@@ -14,126 +9,70 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: repair-consolidated-creator-validator-contracts
+  group: build-creator-compatibility-workflow-bundle
   cancel-in-progress: true
 
 jobs:
-  repair:
-    if: github.head_ref == 'ci/repair-consolidated-validator-contracts-20260731' || github.ref_name == 'ci/repair-consolidated-validator-contracts-20260731'
+  bundle:
+    if: github.head_ref == 'ci/repair-consolidated-validator-contracts-20260731'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ci/repair-consolidated-validator-contracts-20260731
           fetch-depth: 0
-      - name: Restore compatibility workflows and narrow migration triggers
+      - name: Build manual-only compatibility workflows
         env:
           SOURCE_COMMIT: 4c772318b7b737199af2974816a62537b27de6a2
         run: |
           set -euo pipefail
-
+          mkdir -p repair-bundle/.github/workflows
           files=(
-            .github/workflows/creator-campaign-analytics-v10.yml
-            .github/workflows/creator-campaign-budgets-v7.yml
-            .github/workflows/creator-campaign-compensation-v6.yml
-            .github/workflows/creator-campaign-crm-v12.yml
-            .github/workflows/creator-campaign-deliverables-v4.yml
-            .github/workflows/creator-campaign-mcp-bounded-playbooks-v13d.yml
-            .github/workflows/creator-campaign-mcp-canonical-v13c.yml
-            .github/workflows/creator-campaign-mcp-draft-v13b.yml
-            .github/workflows/creator-campaign-mcp-read-v13a.yml
-            .github/workflows/creator-campaign-merchant-builder-v2.yml
-            .github/workflows/creator-campaign-messaging-v9.yml
-            .github/workflows/creator-campaign-native-foundation-v1.yml
-            .github/workflows/creator-campaign-participation-v3.yml
-            .github/workflows/creator-campaign-payouts-v8.yml
-            .github/workflows/creator-campaign-production-pilot-v14.yml
-            .github/workflows/creator-campaign-tracking-v5.yml
-            .github/workflows/creator-campaign-ui-v11.yml
+            creator-campaign-analytics-v10.yml
+            creator-campaign-budgets-v7.yml
+            creator-campaign-compensation-v6.yml
+            creator-campaign-crm-v12.yml
+            creator-campaign-deliverables-v4.yml
+            creator-campaign-mcp-bounded-playbooks-v13d.yml
+            creator-campaign-mcp-canonical-v13c.yml
+            creator-campaign-mcp-draft-v13b.yml
+            creator-campaign-mcp-read-v13a.yml
+            creator-campaign-merchant-builder-v2.yml
+            creator-campaign-messaging-v9.yml
+            creator-campaign-native-foundation-v1.yml
+            creator-campaign-participation-v3.yml
+            creator-campaign-payouts-v8.yml
+            creator-campaign-production-pilot-v14.yml
+            creator-campaign-tracking-v5.yml
+            creator-campaign-ui-v11.yml
           )
-
-          for file in "${files[@]}"; do
-            git show "${SOURCE_COMMIT}:${file}" > "${file}"
+          for name in "${files[@]}"; do
+            git show "${SOURCE_COMMIT}:.github/workflows/${name}" > "repair-bundle/.github/workflows/${name}"
           done
-
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          restored = [
-              Path('.github/workflows/creator-campaign-analytics-v10.yml'),
-              Path('.github/workflows/creator-campaign-budgets-v7.yml'),
-              Path('.github/workflows/creator-campaign-compensation-v6.yml'),
-              Path('.github/workflows/creator-campaign-crm-v12.yml'),
-              Path('.github/workflows/creator-campaign-deliverables-v4.yml'),
-              Path('.github/workflows/creator-campaign-mcp-bounded-playbooks-v13d.yml'),
-              Path('.github/workflows/creator-campaign-mcp-canonical-v13c.yml'),
-              Path('.github/workflows/creator-campaign-mcp-draft-v13b.yml'),
-              Path('.github/workflows/creator-campaign-mcp-read-v13a.yml'),
-              Path('.github/workflows/creator-campaign-merchant-builder-v2.yml'),
-              Path('.github/workflows/creator-campaign-messaging-v9.yml'),
-              Path('.github/workflows/creator-campaign-native-foundation-v1.yml'),
-              Path('.github/workflows/creator-campaign-participation-v3.yml'),
-              Path('.github/workflows/creator-campaign-payouts-v8.yml'),
-              Path('.github/workflows/creator-campaign-production-pilot-v14.yml'),
-              Path('.github/workflows/creator-campaign-tracking-v5.yml'),
-              Path('.github/workflows/creator-campaign-ui-v11.yml'),
-          ]
-
-          trigger = re.compile(r'(?ms)^on:\s*\n.*?(?=^(?:permissions|jobs):)')
-          for path in restored:
+          for path in Path('repair-bundle/.github/workflows').glob('*.yml'):
               text = path.read_text()
-              updated, count = trigger.subn('on:\n  workflow_dispatch:\n\n', text, count=1)
+              updated, count = re.subn(
+                  r'(?ms)^on:\s*\n.*?(?=^(?:permissions|jobs):)',
+                  'on:\n  workflow_dispatch:\n\n',
+                  text,
+                  count=1,
+              )
               if count != 1:
                   raise SystemExit(f'Unable to convert {path} to manual-only')
               path.write_text(updated)
-
-          protected_names = {
-              'Creator Campaign Phases 1-15 Production Audit v1',
-              'Repository Production Quality',
-          }
-          removed = []
-          for path in Path('.github/workflows').glob('*.yml'):
-              if path.name == 'repair-consolidated-validator-contracts.yml':
-                  continue
-              text = path.read_text()
-              if any(f'name: {name}' in text for name in protected_names):
-                  continue
-              lines = text.splitlines()
-              filtered = []
-              changed = False
-              for line in lines:
-                  if line.strip() in {
-                      "- 'config/migrations.php'",
-                      "- 'scripts/validate_migration_manifest.php'",
-                  }:
-                      changed = True
-                      removed.append(f'{path}:{line.strip()}')
-                      continue
-                  filtered.append(line)
-              if changed:
-                  path.write_text('\n'.join(filtered) + '\n')
-
-          report = Path('docs/ci/consolidated-validator-contract-repair-20260731.md')
-          report.write_text(
-              '# Consolidated Creator validator contract repair\n\n'
-              '- Restored 17 historical Creator Campaign workflow files as manual-only compatibility contracts.\n'
-              '- Preserved the consolidated Phase 1–15 production audit as the automatic authority.\n'
-              '- Removed shared migration-manifest paths from unrelated automatic workflow triggers.\n'
-              '- Added explicit manual compatibility validation for the Creator affiliate v16 SQL migration.\n\n'
-              'The compatibility workflows retain historical validator evidence but cannot run automatically on pull requests.\n\n'
-              'Removed unrelated trigger entries:\n\n' +
-              ''.join(f'- `{entry}`\n' for entry in removed)
-          )
           PY
-
-          rm .github/workflows/repair-consolidated-validator-contracts.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Repair consolidated Creator validator contracts"
-          git push origin HEAD:ci/repair-consolidated-validator-contracts-20260731
+          tar -czf creator-compatibility-workflows.tar.gz -C repair-bundle .
+          find repair-bundle -type f -print | sort
+      - uses: actions/upload-artifact@v4
+        with:
+          name: creator-compatibility-workflows
+          path: creator-compatibility-workflows.tar.gz
+          if-no-files-found: error
+          retention-days: 1
