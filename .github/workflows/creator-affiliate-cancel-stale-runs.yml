@@ -6,13 +6,18 @@ on:
       - feature/creator-affiliate-operations-v16-20260730
     paths:
       - .github/workflows/creator-affiliate-cancel-stale-runs.yml
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - .github/workflows/creator-affiliate-cancel-stale-runs.yml
 
 permissions:
   actions: write
   contents: read
 
 concurrency:
-  group: creator-affiliate-cancel-stale-runs
+  group: creator-affiliate-cancel-stale-runs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,8 +28,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          BRANCH_NAME: ${{ github.ref_name }}
-          CURRENT_HEAD: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          CURRENT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
 
