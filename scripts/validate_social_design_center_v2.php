@@ -172,6 +172,8 @@ $assert(str_contains($js, 'data-social-step="preview"'), 'Social UI must include
 $assert(str_contains($js, 'data-social-download'), 'Social UI must preserve JPG download action.');
 $assert(str_contains($js, 'data-social-post-feed'), 'Social UI must preserve feed posting action.');
 $assert(str_contains($save, 'data-social-save-asset'), 'Existing creative-save integration must still add Save Creative Asset.');
+$assert(str_contains($save, 'template_key: composition?.template'), 'Saved creative caption metadata must retain the template family.');
+$assert(str_contains($save, 'savedTemplate'), 'Saved creative reopen flow must restore the template family.');
 $assert(str_contains($css, '.mg-social-v2-template-grid'), 'Social v2 template gallery styles must exist.');
 $assert(str_contains($css, '.format-story'), 'Story format adaptation must exist.');
 $assert(str_contains($css, '.layout-spotlight') || str_contains($js, 'layout-spotlight'), 'Spotlight layout must be renderable.');
