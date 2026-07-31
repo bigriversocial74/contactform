@@ -77,12 +77,21 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
         $page=$this->source('merchant-creator-affiliate-operations.php');
         $view=$this->source('includes/merchant-creator-affiliate-operations-view.php');
         $script=$this->source('assets/js/merchant-creator-affiliate-operations.js');
+        $readiness=$this->source('includes/creator-campaigns/operations-readiness-query.php');
         self::assertStringContainsString('merchant-creator-affiliate-operations-view.php',$page);
         self::assertStringContainsString('data-caops-policy-form',$view);
         self::assertStringContainsString('Campaign readiness',$view);
         self::assertStringContainsString('data-profile-participant',$script);
         self::assertStringContainsString('data-payout-participant',$script);
         self::assertStringContainsString('data-case-action',$script);
+        self::assertStringContainsString('payout_ready_minor',$readiness);
+        self::assertStringContainsString('can_create_payout',$readiness);
+        self::assertStringContainsString('eligibleCreatorIds',$readiness);
+        self::assertStringContainsString('operations_dashboard_with_readiness',$this->source('api/merchant/creator-affiliate-operations.php'));
+        self::assertStringContainsString('name="idempotency_key"',$view);
+        self::assertStringContainsString('randomUUID',$script);
+        self::assertStringContainsString('payoutForm.elements.idempotency_key.value=requestKey()',$script);
+        self::assertStringNotContainsString("new Date().toISOString().slice(0,10)",$script);
         self::assertStringContainsString('/merchant-creator-affiliate-operations.php',$this->source('includes/merchant-navigation.php'));
     }
 
