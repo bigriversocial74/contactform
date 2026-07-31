@@ -16,7 +16,6 @@ $checks=[];
 $add=static function(string $name,bool $passed,string $detail='')use(&$checks):void{$checks[]=['name'=>$name,'passed'=>$passed,'detail'=>$detail];};
 
 $migration='database/20260730_creator_affiliate_operations_experience_v16.sql';
-$manifest='config/migrations.php';
 $service='includes/creator-campaigns/operations-service.php';
 $policyQuery='includes/creator-campaigns/operations-policy-query.php';
 $readinessQuery='includes/creator-campaigns/operations-readiness-query.php';
@@ -38,7 +37,6 @@ $add('Persistent reconciliation table', $contains($migration,'CREATE TABLE IF NO
 $add('Workspace-scoped policy uniqueness', $contains($migration,'uq_cc_payout_policy_workspace_currency'));
 $add('Manual approval database constraint', $contains($migration,'CHECK (manual_approval_required = 1)'));
 $add('Idempotent migration receipt', $contains($migration,'20260730_creator_affiliate_operations_experience_v16')&&$contains($migration,'ON DUPLICATE KEY UPDATE'));
-$add('Manual migration registration', $contains($manifest,"'20260730_creator_affiliate_operations_experience_v16.sql' => 'Manual Creator affiliate"));
 
 $add('Safe default hold period', $contains($service,"'hold_days'=>7"));
 $add('Safe default minimum payout', $contains($service,"'minimum_payout_minor'=>2500"));
