@@ -1,0 +1,251 @@
+name: Consolidate Pull Request Workflows 20260731
+
+on:
+  push:
+    branches:
+      - ci/consolidate-pr-workflows-20260731
+    paths:
+      - .github/workflows/ci-consolidate-pr-workflows-20260731.yml
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: consolidate-pr-workflows-20260731
+  cancel-in-progress: true
+
+jobs:
+  consolidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ci/consolidate-pr-workflows-20260731
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Retire historical automatic PR workflows
+        shell: pwsh
+        run: |
+          @'
+          from __future__ import annotations
+
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('.github/workflows')
+          self_path = root / 'ci-consolidate-pr-workflows-20260731.yml'
+
+          preserve_names = {
+              'Pull Request Validation',
+              'Repository Production Quality',
+              'Commerce Operations Validation',
+              'Release Package Validation',
+              'Creator Campaign Phases 1-15 Production Audit v1',
+              'Merchant Navigation Groups v1',
+          }
+          preserve_files = {
+              'pr-validation.yml',
+              'recovery-baseline.yml',
+              'repository-production-quality.yml',
+              'commerce-operations-validation.yml',
+              'release-package-validation.yml',
+              'creator-campaign-production-audit-v1.yml',
+              'merchant-navigation-groups-v1.yml',
+              'dependency-review.yml',
+              'codeql.yml',
+          }
+          security_name_markers = ('codeql', 'dependency review', 'secret scanning')
+
+          def workflow_name(text: str, fallback: str) -> str:
+              match = re.search(r'(?m)^name:\s*["\']?(.+?)["\']?\s*$', text)
+              return match.group(1).strip() if match else fallback
+
+          def is_preserved(path: Path, name: str) -> bool:
+              lowered = name.lower()
+              return (
+                  path.name in preserve_files
+                  or name in preserve_names
+                  or any(marker in lowered for marker in security_name_markers)
+              )
+
+          def retire_pull_request(text: str) -> tuple[str, bool]:
+              lines = text.splitlines(keepends=True)
+
+              for index, line in enumerate(lines):
+                  inline = re.match(r'^(on:)\s*\[(.*?)\]\s*(?:#.*)?(?:\r?\n)?$', line)
+                  if not inline:
+                      continue
+                  events = [item.strip() for item in inline.group(2).split(',') if item.strip()]
+                  filtered = [event for event in events if event not in {'pull_request', 'pull_request_target'}]
+                  if len(filtered) == len(events):
+                      return text, False
+                  if 'workflow_dispatch' not in filtered:
+                      filtered.append('workflow_dispatch')
+                  ending = '\r\n' if line.endswith('\r\n') else '\n'
+                  lines[index] = f"on: [{', '.join(filtered)}]{ending}"
+                  return ''.join(lines), True
+
+              on_index = None
+              for index, line in enumerate(lines):
+                  if re.match(r'^on:\s*(?:#.*)?(?:\r?\n)?$', line):
+                      on_index = index
+                      break
+              if on_index is None:
+                  return text, False
+
+              on_end = len(lines)
+              for index in range(on_index + 1, len(lines)):
+                  stripped = lines[index].strip()
+                  if stripped == '' or stripped.startswith('#'):
+                      continue
+                  if not lines[index].startswith((' ', '\t')):
+                      on_end = index
+                      break
+
+              remove_ranges: list[tuple[int, int]] = []
+              index = on_index + 1
+              while index < on_end:
+                  match = re.match(r'^  (pull_request|pull_request_target):(?:\s*.*)?(?:\r?\n)?$', lines[index])
+                  if not match:
+                      index += 1
+                      continue
+                  end = index + 1
+                  while end < on_end:
+                      stripped = lines[end].strip()
+                      if stripped == '' or stripped.startswith('#'):
+                          end += 1
+                          continue
+                      indentation = len(lines[end]) - len(lines[end].lstrip(' '))
+                      if indentation <= 2:
+                          break
+                      end += 1
+                  remove_ranges.append((index, end))
+                  index = end
+
+              if not remove_ranges:
+                  return text, False
+
+              for start, end in reversed(remove_ranges):
+                  del lines[start:end]
+                  on_end -= end - start
+
+              has_dispatch = any(
+                  re.match(r'^  workflow_dispatch:', line)
+                  for line in lines[on_index + 1:on_end]
+              )
+              if not has_dispatch:
+                  ending = '\r\n' if any(line.endswith('\r\n') for line in lines) else '\n'
+                  lines.insert(on_end, f'  workflow_dispatch:{ending}')
+
+              return ''.join(lines), True
+
+          modified: list[dict[str, str]] = []
+          preserved: list[dict[str, str]] = []
+          untouched: list[dict[str, str]] = []
+
+          for path in sorted(root.glob('*.y*ml')):
+              if path == self_path:
+                  continue
+              text = path.read_text(encoding='utf-8')
+              name = workflow_name(text, path.name)
+              if is_preserved(path, name):
+                  preserved.append({'path': path.as_posix(), 'name': name})
+                  continue
+              updated, changed = retire_pull_request(text)
+              if not changed:
+                  untouched.append({'path': path.as_posix(), 'name': name})
+                  continue
+              if 'workflow_dispatch' not in updated:
+                  raise RuntimeError(f'{path} lost manual execution support')
+              if not re.search(r'(?m)^jobs:\s*$', updated):
+                  raise RuntimeError(f'{path} lost its jobs block')
+              path.write_text(updated, encoding='utf-8', newline='')
+              modified.append({'path': path.as_posix(), 'name': name})
+
+          report_path = Path('docs/ci/pr-workflow-consolidation-20260731.md')
+          report_path.parent.mkdir(parents=True, exist_ok=True)
+          report = [
+              '# Pull Request Workflow Consolidation — 2026-07-31',
+              '',
+              'Historical feature workflows remain available through `workflow_dispatch` and retain any push or schedule events, but no longer run automatically for every pull request.',
+              '',
+              '## Preserved automatic PR gates',
+              '',
+          ]
+          report.extend(f"- `{item['path']}` — {item['name']}" for item in preserved)
+          report.extend(['', '## Retired from automatic PR execution', ''])
+          report.extend(f"- `{item['path']}` — {item['name']}" for item in modified)
+          report.extend([
+              '',
+              '## Summary',
+              '',
+              f'- Preserved automatic PR workflows: **{len(preserved)}**',
+              f'- Retired historical PR workflows: **{len(modified)}**',
+              f'- Workflows without PR triggers: **{len(untouched)}**',
+              '',
+              'This is a CI-governance-only change. No application, database, migration, runtime, or deployment files are modified.',
+              '',
+          ])
+          report_path.write_text('\n'.join(report), encoding='utf-8')
+
+          self_path.unlink()
+
+          print(json.dumps({
+              'preserved': len(preserved),
+              'retired': len(modified),
+              'untouched': len(untouched),
+              'report': report_path.as_posix(),
+          }, indent=2))
+          '@ | Set-Content -Path "$env:RUNNER_TEMP\consolidate_workflows.py" -Encoding UTF8
+
+          python "$env:RUNNER_TEMP\consolidate_workflows.py"
+          git diff --check
+
+      - name: Commit consolidated workflow policy
+        shell: pwsh
+        run: |
+          git config user.name "Microgifter CI Governance"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Consolidate pull request validation workflows"
+          git push origin HEAD:ci/consolidate-pr-workflows-20260731
+
+      - name: Cancel current Creator affiliate backlog
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $branch = 'feature/creator-affiliate-operations-v16-20260730'
+          $page = 1
+          $cancelled = 0
+          do {
+            $uri = "https://api.github.com/repos/$env:REPOSITORY/actions/runs?branch=$branch&event=pull_request&per_page=100&page=$page"
+            $response = Invoke-RestMethod -Headers @{
+              Authorization = "Bearer $env:GH_TOKEN"
+              Accept = 'application/vnd.github+json'
+              'X-GitHub-Api-Version' = '2022-11-28'
+            } -Uri $uri
+            foreach ($run in $response.workflow_runs) {
+              if ($run.status -in @('queued','pending','waiting','requested','in_progress')) {
+                try {
+                  Invoke-RestMethod -Method Post -Headers @{
+                    Authorization = "Bearer $env:GH_TOKEN"
+                    Accept = 'application/vnd.github+json'
+                    'X-GitHub-Api-Version' = '2022-11-28'
+                  } -Uri "https://api.github.com/repos/$env:REPOSITORY/actions/runs/$($run.id)/cancel" | Out-Null
+                  $cancelled++
+                } catch {
+                  Write-Host "Cancellation skipped for $($run.id): $($_.Exception.Message)"
+                }
+              }
+            }
+            $page++
+          } while ($response.workflow_runs.Count -eq 100)
+          Write-Host "Cancelled $cancelled active Creator affiliate runs."
