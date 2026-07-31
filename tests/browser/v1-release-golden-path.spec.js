@@ -141,7 +141,9 @@ test.describe('V1 release browser golden path', () => {
     await expect(page.locator('[data-cart-items]')).toContainText('Release Smoke Coffee Gift');
     await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
-    await page.locator('[data-cart-checkout][data-provider="stripe"]').click();
+    const cardCheckout = page.locator('[data-cart-checkout-provider="stripe"]');
+    await expect(cardCheckout).toBeVisible();
+    await cardCheckout.click();
     await expect.poll(() => state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
       '/api/commerce/cart-items.php',
       '/api/commerce/checkout-draft.php',
