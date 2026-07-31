@@ -121,10 +121,10 @@ test.describe('V1 release browser golden path', () => {
 
     await page.goto('/tests/browser/fixtures/authenticate-v1.php?target=product');
     await expect(page).toHaveURL(/\/product\.php\?id=11111111-1111-4111-8111-111111111111/);
-    await expect(page.locator('[data-public-product] h1')).toHaveText('Release Smoke Coffee Gift');
-    await expect(page.locator('[data-public-product]')).toContainText('<img src=x onerror=window.__unsafe=true>');
-    await expect(page.locator('[data-public-product] script')).toHaveCount(0);
-    await expect(page.locator('[data-public-product] img')).toHaveCount(0);
+    await expect(page.locator('[data-public-product-page] h1')).toHaveText('Release Smoke Coffee Gift');
+    await expect(page.locator('[data-public-product-page]')).toContainText('<img src=x onerror=window.__unsafe=true>');
+    await expect(page.locator('[data-public-product-page] script')).toHaveCount(0);
+    await expect(page.locator('[data-public-product-page] img')).toHaveCount(0);
 
     await page.locator('[data-cart-add]').click();
     await expect(page.locator('[data-cart-drawer]')).toHaveAttribute('aria-hidden', 'false');
