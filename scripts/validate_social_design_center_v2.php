@@ -143,7 +143,8 @@ $files = [
     'page' => $root . '/design-studio.php',
     'api' => $root . '/api/merchant/product.php',
     'js' => $root . '/assets/js/personal-agent-design-studio-social.js',
-    'css' => $root . '/assets/css/personal-agent-design-studio-social.css',
+    'legacy_css' => $root . '/assets/css/personal-agent-design-studio-social.css',
+    'css' => $root . '/assets/css/personal-agent-design-studio-social-v2.css',
     'save' => $root . '/assets/js/design-studio-creative-save.js',
 ];
 foreach ($files as $label => $path) {
@@ -153,11 +154,14 @@ foreach ($files as $label => $path) {
 $page = is_file($files['page']) ? (string)file_get_contents($files['page']) : '';
 $api = is_file($files['api']) ? (string)file_get_contents($files['api']) : '';
 $js = is_file($files['js']) ? (string)file_get_contents($files['js']) : '';
+$legacyCss = is_file($files['legacy_css']) ? (string)file_get_contents($files['legacy_css']) : '';
 $css = is_file($files['css']) ? (string)file_get_contents($files['css']) : '';
 $save = is_file($files['save']) ? (string)file_get_contents($files['save']) : '';
 
 $assert(str_contains($page, 'mg-social-design-registry'), 'Design Studio page must expose the canonical registry.');
-$assert(str_contains($page, 'personal-agent-design-studio-social.css?v=2.0.0'), 'Design Studio must load Social v2 CSS.');
+$assert(str_contains($page, 'personal-agent-design-studio-social.css?v=1.0.0'), 'Design Studio must preserve legacy shared Design Studio CSS.');
+$assert(str_contains($page, 'personal-agent-design-studio-social-v2.css?v=2.0.0'), 'Design Studio must load additive Social v2 CSS.');
+$assert(str_contains($legacyCss, '.mg-agent-design-modebar'), 'Legacy shared mode-bar styles must remain available.');
 $assert(str_contains($page, 'personal-agent-design-studio-social.js?v=2.0.0'), 'Design Studio must load Social v2 JavaScript.');
 $assert(str_contains($api, 'mg_social_design_resolve_review'), 'Product detail API must resolve real review data.');
 $assert(str_contains($api, "'design_review'=>"), 'Product detail API must return the resolved review.');
