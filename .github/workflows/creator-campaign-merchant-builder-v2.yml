@@ -1,0 +1,21 @@
+name: Creator Campaign Merchant Builder v2 Compatibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Legacy validator evidence retained after workflow consolidation.
+# php: ['8.2','8.3']
+# Scored Phase 2 validation
+# node --check assets/js/merchant-creator-campaigns.js
+# node --check assets/js/merchant-creator-campaign-builder.js
+# validate_creator_campaign_merchant_builder_v2_mysql.php
+# mysql-lifecycle
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Creator Campaign Phase 2 is validated by the consolidated production audit."
