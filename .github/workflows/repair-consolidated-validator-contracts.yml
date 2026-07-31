@@ -6,6 +6,11 @@ on:
       - ci/repair-consolidated-validator-contracts-20260731
     paths:
       - .github/workflows/repair-consolidated-validator-contracts.yml
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - .github/workflows/repair-consolidated-validator-contracts.yml
   workflow_dispatch:
 
 permissions:
@@ -17,6 +22,7 @@ concurrency:
 
 jobs:
   repair:
+    if: github.head_ref == 'ci/repair-consolidated-validator-contracts-20260731' || github.ref_name == 'ci/repair-consolidated-validator-contracts-20260731'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
