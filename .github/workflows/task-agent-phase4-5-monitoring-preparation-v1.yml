@@ -2,6 +2,24 @@ name: Task Agent Phase 4.5 Monitoring Preparation v1
 
 on:
   pull_request:
+    paths:
+      - 'includes/task-agent-monitoring.php'
+      - 'includes/task-agent-monitoring-router.php'
+      - 'includes/task-agent-recurring-programs-router.php'
+      - 'includes/task-agent-program-coordination-router.php'
+      - 'agent.php'
+      - 'assets/js/task-agent-monitoring-runtime.js'
+      - 'config/migrations.php'
+      - 'scripts/validate_migration_manifest.php'
+      - 'tests/phpunit/TaskAgentPhase45MonitoringPreparationV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase44RulesBudgetsApprovalsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase43WorkplaceCommunityProgramsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase42GroupGiftingV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36SafetyBoundaryV1ContractTest.php'
+      - 'tests/phpunit/ProductionAgentPlanReviewApprovalCenterSection2Test.php'
+      - '.github/workflows/task-agent-phase4-5-monitoring-preparation-v1.yml'
   workflow_dispatch:
 
 permissions:
