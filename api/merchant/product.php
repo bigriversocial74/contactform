@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__, 2) . '/includes/personal-agent/social-design-center.php';
 
 mg_require_method('GET');
 $user = mg_require_permission('catalog.products.view');
@@ -82,6 +83,13 @@ if ($draftAssetMap) {
     }
 }
 
+$designReview = mg_social_design_resolve_review(
+    $pdo,
+    $userId,
+    (int)$product['id'],
+    (string)$product['public_id']
+);
+
 $product['payload'] = $product['payload_json'] ? (json_decode((string)$product['payload_json'],true) ?: []) : [];
 $product['asset_map'] = $draftAssetMap;
 $product['expiration_policy'] = $product['expiration_policy_json'] ? (json_decode((string)$product['expiration_policy_json'],true) ?: []) : [];
@@ -102,6 +110,7 @@ mg_ok([
     'versions'=>$versions->fetchAll(),
     'assets'=>$versionAssets,
     'draft_assets'=>$draftAssets,
+    'design_review'=>$designReview,
     'access'=>[
         'manage'=>$isSuper || in_array('catalog.products.manage',$permissions,true),
         'publish'=>$isSuper || in_array('catalog.products.publish',$permissions,true),
