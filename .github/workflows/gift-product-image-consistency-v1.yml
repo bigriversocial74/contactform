@@ -4,6 +4,18 @@ on:
   pull_request:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'api/account/_action_center_product_media.php'
+      - 'api/account/action-center.php'
+      - 'includes/personal-agent/gift-result-cards.php'
+      - 'assets/js/gift-action-center-reward-images.js'
+      - 'scripts/validate_gift_product_image_consistency_v1.php'
+      - 'tests/phpunit/GiftProductImageConsistencyV1Test.php'
+      - 'inbox.php'
+      - 'sent.php'
+      - 'claimed.php'
+      - 'agent.php'
+      - '.github/workflows/gift-product-image-consistency-v1.yml'
   workflow_dispatch:
 
 permissions:
