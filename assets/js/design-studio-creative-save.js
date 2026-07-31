@@ -115,7 +115,7 @@
     return keys.get(signature);
   }
 
-  function captions() {
+  function captions(composition = null) {
     const item = scheduleItem;
     if (item) {
       return {
@@ -126,6 +126,7 @@
         product_link: item.product_link || '',
         call_to_action: item.call_to_action || '',
         platforms: item.platform_copy || {},
+        template_key: composition?.template || item.template_key || '',
       };
     }
 
@@ -143,6 +144,7 @@
       hashtags,
       product_link: '',
       call_to_action: 'Explore this local favorite',
+      template_key: composition?.template || '',
       platforms: {
         general: { short, standard, extended: standard },
         facebook: { short, standard, extended: standard },
@@ -236,7 +238,7 @@
       data.append('title', title);
       data.append('product_id', productId);
       data.append('schedule_id', scheduleId);
-      data.append('caption', JSON.stringify(captions()));
+      data.append('caption', JSON.stringify(captions(composition)));
       data.append('render_metadata', JSON.stringify({
         source: 'design_studio',
         registry_version: Number(canvas.dataset.registryVersion || 1),
@@ -308,6 +310,18 @@
     app.scrollIntoView({ block: 'start' });
   }
 
+  async function savedTemplate(assetId) {
+    if (!assetId) return '';
+    try {
+      const data = await request(`${endpoint}?status=all`);
+      const assets = Array.isArray(data.assets) ? data.assets : [];
+      const asset = assets.find((item) => String(item.id || '') === String(assetId));
+      return String(asset?.caption?.template_key || '');
+    } catch (_) {
+      return '';
+    }
+  }
+
   function printMode(format = 'poster', layout = 'support-local') {
     app.querySelector('[data-design-mode="print"]')?.click();
     setTimeout(() => {
@@ -347,12 +361,21 @@
   if (mode === 'calendar') {
     requestAnimationFrame(() => app.querySelector('[data-calendar-mode-button]')?.click());
   } else if (mode === 'social' && query.get('product')) {
-    requestAnimationFrame(() => socialMode(
-      String(query.get('product')),
-      String(query.get('format') || 'square'),
-      String(query.get('layout') || 'spotlight'),
-      String(query.get('template') || 'hero-offer')
-    ).catch((error) => status('social', error.message || 'Unable to open the linked creative.', 'error')));
+    requestAnimationFrame(async () => {
+      try {
+        const template = String(query.get('template') || '')
+          || await savedTemplate(String(query.get('asset') || ''))
+          || 'hero-offer';
+        await socialMode(
+          String(query.get('product')),
+          String(query.get('format') || 'square'),
+          String(query.get('layout') || 'spotlight'),
+          template
+        );
+      } catch (error) {
+        status('social', error.message || 'Unable to open the linked creative.', 'error');
+      }
+    });
   } else if (mode === 'print') {
     requestAnimationFrame(() => printMode(
       String(query.get('format') || 'poster'),
