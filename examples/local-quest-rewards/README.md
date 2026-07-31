@@ -42,7 +42,7 @@ The production installer uses `install-functions.php` and:
 - validates the Microgifter Developer API credential before finalizing setup
 - creates the database when permitted or uses an existing database
 - safely parses and applies all required SQL schemas
-- verifies all 14 required tables
+- verifies all 16 required tables
 - creates the first owner account
 - generates a signed-code secret when one is not supplied
 - writes `config.php` atomically and backs up an existing configuration
@@ -56,6 +56,7 @@ Schema order:
 database/local_quest_rewards.sql
 database/local_quest_admin_auth.sql
 database/local_quest_production_foundation_v1.sql
+database/local_quest_participant_auth_v1.sql
 ```
 
 After installation:
@@ -194,6 +195,7 @@ For an existing Local Quest database, import:
 
 ```text
 database/local_quest_production_foundation_v1.sql
+database/local_quest_participant_auth_v1.sql
 ```
 
 Then update the application files, confirm `config.php` uses `storage.driver => mysql`, and create `.installed.lock` through an intentional maintenance window after verifying configuration.
