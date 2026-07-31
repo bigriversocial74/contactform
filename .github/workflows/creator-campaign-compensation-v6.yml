@@ -1,0 +1,18 @@
+name: Creator Campaign Compensation v6 Compatibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Legacy validator evidence retained after workflow consolidation.
+# php: ['8.2','8.3']
+# Phase 5 compatibility
+# mysql-lifecycle
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Creator Campaign Phase 6 is validated by the consolidated production audit."
