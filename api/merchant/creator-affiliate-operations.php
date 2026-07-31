@@ -11,7 +11,7 @@ $action=null;
 
 try{
     if($method==='GET'){
-        mg_ok(mg_creator_campaign_operations_dashboard($pdo,$user,$_GET));
+        mg_ok(mg_creator_campaign_operations_dashboard_with_readiness($pdo,$user,$_GET));
     }
     if($method!=='POST')mg_fail('Method not allowed.',405);
     $input=mg_input();
