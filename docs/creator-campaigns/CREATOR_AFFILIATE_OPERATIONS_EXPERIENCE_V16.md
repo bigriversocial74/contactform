@@ -38,7 +38,7 @@ Until the merchant saves a policy, the runtime uses these safe defaults:
 
 ### Policy enforcement
 
-Payout assembly now requires:
+Payout assembly requires:
 
 1. an eligible Creator payout profile
 2. an active merchant payout policy
@@ -49,7 +49,11 @@ Payout assembly now requires:
    - the Creator-specific profile minimum
 6. no active reservation dispute
 
-A payout still begins in `draft`, must be approved by the merchant, and cannot be marked `paid` without an external provider reference.
+A payout begins in `draft`, must be approved by the merchant, and cannot be marked `paid` without an external provider reference.
+
+Pausing a policy blocks new payout assembly and transitions into `approved` or `processing`. It does not prevent an already-processing external payment from being accurately recorded as `paid`; that final transition still requires the provider reference and remains blocked by an active dispute.
+
+Each explicit payout-creation action receives its own idempotency key. The same key is retained for a network retry, but a later deliberate payout action receives a new key. This prevents duplicate drafts without imposing a one-payout-per-day limitation.
 
 ### Reconciliation monitoring
 
@@ -64,6 +68,8 @@ The Operations Center can scan and persist cases for:
 - repeated suspect tracking activity
 
 Cases are fingerprinted and persistent. Repeated scans update the existing case rather than creating duplicates. A clean scan resolves previously open cases that are no longer detected. If any detector fails, the scan records a critical scanner error and does not auto-resolve other cases.
+
+The CLI reconciliation runner uses a database advisory lock, scans workspaces independently, emits structured JSON, and returns a nonzero status for detector or workspace failures. It records reconciliation evidence only; it does not modify orders, earnings, reservations, payouts, or disputes.
 
 ### Merchant setup experience
 
@@ -84,9 +90,19 @@ Campaign readiness is scored across:
 - scheduled/active lifecycle
 - commissionable product relationship
 - active purchase-attributed compensation rule
-- active campaign budget
+- active funded campaign budget
 - active approved Creator
 - active Creator tracking source
+
+Creator payout readiness distinguishes:
+
+- total committed balance
+- balance still inside the hold period
+- payout-ready balance
+- the effective merchant/Creator minimum
+- the next held-fund eligibility time
+
+The interface enables payout creation only when its policy, participant, eligibility, hold, balance, and minimum checks match the locked payout service.
 
 ### Creator experience
 
@@ -105,6 +121,7 @@ Creator earnings now show:
 
 Creator payouts now show:
 
+- the merchant name for each policy
 - merchant payout cadence
 - next scheduled date when applicable
 - hold period
@@ -116,6 +133,8 @@ Creator payouts now show:
 - dated payout timeline
 - provider reference
 - dispute status and resolution
+
+Only the merchant workspace display name is included in Creator policy cards. Merchant owner identity, contact details, and private account fields are not exposed.
 
 ## Payout boundary
 
@@ -145,7 +164,7 @@ Import after the Creator Campaign Phase 8 payout tables and the Phases 1–15 pr
 
 `database/20260730_creator_affiliate_operations_experience_v16.sql`
 
-The migration is additive and idempotent.
+The migration is additive and idempotent and is registered as a manual-only migration because Creator Campaign Phases 6–15 are also applied through their ordered manual install chain.
 
 ## Deployment order
 
@@ -153,8 +172,9 @@ The migration is additive and idempotent.
 2. Import the v16 SQL migration.
 3. Deploy the merged runtime files while preserving production configuration and runtime directories.
 4. Open Affiliate Operations and save the merchant payout policy.
-5. Run reconciliation.
-6. Perform a controlled purchase, refund, and payout-record smoke test.
+5. Configure the reconciliation runner in the server scheduler.
+6. Run reconciliation.
+7. Perform a controlled purchase, refund, and payout-record smoke test.
 
 ## Production smoke test
 
@@ -163,11 +183,13 @@ The migration is additive and idempotent.
 3. Verify attribution, earning, reservation, merchant operations status, and Creator earnings status.
 4. Commit the reservation and verify the Creator status becomes committed.
 5. Configure Creator payout eligibility.
-6. Wait for or temporarily configure the hold period, then create a payout from the guided participant action.
-7. Verify the record starts in draft and requires approval.
-8. Move it through approved and processing.
-9. Confirm it cannot be marked paid without a provider reference.
-10. Mark it paid with a synthetic external reference in a non-production test.
-11. Test a partial refund before payout processing and verify adjustment/release behavior.
-12. Test a refund after payout processing and verify a dispute is created.
-13. Run reconciliation and verify there are no unexplained critical cases.
+6. Wait for or temporarily configure the hold period, then confirm the Operations Center separates held and payout-ready funds.
+7. Create a payout from the guided participant action.
+8. Verify the record starts in draft and requires approval.
+9. Move it through approved and processing.
+10. Confirm it cannot be marked paid without a provider reference.
+11. Pause the policy after processing begins and confirm the existing payout can still be recorded paid with a synthetic external reference in a non-production test.
+12. Confirm a second deliberate payout action can create a new draft while a retry of the first action remains idempotent.
+13. Test a partial refund before payout processing and verify adjustment/release behavior.
+14. Test a refund after payout processing and verify a dispute is created.
+15. Run reconciliation and verify there are no unexplained critical cases.
