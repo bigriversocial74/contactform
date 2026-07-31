@@ -17,6 +17,7 @@ on:
       - 'docs/creator-campaigns/CREATOR_AFFILIATE_RECONCILIATION_RUNNER_V16.md'
       - 'includes/creator-campaigns/operations-service.php'
       - 'includes/creator-campaigns/operations-policy-query.php'
+      - 'includes/creator-campaigns/operations-readiness-query.php'
       - 'includes/creator-campaigns/operations-monitor.php'
       - 'includes/creator-campaigns/payout-service.php'
       - 'includes/creator-campaigns/payout-query.php'
@@ -30,6 +31,7 @@ on:
       - 'merchant-creator-affiliate-operations.php'
       - 'scripts/run_creator_affiliate_reconciliation_v16.php'
       - 'scripts/validate_creator_affiliate_operations_v16.php'
+      - 'scripts/validate_creator_affiliate_operations_v16_mysql.php'
       - 'scripts/validate_merchant_navigation_groups_v1.php'
       - 'tests/phpunit/CreatorAffiliateOperationsV16ContractTest.php'
       - '.github/workflows/creator-affiliate-operations-v16.yml'
@@ -57,6 +59,7 @@ jobs:
           php -l config/migrations.php
           php -l includes/creator-campaigns/operations-service.php
           php -l includes/creator-campaigns/operations-policy-query.php
+          php -l includes/creator-campaigns/operations-readiness-query.php
           php -l includes/creator-campaigns/operations-monitor.php
           php -l includes/creator-campaigns/payout-service.php
           php -l includes/creator-campaigns/payout-query.php
@@ -73,6 +76,7 @@ jobs:
           php -l includes/merchant-navigation.php
           php -l scripts/run_creator_affiliate_reconciliation_v16.php
           php -l scripts/validate_creator_affiliate_operations_v16.php
+          php -l scripts/validate_creator_affiliate_operations_v16_mysql.php
           php -l scripts/validate_merchant_navigation_groups_v1.php
           php -l tests/phpunit/CreatorAffiliateOperationsV16ContractTest.php
       - name: JavaScript syntax
@@ -157,6 +161,8 @@ jobs:
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='creator_campaign_reconciliation_cases' AND index_name='uq_cc_reconciliation_fingerprint' AND non_unique=0;")" = "2"
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('fk_cc_payout_policy_workspace','fk_cc_reconciliation_workspace');")" = "2"
           test "$(mysql -N -B -h 127.0.0.1 -umicrogifter -pmicrogifter microgifter -e "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name='chk_cc_payout_policy_manual' AND check_clause LIKE '%manual_approval_required%1%';")" = "1"
+      - name: Verify v16 MySQL runtime queries
+        run: php scripts/validate_creator_affiliate_operations_v16_mysql.php
       - name: Run unattended reconciliation monitor
         run: php scripts/run_creator_affiliate_reconciliation_v16.php
       - name: Verify v16 re-import idempotency
