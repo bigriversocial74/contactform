@@ -2,6 +2,21 @@ name: Task Agent Phase 4.1 Recurring Programs v1
 
 on:
   pull_request:
+    paths:
+      - 'includes/task-agent-recurring-programs.php'
+      - 'includes/task-agent-recurring-program-links.php'
+      - 'includes/task-agent-recurring-programs-router.php'
+      - 'includes/personal-agent/workflows-recurring-hardening.php'
+      - 'includes/personal-agent/workflows.php'
+      - 'api/agents/runtime.php'
+      - 'api/user-agent/recurring-programs.php'
+      - 'agent.php'
+      - 'assets/js/task-agent-recurring-programs-runtime.js'
+      - 'tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36SafetyBoundaryV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php'
+      - '.github/workflows/task-agent-phase4-1-recurring-programs-v1.yml'
   workflow_dispatch:
 
 permissions:
