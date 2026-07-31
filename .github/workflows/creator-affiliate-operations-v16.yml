@@ -93,7 +93,7 @@ jobs:
       - name: Retained Creator Campaign finance PHPUnit
         run: vendor/bin/phpunit tests/phpunit --filter 'CreatorCampaign(Compensation|Budget|Payout|AffiliateCommerce)'
       - name: Migration manifest
-        run: composer validate-migration-manifest
+        run: php scripts/validate_migration_manifest.php
       - name: Repository production quality
         run: composer audit-repository-quality
 
