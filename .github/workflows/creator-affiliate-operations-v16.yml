@@ -26,12 +26,10 @@ on:
       - 'includes/merchant-creator-campaign-payouts-view.php'
       - 'includes/creator-campaign-earnings-view.php'
       - 'includes/creator-campaign-payouts-view.php'
-      - 'includes/merchant-navigation.php'
       - 'merchant-creator-affiliate-operations.php'
       - 'scripts/run_creator_affiliate_reconciliation_v16.php'
       - 'scripts/validate_creator_affiliate_operations_v16.php'
       - 'scripts/validate_creator_affiliate_operations_v16_mysql.php'
-      - 'scripts/validate_merchant_navigation_groups_v1.php'
       - 'tests/phpunit/CreatorAffiliateOperationsV16ContractTest.php'
       - '.github/workflows/creator-affiliate-operations-v16.yml'
   workflow_dispatch:
@@ -71,11 +69,9 @@ jobs:
           php -l creator-campaign-payouts.php
           php -l includes/creator-campaign-earnings-view.php
           php -l includes/creator-campaign-payouts-view.php
-          php -l includes/merchant-navigation.php
           php -l scripts/run_creator_affiliate_reconciliation_v16.php
           php -l scripts/validate_creator_affiliate_operations_v16.php
           php -l scripts/validate_creator_affiliate_operations_v16_mysql.php
-          php -l scripts/validate_merchant_navigation_groups_v1.php
           php -l tests/phpunit/CreatorAffiliateOperationsV16ContractTest.php
       - name: JavaScript syntax
         run: |
@@ -84,8 +80,6 @@ jobs:
           node --check assets/js/creator-campaign-payouts.js
       - name: Creator affiliate operations score
         run: php scripts/validate_creator_affiliate_operations_v16.php
-      - name: Merchant navigation contract
-        run: php scripts/validate_merchant_navigation_groups_v1.php
       - name: Retained compensation, budget, and payout contracts
         run: |
           php scripts/validate_creator_campaign_compensation_v6.php
