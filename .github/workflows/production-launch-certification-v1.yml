@@ -212,17 +212,32 @@ jobs:
           php scripts/validate_database_migration_status.php > build/production-launch-evidence/mysql8-migration-status.json
           php scripts/check_media_storage.php --initialize --json > build/production-launch-evidence/mysql8-media-storage.json
 
-      - name: Run security, money, gifting, checkout, lifecycle, and recovery gates
-        run: |
-          composer test-security
-          composer test-frontend-contracts
-          composer test-money-behavior
-          composer test-microgift-behavior
-          composer test-pppm-resend-behavior
-          composer audit-product-pppm-golden-path-gate
-          composer test-checkout-fulfillment
-          composer test-lifecycle-completion
-          composer test-active-recovery
+      - name: Validate session and security foundation
+        run: composer test-security
+
+      - name: Validate frontend contracts
+        run: composer test-frontend-contracts
+
+      - name: Validate money and ledger behavior
+        run: composer test-money-behavior
+
+      - name: Validate Microgift behavior
+        run: composer test-microgift-behavior
+
+      - name: Validate PPPM resend behavior
+        run: composer test-pppm-resend-behavior
+
+      - name: Validate product and PPPM golden path
+        run: composer audit-product-pppm-golden-path-gate
+
+      - name: Validate checkout and fulfillment
+        run: composer test-checkout-fulfillment
+
+      - name: Validate lifecycle completion
+        run: composer test-lifecycle-completion
+
+      - name: Validate active recovery
+        run: composer test-active-recovery
 
       - name: Record MySQL 8 lifecycle evidence
         run: |
@@ -353,17 +368,32 @@ jobs:
           php scripts/validate_database_migration_status.php > build/production-launch-evidence/mariadb1011-migration-status.json
           php scripts/check_media_storage.php --initialize --json > build/production-launch-evidence/mariadb1011-media-storage.json
 
-      - name: Run security, money, gifting, checkout, lifecycle, and recovery gates
-        run: |
-          composer test-security
-          composer test-frontend-contracts
-          composer test-money-behavior
-          composer test-microgift-behavior
-          composer test-pppm-resend-behavior
-          composer audit-product-pppm-golden-path-gate
-          composer test-checkout-fulfillment
-          composer test-lifecycle-completion
-          composer test-active-recovery
+      - name: Validate session and security foundation
+        run: composer test-security
+
+      - name: Validate frontend contracts
+        run: composer test-frontend-contracts
+
+      - name: Validate money and ledger behavior
+        run: composer test-money-behavior
+
+      - name: Validate Microgift behavior
+        run: composer test-microgift-behavior
+
+      - name: Validate PPPM resend behavior
+        run: composer test-pppm-resend-behavior
+
+      - name: Validate product and PPPM golden path
+        run: composer audit-product-pppm-golden-path-gate
+
+      - name: Validate checkout and fulfillment
+        run: composer test-checkout-fulfillment
+
+      - name: Validate lifecycle completion
+        run: composer test-lifecycle-completion
+
+      - name: Validate active recovery
+        run: composer test-active-recovery
 
       - name: Record MariaDB 10.11 lifecycle evidence
         run: |
@@ -546,7 +576,7 @@ jobs:
       - name: Install dependencies
         run: |
           composer install --no-interaction --prefer-dist --no-progress
-          npm ci --no-audit --no-fund
+          npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
 
       - name: Wait for MySQL and build application
@@ -587,6 +617,14 @@ jobs:
             --details="Clean database, persistent media, health endpoint, and existing V1 release golden path passed in Chromium." \
             --output=build/production-launch-evidence/browser-chromium.json
 
+      - name: Capture browser server diagnostics
+        if: always()
+        run: |
+          mkdir -p build/production-launch-evidence
+          if [ -f /tmp/microgifter-launch-browser-server.log ]; then
+            cp /tmp/microgifter-launch-browser-server.log build/production-launch-evidence/browser-server.log
+          fi
+
       - name: Upload browser evidence and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -596,7 +634,6 @@ jobs:
             build/production-launch-evidence/**
             playwright-report/**
             test-results/**
-            /tmp/microgifter-launch-browser-server.log
           if-no-files-found: warn
           retention-days: 90
 
