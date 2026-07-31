@@ -90,11 +90,16 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
     {
         $earnings=$this->source('includes/creator-campaigns/compensation-query.php');
         $payouts=$this->source('includes/creator-campaigns/payout-query.php');
+        $policyViews=$this->source('includes/creator-campaigns/operations-policy-query.php');
         self::assertStringContainsString('reservation_status',$earnings);
         self::assertStringContainsString('lifecycle_status',$earnings);
         self::assertStringContainsString('provider_reference',$earnings);
-        self::assertStringContainsString('operations_creator_policies',$earnings);
-        self::assertStringContainsString('operations_creator_policies',$payouts);
+        self::assertStringContainsString('operations_creator_policy_views',$earnings);
+        self::assertStringContainsString('operations_creator_policy_views',$payouts);
+        self::assertStringContainsString('merchant_workspaces',$policyViews);
+        self::assertStringContainsString("'merchant_name'",$policyViews);
+        self::assertStringContainsString('merchant_name',$this->source('assets/js/creator-campaign-earnings.js'));
+        self::assertStringContainsString('merchant_name',$this->source('assets/js/creator-campaign-payouts.js'));
         self::assertStringContainsString('status_guide',$payouts);
         self::assertStringContainsString('data-cce-policy',$this->source('includes/creator-campaign-earnings-view.php'));
         self::assertStringContainsString('data-ccpayout-policy',$this->source('includes/creator-campaign-payouts-view.php'));
