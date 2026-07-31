@@ -81,7 +81,7 @@ function mg_creator_campaign_earnings_creator(PDO $pdo,array $user,array $filter
         unset($item['id']);
     }
     unset($item);
-    $policies=function_exists('mg_creator_campaign_operations_creator_policies')?mg_creator_campaign_operations_creator_policies($pdo,$creatorUserId):[];
+    $policies=function_exists('mg_creator_campaign_operations_creator_policy_views')?mg_creator_campaign_operations_creator_policy_views($pdo,$creatorUserId):[];
     return ['items'=>$items,'totals'=>$totals,'policies'=>$policies,'status_guide'=>[
         'earned'=>'Recorded but not yet reserved against a merchant budget.',
         'reserved'=>'Budget funds are reserved for this earning.',
