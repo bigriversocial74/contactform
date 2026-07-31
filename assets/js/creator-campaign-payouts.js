@@ -7,7 +7,7 @@ const policy=root.querySelector('[data-ccpayout-policy]');
 const dialog=root.querySelector('[data-ccpayout-dispute-dialog]');
 const form=root.querySelector('[data-ccpayout-dispute-form]');
 let tab='payouts',data={};
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=(n,c)=>new Intl.NumberFormat(undefined,{style:'currency',currency:c}).format(Number(n||0)/100);
 const label=s=>String(s||'').replaceAll('_',' ');
 const csrf=()=>document.querySelector('meta[name="csrf-token"]')?.content||'';
