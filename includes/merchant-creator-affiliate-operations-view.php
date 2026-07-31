@@ -73,9 +73,10 @@
     <form data-caops-payout-form>
       <header><div><small>Manual payout assembly</small><h2 data-caops-payout-title>Create payout record</h2></div><button type="button" data-caops-close aria-label="Close">×</button></header>
       <input type="hidden" name="participant_id">
+      <input type="hidden" name="idempotency_key">
       <label>Currency<input name="currency" value="USD" maxlength="3" required></label>
       <p data-caops-payout-balance></p>
-      <p>The payout will include eligible committed reservations that satisfy the configured hold period and effective minimum. It will begin in Draft and still require approval.</p>
+      <p>The payout will include only payout-ready committed reservations that satisfy the configured hold period and effective minimum. It will begin in Draft and still require approval.</p>
       <footer><button type="button" class="mg-btn" data-caops-close>Cancel</button><button class="mg-btn mg-btn-primary" type="submit">Create Draft Payout</button></footer>
     </form>
   </dialog>
