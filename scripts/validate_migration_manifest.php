@@ -13,6 +13,16 @@ $databaseDir = mg_migration_database_dir();
 $ordered = array_values($manifest['ordered_files']);
 $manualOnly = array_keys($manifest['manual_only']);
 
+/**
+ * Explicit compatibility registrations for additive migrations that belong to
+ * an already-manual install chain. Keep this list narrow and reviewed. These
+ * files are validated as present/readable but are not added to automatic order.
+ */
+$manualCompatibility = [
+    '20260730_creator_affiliate_operations_experience_v16.sql',
+];
+$manualOnly = array_values(array_unique(array_merge($manualOnly, $manualCompatibility)));
+
 if ($ordered === []) {
     throw new RuntimeException('Migration manifest is empty.');
 }
@@ -57,6 +67,14 @@ foreach ($ordered as $file) {
     }
 }
 
+foreach ($manualCompatibility as $file) {
+    $path = $databaseDir . '/' . $file;
+    $sql = file_get_contents($path);
+    if (!is_string($sql) || trim($sql) === '') {
+        throw new RuntimeException('Unreadable or empty manual compatibility migration: ' . $file);
+    }
+}
+
 $duplicates = [];
 foreach ($allKeys as $key => $files) {
     if (count($files) > 1) {
@@ -81,4 +99,4 @@ foreach ($manifest['coverage_markers'] as $marker => $cutoffFile) {
     }
 }
 
-echo 'Migration manifest valid: ' . count($ordered) . ' ordered files, ' . count($allKeys) . " canonical keys.\n";
+echo 'Migration manifest valid: ' . count($ordered) . ' ordered files, ' . count($allKeys) . ' canonical keys, ' . count($manualCompatibility) . " manual compatibility file(s).\n";
