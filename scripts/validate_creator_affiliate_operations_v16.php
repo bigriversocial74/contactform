@@ -65,6 +65,8 @@ $add('Scheduled runner documented', $contains($runnerDocs,'Run hourly')&&$contai
 $add('Hold period enforced in payout assembly', $contains($payoutService,'r.committed_at<=?')&&$contains($payoutService,'hold_days'));
 $add('Effective minimum uses policy and profile', $contains($payoutService,"max((int)\$profile['minimum_payout_minor'],\$policyMinimum)"));
 $add('Paused policy blocks payout assembly', $contains($payoutService,'The merchant payout policy is paused.'));
+$add('Paused policy blocks approval and processing', $contains($payoutService,"in_array(\$toStatus,['approved','processing'],true)&&function_exists"));
+$add('Paused policy still permits paid settlement recording', !$contains($payoutService,"in_array(\$toStatus,['approved','processing','paid'],true)&&function_exists"));
 $add('Payout starts in draft', $contains($payoutService,"\$total,'draft'"));
 $add('Provider reference remains required', $contains($payoutService,'provider_reference is required before marking a payout paid'));
 $add('Dashboard is hold-aware', $contains($readinessQuery,'payout_ready_minor')&&$contains($readinessQuery,'r.committed_at<=?'));
