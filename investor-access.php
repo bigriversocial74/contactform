@@ -7,14 +7,22 @@ $page_title = 'Investor Access | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-investment-page mg-investor-access-page';
-$page_styles = ['/assets/css/investment-system-v1.css?v=1.0.0'];
-$page_scripts = ['/assets/js/investor-access-v1.js?v=1.0.0'];
+$page_styles = [
+    '/assets/css/personal-agent-chat-history.css?v=1.2.0',
+    '/assets/css/investment-system-v1.css?v=1.0.0',
+];
+$page_scripts = [
+    '/assets/js/personal-agent-chat-history.js?v=1.2.0',
+    '/assets/js/investor-access-v1.js?v=1.0.0',
+];
 $accountView = 'investor-access';
+$agent_sidebar_mode = 'personal';
+$use_inbox_sidebar = true;
 $csrfToken = mg_csrf_token();
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-account-app">
-  <?php require __DIR__ . '/includes/account-sidebar.php'; ?>
+  <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
   <main class="mg-app-workspace">
     <section class="mg-investment-shell" data-investor-access data-csrf-token="<?= mg_e($csrfToken) ?>">
       <header class="mg-investment-hero">
