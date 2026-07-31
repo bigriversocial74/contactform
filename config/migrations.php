@@ -262,7 +262,6 @@ return [
         'stage_19_design_studio_campaign_links_import_fix.sql' => 'Manual Stage 19 recovery import.',
         'world_canvas_remaining_22_26_consolidated.sql' => 'Manual World Canvas Stage 22-26 bundle for already-partial installs.',
         '20260723_creator_campaign_phases_1_15_production_audit_repair_v1.sql' => 'Manual Creator Campaign Phases 1–15 production repair after the Phase 15 single-install migration.',
-        '20260730_creator_affiliate_operations_experience_v16.sql' => 'Manual Creator affiliate payout policy, reconciliation, merchant operations, and Creator finance experience migration; apply after the Creator Campaign Phase 8 payout schema and Phases 1–15 audit repair.',
         '20260724_investor_module_audit_hardening_v1.sql' => 'Manual additive Investor Module audit migration; apply only after Investor Phases 1-5.',
     ],
 ];
