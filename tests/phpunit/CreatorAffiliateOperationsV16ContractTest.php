@@ -94,7 +94,7 @@ final class CreatorAffiliateOperationsV16ContractTest extends TestCase
         self::assertStringContainsString('randomUUID',$script);
         self::assertStringContainsString('payoutForm.elements.idempotency_key.value=requestKey()',$script);
         self::assertStringNotContainsString("new Date().toISOString().slice(0,10)",$script);
-        self::assertStringContainsString('/merchant-creator-affiliate-operations.php',$this->source('includes/merchant-navigation.php'));
+        self::assertStringContainsString('/merchant-creator-affiliate-operations.php',$this->source('includes/merchant-creator-campaign-payouts-view.php'));
     }
 
     public function testCreatorExperienceShowsPolicyAndFinanceLifecycle(): void
