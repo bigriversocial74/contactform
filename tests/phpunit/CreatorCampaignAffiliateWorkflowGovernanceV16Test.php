@@ -26,5 +26,10 @@ final class CreatorCampaignAffiliateWorkflowGovernanceV16Test extends TestCase
             $this->repositoryPath('.github/workflows/creator-affiliate-operations-v16.yml'),
             'Creator affiliate v16 must use the consolidated Creator Campaign audit instead of a duplicate workflow.'
         );
+
+        self::assertFileDoesNotExist(
+            $this->repositoryPath('.github/workflows/creator-campaign-native-foundation-v1.yml'),
+            'Historical Creator phase workflows must remain retired after consolidation.'
+        );
     }
 }
