@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   cancel-nonessential-runs:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Cancel obsolete and nonessential PR workflow runs
         env:
@@ -44,7 +44,18 @@ jobs:
               break
             fi
 
-            mapfile -t run_ids < <(jq -r --arg target "${TARGET_HEAD}" '
+            while IFS= read -r run_id; do
+              [[ -z "${run_id}" ]] && continue
+              echo "Cancelling nonessential run ${run_id}"
+              curl --fail --silent --show-error \
+                -X POST \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${REPOSITORY}/actions/runs/${run_id}/cancel" \
+                >/dev/null || true
+              cancelled=$((cancelled + 1))
+            done < <(jq -r --arg target "${TARGET_HEAD}" '
               .workflow_runs[]
               | select(
                   .status == "queued"
@@ -64,18 +75,6 @@ jobs:
                 )
               | .id
             ' <<<"${response}")
-
-            for run_id in "${run_ids[@]}"; do
-              echo "Cancelling nonessential run ${run_id}"
-              curl --fail --silent --show-error \
-                -X POST \
-                -H "Authorization: Bearer ${GH_TOKEN}" \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "https://api.github.com/repos/${REPOSITORY}/actions/runs/${run_id}/cancel" \
-                >/dev/null || true
-              cancelled=$((cancelled + 1))
-            done
 
             if [[ "${count}" -lt 100 ]]; then
               break
