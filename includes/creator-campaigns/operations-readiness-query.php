@@ -87,10 +87,13 @@ function mg_creator_campaign_operations_dashboard_with_readiness(PDO $pdo,array 
         is_array($dashboard['policy']??null)?$dashboard['policy']:[]
     );
     $dashboard['participants']=$participants;
-    $dashboard['metrics']['eligible_creators']=count(array_filter(
-        $participants,
-        static fn(array $participant):bool=>(string)$participant['payout_profile_status']==='eligible'
-    ));
+    $eligibleCreatorIds=[];
+    foreach($participants as $participant){
+        if((string)$participant['participant_status']==='active'&&(string)$participant['payout_profile_status']==='eligible'){
+            $eligibleCreatorIds[(int)$participant['creator_user_id']]=true;
+        }
+    }
+    $dashboard['metrics']['eligible_creators']=count($eligibleCreatorIds);
     $dashboard['metrics']['committed_minor']=array_sum(array_map(
         static fn(array $participant):int=>(int)$participant['committed_minor'],
         $participants
