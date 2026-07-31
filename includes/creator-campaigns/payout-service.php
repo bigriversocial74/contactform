@@ -58,7 +58,7 @@ function mg_creator_campaign_payout_transition(PDO $pdo,array $user,string $payo
     $context=mg_creator_campaign_payout_merchant_context($pdo,$user,'merchant.creator_payouts.manage');mg_creator_campaign_assert_transaction_boundary($pdo);$pdo->beginTransaction();
     try{
         $payout=mg_creator_campaign_payout_by_public_id($pdo,$payoutPublicId,(int)$context['workspace_id'],null,true);$from=(string)$payout['status'];if($from===$toStatus){$pdo->commit();return['payout_id'=>$payoutPublicId,'status'=>$toStatus,'idempotent'=>true];}mg_creator_campaign_payout_assert_transition($from,$toStatus);
-        if(in_array($toStatus,['approved','processing','paid'],true)&&function_exists('mg_creator_campaign_operations_installed')&&mg_creator_campaign_operations_installed($pdo)){
+        if(in_array($toStatus,['approved','processing'],true)&&function_exists('mg_creator_campaign_operations_installed')&&mg_creator_campaign_operations_installed($pdo)){
             $policy=mg_creator_campaign_operations_effective_policy($pdo,(int)$context['workspace_id'],(string)$payout['currency']);
             if(($policy['status']??'active')!=='active')throw new DomainException('The merchant payout policy is paused.');
         }
