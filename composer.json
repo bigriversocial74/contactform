@@ -27,6 +27,8 @@
     "audit-product-pppm-golden-path-gate": "bash -o pipefail -c 'mkdir -p build && php scripts/validate_product_pppm_golden_path_gate.php | tee build/product_pppm_golden_path_audit.json'",
     "audit-dependencies": "composer audit --locked --no-interaction",
     "audit-repository-quality": "php scripts/audit_repository_production_quality.php --gate",
+    "validate-launch-contract": "php scripts/validate_production_launch_contract_v1.php --gate",
+    "build-launch-summary": "php scripts/build_production_launch_evidence_v1.php",
     "test-stripe-provider-boundary": "php scripts/validate_stripe_test_provider.php",
     "test-tip-behavior": "php scripts/validate_tip_behavior.php",
     "test-tip-payment-behavior": "php scripts/validate_tip_payment_behavior.php",
