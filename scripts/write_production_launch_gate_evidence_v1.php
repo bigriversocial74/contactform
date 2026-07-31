@@ -44,7 +44,10 @@ if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)
     exit(1);
 }
 
-$commit = trim((string) getenv('GITHUB_SHA'));
+$commit = trim((string) getenv('MG_CERTIFIED_HEAD_SHA'));
+if ($commit === '') {
+    $commit = trim((string) getenv('GITHUB_SHA'));
+}
 if ($commit === '') {
     $resolved = [];
     $code = 1;
