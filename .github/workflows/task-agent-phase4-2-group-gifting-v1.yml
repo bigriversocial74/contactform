@@ -2,6 +2,18 @@ name: Task Agent Phase 4.2 Group Gifting v1
 
 on:
   pull_request:
+    paths:
+      - 'includes/task-agent-group-gifts.php'
+      - 'includes/task-agent-group-gifts-router.php'
+      - 'api/agents/runtime.php'
+      - 'agent.php'
+      - 'assets/js/task-agent-group-gifts-runtime.js'
+      - 'tests/phpunit/TaskAgentPhase42GroupGiftingV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase41RecurringProgramsV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36ProductionQaV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase36SafetyBoundaryV1ContractTest.php'
+      - 'tests/phpunit/TaskAgentPhase2ProductionQaV1ContractTest.php'
+      - '.github/workflows/task-agent-phase4-2-group-gifting-v1.yml'
   workflow_dispatch:
 
 permissions:

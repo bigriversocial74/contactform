@@ -4,6 +4,15 @@ on:
   pull_request:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'design-calendar.php'
+      - 'includes/personal-agent/workspace-design-calendar.php'
+      - 'assets/js/design-calendar-product-cards-v2.js'
+      - 'assets/js/design-calendar-side-view-v2.js'
+      - 'assets/js/design-calendar-product-tools-v3.js'
+      - 'assets/js/design-calendar-view-preferences-v3.js'
+      - 'scripts/validate_design_calendar_modal_side_view_v2.php'
+      - '.github/workflows/design-calendar-modal-side-view-v2-validation.yml'
   workflow_dispatch:
 
 permissions:

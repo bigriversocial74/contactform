@@ -4,6 +4,20 @@ on:
   pull_request:
     branches:
       - integration-from-repair-20260628
+    paths:
+      - 'merchant-agent-chat.php'
+      - 'api/ai/merchant-agent-chat.php'
+      - 'api/merchant/crm-search.php'
+      - 'api/merchant/merchant-crm.php'
+      - 'includes/merchant-crm-search.php'
+      - 'includes/merchant-crm-directory.php'
+      - 'includes/ai/merchant-agent-crm-search.php'
+      - 'assets/js/merchant-agent-crm-mention-search.js'
+      - 'assets/js/merchant-crm-directory-data.js'
+      - 'assets/js/merchant-crm-directory.js'
+      - 'scripts/validate_merchant_agent_crm_mention_search_v1.php'
+      - 'tests/phpunit/MerchantAgentCrmMentionSearchV1Test.php'
+      - '.github/workflows/crm-lookup-v1.yml'
   workflow_dispatch:
 
 permissions:

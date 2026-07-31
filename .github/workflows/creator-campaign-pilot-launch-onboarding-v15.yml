@@ -1,21 +1,6 @@
 name: Creator Campaign Pilot Launch Onboarding v15
 
 on:
-  pull_request:
-    branches: [integration-from-repair-20260628]
-    paths:
-      - 'account-creator-campaign-onboarding.php'
-      - 'includes/creator-campaign-onboarding.php'
-      - 'includes/creator-campaign-onboarding/**'
-      - 'includes/creator-campaign-pilot/page-view.php'
-      - 'includes/creator-campaign-pilot/page-view-onboarding.php'
-      - 'assets/css/creator-campaign-onboarding.css'
-      - 'assets/js/creator-campaign-onboarding.js'
-      - 'database/20260723_creator_campaign_pilot_launch_onboarding_v15_single_install.sql'
-      - 'docs/creator-campaigns/CREATOR_CAMPAIGN_PHASE15_PILOT_LAUNCH_ONBOARDING.md'
-      - 'scripts/validate_creator_campaign_onboarding_v15.php'
-      - 'tests/phpunit/CreatorCampaignPilotLaunchOnboardingV15ContractTest.php'
-      - '.github/workflows/creator-campaign-pilot-launch-onboarding-v15.yml'
   workflow_dispatch:
 
 permissions: {contents: read}

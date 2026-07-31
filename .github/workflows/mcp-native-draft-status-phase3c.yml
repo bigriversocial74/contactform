@@ -2,6 +2,14 @@ name: MCP Native Draft Status Phase 3C
 on:
   pull_request:
     branches: [integration-from-repair-20260628]
+    paths:
+      - 'includes/mcp-drafts/native-status/**'
+      - 'scripts/mcp-phase3c/**'
+      - 'api/internal/mcp-bridge.php'
+      - 'account-agent-handoffs.php'
+      - 'scripts/test_mcp_native_draft_status_phase3c.php'
+      - 'tests/phpunit/McpNativeDraftStatusPhase3cV1ContractTest.php'
+      - '.github/workflows/mcp-native-draft-status-phase3c.yml'
   workflow_dispatch:
 permissions:
   contents: read
