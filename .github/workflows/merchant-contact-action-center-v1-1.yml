@@ -5,6 +5,20 @@ on:
     branches:
       - feature/merchant-contact-action-center-v1-20260717
       - integration-from-repair-20260628
+    paths:
+      - 'merchant-agent-chat.php'
+      - 'includes/merchant-agent-chat-view.php'
+      - 'api/ai/merchant-agent-chat.php'
+      - 'api/merchant/agent-approval-action.php'
+      - 'includes/ai/merchant-agent-contact-action-center.php'
+      - 'includes/ai/merchant-agent-contact-workspace-v1-1.php'
+      - 'includes/ai/merchant-contact-workspace-review-actions.php'
+      - 'assets/js/merchant-agent-contact-workspace-v1-1.js'
+      - 'scripts/validate_merchant_contact_action_center_v1_1.php'
+      - 'scripts/validate_merchant_contact_workspace_review_actions.php'
+      - 'tests/phpunit/MerchantContactActionCenterV11Test.php'
+      - 'tests/phpunit/MerchantContactWorkspaceReviewActionsTest.php'
+      - '.github/workflows/merchant-contact-action-center-v1-1.yml'
   workflow_dispatch:
 
 permissions:
