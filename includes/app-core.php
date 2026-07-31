@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-if(session_status()!==PHP_SESSION_ACTIVE){session_start();}
+require_once __DIR__.'/session.php';
+mg_start_session();
 require_once __DIR__.'/csrf.php';
 require_once __DIR__.'/auth.php';
 require_once __DIR__.'/permissions.php';

@@ -6,12 +6,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/session.php';
+
 function mg_current_user(): ?array
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
-
+    mg_start_session();
     return isset($_SESSION['mg_user']) && is_array($_SESSION['mg_user']) ? $_SESSION['mg_user'] : null;
 }
 
