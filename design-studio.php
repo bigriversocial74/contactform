@@ -43,7 +43,7 @@ $page_scripts = [
     '/assets/js/personal-agent-design-studio-social.js?v=2.0.0',
     '/assets/js/design-studio-template-variants.js?v=1.0.1',
     '/assets/js/design-studio-schedule-context.js?v=1.0.1',
-    '/assets/js/design-studio-creative-save.js?v=2.1.0',
+    '/assets/js/design-studio-creative-save.js?v=2.2.0',
 ];
 $page_manifest = [
     'id' => 'design-studio',
