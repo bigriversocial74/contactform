@@ -1,0 +1,34 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/includes/app.php';
+$page_title='Creator Affiliate Operations | Microgifter';
+$page_section='merchant';
+$header_mode='account';
+$page_body_class='mg-creator-affiliate-operations-page';
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/creator-affiliate-operations.css?v=16.0.0'];
+$page_scripts=['/assets/js/merchant-creator-affiliate-operations.js?v=16.0.0'];
+$merchantView='creator_affiliate_operations';
+require __DIR__.'/includes/header.php';
+require_once __DIR__.'/includes/merchant-navigation.php';
+$user=mg_current_user();
+$mg_package_context=is_array($mg_package_context??null)?$mg_package_context:mg_user_package_context(null,$user);
+$canMerchantAccess=(bool)($can_merchant_nav??!empty($mg_package_context['merchant_access']));
+$appSidebarNav=$canMerchantAccess?mg_merchant_navigation_sidebar($merchantView):[];
+$appSidebarVariant='merchant';
+$appSidebarLabel='Merchant';
+$appSidebarActive=mg_merchant_navigation_active_key($merchantView);
+$appSidebarCompact=true;
+?>
+<section class="mg-app-shell mg-merchant-app" data-merchant-app>
+  <?php require __DIR__.'/includes/app-sidebar.php';?>
+  <main class="mg-app-workspace mg-merchant-main">
+    <?php if(!$user):?>
+      <a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a>
+    <?php elseif(!$canMerchantAccess):?>
+      <a class="mg-btn mg-btn-primary" href="/pricing.php">View packages</a>
+    <?php else:?>
+      <?php require __DIR__.'/includes/merchant-creator-affiliate-operations-view.php';?>
+    <?php endif;?>
+  </main>
+</section>
+<?php require __DIR__.'/includes/footer.php';?>
