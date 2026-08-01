@@ -1,0 +1,684 @@
+name: Production Launch Certification v1
+
+on:
+  pull_request:
+    branches: [integration-from-repair-20260628]
+    paths:
+      - '**/*.php'
+      - 'assets/**'
+      - 'includes/**'
+      - 'api/**'
+      - 'config/**'
+      - 'database/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.js'
+      - '.github/workflows/production-launch-certification-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-launch-certification-v1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MG_CERTIFIED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  contract:
+    name: Contract PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Check out exact candidate head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MG_CERTIFIED_HEAD_SHA }}
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate launch certification source
+        run: |
+          php -l config/production-launch-certification-v1.php
+          php -l scripts/validate_production_launch_contract_v1.php
+          php -l scripts/write_production_launch_gate_evidence_v1.php
+          php -l scripts/build_production_launch_evidence_v1.php
+          composer validate --strict
+          composer validate-launch-contract
+
+      - name: Record PHP contract evidence
+        run: |
+          VERSION_KEY="${{ matrix.php }}"
+          VERSION_KEY="${VERSION_KEY//./}"
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate="contract_php_${VERSION_KEY}" \
+            --status=passed \
+            --label="Launch contract on PHP ${{ matrix.php }}" \
+            --runtime="${{ matrix.php }}" \
+            --details="Manifest, required files, Composer commands, public trust contracts, and launch evidence model validated." \
+            --output="build/production-launch-evidence/contract-php-${{ matrix.php }}.json"
+
+      - name: Validate canonical migrations and upgrade build
+        if: matrix.php == '8.3'
+        run: |
+          mkdir -p build/production-launch-evidence
+          php scripts/validate_migration_manifest.php
+          php scripts/build_full_upgrade_sql.php build/production-launch-evidence/microgifter-full-upgrade.sql
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=migration_manifest \
+            --status=passed \
+            --label="Canonical migration manifest and full-upgrade build" \
+            --details="Canonical migration manifest resolved and full upgrade SQL generated from exact head." \
+            --artifact="build/production-launch-evidence/microgifter-full-upgrade.sql" \
+            --output=build/production-launch-evidence/migration-manifest.json
+
+      - name: Run repository production-quality gate
+        if: matrix.php == '8.3'
+        run: |
+          composer audit-repository-quality
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=repository_quality \
+            --status=passed \
+            --label="Repository production-quality gate" \
+            --details="Reproducible repository production-quality audit passed on exact head." \
+            --artifact="build/repository-production-audit.json" \
+            --output=build/production-launch-evidence/repository-quality.json
+
+      - name: Upload contract evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-launch-contract-php-${{ matrix.php }}-${{ env.MG_CERTIFIED_HEAD_SHA }}
+          path: |
+            build/production-launch-evidence/**
+            build/repository-production-audit.json
+            build/repository-production-audit.md
+          if-no-files-found: warn
+          retention-days: 90
+
+  database-mysql8:
+    name: MySQL 8 launch lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_PORT: '3306'
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_launch_mysql8
+      MG_CLAIM_CODE_PEPPER: launch-mysql8-claim-pepper
+      MG_MEDIA_SIGNING_SECRET: launch-mysql8-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: launch-mysql8-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: launch-mysql8-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: launch-mysql8-merchant-secret
+      MG_REPORT_EMAIL_SECRET: launch-mysql8-report-secret
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '1'
+      MG_STRIPE_STUB_ACCOUNT_ACTIVE: '1'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: pk_test_launch_mysql8
+      MG_STRIPE_SECRET_KEY_TEST: sk_test_launch_mysql8
+      MG_STRIPE_WEBHOOK_SECRET_TEST: whsec_launch_mysql8
+      MG_PLATFORM_FEE_BPS: '1500'
+      MG_PLATFORM_FIXED_FEE_CENTS: '0'
+      MG_ENABLE_POLLING_NOTIFICATIONS: 'true'
+      MG_ENABLE_DB_OUTBOX: 'true'
+      MG_ENABLE_QUEUE_WORKER: 'false'
+      MG_ENABLE_REDIS: 'false'
+      MG_ENABLE_WEBSOCKETS: 'false'
+      MG_ENABLE_SSE: 'false'
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-launch-mysql8-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+      MG_REQUIRE_PERSISTENT_MEDIA_STORAGE: 'true'
+    steps:
+      - name: Check out exact candidate head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MG_CERTIFIED_HEAD_SHA }}
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Wait for MySQL
+        run: |
+          for attempt in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0
+            sleep 1
+          done
+          exit 1
+
+      - name: Allow trusted trigger creation
+        run: mysql -h 127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+
+      - name: Build clean database and prove migration replay
+        run: |
+          mkdir -p build/production-launch-evidence
+          php scripts/validate_migration_manifest.php
+          composer migrate
+          composer migrate
+          php scripts/validate_database_migration_status.php > build/production-launch-evidence/mysql8-migration-status.json
+          php scripts/check_media_storage.php --initialize --json > build/production-launch-evidence/mysql8-media-storage.json
+
+      - name: Validate session and security foundation
+        run: composer test-security
+
+      - name: Validate frontend contracts
+        run: composer test-frontend-contracts
+
+      - name: Validate money and ledger behavior
+        run: composer test-money-behavior
+
+      - name: Validate Microgift behavior
+        run: composer test-microgift-behavior
+
+      - name: Validate PPPM resend behavior
+        run: composer test-pppm-resend-behavior
+
+      - name: Validate product and PPPM golden path
+        run: composer audit-product-pppm-golden-path-gate
+
+      - name: Validate checkout and fulfillment
+        run: composer test-checkout-fulfillment
+
+      - name: Validate lifecycle completion
+        run: composer test-lifecycle-completion
+
+      - name: Validate active recovery
+        run: composer test-active-recovery
+
+      - name: Record MySQL 8 lifecycle evidence
+        run: |
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=database_mysql_8 \
+            --status=passed \
+            --label="MySQL 8 migration, security, commerce, gifting, and recovery" \
+            --database="MySQL 8.0" \
+            --details="Clean migration, migration replay, session/security, frontend, money, Microgift, PPPM, checkout/capture, lifecycle, and active recovery gates passed." \
+            --output=build/production-launch-evidence/database-mysql8.json
+
+      - name: Validate database backup and isolated restore
+        run: |
+          MYSQL_CONTAINER="$(docker ps --filter 'ancestor=mysql:8.0' --format '{{.ID}}' | head -n1)"
+          test -n "${MYSQL_CONTAINER}"
+          chmod +x scripts/ci/mysql scripts/ci/mysqldump
+          PATH="${GITHUB_WORKSPACE}/scripts/ci:${PATH}" \
+          MG_MYSQL_DOCKER_CONTAINER="${MYSQL_CONTAINER}" \
+            bash scripts/validate_database_backup_restore.sh --output-dir build/production-launch-evidence
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=backup_restore_mysql_8 \
+            --status=passed \
+            --label="Consistent backup and isolated restore" \
+            --database="MySQL 8.0" \
+            --details="Consistent backup, checksum, isolated restore, canary, table count, migration count, and restored migration readiness passed." \
+            --artifact="build/production-launch-evidence/backup-restore-validation.json" \
+            --output=build/production-launch-evidence/backup-restore-mysql8.json
+
+      - name: Upload MySQL launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-launch-mysql8-${{ env.MG_CERTIFIED_HEAD_SHA }}
+          path: build/production-launch-evidence/**
+          if-no-files-found: warn
+          retention-days: 90
+
+  database-mariadb1011:
+    name: MariaDB 10.11 launch lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: microgifter
+          MARIADB_USER: microgifter
+          MARIADB_PASSWORD: microgifter
+          MARIADB_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_PORT: '3306'
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_launch_mariadb1011
+      MG_CLAIM_CODE_PEPPER: launch-mariadb-claim-pepper
+      MG_MEDIA_SIGNING_SECRET: launch-mariadb-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: launch-mariadb-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: launch-mariadb-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: launch-mariadb-merchant-secret
+      MG_REPORT_EMAIL_SECRET: launch-mariadb-report-secret
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '1'
+      MG_STRIPE_STUB_ACCOUNT_ACTIVE: '1'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: pk_test_launch_mariadb
+      MG_STRIPE_SECRET_KEY_TEST: sk_test_launch_mariadb
+      MG_STRIPE_WEBHOOK_SECRET_TEST: whsec_launch_mariadb
+      MG_PLATFORM_FEE_BPS: '1500'
+      MG_PLATFORM_FIXED_FEE_CENTS: '0'
+      MG_ENABLE_POLLING_NOTIFICATIONS: 'true'
+      MG_ENABLE_DB_OUTBOX: 'true'
+      MG_ENABLE_QUEUE_WORKER: 'false'
+      MG_ENABLE_REDIS: 'false'
+      MG_ENABLE_WEBSOCKETS: 'false'
+      MG_ENABLE_SSE: 'false'
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-launch-mariadb-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+      MG_REQUIRE_PERSISTENT_MEDIA_STORAGE: 'true'
+    steps:
+      - name: Check out exact candidate head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MG_CERTIFIED_HEAD_SHA }}
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Wait for MariaDB
+        run: |
+          for attempt in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0
+            sleep 1
+          done
+          exit 1
+
+      - name: Build clean database and prove migration replay
+        run: |
+          mkdir -p build/production-launch-evidence
+          php scripts/validate_migration_manifest.php
+          composer migrate
+          composer migrate
+          php scripts/validate_database_migration_status.php > build/production-launch-evidence/mariadb1011-migration-status.json
+          php scripts/check_media_storage.php --initialize --json > build/production-launch-evidence/mariadb1011-media-storage.json
+
+      - name: Validate session and security foundation
+        run: composer test-security
+
+      - name: Validate frontend contracts
+        run: composer test-frontend-contracts
+
+      - name: Validate money and ledger behavior
+        run: composer test-money-behavior
+
+      - name: Validate Microgift behavior
+        run: composer test-microgift-behavior
+
+      - name: Validate PPPM resend behavior
+        run: composer test-pppm-resend-behavior
+
+      - name: Validate product and PPPM golden path
+        run: composer audit-product-pppm-golden-path-gate
+
+      - name: Validate checkout and fulfillment
+        run: composer test-checkout-fulfillment
+
+      - name: Validate lifecycle completion
+        run: composer test-lifecycle-completion
+
+      - name: Validate active recovery
+        run: composer test-active-recovery
+
+      - name: Record MariaDB 10.11 lifecycle evidence
+        run: |
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=database_mariadb_10_11 \
+            --status=passed \
+            --label="MariaDB 10.11 migration, security, commerce, gifting, and recovery" \
+            --database="MariaDB 10.11" \
+            --details="Clean migration, migration replay, session/security, frontend, money, Microgift, PPPM, checkout/capture, lifecycle, and active recovery gates passed." \
+            --output=build/production-launch-evidence/database-mariadb1011.json
+
+      - name: Upload MariaDB launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-launch-mariadb1011-${{ env.MG_CERTIFIED_HEAD_SHA }}
+          path: build/production-launch-evidence/**
+          if-no-files-found: warn
+          retention-days: 90
+
+  release-and-rollback:
+    name: Release reproducibility and rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out exact candidate head with history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MG_CERTIFIED_HEAD_SHA }}
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Resolve rollback ref
+        id: refs
+        run: |
+          ROLLBACK_REF="${{ github.event.pull_request.base.sha }}"
+          if [[ -z "${ROLLBACK_REF}" ]]; then
+            ROLLBACK_REF="$(git rev-parse HEAD^)"
+          fi
+          git cat-file -e "${ROLLBACK_REF}^{commit}"
+          echo "rollback_ref=${ROLLBACK_REF}" >> "${GITHUB_OUTPUT}"
+          echo "release_version=launch-${MG_CERTIFIED_HEAD_SHA:0:12}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build candidate artifact twice
+        run: |
+          bash scripts/build_release_artifact.sh --ref "${MG_CERTIFIED_HEAD_SHA}" --version "${{ steps.refs.outputs.release_version }}" --output-dir build/releases/current-a
+          bash scripts/build_release_artifact.sh --ref "${MG_CERTIFIED_HEAD_SHA}" --version "${{ steps.refs.outputs.release_version }}" --output-dir build/releases/current-b
+          CURRENT_A="$(find build/releases/current-a -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          CURRENT_B="$(find build/releases/current-b -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          test -n "${CURRENT_A}" -a -n "${CURRENT_B}"
+          SHA_A="$(sha256sum "${CURRENT_A}" | awk '{print $1}')"
+          SHA_B="$(sha256sum "${CURRENT_B}" | awk '{print $1}')"
+          test "${SHA_A}" = "${SHA_B}"
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=release_reproducibility \
+            --status=passed \
+            --label="Reproducible candidate release package" \
+            --details="Candidate artifact built twice with identical SHA-256 digest ${SHA_A}." \
+            --artifact="${CURRENT_A}" \
+            --output=build/production-launch-evidence/release-reproducibility.json
+
+      - name: Build and validate rollback artifact
+        run: |
+          bash scripts/build_release_artifact.sh --ref "${{ steps.refs.outputs.rollback_ref }}" --version "rollback-${{ steps.refs.outputs.rollback_ref }}" --output-dir build/releases/rollback
+          CURRENT_ARTIFACT="$(find build/releases/current-a -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          ROLLBACK_ARTIFACT="$(find build/releases/rollback -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          mkdir -p build/production-launch-evidence
+          bash scripts/validate_release_rollback.sh \
+            --current "${CURRENT_ARTIFACT}" \
+            --rollback "${ROLLBACK_ARTIFACT}" \
+            --output build/production-launch-evidence/rollback-validation.json
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=release_rollback \
+            --status=passed \
+            --label="Candidate and rollback package validation" \
+            --details="Candidate and base-commit rollback packages passed checksum, archive safety, required-file, exclusion, PHP syntax, metadata, and database rollback-policy validation." \
+            --artifact="${ROLLBACK_ARTIFACT}" \
+            --output=build/production-launch-evidence/release-rollback.json
+
+      - name: Upload candidate, rollback, and release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-launch-release-${{ env.MG_CERTIFIED_HEAD_SHA }}
+          path: |
+            build/releases/current-a/**
+            build/releases/rollback/**
+            build/production-launch-evidence/**
+          if-no-files-found: warn
+          retention-days: 90
+
+  browser:
+    name: Chromium production golden path
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_TEST_BASE_URL: http://127.0.0.1:8080
+      MG_TEST_SKIP_AUTHENTICATED: '1'
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_launch_browser
+      MG_CLAIM_CODE_PEPPER: launch-browser-claim-pepper
+      MG_MEDIA_SIGNING_SECRET: launch-browser-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: launch-browser-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: launch-browser-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: launch-browser-merchant-secret
+      MG_REPORT_EMAIL_SECRET: launch-browser-report-secret
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '1'
+      MG_STRIPE_STUB_ACCOUNT_ACTIVE: '1'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: pk_test_launch_browser
+      MG_STRIPE_SECRET_KEY_TEST: sk_test_launch_browser
+      MG_STRIPE_WEBHOOK_SECRET_TEST: whsec_launch_browser
+      MG_PLATFORM_FEE_BPS: '1500'
+      MG_PLATFORM_FIXED_FEE_CENTS: '0'
+      MG_ENABLE_POLLING_NOTIFICATIONS: 'true'
+      MG_ENABLE_DB_OUTBOX: 'true'
+      MG_ENABLE_QUEUE_WORKER: 'false'
+      MG_ENABLE_REDIS: 'false'
+      MG_ENABLE_WEBSOCKETS: 'false'
+      MG_ENABLE_SSE: 'false'
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-launch-browser-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+      MG_REQUIRE_PERSISTENT_MEDIA_STORAGE: 'true'
+    steps:
+      - name: Check out exact candidate head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MG_CERTIFIED_HEAD_SHA }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Wait for MySQL and build application
+        run: |
+          for attempt in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && break
+            sleep 1
+          done
+          mysql -h 127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+          composer migrate
+          php scripts/check_media_storage.php --initialize --json
+
+      - name: Start PHP test server
+        run: |
+          php -S 127.0.0.1:8080 -t . > /tmp/microgifter-launch-browser-server.log 2>&1 &
+          echo $! > /tmp/microgifter-launch-browser-server.pid
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/api/health.php >/tmp/microgifter-launch-browser-health.json; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/microgifter-launch-browser-server.log
+          exit 1
+
+      - name: Run production golden-path browser smoke test
+        run: npm run test:browser:v1
+
+      - name: Record browser evidence
+        run: |
+          mkdir -p build/production-launch-evidence
+          cp /tmp/microgifter-launch-browser-health.json build/production-launch-evidence/browser-health.json
+          php scripts/write_production_launch_gate_evidence_v1.php \
+            --gate=browser_chromium \
+            --status=passed \
+            --label="Production browser golden-path smoke test" \
+            --runtime="Chromium / Playwright" \
+            --details="Clean database, persistent media, health endpoint, and existing V1 release golden path passed in Chromium." \
+            --output=build/production-launch-evidence/browser-chromium.json
+
+      - name: Capture browser server diagnostics
+        if: always()
+        run: |
+          mkdir -p build/production-launch-evidence
+          if [ -f /tmp/microgifter-launch-browser-server.log ]; then
+            cp /tmp/microgifter-launch-browser-server.log build/production-launch-evidence/browser-server.log
+          fi
+
+      - name: Upload browser evidence and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-launch-browser-${{ env.MG_CERTIFIED_HEAD_SHA }}
+          path: |
+            build/production-launch-evidence/**
+            playwright-report/**
+            test-results/**
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Stop PHP test server
+        if: always()
+        run: if [ -f /tmp/microgifter-launch-browser-server.pid ]; then kill "$(cat /tmp/microgifter-launch-browser-server.pid)" || true; fi
+
+  summary:
+    name: Exact-head launch evidence summary
+    if: always()
+    needs: [contract, database-mysql8, database-mariadb1011, release-and-rollback, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact candidate head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MG_CERTIFIED_HEAD_SHA }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Download launch evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: production-launch-*
+          path: build/production-launch-collected
+          merge-multiple: true
+
+      - name: Build exact-head automated certification
+        run: |
+          php scripts/build_production_launch_evidence_v1.php \
+            --evidence-dir=build/production-launch-collected \
+            --expected-head="${MG_CERTIFIED_HEAD_SHA}" \
+            --output=build/production-launch-evidence/production-launch-certification-v1.json \
+            --gate
+
+      - name: Upload final launch report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-launch-summary-${{ env.MG_CERTIFIED_HEAD_SHA }}
+          path: build/production-launch-evidence/**
+          if-no-files-found: error
+          retention-days: 180

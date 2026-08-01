@@ -15,6 +15,14 @@ function mg_checkout_scalar(PDO $pdo,string $sql,array $params=[]): mixed
 {
     $stmt=$pdo->prepare($sql);$stmt->execute($params);return $stmt->fetchColumn();
 }
+function mg_checkout_intent_state(PDO $pdo,int $intentId): array
+{
+    $stmt=$pdo->prepare('SELECT provider_intent_reference,status,authorized_at,captured_at,failure_code,failure_message,updated_at FROM payment_intents WHERE id=?');
+    $stmt->execute([$intentId]);
+    $state=$stmt->fetch(PDO::FETCH_ASSOC);
+    if(!$state)throw new RuntimeException('Payment intent not found.');
+    return $state;
+}
 function mg_checkout_balanced(PDO $pdo,int $groupId): bool
 {
     $stmt=$pdo->prepare('SELECT entry_type,SUM(amount_cents) total FROM ledger_entries WHERE transaction_group_id=? GROUP BY entry_type');
@@ -192,13 +200,14 @@ try{
     $rollbackOrderId=(int)mg_checkout_scalar($pdo,'SELECT id FROM commerce_orders WHERE public_id=?',[$rollbackOrder['order']['order_id']]);
     $rollbackSession=mg_payment_create_checkout_session($pdo,$buyerId,$rollbackOrder['order']['order_id'],'rollback-session-'.$runId);
     $rollbackIntentId=(int)mg_checkout_scalar($pdo,'SELECT id FROM payment_intents WHERE public_id=?',[$rollbackSession['payment_intent_id']]);
+    $rollbackIntentBefore=mg_checkout_intent_state($pdo,$rollbackIntentId);
     $beforeGroups=(int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM ledger_transaction_groups');
     $beforeNotifications=(int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM notifications');
     $pdo->exec('SAVEPOINT checkout_post_ledger_failure');$forced=false;
     try{mg_finance_record_paid_order($pdo,$rollbackOrderId,$rollbackIntentId,'rollback-provider-'.$runId,$buyerId,static function(string $stage): void {if($stage==='after_ledger')throw new RuntimeException('Forced post-ledger failure.');});}catch(Throwable){$forced=true;$pdo->exec('ROLLBACK TO SAVEPOINT checkout_post_ledger_failure');}
     mg_checkout_assert($forced,'Forced post-ledger failure did not throw.');
     mg_checkout_assert((string)mg_checkout_scalar($pdo,'SELECT payment_status FROM commerce_orders WHERE id=?',[$rollbackOrderId])==='unpaid','Post-ledger failure left order paid.');
-    mg_checkout_assert((string)mg_checkout_scalar($pdo,'SELECT status FROM payment_intents WHERE id=?',[$rollbackIntentId])==='created','Post-ledger failure changed intent.');
+    mg_checkout_assert(mg_checkout_intent_state($pdo,$rollbackIntentId)===$rollbackIntentBefore,'Post-ledger failure changed intent.');
     mg_checkout_assert((int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM ledger_transaction_groups')===$beforeGroups,'Post-ledger failure left ledger group.');
     mg_checkout_assert((int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM notifications')===$beforeNotifications,'Post-ledger failure left notifications.');
     mg_checkout_assert((string)mg_checkout_scalar($pdo,'SELECT status FROM receipts WHERE order_id=?',[$rollbackOrderId])==='pending','Post-ledger failure finalized receipt.');
@@ -209,6 +218,7 @@ try{
     $fulfillmentOrderId=(int)mg_checkout_scalar($pdo,'SELECT id FROM commerce_orders WHERE public_id=?',[$fulfillmentOrder['order']['order_id']]);
     $fulfillmentSession=mg_payment_create_checkout_session($pdo,$buyerId,$fulfillmentOrder['order']['order_id'],'fulfillment-rollback-session-'.$runId);
     $fulfillmentIntentId=(int)mg_checkout_scalar($pdo,'SELECT id FROM payment_intents WHERE public_id=?',[$fulfillmentSession['payment_intent_id']]);
+    $fulfillmentIntentBefore=mg_checkout_intent_state($pdo,$fulfillmentIntentId);
     $beforeGroups=(int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM ledger_transaction_groups');
     $beforeNotifications=(int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM notifications');
     $beforePppm=(int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM pppm_items');
@@ -220,7 +230,7 @@ try{
     mg_checkout_assert($forced,'Forced post-fulfillment failure did not throw.');
     mg_checkout_assert((string)mg_checkout_scalar($pdo,'SELECT payment_status FROM commerce_orders WHERE id=?',[$fulfillmentOrderId])==='unpaid','Post-fulfillment failure left order paid.');
     mg_checkout_assert((string)mg_checkout_scalar($pdo,'SELECT fulfillment_status FROM commerce_orders WHERE id=?',[$fulfillmentOrderId])==='pending','Post-fulfillment failure left order fulfilled.');
-    mg_checkout_assert((string)mg_checkout_scalar($pdo,'SELECT status FROM payment_intents WHERE id=?',[$fulfillmentIntentId])==='created','Post-fulfillment failure changed intent.');
+    mg_checkout_assert(mg_checkout_intent_state($pdo,$fulfillmentIntentId)===$fulfillmentIntentBefore,'Post-fulfillment failure changed intent.');
     mg_checkout_assert((int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM ledger_transaction_groups')===$beforeGroups,'Post-fulfillment failure left ledger groups.');
     mg_checkout_assert((int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM notifications')===$beforeNotifications,'Post-fulfillment failure left notifications.');
     mg_checkout_assert((int)mg_checkout_scalar($pdo,'SELECT COUNT(*) FROM pppm_items')===$beforePppm,'Post-fulfillment failure left PPPM items.');

@@ -76,37 +76,35 @@ async function mockV1Commerce(page) {
     await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true, data: cart }) });
   });
 
-  await page.route('**/api/commerce/checkout-draft.php', async route => {
-    const body = route.request().postDataJSON();
-    writes.push({ method: route.request().method(), path: '/api/commerce/checkout-draft.php', body });
-    await route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, data: { checkout_draft_id: '44444444-4444-4444-8444-444444444444' } }),
-    });
-  });
+  await page.route('**/api/payments/checkout-options.php', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      data: {
+        methods: {
+          card: { available: true, label: 'Pay with card', detail: 'Secure card checkout is available.' },
+          cash: { available: false, label: 'Pay with cash', detail: 'Cash checkout is unavailable.' },
+        },
+      },
+    }),
+  }));
 
-  await page.route('**/api/commerce/orders.php', async route => {
+  await page.route('**/api/commerce/cart-checkout.php', async route => {
     const body = route.request().postDataJSON();
-    writes.push({ method: route.request().method(), path: '/api/commerce/orders.php', body });
-    await route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, data: { order_id: '55555555-5555-4555-8555-555555555555' } }),
-    });
-  });
-
-  await page.route('**/api/payments/order-checkout-session.php', async route => {
-    const body = route.request().postDataJSON();
-    writes.push({ method: route.request().method(), path: '/api/payments/order-checkout-session.php', body });
+    writes.push({ method: route.request().method(), path: '/api/commerce/cart-checkout.php', body });
     await route.fulfill({
       status: 201,
       contentType: 'application/json',
       body: JSON.stringify({
         ok: true,
         data: {
-          checkout_session_id: '66666666-6666-4666-8666-666666666666',
-          checkout_url: 'https://checkout.stripe.test/c/pay/release-smoke',
+          reused: false,
+          order: { order_id: '55555555-5555-4555-8555-555555555555' },
+          session: {
+            checkout_session_id: '66666666-6666-4666-8666-666666666666',
+            checkout_url: '/checkout.php?session=66666666-6666-4666-8666-666666666666',
+          },
         },
       }),
     });
@@ -121,10 +119,10 @@ test.describe('V1 release browser golden path', () => {
 
     await page.goto('/tests/browser/fixtures/authenticate-v1.php?target=product');
     await expect(page).toHaveURL(/\/product\.php\?id=11111111-1111-4111-8111-111111111111/);
-    await expect(page.locator('[data-public-product] h1')).toHaveText('Release Smoke Coffee Gift');
-    await expect(page.locator('[data-public-product]')).toContainText('<img src=x onerror=window.__unsafe=true>');
-    await expect(page.locator('[data-public-product] script')).toHaveCount(0);
-    await expect(page.locator('[data-public-product] img')).toHaveCount(0);
+    await expect(page.locator('[data-public-product-page] h1')).toHaveText('Release Smoke Coffee Gift');
+    await expect(page.locator('[data-public-product-page]')).toContainText('<img src=x onerror=window.__unsafe=true>');
+    await expect(page.locator('[data-public-product-page] script')).toHaveCount(0);
+    await expect(page.locator('[data-public-product-page] img')).toHaveCount(0);
 
     await page.locator('[data-cart-add]').click();
     await expect(page.locator('[data-cart-drawer]')).toHaveAttribute('aria-hidden', 'false');
@@ -141,15 +139,15 @@ test.describe('V1 release browser golden path', () => {
     await expect(page.locator('[data-cart-items]')).toContainText('Release Smoke Coffee Gift');
     await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
-    await page.locator('[data-cart-checkout]').click();
-    await expect.poll(() => state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
-      '/api/commerce/cart-items.php',
-      '/api/commerce/checkout-draft.php',
-      '/api/commerce/orders.php',
-      '/api/payments/order-checkout-session.php',
-    ]));
+    const cardCheckout = page.locator('[data-cart-checkout-provider="stripe"]');
+    await expect(cardCheckout).toBeVisible();
+    await cardCheckout.click();
+    await expect.poll(() => state.writes.map(item => item.path)).toContain('/api/commerce/cart-checkout.php');
 
-    const paymentWrite = state.writes.find(item => item.path === '/api/payments/order-checkout-session.php');
-    expect(paymentWrite.body.order_id).toBe('55555555-5555-4555-8555-555555555555');
+    const checkoutWrite = state.writes.find(item => item.path === '/api/commerce/cart-checkout.php');
+    expect(checkoutWrite.method).toBe('POST');
+    expect(checkoutWrite.body.provider_key).toBe('stripe');
+    expect(checkoutWrite.body.workflow_key).toMatch(/^checkout-/);
+    await expect(page).toHaveURL(/\/checkout\.php\?session=66666666-6666-4666-8666-666666666666/);
   });
 });

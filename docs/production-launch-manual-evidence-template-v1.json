@@ -1,0 +1,61 @@
+{
+  "suite": "production_launch_manual_evidence_v1",
+  "candidate_head_sha": "REPLACE_WITH_EXACT_CANDIDATE_HEAD_SHA",
+  "production_release_version": "REPLACE_WITH_RELEASE_VERSION",
+  "signoffs": {
+    "production_environment": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "payment_provider": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "email_delivery": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "legal_review": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "feature_scope": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "backup_retention": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "restore_drill": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "support_operations": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    },
+    "deployment_rollback": {
+      "status": "pending",
+      "approved_by": "",
+      "approved_at": "",
+      "evidence": ""
+    }
+  }
+}

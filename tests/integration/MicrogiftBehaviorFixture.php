@@ -22,7 +22,7 @@ function mg_it_insert(PDO $pdo,string $table,array $values): int
 
 function mg_it_user(PDO $pdo,string $email,string $name): int
 {
-    return mg_it_insert($pdo,'users',[
+    $userId=mg_it_insert($pdo,'users',[
         'email'=>$email,
         'password_hash'=>password_hash('BehaviorPassword123!',PASSWORD_DEFAULT),
         'full_name'=>$name,
@@ -32,6 +32,31 @@ function mg_it_user(PDO $pdo,string $email,string $name): int
         'created_at'=>gmdate('Y-m-d H:i:s'),
         'updated_at'=>gmdate('Y-m-d H:i:s'),
     ]);
+
+    // The product/PPPM golden-path audit deliberately runs the Stripe test adapter.
+    // Give only its synthetic merchant an active Connect account so checkout readiness
+    // is exercised rather than bypassed with the sandbox provider.
+    if(str_contains($email,'-merchant@example.test')&&strtolower(trim((string)(getenv('MG_PAYMENT_PROVIDER')?:'')))==='stripe'){
+        $tableExists=(bool)mg_it_scalar($pdo,"SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='payment_provider_accounts'");
+        if($tableExists){
+            $mode=strtolower(trim((string)(getenv('MG_PAYMENT_MODE')?:'test')))==='live'?'live':'test';
+            mg_it_insert($pdo,'payment_provider_accounts',[
+                'public_id'=>mg_public_uuid(),
+                'merchant_user_id'=>$userId,
+                'provider_key'=>'stripe',
+                'provider_account_reference'=>'acct_test_golden_'.str_replace('-','',mg_public_uuid()),
+                'mode'=>$mode,
+                'status'=>'active',
+                'charges_enabled'=>1,
+                'payouts_enabled'=>1,
+                'capabilities_json'=>json_encode(['card_payments'=>'active','transfers'=>'active'],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
+                'created_at'=>gmdate('Y-m-d H:i:s'),
+                'updated_at'=>gmdate('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
+    return $userId;
 }
 
 function mg_it_pppm(PDO $pdo,int $merchantId,string $runId): array
