@@ -1,0 +1,211 @@
+name: HomeServer Primary Upgrade Authority
+
+on:
+  pull_request:
+    paths:
+      - 'admin/homeserver-releases.php'
+      - 'admin/homeserver-upgrades.php'
+      - 'api/admin/homeserver-releases.php'
+      - 'api/admin/homeserver-upgrades.php'
+      - 'api/admin/homeserver-upgrade-signing-payload.php'
+      - 'api/homeserver/update-manifest-stable.php'
+      - 'api/homeserver/update-download.php'
+      - 'assets/js/admin-homeserver-upgrades.js'
+      - 'config/migrations.php'
+      - 'database/20260803_homeserver_upgrade_control_v2.sql'
+      - 'docs/homeserver/microgifter-primary-upgrade-authority-v2.md'
+      - 'includes/homeserver-upgrades.php'
+      - 'tests/phpunit/HomeServerPrimaryUpgradeAuthorityContractTest.php'
+      - '.github/workflows/homeserver-primary-upgrade-authority.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homeserver-primary-upgrade-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application-contract:
+    name: PHP ${{ matrix.php }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify exact candidate identity
+        shell: bash
+        run: |
+          expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$expected"
+          echo "Validated exact candidate $actual"
+
+      - name: Configure PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, mbstring, pdo, sodium
+          coverage: none
+
+      - name: Configure Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+
+      - name: Install PHP dependencies
+        run: |
+          composer validate --strict
+          composer audit --locked --no-interaction
+          composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint upgrade authority PHP
+        run: |
+          php -l includes/homeserver-upgrades.php
+          php -l api/admin/homeserver-upgrades.php
+          php -l api/admin/homeserver-upgrade-signing-payload.php
+          php -l api/homeserver/update-manifest-stable.php
+          php -l api/homeserver/update-download.php
+          php -l admin/homeserver-upgrades.php
+          php -l admin/homeserver-releases.php
+          php -l config/migrations.php
+          php -l tests/phpunit/HomeServerPrimaryUpgradeAuthorityContractTest.php
+
+      - name: Validate upgrade authority JavaScript
+        run: node --check assets/js/admin-homeserver-upgrades.js
+
+      - name: Validate focused HomeServer contracts
+        run: |
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomeServerReleaseDistributionContractTest.php
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/phpunit/HomeServerPrimaryUpgradeAuthorityContractTest.php
+
+      - name: Validate canonical migration chain
+        run: |
+          php scripts/validate_migration_manifest.php
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+          test -s build/microgifter_full_upgrade.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_release_controls_v2' build/microgifter_full_upgrade.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS homeserver_release_control_events_v2' build/microgifter_full_upgrade.sql
+
+  mysql-8-contract:
+    name: MySQL 8 schema
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_contract
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install database client
+        run: sudo apt-get update && sudo apt-get install -y default-mysql-client
+
+      - name: Validate MySQL 8 upgrade schema
+        env:
+          MYSQL_PWD: root
+        run: |
+          mysql -h 127.0.0.1 -uroot microgifter_contract <<'SQL'
+          CREATE TABLE users (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, PRIMARY KEY (id)) ENGINE=InnoDB;
+          CREATE TABLE homeserver_releases (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            public_id CHAR(36) NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_release_public (public_id)
+          ) ENGINE=InnoDB;
+          INSERT INTO users (id) VALUES (1);
+          INSERT INTO homeserver_releases (id,public_id) VALUES
+            (1,'00000000-0000-4000-8000-000000000001'),
+            (2,'00000000-0000-4000-8000-000000000002');
+          SQL
+          mysql -h 127.0.0.1 -uroot microgifter_contract < database/20260803_homeserver_upgrade_control_v2.sql
+          mysql -h 127.0.0.1 -uroot microgifter_contract <<'SQL'
+          INSERT INTO homeserver_release_controls_v2
+            (public_id,release_id,control_state,rollout_percentage,rollback_release_id,created_by_user_id,updated_by_user_id)
+          VALUES
+            ('10000000-0000-4000-8000-000000000001',1,'active',25,2,1,1);
+          INSERT INTO homeserver_release_control_events_v2
+            (public_id,release_control_id,release_id,event_type,previous_state,new_state,metadata_json,actor_user_id)
+          SELECT '20000000-0000-4000-8000-000000000001',id,release_id,'activated','draft','active',JSON_OBJECT('rollout_percentage',25),1
+          FROM homeserver_release_controls_v2 WHERE release_id=1;
+          SELECT IF(COUNT(*)=1,'mysql8-contract-ok','mysql8-contract-failed') AS result
+          FROM homeserver_release_control_events_v2;
+          SQL
+
+  mariadb-1011-contract:
+    name: MariaDB 10.11 schema
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: microgifter_contract
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install database client
+        run: sudo apt-get update && sudo apt-get install -y default-mysql-client
+
+      - name: Validate MariaDB 10.11 upgrade schema
+        env:
+          MYSQL_PWD: root
+        run: |
+          mysql -h 127.0.0.1 -uroot microgifter_contract <<'SQL'
+          CREATE TABLE users (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, PRIMARY KEY (id)) ENGINE=InnoDB;
+          CREATE TABLE homeserver_releases (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            public_id CHAR(36) NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_release_public (public_id)
+          ) ENGINE=InnoDB;
+          INSERT INTO users (id) VALUES (1);
+          INSERT INTO homeserver_releases (id,public_id) VALUES
+            (1,'00000000-0000-4000-8000-000000000001'),
+            (2,'00000000-0000-4000-8000-000000000002');
+          SQL
+          mysql -h 127.0.0.1 -uroot microgifter_contract < database/20260803_homeserver_upgrade_control_v2.sql
+          mysql -h 127.0.0.1 -uroot microgifter_contract <<'SQL'
+          INSERT INTO homeserver_release_controls_v2
+            (public_id,release_id,control_state,rollout_percentage,rollback_release_id,created_by_user_id,updated_by_user_id)
+          VALUES
+            ('10000000-0000-4000-8000-000000000001',1,'active',25,2,1,1);
+          INSERT INTO homeserver_release_control_events_v2
+            (public_id,release_control_id,release_id,event_type,previous_state,new_state,metadata_json,actor_user_id)
+          SELECT '20000000-0000-4000-8000-000000000001',id,release_id,'activated','draft','active',JSON_OBJECT('rollout_percentage',25),1
+          FROM homeserver_release_controls_v2 WHERE release_id=1;
+          SELECT IF(COUNT(*)=1,'mariadb-contract-ok','mariadb-contract-failed') AS result
+          FROM homeserver_release_control_events_v2;
+          SQL
