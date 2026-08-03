@@ -4,9 +4,9 @@ declare(strict_types=1);
 <section class="mg-app-panel mg-account-pane mg-homeserver-account is-active" data-account-pane="homeserver" data-homeserver-account>
   <div class="mg-app-panel-head mg-homeserver-head">
     <div>
-      <span class="mg-homeserver-kicker">Private local Microgifter edge</span>
+      <span class="mg-homeserver-kicker">Independent Microgifter provider connection</span>
       <h2>HomeServer Connections</h2>
-      <p>Pair a Windows HomeServer, review its signed synchronization scopes, and control exactly which operational data and campaign actions each agent may use.</p>
+      <p>Connect an independently licensed HomeServer to Microgifter, review its signed synchronization scopes, and control exactly which merchant data and campaign actions it may use.</p>
     </div>
     <button id="create-sync-code" class="mg-btn mg-btn-primary" type="button" data-homeserver-create-code>Create Sync Code</button>
   </div>
@@ -16,7 +16,7 @@ declare(strict_types=1);
 
     <section class="mg-homeserver-code-panel" data-homeserver-code-panel hidden aria-live="polite">
       <div>
-        <span>One-time Sync Code</span>
+        <span>One-time Microgifter Sync Code</span>
         <strong class="mg-homeserver-code" data-homeserver-code></strong>
         <small data-homeserver-code-expiry></small>
       </div>
@@ -24,35 +24,35 @@ declare(strict_types=1);
         <button class="mg-btn mg-btn-soft" type="button" data-homeserver-copy-code>Copy code</button>
         <button class="mg-btn mg-btn-ghost" type="button" data-homeserver-hide-code>Hide</button>
       </div>
-      <p>Enter this code in the HomeServer Control Center. The code expires quickly and is permanently consumed by the first successful pairing.</p>
+      <p>Enter this code in the HomeServer Control Center to authorize the Microgifter connection. It does not activate the HomeServer software license and cannot authorize software updates.</p>
     </section>
 
     <div class="mg-homeserver-grid">
       <article class="mg-homeserver-card mg-homeserver-onboarding">
-        <span class="mg-homeserver-kicker">Secure setup</span>
-        <h3>Connect a HomeServer</h3>
+        <span class="mg-homeserver-kicker">Secure provider setup</span>
+        <h3>Connect Microgifter</h3>
         <ol>
-          <li>Install and open the Microgifter HomeServer Control Center on Windows.</li>
+          <li>Register, license, and install HomeServer through VP3.</li>
+          <li>Open the HomeServer Control Center and choose the Microgifter provider connection.</li>
           <li>Create a one-time Sync Code above while signed into the owning Microgifter account.</li>
-          <li>Paste the code into the Control Center. A new Ed25519 key is generated locally.</li>
-          <li>Confirm the device appears below, then grant only the data and campaign authority it needs.</li>
+          <li>Paste the code into HomeServer, then grant only the merchant data and campaign authority it needs.</li>
         </ol>
         <div class="mg-homeserver-boundary">
-          <strong>Microgifter remains authoritative.</strong>
-          <p>HomeServer may analyze explicitly granted reviews, messages, CRM, store, purchase, gifting, and campaign records. Agent actions use separate merchant policies and Microgifter still verifies consent, limits, inventory, ownership, claims, redemptions, and delivery.</p>
+          <strong>Microgifter remains authoritative for Microgifter data and actions.</strong>
+          <p>Microgifter controls merchant and site assignments, datasets, CRM and campaign permissions, commerce and gifting synchronization, claims, redemptions, delivery, and operational receipts. VP3 separately controls the HomeServer license, registered device, installer, release channel, and software updates.</p>
         </div>
       </article>
 
       <article class="mg-homeserver-card">
-        <span class="mg-homeserver-kicker">Protocol controls</span>
-        <h3>What every connection uses</h3>
+        <span class="mg-homeserver-kicker">Separated authority</span>
+        <h3>What this connection controls</h3>
         <dl class="mg-homeserver-control-list">
-          <div><dt>Transport</dt><dd>HTTPS only</dd></div>
+          <div><dt>HomeServer license</dt><dd>VP3</dd></div>
+          <div><dt>Installer and updates</dt><dd>VP3</dd></div>
+          <div><dt>Microgifter data</dt><dd>Microgifter grants</dd></div>
           <div><dt>Requests</dt><dd>Ed25519 signed</dd></div>
           <div><dt>Replay defense</dt><dd>Timestamp + unique nonce</dd></div>
-          <div><dt>Credentials</dt><dd>Hashed cloud token</dd></div>
-          <div><dt>Synchronization</dt><dd>Idempotent receipts</dd></div>
-          <div><dt>Revocation</dt><dd>Immediate cloud denial</dd></div>
+          <div><dt>Revocation</dt><dd>Independent per provider</dd></div>
         </dl>
       </article>
     </div>
@@ -60,18 +60,18 @@ declare(strict_types=1);
     <section class="mg-homeserver-devices-section">
       <div class="mg-homeserver-section-head">
         <div>
-          <span class="mg-homeserver-kicker">Account-owned devices</span>
+          <span class="mg-homeserver-kicker">Microgifter-authorized connections</span>
           <h3>Connected HomeServers</h3>
         </div>
         <button class="mg-btn mg-btn-ghost" type="button" data-homeserver-refresh>Refresh</button>
       </div>
       <div class="mg-homeserver-devices" data-homeserver-devices>
-        <p class="mg-muted">Loading HomeServer devices…</p>
+        <p class="mg-muted">Loading Microgifter provider connections…</p>
       </div>
     </section>
 
     <section class="mg-homeserver-authority-shell" data-homeserver-authority aria-live="polite">
-      <div class="mg-homeserver-authority-empty">Loading HomeServer data grants and agent campaign policies…</div>
+      <div class="mg-homeserver-authority-empty">Loading Microgifter data grants and agent campaign policies…</div>
     </section>
   </div>
 </section>

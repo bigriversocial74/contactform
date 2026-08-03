@@ -16,7 +16,9 @@
     active_device_count: 0,
     device_limit: 0,
     remaining_device_slots: 0,
-    upgrade_url: '/account-subscriptions.php?homeserver=upgrade'
+    upgrade_url: '/account-subscriptions.php?homeserver=provider-access',
+    software_authority: 'vp3',
+    vp3_account_url: 'https://vp3.me'
   };
   var latestRelease = null;
   var releaseSchemaReady = true;
@@ -106,13 +108,7 @@
   }
 
   function hasUpdateAvailable() {
-    if (!latestRelease || !entitlement.can_download) return false;
-    var installedVersions = activeDevices()
-      .filter(function (device) { return String(device.version || '').trim() !== ''; })
-      .map(function (device) { return String(device.version); });
-    if (!installedVersions.length) return false;
-    var newestInstalled = installedVersions.sort(compareVersions).slice(-1)[0];
-    return compareVersions(latestRelease.version, newestInstalled) > 0;
+    return false;
   }
 
   function statusSummary() {
@@ -132,7 +128,7 @@
       if (state === 'suspended' || active.length > 0 || revoked.length > 0) {
         return { tone: 'blocked', online: false, label: 'Subscription attention', detail: entitlement.message || 'HomeServer cloud access is not active for this account.' };
       }
-      return { tone: 'muted', online: false, label: 'HomeServer not included', detail: entitlement.message || 'Upgrade to a paid Microgifter package to install and connect HomeServer.' };
+      return { tone: 'muted', online: false, label: 'Microgifter not connected', detail: entitlement.message || 'Enable Microgifter provider access after licensing HomeServer through VP3.' };
     }
     if (online.length > 0) {
       if (hasUpdateAvailable()) {
@@ -149,23 +145,11 @@
     if (revoked.length > 0) {
       return { tone: 'blocked', online: false, label: 'Revoked', detail: 'The saved HomeServer connection has been revoked.' };
     }
-    return { tone: 'ready', online: false, label: 'Ready to install', detail: 'HomeServer is included. Download the installer and connect it with a one-time Sync Code.' };
+    return { tone: 'ready', online: false, label: 'Ready to connect', detail: 'License and install HomeServer through VP3, then connect Microgifter with a one-time Sync Code.' };
   }
 
   function releaseSummary() {
-    if (!entitlement.can_download) return { label: 'Upgrade required', className: ' is-muted' };
-    if (releaseLoadFailed) return { label: 'Download unavailable', className: ' is-warning' };
-    if (!releaseSchemaReady) return { label: 'Coming soon', className: ' is-warning' };
-    if (!latestRelease) return { label: 'Not published', className: ' is-warning' };
-
-    var installedVersions = activeDevices()
-      .filter(function (device) { return String(device.version || '').trim() !== ''; })
-      .map(function (device) { return String(device.version); });
-    if (!installedVersions.length) return { label: 'Ready to install', className: ' is-ready' };
-
-    var newestInstalled = installedVersions.sort(compareVersions).slice(-1)[0];
-    if (compareVersions(latestRelease.version, newestInstalled) > 0) return { label: 'Update available', className: ' is-update' };
-    return { label: 'Latest installed', className: ' is-current' };
+    return { label: 'Managed by VP3', className: ' is-current' };
   }
 
   function createTrigger() {
@@ -246,31 +230,13 @@
   }
 
   function releaseMarkup() {
-    var summary = releaseSummary();
-    if (!entitlement.can_download) {
-      return '<div class="mg-homeserver-empty"><strong>HomeServer is not included with this account.</strong><br>Upgrade to a paid Microgifter package to download the Windows installer and create a Sync Code.</div>';
-    }
-    if (releaseLoadFailed) {
-      return '<div class="mg-homeserver-empty">Microgifter could not load the latest HomeServer installer. Refresh the modal or try again shortly.</div>';
-    }
-    if (!releaseSchemaReady) {
-      return '<div class="mg-homeserver-empty">The HomeServer installer download system has not been activated yet.</div>';
-    }
-    if (!latestRelease) {
-      return '<div class="mg-homeserver-empty">No stable HomeServer installer has been published yet. An administrator can upload the first Windows release.</div>';
-    }
-
-    var checksum = String(latestRelease.checksum_sha256 || '');
-    var notes = String(latestRelease.release_notes || '').trim();
     return [
       '<div class="mg-homeserver-release-card">',
       '  <div class="mg-homeserver-release-info">',
-      '    <div class="mg-homeserver-release-title"><strong>Microgifter HomeServer v' + escapeHtml(latestRelease.version) + '</strong><span class="mg-homeserver-release-state' + summary.className + '">' + escapeHtml(summary.label) + '</span></div>',
-      '    <p>Windows ' + escapeHtml(String(latestRelease.architecture || 'x64').toUpperCase()) + ' · ' + escapeHtml(formatBytes(latestRelease.byte_size)) + ' · Published ' + escapeHtml(formatDate(latestRelease.published_at)) + '</p>',
-      (notes ? '    <p class="mg-homeserver-release-notes">' + escapeHtml(notes.length > 240 ? notes.slice(0, 237) + '…' : notes) + '</p>' : ''),
-      (checksum ? '    <code title="SHA-256 checksum">SHA-256 ' + escapeHtml(checksum.slice(0, 16)) + '…</code>' : ''),
+      '    <div class="mg-homeserver-release-title"><strong>VP3 HomeServer</strong><span class="mg-homeserver-release-state is-current">Software authority</span></div>',
+      '    <p>VP3 manages the HomeServer license, registered device, Windows installer, signed release channels, and software updates.</p>',
       '  </div>',
-      '  <a class="mg-homeserver-release-download" href="' + escapeHtml(latestRelease.download_url || '/api/homeserver/download.php') + '">Download .exe</a>',
+      '  <a class="mg-homeserver-release-download" href="https://vp3.me" rel="noopener">Open VP3</a>',
       '</div>'
     ].join('');
   }
@@ -296,19 +262,19 @@
     root.innerHTML = [
       '<div class="mg-homeserver-overview">',
       '  <article class="mg-homeserver-status-card">',
-      '    <span>Cloud connection</span>',
+      '    <span>Microgifter connection</span>',
       '    <strong><i class="mg-homeserver-state-light' + statusClass + '" aria-hidden="true"></i>' + escapeHtml(summary.label) + '</strong>',
       '    <p>' + escapeHtml(summary.detail) + '</p>',
       '  </article>',
       '  <article class="mg-homeserver-status-card">',
-      '    <span>Package access</span>',
+      '    <span>Microgifter access</span>',
       '    <strong>' + escapeHtml(entitlement.package_name || 'Free Wallet') + '</strong>',
       '    <p>' + escapeHtml(allowanceLabel()) + ' · ' + escapeHtml(String(entitlement.subscription_status || 'unknown').replace(/_/g, ' ')) + '</p>',
       '  </article>',
       '</div>',
       '<section class="mg-homeserver-section mg-homeserver-release-section">',
       '  <div class="mg-homeserver-section-head">',
-      '    <div><p>Windows installer</p><h3>Download HomeServer</h3></div>',
+      '    <div><p>Software authority</p><h3>VP3 HomeServer</h3></div>',
       '    <span class="mg-homeserver-chip' + releaseState.className + '">' + escapeHtml(releaseState.label) + '</span>',
       '  </div>',
       releaseMarkup(),
@@ -335,7 +301,8 @@
       '<div class="mg-homeserver-status-actions">',
       '  <button type="button" data-homeserver-status-refresh>Refresh status</button>',
       (canManageReleases && releaseAdminUrl ? '  <a class="is-secondary" href="' + escapeHtml(releaseAdminUrl) + '">Release admin</a>' : ''),
-      (entitlement.can_manage ? '  <a href="/account-homeserver.php">Manage HomeServer</a>' : '  <a href="' + escapeHtml(entitlement.upgrade_url || '/account-subscriptions.php?homeserver=upgrade') + '">Upgrade for HomeServer</a>'),
+      '  <a class="is-secondary" href="https://vp3.me" rel="noopener">Open VP3</a>',
+      (entitlement.can_manage ? '  <a href="/account-homeserver.php">Manage Microgifter Connection</a>' : '  <a href="' + escapeHtml(entitlement.upgrade_url || '/account-subscriptions.php?homeserver=provider-access') + '">Enable Microgifter Access</a>'),
       '</div>'
     ].join('');
 
@@ -381,34 +348,11 @@
   }
 
   async function loadRelease() {
-    if (!entitlement.can_download) {
-      latestRelease = null;
-      releaseSchemaReady = true;
-      canManageReleases = false;
-      releaseAdminUrl = null;
-      releaseLoadFailed = false;
-      return;
-    }
-
-    try {
-      var response = await window.fetch(RELEASE_API_URL, {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store'
-      });
-      var payload = await response.json().catch(function () { return {}; });
-      if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Unable to load HomeServer release.');
-      var data = payload.data && typeof payload.data === 'object' ? payload.data : payload;
-      latestRelease = data.release && typeof data.release === 'object' ? data.release : null;
-      releaseSchemaReady = data.schema_ready !== false;
-      if (data.entitlement && typeof data.entitlement === 'object') entitlement = data.entitlement;
-      canManageReleases = data.can_manage_releases === true;
-      releaseAdminUrl = canManageReleases ? String(data.admin_url || '/admin/homeserver-releases.php') : null;
-      releaseLoadFailed = false;
-    } catch (error) {
-      releaseLoadFailed = true;
-    }
+    latestRelease = null;
+    releaseSchemaReady = false;
+    canManageReleases = false;
+    releaseAdminUrl = null;
+    releaseLoadFailed = false;
   }
 
   async function loadAll(forceRender) {

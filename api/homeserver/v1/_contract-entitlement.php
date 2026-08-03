@@ -35,12 +35,11 @@ function mg_hs_v1_capability_decisions(array $entitlement, array $requested): ar
 
     $always = [
         'device-heartbeat.v1', 'entitlement-lease.v1', 'credential-rotation.v1',
-        'signed-updates.v1', 'update-receipts.v1', 'device-replacement.v1',
+        'device-replacement.v1',
     ];
     $paid = [
         'pairing.v1', 'device-registration.v1', 'merchant-assignments.v1',
         'site-assignments.v1', 'dataset-grants.v1', 'sync.incremental.v1',
-        'update-authorization.v1',
     ];
     if (!empty($entitlement['can_operational_data'])) $paid[] = 'operational-data.v1';
     if (!empty($entitlement['can_agent_actions'])) $paid[] = 'campaign-actions.v1';
@@ -150,8 +149,7 @@ function mg_hs_v1_issue_lease(PDO $pdo, array $connection, array $entitlement, ?
     $requested = json_decode((string)($connection['requested_capabilities_json'] ?? '[]'), true);
     $decisions = mg_hs_v1_capability_decisions($entitlement, is_array($requested) ? $requested : []);
     $scopes = mg_hs_v1_scopes($pdo, $connection, $requestedMerchant, $requestedSite);
-    $channels = ['stable'];
-    if (!empty($entitlement['can_beta_updates'])) $channels[] = 'beta';
+    $channels = [];
     $now = time();
     $leaseId = mg_homeserver_public_uuid();
     $payload = [
@@ -170,10 +168,13 @@ function mg_hs_v1_issue_lease(PDO $pdo, array $connection, array $entitlement, ?
         'merchant_scope' => $scopes['merchant_scope'],
         'site_scope' => $scopes['site_scope'],
         'device_allowance' => mg_hs_v1_device_allowance($pdo, $entitlement, (int)$connection['owner_user_id']),
-        'update_eligibility' => in_array($subscriptionState, ['active', 'grace'], true) && !empty($entitlement['can_feature_updates']),
+        'update_eligibility' => false,
         'allowed_update_channels' => $channels,
         'minimum_homeserver_version' => null,
         'signing_key_id' => $material['key_id'],
+        'software_authority' => 'vp3',
+        'software_license_managed_here' => false,
+        'installer_managed_here' => false,
     ];
     $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     $signature = sodium_crypto_sign_detached($payloadJson, $material['secret_key']);
@@ -192,17 +193,16 @@ function mg_hs_v1_issue_lease(PDO $pdo, array $connection, array $entitlement, ?
         $payload['account_id'], 1, $subscriptionState,
         mg_homeserver_json($payload['granted_capabilities']), mg_homeserver_json($payload['denied_capabilities']),
         mg_homeserver_json($payload['merchant_scope']), mg_homeserver_json($payload['site_scope']),
-        mg_homeserver_json($payload['device_allowance']), $payload['update_eligibility'] ? 1 : 0,
+        mg_homeserver_json($payload['device_allowance']), 0,
         mg_homeserver_json($channels), null, $material['key_id'], $payloadJson, $signatureEncoded,
         $now, $now - 30, $now + mg_hs_v1_lease_seconds(),
     ]);
-    $pdo->prepare('UPDATE homeserver_provider_connections SET lifecycle_state=?,subscription_state=?,granted_capabilities_json=?,denied_capabilities_json=?,merchant_scope_json=?,site_scope_json=?,current_lease_id=?,entitlement_expires_at=FROM_UNIXTIME(?),update_eligible=?,update_channels_json=?,last_entitlement_refresh_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() WHERE id=?')
+    $pdo->prepare('UPDATE homeserver_provider_connections SET lifecycle_state=?,subscription_state=?,granted_capabilities_json=?,denied_capabilities_json=?,merchant_scope_json=?,site_scope_json=?,current_lease_id=?,entitlement_expires_at=FROM_UNIXTIME(?),update_eligible=0,update_channels_json=?,last_entitlement_refresh_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() WHERE id=?')
         ->execute([
             mg_hs_v1_lifecycle_state($subscriptionState), $subscriptionState,
             mg_homeserver_json($payload['granted_capabilities']), mg_homeserver_json($payload['denied_capabilities']),
             mg_homeserver_json($payload['merchant_scope']), mg_homeserver_json($payload['site_scope']),
-            $leaseId, $now + mg_hs_v1_lease_seconds(), $payload['update_eligibility'] ? 1 : 0,
-            mg_homeserver_json($channels), (int)$connection['id'],
+            $leaseId, $now + mg_hs_v1_lease_seconds(), mg_homeserver_json($channels), (int)$connection['id'],
         ]);
     return ['payload' => $payload, 'signature' => $signatureEncoded];
 }
