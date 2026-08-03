@@ -6,6 +6,8 @@ Microgifter is the primary customer-facing connection for HomeServer account own
 
 This control plane extends the already deployed Microgifter HomeServer pairing and release-distribution systems. It does not replace the HomeServer updater and does not roll HomeServer back to an earlier repository state.
 
+The coordinated runtime restoration is HomeServer PR #69. The coordinated cloud/update control is Microgifter PR #1390. Both PRs remain independent drafts until their exact final heads pass retained and cross-repository certification.
+
 ## Existing contracts retained
 
 - one-time Microgifter Sync Code pairing
