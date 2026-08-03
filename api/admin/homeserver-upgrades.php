@@ -312,7 +312,8 @@ if ($action === 'activate_rollback') {
     try {
         mg_homeserver_upgrade_manifest($target, $target);
     } catch (Throwable $error) {
-        mg_fail('The rollback target manifest is no longer valid: ' . $error->getMessage(), 409);
+        error_log('HomeServer rollback target manifest validation failed: ' . $error->getMessage());
+        mg_fail('The rollback target manifest is no longer valid.', 409);
     }
 
     $pdo->beginTransaction();
