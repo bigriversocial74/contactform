@@ -22,9 +22,10 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-hsr-back" href="/account-homeserver.php">← HomeServer settings</a>
           <span class="mg-eyebrow">Windows distribution control</span>
           <h1>HomeServer releases and downloads</h1>
-          <p>Upload the current Windows installer, publish the latest version, and review authenticated download activity. This is the manual distribution foundation for the later automated updater.</p>
+          <p>Upload the current Windows installer, publish the latest version, and review authenticated download activity. The signed update control center publishes these verified installers to the active HomeServer updater.</p>
         </div>
         <div class="mg-hsr-hero-actions">
+          <a class="mg-btn mg-btn-primary" href="/admin/homeserver-upgrades.php">Signed update control</a>
           <a class="mg-btn mg-btn-soft" href="/api/homeserver/latest-release.php" target="_blank" rel="noopener">View latest metadata</a>
           <a class="mg-btn mg-btn-soft" href="/account-homeserver.php">User download view</a>
         </div>
@@ -51,12 +52,12 @@ require dirname(__DIR__) . '/includes/header.php';
               <label><span>Channel</span><select name="channel"><option value="stable">Stable</option><option value="beta">Beta</option><option value="preview">Preview</option></select></label>
               <label><span>Architecture</span><select name="architecture"><option value="x64">Windows x64</option><option value="arm64">Windows ARM64</option></select></label>
             </div>
-            <label><span>Minimum supported version</span><input name="minimum_supported_version" maxlength="64" placeholder="Optional" autocomplete="off"><small>Reserved now for the future updater compatibility policy.</small></label>
+            <label><span>Minimum supported version</span><input name="minimum_supported_version" maxlength="64" placeholder="Optional" autocomplete="off"><small>Enforced by the signed HomeServer update manifest.</small></label>
             <label><span>Release notes</span><textarea name="release_notes" maxlength="12000" rows="6" placeholder="What changed in this HomeServer release?"></textarea></label>
             <label class="mg-hsr-file-field"><span>Windows installer</span><input name="file" type="file" required accept=".exe,application/vnd.microsoft.portable-executable,application/x-msdownload"><strong data-hsr-file-name>Choose the latest .exe file</strong><small data-hsr-file-limit>Maximum application limit: 1 GB. The web server may impose a smaller PHP upload limit.</small></label>
             <div class="mg-hsr-checks">
               <label><input type="checkbox" name="publish_now" checked><span><strong>Publish as latest</strong><small>Immediately replaces the current latest version for this channel and architecture.</small></span></label>
-              <label><input type="checkbox" name="mandatory_update"><span><strong>Mandatory update flag</strong><small>Saved for the future automated updater; it does not force-install anything yet.</small></span></label>
+              <label><input type="checkbox" name="mandatory_update"><span><strong>Mandatory update flag</strong><small>Included in release policy while installation remains user-authorized and rollback protected.</small></span></label>
             </div>
             <button class="mg-btn mg-btn-primary mg-hsr-upload-button" type="submit" data-hsr-upload>Upload and publish</button>
           </form>
@@ -70,7 +71,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <article><span>Download access</span><strong>Authenticated</strong><p>Only signed-in Microgifter accounts can request the installer.</p></article>
             <article><span>Integrity metadata</span><strong>SHA-256</strong><p>Every uploaded installer receives an immutable checksum.</p></article>
           </div>
-          <div class="mg-hsr-foundation-note"><strong>Updater foundation</strong><p>The version, channel, architecture, checksum, mandatory flag, minimum supported version, and latest-release endpoint are stored now so the future HomeServer updater can consume a stable contract.</p></div>
+          <div class="mg-hsr-foundation-note"><strong>Active updater catalog</strong><p>Version, channel, architecture, checksum, minimum version, signing identity, rollout, revocation, and rollback are joined by the signed update control center.</p></div>
         </aside>
       </div>
 
